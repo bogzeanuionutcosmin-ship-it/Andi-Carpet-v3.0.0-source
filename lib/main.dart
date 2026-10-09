@@ -8286,6 +8286,10 @@ class _ExpensePageState extends State<ExpensePage> {
   List<Expense> get ex => allEx.where((e) => e.confirmed).toList();
   List<PerDiemEntry> get di => widget.perDiems.where((e) => e.teamId == team.id && _belongsToSelected(e.settlementId)).toList()
     ..sort((a, b) => b.date.compareTo(a.date));
+  List<PerDiemEntry> get pendingOwnPerDiems => widget.perDiems
+      .where((e) => e.teamId == team.id && e.memberId == widget.currentUser.id && e.status == PerDiemStatus.awaitingConfirmation && e.received != true)
+      .toList()
+    ..sort((a, b) => b.date.compareTo(a.date));
   double get spent => ex.fold<double>(0, (a, b) => a + b.amount) + di.where((d) => d.status == PerDiemStatus.confirmed).fold<double>(0, (a, b) => a + b.amount);
   double get balance => received - spent;
   double get liters => ex.where((e) => e.category == 'Combustibil').fold<double>(0, (a, b) => a + (b.liters ?? 0));
@@ -8327,6 +8331,10 @@ class _ExpensePageState extends State<ExpensePage> {
           Text('Echipă: ${team.name}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         _settlementSelector(),
+        if (pendingOwnPerDiems.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          ...pendingOwnPerDiems.map(_pendingPerDiemCard),
+        ],
         const SizedBox(height: 14),
         if (!hasSelectedDecont) ...[
           const _Empty(icon: Icons.luggage_outlined, text: 'Nu există încă nicio deplasare. Creează prima deplasare pentru a separa corect bugetele și documentele.'),
@@ -8659,6 +8667,74 @@ class _ExpensePageState extends State<ExpensePage> {
       }
       if(mounted){setState((){});showSuccessMessage(context,'Suma primită a fost adăugată.');}
     }catch(e){if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');}
+  }
+
+  Widget _pendingPerDiemCard(PerDiemEntry entry) {
+    final source = entry.distributedBy == null ? 'Gestionar financiar' : name(entry.distributedBy!);
+    final method = entry.method?.label ?? 'Metodă nespecificată';
+    final alreadyReportedMissing = entry.received == false;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.payments_outlined, color: Colors.orange),
+            const SizedBox(width: 10),
+            Expanded(child: Text('Confirmare diurnă', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900))),
+          ]),
+          const SizedBox(height: 8),
+          Text('${entry.amount.toStringAsFixed(2)} lei · $method · de la $source'),
+          Text('Data distribuirii: ${formatDate(entry.distributedAt ?? entry.date)}'),
+          if (alreadyReportedMissing) ...[
+            const SizedBox(height: 6),
+            const Text('Ai declarat că nu ai primit încă această diurnă. Confirmă atunci când banii ajung la tine.', style: TextStyle(fontWeight: FontWeight.w700)),
+          ] else ...[
+            const SizedBox(height: 6),
+            const Text('Confirmă dacă ai primit efectiv suma.', style: TextStyle(fontWeight: FontWeight.w700)),
+          ],
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            FilledButton.icon(
+              onPressed: () => _answerPerDiem(entry, true),
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Am primit'),
+            ),
+            if (!alreadyReportedMissing)
+              OutlinedButton.icon(
+                onPressed: () => _answerPerDiem(entry, false),
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Nu am primit'),
+              ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _answerPerDiem(PerDiemEntry entry, bool received) async {
+    final previousReceived = entry.received;
+    final previousStatus = entry.status;
+    final previousConfirmedAt = entry.confirmedAt;
+    entry.received = received;
+    entry.status = received ? PerDiemStatus.confirmed : PerDiemStatus.awaitingConfirmation;
+    entry.confirmedAt = received ? DateTime.now() : null;
+    try {
+      await widget.savePerDiem(entry);
+      widget.log(received ? 'Diurnă confirmată ca primită' : 'Diurnă declarată neprimita', '${entry.amount.toStringAsFixed(2)} lei · ${name(entry.memberId)}');
+      widget.onChanged();
+      if (mounted) {
+        setState(() {});
+        showSuccessMessage(context, received ? 'Diurna a fost confirmată.' : 'Am salvat că diurna nu a fost primită încă.');
+      }
+    } catch (e) {
+      entry.received = previousReceived;
+      entry.status = previousStatus;
+      entry.confirmedAt = previousConfirmedAt;
+      if (mounted) {
+        setState(() {});
+        showErrorMessage(context, 'Nu s-a putut salva confirmarea diurnei: $e');
+      }
+    }
   }
 
   Future<void> _manager() async {
