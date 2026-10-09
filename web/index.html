@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Aplicația operațională Andi Carpetă pentru grafice, locații, centralizatoare și decont.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Andi Carpetă">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Andi Carpetă</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style id="andi-install-style">
+    #andi-install-overlay[hidden] { display: none !important; }
+    #andi-install-overlay {
+      position: fixed; inset: 0; z-index: 2147483647;
+      display: flex; align-items: flex-end; justify-content: center;
+      padding: 16px; background: rgba(0,0,0,.34);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    #andi-install-card {
+      width: min(520px, 100%); background: #fff; color: #222;
+      border-radius: 20px; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.28);
+    }
+    #andi-install-card h2 { margin: 0 0 8px; font-size: 22px; }
+    #andi-install-card p { margin: 0 0 14px; line-height: 1.42; }
+    #andi-install-steps { margin: 0 0 16px; padding-left: 22px; line-height: 1.5; }
+    #andi-install-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+    .andi-install-btn { border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 700; font-size: 15px; }
+    #andi-install-primary { background: #B97A2B; color: #fff; }
+    #andi-install-later { background: #eee; color: #222; }
+  </style>
+</head>
+<body>
+
+  <div id="andi-install-overlay" hidden aria-live="polite">
+    <div id="andi-install-card" role="dialog" aria-modal="true" aria-labelledby="andi-install-title">
+      <h2 id="andi-install-title">Instalează Andi Carpetă</h2>
+      <p id="andi-install-text">Instalează aplicația pe telefon pentru acces rapid și notificări mai fiabile.</p>
+      <ol id="andi-install-steps" hidden></ol>
+      <div id="andi-install-actions">
+        <button id="andi-install-later" class="andi-install-btn" type="button">Mai târziu</button>
+        <button id="andi-install-primary" class="andi-install-btn" type="button">Instalează</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Instalare PWA ghidată automat. Browserul/OS-ul păstrează controlul final:
+    // Android/Chromium oferă beforeinstallprompt; iOS nu expune un API care să
+    // deschidă programatic Add to Home Screen, așa că afișăm automat pașii.
+    (function setupAndiInstallPrompt() {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (standalone || !mobile) return;
+
+      const overlay = document.getElementById('andi-install-overlay');
+      const title = document.getElementById('andi-install-title');
+      const text = document.getElementById('andi-install-text');
+      const steps = document.getElementById('andi-install-steps');
+      const primary = document.getElementById('andi-install-primary');
+      const later = document.getElementById('andi-install-later');
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      let deferredPrompt = null;
+
+      const show = () => {
+        if (sessionStorage.getItem('andi_install_prompt_dismissed') === '1') return;
+        overlay.hidden = false;
+      };
+      const hide = (rememberForSession) => {
+        overlay.hidden = true;
+        if (rememberForSession) sessionStorage.setItem('andi_install_prompt_dismissed', '1');
+      };
+
+      later.addEventListener('click', () => hide(true));
+      window.addEventListener('appinstalled', () => hide(false));
+
+      if (isIOS) {
+        title.textContent = 'Instalează Andi Carpetă pe iPhone';
+        text.textContent = 'iPhone nu permite site-ului să pornească singur instalarea. Urmează pașii de mai jos; fereastra aceasta apare automat până când aplicația este instalată.';
+        steps.hidden = false;
+        steps.innerHTML = '<li>Apasă butonul Partajare din browser.</li><li>Alege „Adaugă pe ecranul principal”.</li><li>Confirmă „Adaugă”, apoi deschide Andi Carpetă din iconița nouă.</li>';
+        primary.textContent = 'Am înțeles';
+        primary.addEventListener('click', () => hide(true));
+        setTimeout(show, 900);
+        return;
+      }
+
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredPrompt = event;
+        title.textContent = 'Instalează Andi Carpetă';
+        text.textContent = 'Apasă „Instalează” și confirmă fereastra Android/Chrome.';
+        steps.hidden = true;
+        primary.textContent = 'Instalează';
+        show();
+      });
+
+      primary.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          try {
+            const promptEvent = deferredPrompt;
+            deferredPrompt = null;
+            const result = await promptEvent.prompt();
+            if (result && result.outcome === 'accepted') hide(false);
+            else hide(true);
+          } catch (e) {
+            console.error('[Andi Carpeta] Install prompt failed:', e);
+            hide(true);
+          }
+          return;
+        }
+        hide(true);
+      });
+
+      if (isAndroid) {
+        setTimeout(() => {
+          if (!deferredPrompt) {
+            title.textContent = 'Instalează Andi Carpetă';
+            text.textContent = 'Dacă butonul de instalare Android nu este încă disponibil, deschide meniul browserului (⋮) și alege „Instalează aplicația” sau „Adaugă pe ecranul principal”.';
+            steps.hidden = true;
+            primary.textContent = 'Am înțeles';
+            show();
+          }
+        }, 1800);
+      }
+    })();
+  </script>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script>
+  <script>
+    window.andiCarpetaOcr = async function(dataUrl) {
+      if (!window.Tesseract) throw new Error('Motorul OCR nu s-a încărcat. Verifică conexiunea la internet.');
+      const result = await window.Tesseract.recognize(dataUrl, 'ron+eng');
+      return (result && result.data && result.data.text) ? result.data.text : '';
+    };
+  </script>
+  <script>
+    // FCM Web/PWA: register the dedicated messaging service worker before
+    // Flutter starts asking Firebase Messaging for a registration token.
+    // Flutter registers its own service worker separately for app caching.
+    (async function bootstrapAndiCarpeta() {
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/firebase-cloud-messaging-push-scope',
+          });
+          console.log('[Andi Carpeta] Firebase Messaging service worker registered.');
+        } catch (error) {
+          console.error('[Andi Carpeta] FCM service worker registration failed:', error);
+        }
+      }
+      const flutterScript = document.createElement('script');
+      flutterScript.src = 'flutter_bootstrap.js';
+      flutterScript.async = true;
+      document.body.appendChild(flutterScript);
+    })();
+  </script>
+</body>
+</html>

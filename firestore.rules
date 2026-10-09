@@ -1,0 +1,401 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function userData() {
+      return get(userPath()).data;
+    }
+
+    function isActive() {
+      return signedIn()
+        && exists(userPath())
+        && userData().active == true;
+    }
+
+    function isAdmin() {
+      return isActive()
+        && userData().role == 'admin';
+    }
+
+    // Drepturile efective sunt calculate de aplicație din toate funcțiile atribuite
+    // și sunt scrise doar de Admin în users/{uid}. Fallback-ul păstrează compatibilitatea
+    // cu utilizatorii existenți până la prima sincronizare făcută de un Admin.
+    function functionPath(functionId) {
+      return /databases/$(database)/documents/functions/$(functionId);
+    }
+
+    function hasLegacyPermission(permission) {
+      return isActive() && (
+        userData().function == 'director'
+        || (('function' in userData())
+          && exists(functionPath(userData().function))
+          && get(functionPath(userData().function)).data.active == true
+          && permission in get(functionPath(userData().function)).data.permissions)
+        || (userData().function == 'driver' && permission in [
+          'viewDashboard', 'viewProgram', 'editProgram', 'viewMap',
+          'viewCentralizer', 'viewOwnDecont', 'viewContacts'
+        ])
+        || (userData().function == 'worker' && permission in [
+          'viewDashboard', 'viewProgram', 'editProgram', 'viewMap',
+          'viewCentralizer', 'viewOwnDecont', 'viewContacts'
+        ])
+        || (userData().function == 'developer' && permission in [
+          'viewDashboard', 'viewProgram', 'viewMap',
+          'viewCentralizer', 'viewOwnDecont', 'viewContacts'
+        ])
+      );
+    }
+
+    function hasPermission(permission) {
+      return isAdmin()
+        || (isActive()
+          && ('effectivePermissions' in userData())
+          && userData().effectivePermissions is list
+          && permission in userData().effectivePermissions)
+        || (isActive()
+          && !('effectivePermissions' in userData())
+          && hasLegacyPermission(permission));
+    }
+
+    function teamPath(teamId) {
+      return /databases/$(database)/documents/teams/$(teamId);
+    }
+
+    function isTeamMember(teamId) {
+      return isActive()
+        && exists(teamPath(teamId))
+        && request.auth.uid in get(teamPath(teamId)).data.members;
+    }
+
+    function otherUserPath(userId) {
+      return /databases/$(database)/documents/users/$(userId);
+    }
+
+    function canNotifyUser(userId) {
+      return isAdmin()
+        || (isActive() && request.auth.uid == userId)
+        || (isActive()
+          && exists(otherUserPath(userId))
+          && get(otherUserPath(userId)).data.active == true);
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isActive());
+
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == 'member'
+        && request.resource.data.active == false
+        && request.resource.data.status == 'pending';
+
+      allow update: if isAdmin() || (isActive()
+        && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'nickname', 'useNickname', 'username', 'usernameNormalized', 'phone', 'phoneNormalized', 'city', 'county', 'address', 'photoBase64', 'profileFields',
+          'hireDate', 'contractFunction', 'theme', 'backgroundId', 'fontFamily', 'locationMode', 'locationIntervalMinutes', 'notificationPreferences', 'lastGroupChatSeenAt', 'updatedAt'
+        ]));
+      allow delete: if isAdmin();
+    }
+
+    match /locations/{locationId} {
+      allow read: if isActive();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (hasPermission('editContacts')
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'contacts', 'phone', 'updatedAt'
+          ]));
+    }
+
+    match /locationCategories/{categoryId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    // Fundaluri încărcate de Admin. Utilizatorii activi le pot citi, dar numai
+    // Adminul le poate crea/modifica/șterge și selecta global din uiSettings.
+    match /backgrounds/{backgroundId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    match /functions/{functionId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    match /teams/{teamId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    match /cars/{carId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    // Graficul este vizibil intern, dar modificarea lui cere explicit dreptul editProgram.
+    match /schedules/{scheduleId} {
+      allow read: if isActive();
+      allow create: if isAdmin()
+        || (hasPermission('editProgram') && isTeamMember(request.resource.data.teamId));
+      allow update: if isAdmin()
+        || (hasPermission('editProgram')
+          && isTeamMember(resource.data.teamId)
+          && isTeamMember(request.resource.data.teamId));
+      allow delete: if isAdmin()
+        || (hasPermission('editProgram') && isTeamMember(resource.data.teamId));
+    }
+
+    // START/FINAL cer editProgram; corecțiile din Centralizator pot folosi editCentralizer.
+    match /records/{recordId} {
+      allow read: if isActive();
+      allow create: if isAdmin()
+        || ((hasPermission('editProgram') || hasPermission('editCentralizer'))
+          && isTeamMember(request.resource.data.teamId));
+      allow update: if isAdmin()
+        || ((hasPermission('editProgram') || hasPermission('editCentralizer'))
+          && isTeamMember(resource.data.teamId)
+          && isTeamMember(request.resource.data.teamId));
+      allow delete: if isAdmin();
+    }
+
+    match /expenses/{expenseId} {
+      allow read: if isAdmin()
+        || hasPermission('viewOtherDecont')
+        || isTeamMember(resource.data.teamId);
+      allow create: if isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
+      allow update: if isAdmin()
+        || (hasPermission('viewOwnDecont')
+          && isTeamMember(resource.data.teamId)
+          && isTeamMember(request.resource.data.teamId));
+      allow delete: if isAdmin();
+    }
+
+    match /perDiems/{perDiemId} {
+      allow read: if isAdmin()
+        || hasPermission('viewOtherDecont')
+        || isTeamMember(resource.data.teamId)
+        || (isActive() && resource.data.memberId == request.auth.uid);
+      allow create: if isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
+      allow update: if isAdmin()
+        || (hasPermission('viewOwnDecont')
+          && isTeamMember(resource.data.teamId)
+          && isTeamMember(request.resource.data.teamId))
+        || (isActive()
+          && resource.data.memberId == request.auth.uid
+          && request.resource.data.memberId == request.auth.uid
+          && request.resource.data.teamId == resource.data.teamId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'received', 'confirmedAt', 'updatedAt'
+          ]));
+      allow delete: if isAdmin();
+    }
+
+    match /finance/{teamId} {
+      allow read: if isAdmin()
+        || hasPermission('viewOtherDecont')
+        || isTeamMember(teamId);
+      allow create, update: if isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(teamId));
+      allow delete: if isAdmin();
+    }
+
+    match /settlements/{settlementId} {
+      allow read: if isAdmin()
+        || hasPermission('viewOtherDecont')
+        || isTeamMember(resource.data.teamId);
+      allow create: if isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
+      allow update: if isAdmin()
+        || (hasPermission('viewOwnDecont')
+          && isTeamMember(resource.data.teamId)
+          && isTeamMember(request.resource.data.teamId));
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAdmin()
+        || (isActive() && resource.data.userId == request.auth.uid);
+
+      allow create: if isActive()
+        && request.resource.data.keys().hasOnly([
+          'userId', 'title', 'message', 'createdAt', 'read', 'updatedAt'
+        ])
+        && request.resource.data.userId is string
+        && canNotifyUser(request.resource.data.userId)
+        && request.resource.data.read == false;
+
+      allow update: if isAdmin()
+        || (isActive()
+          && resource.data.userId == request.auth.uid
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'read', 'updatedAt'
+          ]));
+      allow delete: if isAdmin();
+    }
+
+    match /chatMessages/{messageId} {
+      // Interogările clientului sunt intenționat pe senderId/recipientId; astfel
+      // Firestore poate demonstra dreptul de citire fără a respinge query-ul.
+      allow read: if isActive()
+        && (resource.data.senderId == request.auth.uid
+          || resource.data.recipientId == request.auth.uid);
+
+      allow create: if isActive()
+        && request.resource.data.keys().hasOnly([
+          'chatId', 'senderId', 'senderName', 'recipientId', 'recipientName', 'participantIds',
+          'text', 'customEmoji', 'createdAt', 'read', 'updatedAt'
+        ])
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.recipientId is string
+        && request.resource.data.recipientId != request.auth.uid
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.size() == 2
+        && request.auth.uid in request.resource.data.participantIds
+        && request.resource.data.recipientId in request.resource.data.participantIds
+        && exists(otherUserPath(request.resource.data.recipientId))
+        && get(otherUserPath(request.resource.data.recipientId)).data.active == true
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 5000
+        && request.resource.data.read == false;
+
+      allow update: if isActive()
+        && request.resource.data.senderId == resource.data.senderId
+        && request.resource.data.recipientId == resource.data.recipientId
+        && request.resource.data.chatId == resource.data.chatId
+        && request.resource.data.participantIds == resource.data.participantIds
+        && (
+          (resource.data.recipientId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'read', 'readAt', 'updatedAt'
+            ]))
+          ||
+          (request.auth.uid in resource.data.participantIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'deletedFor', 'updatedAt'
+            ])
+            && request.resource.data.deletedFor is list
+            && request.auth.uid in request.resource.data.deletedFor)
+        );
+
+      // Mesajele nu sunt șterse global de un participant. „Șterge conversația”
+      // adaugă utilizatorul în deletedFor și păstrează istoricul celuilalt membru.
+      allow delete: if false;
+    }
+
+    match /groupChatMessages/{messageId} {
+      // Chatul comun este vizibil tuturor conturilor active. Mesajele sunt păstrate
+      // scurt și clientul încarcă doar ultimele 50 pentru a reduce citirile.
+      allow read: if isActive();
+
+      allow create: if isActive()
+        && request.resource.data.keys().hasOnly([
+          'senderId', 'senderName', 'senderPhotoBase64', 'text', 'customEmoji', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.senderName is string
+        && request.resource.data.senderPhotoBase64 is string
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 5000
+        && request.resource.data.createdAt is timestamp;
+
+      allow update: if false;
+
+      // Orice membru activ poate participa la curățarea automată, dar numai pentru
+      // mesaje mai vechi de 7 zile; mesajele recente nu pot fi șterse global din client.
+      allow delete: if isActive()
+        && resource.data.createdAt is timestamp
+        && resource.data.createdAt < request.time - duration.value(7, 'd');
+    }
+
+    match /users/{userId}/pushTokens/{tokenId} {
+      allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /documents/{documentId} {
+      allow read: if isActive();
+      allow write: if isAdmin();
+    }
+
+    match /meta/{documentId} {
+      allow read: if documentId == 'uiSettings' || isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (documentId == 'uiSettings'
+          && hasPermission('manageMessageTemplates')
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'smsTemplates', 'updatedAt'
+          ]));
+    }
+
+    // Poziții live interne. Utilizatorul își scrie doar propria poziție;
+    // membrii activi pot vedea pozițiile colegilor din aplicația internă.
+    match /liveLocations/{userId} {
+      allow read: if isActive();
+      allow create, update: if isAdmin() || (isActive() && request.auth.uid == userId);
+      allow delete: if isAdmin() || (isActive() && request.auth.uid == userId);
+    }
+
+    match /errorReports/{reportId} {
+      allow create: if isActive() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (isActive() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /suggestions/{suggestionId} {
+      allow read: if isActive();
+      allow create: if isActive() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (isActive()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upVotes', 'downVotes']));
+      allow delete: if isAdmin() || (isActive() && resource.data.userId == request.auth.uid);
+    }
+
+    match /updateHistory/{entryId} {
+      allow read: if isActive();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /audit/{auditId} {
+      allow read: if isAdmin();
+      allow create: if isActive()
+        && request.resource.data.actorUid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Jurnal structurat folosit de Learning. Membrii activi pot adăuga evenimente
+    // proprii și pot citi istoricul necesar rutării; doar Admin poate modifica/șterge.
+    match /learningEvents/{eventId} {
+      allow read: if isActive();
+      allow create: if isActive()
+        && request.resource.data.actorUid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Snapshot-uri interne de siguranță. Sunt disponibile exclusiv Adminului.
+    match /backups/{backupId} {
+      allow read, write: if isAdmin();
+      match /{document=**} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
