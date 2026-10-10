@@ -203,18 +203,142 @@ service cloud.firestore {
     // sau soluționarea contestațiilor. Nu activați fluxul v2 în producție
     // înainte de testele emulatorului.
     match /per_diem_settlements_v2/{settlementId} {
+      function settlementPath() {
+        return /databases/$(database)/documents/per_diem_settlements_v2/$(settlementId);
+      }
+      function validMoney(n, zeroAllowed) {
+        return n is int && n <= 100000000 &&
+          (zeroAllowed ? n >= 0 : n > 0);
+      }
+      function validBase(d) {
+        return d.distributorId is string && d.beneficiaryId is string
+          && d.distributorId != d.beneficiaryId
+          && validMoney(d.declaredBani, false);
+      }
+      function nextAudit() {
+        return getAfter(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)/audit/$(('revision-' + string(request.resource.data.revision)))).data;
+      }
+      function hasMatchingAudit(action) {
+        let auditPath = /databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)/audit/$(('revision-' + string(request.resource.data.revision)));
+        return !exists(auditPath) && existsAfter(auditPath)
+          && getAfter(auditPath).data.action == action
+          && getAfter(auditPath).data.actorId == request.auth.uid
+          && getAfter(auditPath).data.revision == request.resource.data.revision;
+      }
+      function validConfirmation() {
+        let d = request.resource.data;
+        let old = resource.data;
+        return isActive() && request.auth.uid == old.beneficiaryId
+          && validBase(old)
+          && old.status in ['pending', 'refused']
+          && d.diff(old).affectedKeys().hasOnly([
+            'receivedBani', 'status', 'revision', 'updatedAt'
+          ])
+          && validMoney(d.receivedBani, true)
+          && d.receivedBani <= old.declaredBani
+          && d.status == (d.receivedBani == 0 ? 'refused' :
+            (d.receivedBani == old.declaredBani ? 'received' : 'partiallyReceived'))
+          && old.revision is int && old.revision >= 0
+          && d.revision == old.revision + 1
+          && d.updatedAt == request.time
+          && hasMatchingAudit(d.receivedBani == 0 ? 'refuse' : 'acknowledge');
+      }
+      function validDispute() {
+        let d = request.resource.data;
+        let old = resource.data;
+        return isActive() && request.auth.uid == old.distributorId
+          && validBase(old)
+          && old.status in ['refused', 'partiallyReceived']
+          && d.diff(old).affectedKeys().hasOnly([
+            'status', 'disputeReason', 'revision', 'updatedAt'
+          ])
+          && d.status == 'disputed'
+          && d.disputeReason is string
+          && d.disputeReason.size() > 0 && d.disputeReason.size() <= 1000
+          && old.revision is int && old.revision >= 0
+          && d.revision == old.revision + 1
+          && d.updatedAt == request.time
+          && hasMatchingAudit('dispute');
+      }
       allow read: if isAdmin() || (isActive() &&
         (resource.data.distributorId == request.auth.uid ||
          resource.data.beneficiaryId == request.auth.uid));
-      // FAIL CLOSED: registrul v2 nu este încă conectat și validat.
-      // Păstrăm citirea pentru diagnostic, dar nu permitem mutații client-side
-      // până când tranzacțiile + auditul sunt verificate în Firebase Emulator.
-      allow create, update, delete: if false;
+      allow create: if isActive()
+        && request.resource.data.keys().hasOnly([
+          'distributorId', 'beneficiaryId', 'declaredBani', 'receivedBani',
+          'status', 'paymentMethod', 'createdAt', 'updatedAt', 'revision'
+        ])
+        && request.resource.data.keys().hasAll([
+          'distributorId', 'beneficiaryId', 'declaredBani', 'receivedBani',
+          'status', 'paymentMethod', 'createdAt', 'updatedAt', 'revision'
+        ])
+        && validBase(request.resource.data)
+        && request.auth.uid == request.resource.data.distributorId
+        && request.resource.data.receivedBani == null
+        && request.resource.data.status == 'pending'
+        && request.resource.data.paymentMethod in ['cash', 'transfer']
+        && request.resource.data.revision == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && !exists(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)/audit/declare)
+        && existsAfter(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)/audit/declare)
+        && getAfter(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)/audit/declare).data.actorId == request.auth.uid;
+      allow update: if validConfirmation() || validDispute();
+      allow delete: if false;
       match /audit/{auditId} {
+        function parentAfter() {
+          return getAfter(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)).data;
+        }
         allow read: if isAdmin() || (isActive() &&
           (get(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)).data.distributorId == request.auth.uid ||
            get(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)).data.beneficiaryId == request.auth.uid));
-        allow create, update, delete: if false;
+        allow create: if isActive()
+          && !exists(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)/audit/$(auditId))
+          && request.resource.data.at == request.time
+          && request.resource.data.actorId == request.auth.uid
+          && (
+            (auditId == 'declare'
+              && request.resource.data.keys().hasOnly([
+                'action', 'actorId', 'amountBani', 'previousStatus',
+                'newStatus', 'revision', 'at'
+              ])
+              && request.resource.data.action == 'declare'
+              && request.resource.data.revision == 0
+              && request.resource.data.previousStatus == null
+              && request.resource.data.newStatus == 'pending'
+              && parentAfter().distributorId == request.auth.uid
+              && parentAfter().declaredBani == request.resource.data.amountBani
+              && parentAfter().revision == 0
+              && parentAfter().status == 'pending')
+            ||
+            (auditId == 'revision-' + string(request.resource.data.revision)
+              && request.resource.data.revision is int
+              && request.resource.data.revision > 0
+              && parentAfter().revision == request.resource.data.revision
+              && (
+                (request.resource.data.action in ['acknowledge', 'refuse']
+                  && request.resource.data.keys().hasOnly([
+                    'action', 'actorId', 'receivedBani', 'previousReceivedBani',
+                    'previousStatus', 'newStatus', 'revision', 'at'
+                  ])
+                  && parentAfter().beneficiaryId == request.auth.uid
+                  && parentAfter().receivedBani == request.resource.data.receivedBani
+                  && parentAfter().status == request.resource.data.newStatus
+                  && request.resource.data.action == (request.resource.data.receivedBani == 0 ? 'refuse' : 'acknowledge'))
+                ||
+                (request.resource.data.action == 'dispute'
+                  && request.resource.data.keys().hasOnly([
+                    'action', 'actorId', 'reason', 'previousStatus',
+                    'newStatus', 'revision', 'at'
+                  ])
+                  && parentAfter().distributorId == request.auth.uid
+                  && parentAfter().status == 'disputed'
+                  && parentAfter().disputeReason == request.resource.data.reason
+                  && request.resource.data.newStatus == 'disputed')
+              )
+            )
+          );
+        allow update, delete: if false;
       }
     }
 
