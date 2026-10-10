@@ -407,7 +407,7 @@ service cloud.firestore {
           && resource.data.distributedBy is string
           && resource.data.distributedBy != request.auth.uid
           && resource.data.status == 'awaitingConfirmation'
-          && resource.data.actualReceivedAmount == null
+          && resource.data.get('actualReceivedAmount', null) == null
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'status','received','actualReceivedAmount','confirmedAt','receiptUpdatedAt'
           ])
