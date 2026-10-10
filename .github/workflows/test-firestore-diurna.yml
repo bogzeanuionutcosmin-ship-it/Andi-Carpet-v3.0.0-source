@@ -1,4 +1,6 @@
+
 name: Test Firestore Diurna
+
 on:
   workflow_dispatch:
   push:
@@ -7,22 +9,29 @@ on:
       - 'tests/firestore/**'
       - '.github/workflows/test-firestore-diurna.yml'
       - 'firebase.rules-test.json'
+
 permissions:
   contents: read
+
 jobs:
   test-rules:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
+
       - name: Install Firebase emulator and test libraries
-        run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@11
+        run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
+
       - name: Run Firestore authorization tests
         run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test tests/firestore/diurna.test.cjs'
