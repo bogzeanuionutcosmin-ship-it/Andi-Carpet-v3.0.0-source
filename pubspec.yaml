@@ -1,7 +1,7 @@
 name: andi_carpeta
 description: Aplicatia Andi Carpeta pentru program, locatii, executii, decont si documente.
 publish_to: 'none'
-version: 3.0.0+32
+version: 3.0.1+33
 
 environment:
   sdk: '>=3.12.0 <4.0.0'

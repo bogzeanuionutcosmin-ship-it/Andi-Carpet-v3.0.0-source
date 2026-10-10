@@ -27,6 +27,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
+import 'mapbox_services.dart';
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';
@@ -502,11 +503,19 @@ class LearnedDurationEstimate {
 LearnedDurationEstimate? learnedDurationEstimate(List<CentralizerRecord> records, String locationId, AppSettings settings, {DateTime? targetDate}) {
   final learning = settings.learning['duration'];
   if (learning?.enabled != true) return null;
-  final history = records.where((r) => r.locationId == locationId && r.completed && r.duration != null && r.keptForLearning).toList()
-    ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
-  if (history.length < 3) return null;
-
   final target = targetDate ?? DateTime.now();
+  // Folosim doar execuții efective, anterioare zilei estimate.
+  // Excludem duratele imposibile și datele lipsă pentru a evita
+  // contaminarea Learning-ului cu înregistrări incomplete/viitoare.
+  final history = records.where((r) {
+    if (r.locationId != locationId || !r.completed || !r.keptForLearning) return false;
+    final duration = r.duration;
+    if (duration == null || duration.inSeconds <= 0 || duration > const Duration(hours: 24)) return false;
+    final event = recordEventTime(r);
+    if (event.year <= 1900 || event.isAfter(target)) return false;
+    return true;
+  }).toList()..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
+  if (history.length < 3) return null;
   final sameMonth = history.where((r) => recordEventTime(r).month == target.month).toList();
   final sameWeekday = history.where((r) => recordEventTime(r).weekday == target.weekday).toList();
   List<CentralizerRecord> selected;
@@ -1250,6 +1259,21 @@ class Expense {
   bool get hasImage => documentImageBase64.isNotEmpty;
 }
 
+
+// PATCH 63–70: validare exactă a sumelor monetare (maxim două zecimale).
+// Evită rotunjirea implicită a unei sume introduse greșit.
+int? parsePerDiemBani(String raw, {bool allowZero = true}) {
+  final value = raw.trim().replaceAll(',', '.');
+  if (!RegExp(r'^\d{1,9}(?:\.\d{1,2})?$').hasMatch(value)) return null;
+  final parts = value.split('.');
+  final lei = int.tryParse(parts[0]);
+  if (lei == null || lei > 100000000) return null;
+  final bani = parts.length == 2 ? int.parse(parts[1].padRight(2, '0')) : 0;
+  final total = lei * 100 + bani;
+  if (!allowZero && total == 0) return null;
+  return total;
+}
+
 class PerDiemEntry {
   final String id;
   final String teamId;
@@ -1263,7 +1287,9 @@ class PerDiemEntry {
   DateTime? distributedAt;
   DateTime? confirmedAt;
   bool? received;
-  PerDiemEntry({required this.id, required this.teamId, required this.memberId, required this.date, this.settlementId, required this.amount, this.status = PerDiemStatus.notGranted, this.method, this.distributedBy, this.distributedAt, this.confirmedAt, this.received});
+  double? actualReceivedAmount;
+  String? supplementaryFor; // Payment-only, never a second entitlement.
+  PerDiemEntry({required this.id, required this.teamId, required this.memberId, required this.date, this.settlementId, required this.amount, this.status = PerDiemStatus.notGranted, this.method, this.distributedBy, this.distributedAt, this.confirmedAt, this.received, this.actualReceivedAmount, this.supplementaryFor});
 }
 
 class ReceivedMoneyEntry {
@@ -1409,30 +1435,101 @@ String _safeFilePart(String text) => text
 String _pdfDate(DateTime d) => '${two(d.day)}.${two(d.month)}.${d.year}';
 
 
-double estimateGraphDistanceKm(List<WorkSchedule> days, List<Location> locations) {
-  if (days.isEmpty) return 0;
+/// Punctele reale ale deplasării; capetele nu sunt intervenții de lucru.
+/// Un grafic incomplet GPS nu trebuie raportat ca traseu complet.
+class GraphRoutePoints {
+  final List<LatLng> points;
+  final List<String> missingLocations;
+  final bool missingDeparture;
+  final bool missingDestination;
+  const GraphRoutePoints(this.points, this.missingLocations,
+      this.missingDeparture, this.missingDestination);
+  bool get complete => !missingDeparture && !missingDestination && missingLocations.isEmpty;
+}
+
+GraphRoutePoints graphRoutePoints(List<WorkSchedule> days, List<Location> locations) {
+  if (days.isEmpty) return const GraphRoutePoints([], [], true, true);
+  final orderedDays = [...days]..sort((a, b) => a.date.compareTo(b.date));
+  final head = orderedDays.first;
   final byId = {for (final l in locations) l.id: l};
-  var meters = 0.0;
-  final sortedDays = [...days]..sort((a, b) => a.date.compareTo(b.date));
-  final head = sortedDays.first;
-  double? previousLat = head.departureLatitude;
-  double? previousLon = head.departureLongitude;
-  for (final day in sortedDays) {
-    final ordered = [...day.items]..sort((a, b) => a.order.compareTo(b.order));
-    for (final item in ordered) {
-      final current = byId[item.locationId];
-      if (current == null || current.latitude == null || current.longitude == null) continue;
-      if (previousLat != null && previousLon != null) {
-        meters += Geolocator.distanceBetween(previousLat, previousLon, current.latitude!, current.longitude!);
+  final points = <LatLng>[];
+  final missing = <String>[];
+  final missingStart = head.departureLatitude == null || head.departureLongitude == null;
+  final missingEnd = head.returnLatitude == null || head.returnLongitude == null;
+  if (!missingStart) points.add(LatLng(head.departureLatitude!, head.departureLongitude!));
+  for (final day in orderedDays) {
+    final items = [...day.items]..sort((a, b) => a.order.compareTo(b.order));
+    for (final item in items) {
+      final location = byId[item.locationId];
+      if (location?.latitude == null || location?.longitude == null) {
+        missing.add(location?.name ?? item.locationId);
+        continue;
       }
-      previousLat = current.latitude!;
-      previousLon = current.longitude!;
+      points.add(LatLng(location!.latitude!, location.longitude!));
     }
   }
-  if (previousLat != null && previousLon != null && head.returnLatitude != null && head.returnLongitude != null) {
-    meters += Geolocator.distanceBetween(previousLat, previousLon, head.returnLatitude!, head.returnLongitude!);
+  if (!missingEnd) points.add(LatLng(head.returnLatitude!, head.returnLongitude!));
+  return GraphRoutePoints(points, missing, missingStart, missingEnd);
+}
+
+double estimateGraphDistanceKm(List<WorkSchedule> days, List<Location> locations) {
+  final route = graphRoutePoints(days, locations);
+  if (!route.complete || route.points.length < 2) return 0;
+  var meters = 0.0;
+  for (var i = 1; i < route.points.length; i++) {
+    final a = route.points[i - 1];
+    final b = route.points[i];
+    meters += Geolocator.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude);
   }
   return meters / 1000.0;
+}
+
+/// Distanța rutieră în kilometri, pe drumuri practicabile cu automobilul.
+/// Null înseamnă că serviciul de rutare nu a putut confirma traseul.
+/// Serviciul public OSRM este destinat utilizării moderate, nu garantează SLA.
+/// Public Mapbox token supplied at build time. Never embed an sk.* secret here.
+const String kMapboxPublicToken = String.fromEnvironment('MAPBOX_ACCESS_TOKEN');
+
+String get kMapTileUrl => !kMapboxEnabled
+    ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+    : 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}?access_token=$kMapboxPublicToken';
+
+bool get kMapboxEnabled => kMapboxPublicToken.startsWith('pk.');
+final MapboxServices _mapboxServices = MapboxServices(kMapboxPublicToken);
+
+
+Future<double?> estimateGraphRoadDistanceKm(
+    List<WorkSchedule> days, List<Location> locations) async {
+  final route = graphRoutePoints(days, locations);
+  if (!route.complete || route.points.length < 2 || route.points.length > 75) {
+    return null;
+  }
+  // Mapbox Directions accepts up to 25 waypoints per request. Overlap
+  // adjacent chunks at the boundary to preserve the entire road distance.
+  if (kMapboxEnabled) {
+    return _mapboxServices.drivingKm(route.points
+        .map((p) => <double>[p.latitude, p.longitude]).toList());
+  }
+
+  // Development fallback when no public Mapbox token was supplied.
+  final coordinates = route.points
+      .map((p) => '${p.longitude},${p.latitude}')
+      .join(';');
+  final uri = Uri.https('router.project-osrm.org',
+      '/route/v1/driving/$coordinates', {'overview': 'false', 'steps': 'false'});
+  try {
+    final response = await http.get(uri).timeout(const Duration(seconds: 12));
+    if (response.statusCode != 200) return null;
+    final data = jsonDecode(response.body);
+    if (data is! Map || data['code'] != 'Ok') return null;
+    final routes = data['routes'];
+    if (routes is! List || routes.isEmpty) return null;
+    final distance = routes.first['distance'];
+    if (distance is! num || !distance.isFinite || distance < 0) return null;
+    return distance.toDouble() / 1000.0;
+  } catch (_) {
+    return null;
+  }
 }
 
 Future<void> downloadWorkGraphPdf({
@@ -1445,7 +1542,8 @@ Future<void> downloadWorkGraphPdf({
   final theme = await _buildPdfTheme();
   final orderedDays = [...days]..sort((a, b) => a.date.compareTo(b.date));
   final first = orderedDays.first;
-  final km = estimateGraphDistanceKm(orderedDays, locations);
+  final roadKm = await estimateGraphRoadDistanceKm(orderedDays, locations);
+  final km = roadKm ?? estimateGraphDistanceKm(orderedDays, locations);
   final liters = car != null && car.averageConsumption > 0 ? km * car.averageConsumption / 100 : 0.0;
   final fuelCost = car != null && car.fuelPricePerLiter > 0 ? liters * car.fuelPricePerLiter : 0.0;
   final doc = pw.Document(theme: theme);
@@ -1463,7 +1561,7 @@ Future<void> downloadWorkGraphPdf({
         pw.Text('Locatii: ${orderedDays.fold<int>(0, (a, b) => a + b.items.length)}'),
         if (first.departureName.isNotEmpty) pw.Text('Plecare: ${first.departureName}'),
         if (first.returnName.isNotEmpty) pw.Text('Intoarcere: ${first.returnName}'),
-        pw.Text('Km estimati traseu complet: ${km.toStringAsFixed(1)}'),
+        pw.Text('Km traseu complet: ${!graphRoutePoints(orderedDays, locations).complete ? 'GPS incomplet' : roadKm != null ? '${km.toStringAsFixed(1)} km rutieri' : '${km.toStringAsFixed(1)} km in linie dreapta (rutare indisponibila)'}'),
         if (car != null) pw.Text('Masina: ${car.plate} ${car.makeModel}'),
         if (car != null && car.averageConsumption > 0) pw.Text('Consum: ${car.averageConsumption.toStringAsFixed(1)} l/100 km'),
         if (liters > 0) pw.Text('Carburant estimat: ${liters.toStringAsFixed(1)} l'),
@@ -1488,7 +1586,7 @@ Future<void> downloadWorkGraphPdf({
         ];
       }),
       pw.SizedBox(height: 14),
-      pw.Text('Nota: kilometrii includ plecarea, toate locatiile din grafic si intoarcerea; sunt estimati intre coordonate, iar distanta rutiera reala poate fi diferita.', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+      pw.Text('Nota: traseul include plecarea, toate locatiile si intoarcerea. Cand rutarea nu este disponibila, distanta este in linie dreapta si consumul/costul sunt doar valori minime orientative.', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
     ],
   ));
   await downloadFile(await doc.save(), 'grafic_${_safeFilePart(first.graphName)}.pdf', mimeType: 'application/pdf');
@@ -1577,12 +1675,16 @@ Future<void> downloadCentralizerPdf({
   if(q.isNotEmpty)filters.add('Căutare: $search');
   if(statusFilter!=null)filters.add('Stare: ${statusFilter.name}');
 
-  pw.Widget facadeBox(bool checked) => pw.Container(
+  // PDF: distinguish planned facade work from work actually completed.
+  // X = completed; P = planned but not completed; empty = not planned.
+  pw.Widget facadeBox({required bool planned, required bool done}) => pw.Container(
     width: 12,
     height: 12,
     alignment: pw.Alignment.center,
     decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey700, width: .7)),
-    child: checked ? pw.Text('X', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)) : null,
+    child: done || planned
+        ? pw.Text(done ? 'X' : 'P', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))
+        : null,
   );
 
   pw.Widget headerCell(String text, {pw.Alignment alignment = pw.Alignment.centerLeft}) => pw.Container(
@@ -1619,11 +1721,11 @@ Future<void> downloadCentralizerPdf({
             ? '${location.surfaceM2.toStringAsFixed(location.surfaceM2%1==0?0:1)} m²'
             : '—';
         return pw.TableRow(children:[
-          valueCell(_pdfDate(date)),
+          valueCell(record==null ? '${_pdfDate(date)}\n${row['statusText'] ?? 'Neexecutată'}' : _pdfDate(date)),
           valueCell(record==null?'—':timeText(record.startedAt),alignment:pw.Alignment.center),
           valueCell(record==null?'—':timeText(record.finishedAt),alignment:pw.Alignment.center),
           valueCell(surface,alignment:pw.Alignment.centerRight),
-          pw.Container(padding:const pw.EdgeInsets.symmetric(vertical:4),alignment:pw.Alignment.center,child:facadeBox(record?.facadeDone==true)),
+          pw.Container(padding:const pw.EdgeInsets.symmetric(vertical:4),alignment:pw.Alignment.center,child:facadeBox(planned:record?.facadePlanned==true,done:record?.facadeDone==true)),
         ]);
       }).toList(),
     );
@@ -1664,6 +1766,7 @@ Future<void> downloadCentralizerPdf({
         pw.Text('Generat: ${_pdfDate(DateTime.now())}',style:const pw.TextStyle(fontSize:8)),
       ]),
       if(filters.isNotEmpty)pw.Text(filters.join(' | '),style:const pw.TextStyle(fontSize:8)),
+      pw.Text('Fațadă: X = realizată, P = planificată (nerealizată), gol = neplanificată', style: const pw.TextStyle(fontSize: 7)),
       pw.SizedBox(height:6),
       tableHeader,
       pw.SizedBox(height:3),
@@ -1712,25 +1815,48 @@ Future<void> downloadDecontPdf({
     return true;
   }
 
-  final confirmedExpenses = expenses.where((e) => e.teamId == team.id && e.confirmed && matchesSettlement(e.settlementId)).toList()
+  // Reconcile by immutable document/transfer IDs before exporting totals.
+  // A repeated Firestore snapshot must not duplicate an expense or payment.
+  final expenseIds = <String>{};
+  final confirmedExpenses = expenses.where((e) =>
+      e.teamId == team.id && e.confirmed && e.amount.isFinite && e.amount >= 0 &&
+      matchesSettlement(e.settlementId) && expenseIds.add(e.id)).toList()
     ..sort((a,b)=>a.date.compareTo(b.date));
-  final confirmedPerDiems = perDiems.where((d) => d.teamId == team.id && d.status == PerDiemStatus.confirmed && matchesSettlement(d.settlementId)).toList()
+  final paymentIds = <String>{};
+  final confirmedPerDiems = perDiems.where((d) =>
+      d.teamId == team.id && d.status == PerDiemStatus.confirmed &&
+      d.received == true && d.actualReceivedAmount != null &&
+      d.actualReceivedAmount!.isFinite && d.actualReceivedAmount! >= 0 &&
+      matchesSettlement(d.settlementId) && paymentIds.add(d.id)).toList()
     ..sort((a,b)=>a.date.compareTo(b.date));
   String userName(String id) => users.firstWhere((u) => u.id == id, orElse: () => AppUser(id: id, name: id, role: UserRole.member)).name;
 
   final fuelReceipts = confirmedExpenses.where((e) => e.category == 'Combustibil').toList();
-  final invoices = confirmedExpenses.where((e) => e.documentType == ExpenseDocumentType.invoice || e.category == 'Facturi').toList();
+  final invoices = confirmedExpenses.where((e) => e.category != 'Combustibil' && (e.documentType == ExpenseDocumentType.invoice || e.category == 'Facturi')).toList();
   final otherReceipts = confirmedExpenses.where((e) => e.category != 'Combustibil' && e.documentType != ExpenseDocumentType.invoice && e.category != 'Facturi').toList();
   final spentExpenses = confirmedExpenses.fold<double>(0, (a,b)=>a+b.amount);
-  final spentPerDiem = confirmedPerDiems.fold<double>(0, (a,b)=>a+b.amount);
+  final spentPerDiem = confirmedPerDiems.fold<double>(0, (a,b)=>a+b.actualReceivedAmount!);
   final spent = spentExpenses + spentPerDiem;
-  final receivedDeparture = settlement?.departureTotal ?? finance.departureTotal;
-  final receivedDuring = settlement?.duringTotal ?? finance.duringTotal;
+  // Derive received totals from the same unique transfers shown in the PDF.
+  // Legacy aggregate-only records retain their historical stored totals.
+  final rawReceipts = settlement?.receivedEntries ?? finance.receivedEntries;
+  final uniqueReceiptIds = <String>{};
+  final uniqueReceipts = rawReceipts.where((e) => e.amount.isFinite && e.amount >= 0 &&
+      uniqueReceiptIds.add(e.id)).toList();
+  final receivedDeparture = rawReceipts.isEmpty
+      ? (settlement?.departureTotal ?? finance.departureTotal)
+      : uniqueReceipts.where((e)=>e.kind=='departure').fold<double>(0,(a,e)=>a+e.amount);
+  final receivedDuring = rawReceipts.isEmpty
+      ? (settlement?.duringTotal ?? finance.duringTotal)
+      : uniqueReceipts.where((e)=>e.kind=='during').fold<double>(0,(a,e)=>a+e.amount);
   final totalReceived = receivedDeparture + receivedDuring;
   final budgetRemaining = math.max(0.0, totalReceived - spent).toDouble();
   final amountDue = math.max(0.0, spent - totalReceived).toDouble();
   final titleSuffix = settlement?.name ?? (legacyOnly ? 'Istoric anterior' : team.name);
-  final entries = settlement?.receivedEntries ?? finance.receivedEntries;
+  final rawEntries = settlement?.receivedEntries ?? finance.receivedEntries;
+  final receiptIds = <String>{};
+  final entries = rawEntries.where((e) => e.amount.isFinite && e.amount >= 0 &&
+      receiptIds.add(e.id)).toList();
   final duringEntries = entries.where((e)=>e.kind=='during').toList()..sort((a,b)=>a.date.compareTo(b.date));
 
   String money(double value) => '${value.toStringAsFixed(2)} lei';
@@ -1774,15 +1900,15 @@ Future<void> downloadDecontPdf({
   for(final d in confirmedPerDiems) {
     (perMember[d.memberId] ??= <PerDiemEntry>[]).add(d);
   }
-  final perDiemRows = <List<String>>[['MEMBRU', 'NR. ZILE', 'LEI / ZI', 'TOTAL']];
+  final perDiemRows = <List<String>>[['MEMBRU', 'PLĂȚI', 'LEI / ZI', 'PRIMIT EFECTIV']];
   for(final entry in perMember.entries) {
     final list=entry.value;
-    final total=list.fold<double>(0,(a,b)=>a+b.amount);
+    final total=list.fold<double>(0,(a,b)=>a+b.actualReceivedAmount!);
     final rate = settlement?.perDiemRate ?? finance.perDiemRate;
     perDiemRows.add([userName(entry.key), '${list.length}', money(rate), money(total)]);
   }
   if(perMember.isEmpty) perDiemRows.add(['—','—','—','—']);
-  perDiemRows.add(['TOTAL DIURNE','','',money(spentPerDiem)]);
+  perDiemRows.add(['TOTAL DIURNE PRIMITE','','',money(spentPerDiem)]);
 
   final summaryRows=<List<String>>[
     ['Primit la plecare', money(receivedDeparture)],
@@ -1902,7 +2028,7 @@ Future<void> downloadFinancialSummaryPdf({
   TeamFinance financeFor(String teamId) => finances.firstWhere((f) => f.teamId == teamId, orElse: () => TeamFinance(teamId: teamId));
   pw.Widget financeRow(Team team) {
     final ex = expenses.where((e) => e.teamId == team.id && e.confirmed).fold<double>(0, (a,b)=>a+b.amount);
-    final di = perDiems.where((d) => d.teamId == team.id && d.status == PerDiemStatus.confirmed).fold<double>(0, (a,b)=>a+b.amount);
+    final di = perDiems.where((d) => d.teamId == team.id && d.status == PerDiemStatus.confirmed && d.received == true && d.actualReceivedAmount != null).fold<double>(0, (a,b)=>a+b.actualReceivedAmount!);
     final f = financeFor(team.id);
     final tripReceived = settlements.where((x) => x.teamId == team.id).fold<double>(0, (a,b) => a + b.totalReceived);
     final totalReceived = f.totalReceived + tripReceived;
@@ -2675,7 +2801,7 @@ class _HomePageState extends State<HomePage> {
     if (!mounted || otherUserId.trim().isEmpty || otherUserId == currentUserId) return;
     if (!isAdmin && _hiddenUserIds.contains(otherUserId)) return;
     try {
-      final snap = await FirebaseFirestore.instance.collection('users').doc(otherUserId).get();
+      final snap = await FirebaseFirestore.instance.collection(isAdmin ? 'users' : 'memberDirectory').doc(otherUserId).get();
       if (!mounted) return;
       final d = snap.data() ?? <String, dynamic>{};
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => PrivateChatPage(
@@ -3051,6 +3177,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _applyWorkAutomationFromPosition(Position p, DateTime now, DateTime workDate) async {
+    // Geofencing-ul nu poate confirma sosirea dintr-o poziție GPS imprecisă,
+    // veche sau raportată în timpul deplasării rapide. Nu pornim niciodată
+    // o intervenție fără alegerea explicită a utilizatorului.
+    if (!p.latitude.isFinite || !p.longitude.isFinite ||
+        p.latitude < -90 || p.latitude > 90 ||
+        p.longitude < -180 || p.longitude > 180) return;
+    if (!p.accuracy.isFinite || p.accuracy < 0 || p.accuracy > 80) return;
+    if (p.timestamp.isAfter(now.add(const Duration(minutes: 1))) ||
+        now.difference(p.timestamp) > const Duration(minutes: 2)) return;
+    if (p.speed.isFinite && p.speed > 8) return;
     if (!hasPermission(FunctionPermission.editProgram)) return;
     final teamId = me.teamId;
     if (teamId == null || teamId.isEmpty || !canEditTeam(teamId)) return;
@@ -3109,7 +3245,9 @@ class _HomePageState extends State<HomePage> {
       final loc = _homeLocationById(item.locationId);
       if (loc?.latitude == null || loc?.longitude == null) continue;
       final meters = Geolocator.distanceBetween(p.latitude, p.longitude, loc!.latitude!, loc.longitude!);
-      if (meters <= 250) candidates.add((item, loc, meters));
+      // GPS-ul cu eroare mare nu trebuie să declanșeze promptul la marginea razei.
+      // Cerem ca distanța + eroarea estimată să rămână în raza de 250 m.
+      if (meters + p.accuracy <= 250) candidates.add((item, loc, meters));
     }
     if (candidates.isEmpty) {
       _autoInsideSince.clear();
@@ -3790,6 +3928,8 @@ class _HomePageState extends State<HomePage> {
     'distributedAt': d.distributedAt == null ? null : Timestamp.fromDate(d.distributedAt!),
     'confirmedAt': d.confirmedAt == null ? null : Timestamp.fromDate(d.confirmedAt!),
     'received': d.received,
+    'actualReceivedAmount': d.actualReceivedAmount,
+    'supplementaryFor': d.supplementaryFor,
     'updatedAt': FieldValue.serverTimestamp(),
   };
 
@@ -3816,6 +3956,8 @@ class _HomePageState extends State<HomePage> {
       distributedAt: _dateFrom(d['distributedAt']),
       confirmedAt: _dateFrom(d['confirmedAt']),
       received: d['received'] is bool ? d['received'] as bool : null,
+      actualReceivedAmount: d['actualReceivedAmount'] == null ? null : _doubleFrom(d['actualReceivedAmount']),
+      supplementaryFor: d['supplementaryFor']?.toString(),
     );
   }
 
@@ -4142,7 +4284,7 @@ class _HomePageState extends State<HomePage> {
     );
 
     _coreSubscriptions.add(
-      db.collection('users').snapshots().listen((snap) {
+      (isAdmin ? db.collection('users') : db.collection('memberDirectory')).snapshots().listen((snap) {
         final list = snap.docs.map((doc) {
           final d = doc.data();
           final roleText = (d['role'] ?? 'member').toString();
@@ -4220,6 +4362,35 @@ class _HomePageState extends State<HomePage> {
       }, onError: (Object e) {
         if (mounted) setState(() => coreSyncError = 'Conturi: $e');
       }),
+    );
+
+    // Datele private ale contului propriu nu sunt in directorul public.
+    if (!isAdmin) _coreSubscriptions.add(
+      db.collection('users').doc(currentUserId).snapshots().listen((snap) {
+        final d = snap.data();
+        if (d == null || !mounted) return;
+        _personalLocationMode = (d['locationMode'] ?? 'economic').toString();
+        _personalLocationIntervalMinutes = (d['locationIntervalMinutes'] is num)
+            ? (d['locationIntervalMinutes'] as num).toInt().clamp(1, 60).toInt() : 10;
+        final prefs = d['notificationPreferences'];
+        if (prefs is Map) {
+          for (final key in _personalNotificationPreferences.keys.toList()) {
+            if (prefs[key] is bool) _personalNotificationPreferences[key] = prefs[key] as bool;
+          }
+        }
+        final seen = d['lastGroupChatSeenAt'];
+        _lastGroupChatSeenAt = seen is Timestamp ? seen.toDate() : null;
+        if (_recentGroupDocs.isNotEmpty) _recomputeGroupUnread();
+        final personalTheme = AppThemeChoice.values.firstWhere(
+          (x) => x.name == (d['theme'] ?? settings.theme.name).toString(),
+          orElse: () => settings.theme);
+        final personalFont = _normalizeFontChoice((d['fontFamily'] ?? settings.fontFamily).toString());
+        final visualChanged = personalTheme != settings.theme || personalFont != settings.fontFamily;
+        settings.theme = personalTheme;
+        settings.personalBackgroundId = 'global';
+        settings.fontFamily = personalFont;
+        if (visualChanged) WidgetsBinding.instance.addPostFrameCallback((_) => widget.onSettingsChanged());
+      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Profil propriu: $e'); }),
     );
 
     _coreSubscriptions.add(
@@ -4773,7 +4944,86 @@ class _HomePageState extends State<HomePage> {
         (canEditTeam(entry.teamId) && hasPermission(FunctionPermission.viewOwnDecont));
     if (!canWrite) throw StateError('Nu ai dreptul să modifici această diurnă.');
     final data = _perDiemMap(entry);
-    await FirebaseFirestore.instance.collection('perDiems').doc(entry.id).set(data, SetOptions(merge: true));
+    // Confirmarea sau refuzul se salvează atomic. Verificarea exclusiv în UI
+    // nu poate preveni două confirmări simultane de pe dispozitive diferite.
+    final isReceiptResponse = entry.distributedBy != null &&
+        (entry.status == PerDiemStatus.confirmed ||
+         (entry.status == PerDiemStatus.awaitingConfirmation && entry.received == false));
+    final db = FirebaseFirestore.instance;
+    final ref = db.collection('perDiems').doc(entry.id);
+    if (isReceiptResponse) {
+      if (entry.memberId != currentUserId) {
+        throw StateError('Doar beneficiarul poate confirma primirea diurnei.');
+      }
+      // 79–86: validarea se face înainte de tranzacție, iar în tranzacție
+      // verificăm documentul curent, nu datele posibil învechite din UI.
+      final received = entry.actualReceivedAmount;
+      final receivedBani = received == null ? null :
+          (received.isFinite ? parsePerDiemBani(received.toString()) : null);
+      final isRefusal = entry.received == false &&
+          entry.status == PerDiemStatus.awaitingConfirmation && received == null;
+      if (!isRefusal && (entry.status != PerDiemStatus.confirmed ||
+          entry.received != true || receivedBani == null || receivedBani <= 0)) {
+        throw StateError('Confirmare invalidă: suma primită trebuie să fie pozitivă.');
+      }
+      if (FirebaseAuth.instance.currentUser?.uid != currentUserId) {
+        throw StateError('Sesiunea de autentificare nu corespunde beneficiarului.');
+      }
+      final auditRef = ref.collection('receiptAudit').doc();
+      await db.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        if (!snap.exists) throw StateError('Distribuirea nu mai există.');
+        final previous = snap.data()!;
+        if (previous['memberId'] != currentUserId ||
+            previous['distributedBy'] == null ||
+            previous['status'] != PerDiemStatus.awaitingConfirmation.name ||
+            previous['actualReceivedAmount'] != null) {
+          throw StateError('Diurna a fost deja confirmată sau modificată. Reîncarcă datele.');
+        }
+        if (previous['distributedBy'] is! String ||
+            (previous['distributedBy'] as String).isEmpty ||
+            previous['distributedBy'] == currentUserId) {
+          throw StateError('Distribuitorul acestei diurne este invalid.');
+        }
+        final declared = previous['amount'];
+        if (declared is! num || !declared.toDouble().isFinite ||
+            declared <= 0 || parsePerDiemBani(declared.toString()) == null) {
+          throw StateError('Suma declarată nu este validă.');
+        }
+        if (isRefusal && previous['received'] == false) {
+          throw StateError('Refuzul a fost deja înregistrat.');
+        }
+        // Valoarea declarată, identitatea și echipa NU sunt modificate.
+        final declaredBani = parsePerDiemBani(declared.toString())!;
+        final changes = <String, dynamic>{
+          'received': !isRefusal,
+          'actualReceivedAmount': isRefusal ? null : receivedBani! / 100,
+          'status': isRefusal ? PerDiemStatus.awaitingConfirmation.name
+              : PerDiemStatus.confirmed.name,
+          'confirmedAt': isRefusal ? null : FieldValue.serverTimestamp(),
+          'receiptUpdatedAt': FieldValue.serverTimestamp(),
+        };
+        tx.update(ref, changes);
+        tx.set(auditRef, {
+          'actorUid': currentUserId,
+          'action': isRefusal ? 'reported_missing' : 'confirmed_received',
+          'distributorId': previous['distributedBy'],
+          'beneficiaryId': previous['memberId'],
+          'declaredAmountBani': declaredBani,
+          'actualReceivedBani': isRefusal ? 0 : receivedBani,
+          'differenceBani': declaredBani - (isRefusal ? 0 : receivedBani!),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      });
+    } else {
+      // Distribuirea este imuabilă: nu suprascriem confirmări existente.
+      await db.runTransaction((tx) async {
+        if ((await tx.get(ref)).exists) {
+          throw StateError('Această distribuire există deja.');
+        }
+        tx.set(ref, data);
+      });
+    }
     unawaited(_writeLearningEvent(category: 'finance', event: 'per_diem_saved', teamId: entry.teamId, data: {
       'memberId': entry.memberId, 'amount': entry.amount, 'status': entry.status.name, 'method': entry.method?.name ?? '',
     }));
@@ -4991,6 +5241,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openMembersDirectory({bool chatMode=false}) {
+    // Accesul la directorul de membri respectă permisiunile configurate de Admin.
+    // Chatul rămâne separat și nu acordă implicit dreptul de a consulta directorul.
+    if (!chatMode && !hasPermission(FunctionPermission.viewMembers)) {
+      showErrorMessage(context, 'Nu ai permisiunea de a vedea directorul membrilor.');
+      return;
+    }
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => MembersDirectoryPage(currentUser: me, functionDefinitions: functionDefinitions, chatMode: chatMode),
     ));
@@ -5157,10 +5413,10 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(width:6),
               if(compactNav)...[
-                IconButton(tooltip:'Membrii',onPressed:()=>_openMembersDirectory(),icon:sectionAssetWidget('Membri', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.people_outline)),
+                if (hasPermission(FunctionPermission.viewMembers)) IconButton(tooltip:'Membrii',onPressed:()=>_openMembersDirectory(),icon:sectionAssetWidget('Membri', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.people_outline)),
                 Badge(isLabelVisible:_unreadMessageCount>0,label:Text(_unreadMessageCount>99?'99+':'$_unreadMessageCount'),child:IconButton(tooltip:'Chat live',onPressed:_openGroupChat,icon:sectionAssetWidget('Chat live', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.forum_outlined))),
               ]else...[
-                FilledButton.tonalIcon(onPressed:()=>_openMembersDirectory(),icon:sectionAssetWidget('Membri', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.people_outline),label:const Text('Membrii')),
+                if (hasPermission(FunctionPermission.viewMembers)) FilledButton.tonalIcon(onPressed:()=>_openMembersDirectory(),icon:sectionAssetWidget('Membri', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.people_outline),label:const Text('Membrii')),
                 const SizedBox(width:8),
                 Badge(isLabelVisible:_unreadMessageCount>0,label:Text(_unreadMessageCount>99?'99+':'$_unreadMessageCount'),child:FilledButton.tonalIcon(onPressed:_openGroupChat,icon:sectionAssetWidget('Chat live', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.forum_outlined),label:const Text('Chat live'))),
               ],
@@ -5323,37 +5579,68 @@ class _DashboardPageState extends State<DashboardPage> {
     if(mounted)showSuccessMessage(context,'Programul echipei a fost oprit.');
   }
 
+  // Orașul este preluat din denumirea locației sau din ultimul segment al
+  // adresei, nu din numele străzii (primul segment al adresei).
   String _locationCityLabel(Location l) {
-    final raw = l.address.trim();
-    if (raw.isEmpty) return '';
-    final first = raw.split(',').first.trim();
-    if (first.isNotEmpty && !RegExp(r'^(str\.|strada|bd\.|bulevard|calea|nr\.)', caseSensitive:false).hasMatch(first)) return first;
-    final name = l.name.trim();
-    final cleaned = name.replaceFirst(RegExp(r'^(million|magic)\s+', caseSensitive:false), '').trim();
-    return cleaned.split(RegExp(r'[-–]')).first.trim();
+    final name = l.name.trim().replaceFirst(
+      RegExp(r'^(million|magic)\s+', caseSensitive: false), '',
+    ).trim();
+    final parts = l.address.split(',').map((s) => s.trim())
+        .where((s) => s.isNotEmpty).toList();
+    if (parts.length >= 2) {
+      final candidate = parts.last.replaceFirst(
+        RegExp(r'^(jud\.?|județul|municipiul|orașul)\s+', caseSensitive: false), '',
+      ).trim();
+      if (candidate.isNotEmpty &&
+          !RegExp(r'^(românia|romania|rom|\d{5,6})$', caseSensitive: false).hasMatch(candidate)) {
+        return candidate;
+      }
+    }
+    return name.split(RegExp(r'[-–]')).first.trim();
   }
 
-  String _memberLocationLabel(String userId, Map<String, Map<String,dynamic>> live) {
-    final d=live[userId];
-    if(d==null)return 'Locație live indisponibilă';
-    final lat=d['latitude']; final lon=d['longitude'];
-    if(lat is! num || lon is! num)return 'Locație live indisponibilă';
-    Location? nearest; var best=double.infinity;
-    for(final l in widget.locations){
-      if(l.latitude==null||l.longitude==null)continue;
-      final meters=Geolocator.distanceBetween(lat.toDouble(),lon.toDouble(),l.latitude!,l.longitude!);
-      if(meters<best){best=meters;nearest=l;}
+  String _memberLocationLabel(String userId, Map<String, Map<String,dynamic>> live, String teamId) {
+    final d = live[userId];
+    if (d == null) return 'Locație live indisponibilă';
+    final lat = d['latitude'];
+    final lon = d['longitude'];
+    if (lat is! num || lon is! num || !lat.toDouble().isFinite ||
+        !lon.toDouble().isFinite || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      return 'Locație live indisponibilă';
     }
-    final updated=d['updatedAt'];
-    final at=updated is Timestamp?updated.toDate():null;
-    final age=at==null?'': ' · actualizat ${timeText(at)}';
-    if(nearest!=null&&best<=300){
-      final city=_locationCityLabel(nearest);
-      return city.isEmpty?'${nearest.name}$age':'${nearest.name} · $city$age';
+    final updated = d['updatedAt'];
+    final at = updated is Timestamp ? updated.toDate() : null;
+    if (at == null || DateTime.now().difference(at) > const Duration(minutes: 30) ||
+        at.isAfter(DateTime.now().add(const Duration(minutes: 5)))) {
+      return 'Locație live neactualizată';
     }
-    final locality=(d['localityLabel']??'').toString().trim();
-    if(locality.isNotEmpty)return '$locality$age';
-    return 'Localitate în curs de identificare$age';
+    final age = ' · actualizat ${timeText(at)}';
+    final locality = (d['localityLabel'] ?? '').toString().trim();
+
+    // Apropierea GPS de o sală nu dovedește că membrul lucrează acolo.
+    // Afișăm sala numai când echipa are o intervenție efectiv în lucru.
+    final active = widget.records.where((r) =>
+        r.teamId == teamId && r.status == WorkAttemptStatus.running &&
+        r.finishedAt == null && recordBelongsToWorkDate(r, DateTime.now()));
+    Location? currentSite;
+    var closest = double.infinity;
+    for (final record in active) {
+      for (final site in widget.locations) {
+        if (site.id != record.locationId || site.latitude == null || site.longitude == null) continue;
+        final meters = Geolocator.distanceBetween(lat.toDouble(), lon.toDouble(),
+            site.latitude!, site.longitude!);
+        if (meters <= 150 && meters < closest) {
+          currentSite = site;
+          closest = meters;
+        }
+      }
+    }
+    if (currentSite != null) {
+      final city = _locationCityLabel(currentSite);
+      return city.isEmpty ? '${currentSite.name}$age' : '${currentSite.name} · $city$age';
+    }
+    if (locality.isNotEmpty) return '$locality$age';
+    return 'Oraș/județ indisponibil$age';
   }
 
   String _confidenceLabel(List<int> counts) {
@@ -5558,7 +5845,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   child:CircleAvatar(radius:22,backgroundImage:photo==null?null:MemoryImage(photo),child:photo==null?const Icon(Icons.person_outline):null),
                 ),
                 title:Text(name,style:const TextStyle(fontWeight:FontWeight.w700)),
-                subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[Text(_memberLocationLabel(id,live)),if(functions.isNotEmpty)Text(functions),if(u!=null&&u.functionIds.isNotEmpty)...[const SizedBox(height:6),memberBadgeStripWidget(widget.functionDefinitions,u.functionIds,size:30)]]),
+                subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[Text(_memberLocationLabel(id,live,team.id)),if(functions.isNotEmpty)Text(functions),if(u!=null&&u.functionIds.isNotEmpty)...[const SizedBox(height:6),memberBadgeStripWidget(widget.functionDefinitions,u.functionIds,size:30)]]),
               );
             }).toList();
             return Card(child:ExpansionTile(
@@ -5845,6 +6132,21 @@ class ProgramPage extends StatefulWidget {
   @override State<ProgramPage> createState() => _ProgramPageState();
 }
 class _ProgramPageState extends State<ProgramPage> {
+  String? _roadRouteKey;
+  Future<double?>? _roadRouteFuture;
+
+  Future<double?> _roadDistanceForGraph(List<WorkSchedule> days) {
+    final route = graphRoutePoints(days, widget.locations);
+    final key = route.complete
+        ? route.points.map((p) => '${p.latitude},${p.longitude}').join('|')
+        : 'incomplete';
+    if (_roadRouteKey != key || _roadRouteFuture == null) {
+      _roadRouteKey = key;
+      _roadRouteFuture = estimateGraphRoadDistanceKm(days, widget.locations);
+    }
+    return _roadRouteFuture!;
+  }
+
   int teamIndex = 0;
   String? selectedGraphId;
   final GlobalKey _graphCaptureKey = GlobalKey();
@@ -5936,7 +6238,13 @@ class _ProgramPageState extends State<ProgramPage> {
   Future<void> _maybeRaisePlanAlert(WorkSchedule day, String reason) async {
     final programLearning = widget.settings.learning['program'];
     if (programLearning?.enabled != true) return;
-    if (day.planAlertAt != null || _planAlertInFlight.contains(day.id)) return;
+    if (_planAlertInFlight.contains(day.id)) return;
+    // Evităm alerte duplicate la fiecare rebuild, dar permitem una nouă
+    // dacă riscul s-a schimbat sau a trecut o perioadă semnificativă.
+    if (day.planAlertAt != null &&
+        DateTime.now().difference(day.planAlertAt!).inMinutes < 60) return;
+    if (day.planAlertReason == reason && day.planAlertAt != null &&
+        DateTime.now().difference(day.planAlertAt!).inHours < 4) return;
     _planAlertInFlight.add(day.id);
     try {
       final updated = _cloneSchedule(day);
@@ -5946,7 +6254,10 @@ class _ProgramPageState extends State<ProgramPage> {
       widget.notifyTeam(team.id, 'Planul zilei este în risc', '${updated.graphName} · ${formatDate(updated.date)} · $reason');
       widget.log('Plan nerespectat / risc întârziere', '${team.name} · ${updated.graphName} · ${formatDate(updated.date)} · $reason');
       final routing = widget.settings.learning['routing'];
-      if (programLearning!.mode == LearningMode.automatic && routing?.enabled == true && routing?.mode == LearningMode.automatic) {
+      if (programLearning!.mode == LearningMode.automatic && routing?.enabled == true &&
+          routing?.mode == LearningMode.automatic &&
+          (updated.lastRecalculatedAt == null ||
+           DateTime.now().difference(updated.lastRecalculatedAt!).inMinutes >= 30)) {
         await _recalculateRemainingRoute(updated, automatic: true);
       }
     } catch (_) {
@@ -6069,6 +6380,53 @@ class _ProgramPageState extends State<ProgramPage> {
     }
   }
 
+  // Optimizare locală 2-opt: păstrează toate intervențiile neîncepute și
+  // combină distanța GPS cu tranzițiile Learning observate (fără a inventa
+  // durate sau distanțe rutiere). Punctul final este inclus în cost.
+  List<ScheduleItem> _improveLearnedRoute(
+    List<ScheduleItem> initial, double startLat, double startLon,
+    String? previousId, Map<String, int> transitions, WorkSchedule day,
+  ) {
+    if (initial.length < 3 || initial.length > 25) return initial;
+    double score(List<ScheduleItem> order) {
+      var lat = startLat, lon = startLon, km = 0.0;
+      var prev = previousId;
+      for (final item in order) {
+        final l = _locationById(item.locationId)!;
+        km += Geolocator.distanceBetween(lat, lon, l.latitude!, l.longitude!) / 1000;
+        // Bonus plafonat: o singură tranziție repetată nu domină kilometri mulți.
+        final samples = prev == null ? 0 : (transitions['$prev>${item.locationId}'] ?? 0);
+        km -= (samples.clamp(0, 4) * 0.35);
+        lat = l.latitude!; lon = l.longitude!;
+        prev = item.locationId;
+      }
+      if (day.returnLatitude != null && day.returnLongitude != null) {
+        km += Geolocator.distanceBetween(lat, lon, day.returnLatitude!, day.returnLongitude!) / 1000;
+      }
+      return km;
+    }
+    var best = List<ScheduleItem>.from(initial);
+    var bestScore = score(best);
+    for (var pass = 0; pass < 4; pass++) {
+      var changed = false;
+      for (var i = 0; i < best.length - 1; i++) {
+        for (var j = i + 1; j < best.length; j++) {
+          final candidate = <ScheduleItem>[
+            ...best.take(i), ...best.sublist(i, j + 1).reversed, ...best.skip(j + 1),
+          ];
+          final candidateScore = score(candidate);
+          if (candidateScore < bestScore - 0.001) {
+            best = candidate;
+            bestScore = candidateScore;
+            changed = true;
+          }
+        }
+      }
+      if (!changed) break;
+    }
+    return best;
+  }
+
   Future<bool> _recalculateRemainingRoute(WorkSchedule day, {bool automatic = false}) async {
     final workDate = operationalWorkDate(DateTime.now());
     final movable = _pendingItemsForDay(day, workDate, includeActive: false);
@@ -6093,6 +6451,14 @@ class _ProgramPageState extends State<ProgramPage> {
     final withoutGps = movable.where((i){final l=_locationById(i.locationId);return l?.latitude==null||l?.longitude==null;}).toList();
     if (withGps.length < 2) {
       if (!automatic && mounted) showErrorMessage(context, 'Prea puține locații rămase au GPS pentru a calcula o ordine mai bună.');
+      return false;
+    }
+    // Nu reordonăm automat un traseu incomplet: ar putea muta săli fără GPS
+    // la final, fără ca echipa să știe că optimizarea a fost parțială.
+    if (withoutGps.isNotEmpty) {
+      if (!automatic && mounted) {
+        showErrorMessage(context, 'Recalcularea necesită GPS pentru toate locațiile rămase. Lipsesc coordonate pentru: ${withoutGps.map((e) => e.locationNameSnapshot).join(', ')}.');
+      }
       return false;
     }
     final executionTransitions = _executionTransitionCounts();
@@ -6122,7 +6488,62 @@ class _ProgramPageState extends State<ProgramPage> {
       final l=_locationById(next.locationId)!; lat=l.latitude!; lon=l.longitude!;
       previousId=next.locationId;
     }
+    // Îmbunătățire globală față de alegerea strict locală a următoarei săli.
+    // Se aplică doar locațiilor cu minimum 3 execuții și GPS valid.
+    final refined = _improveLearnedRoute(optimized, anchor[0], anchor[1],
+        _lastOperationalLocationId(workDate), transitionCounts, day);
+    optimized
+      ..clear()
+      ..addAll(refined);
+    // Mapbox Optimization este doar o propunere asistată: nu înlocuiește
+    // deciziile Learning și nu schimbă automat ordinea de lucru.
+    // Punctele de plecare și sosire sunt fixe și nu devin intervenții.
+    var mapboxSuggested = false;
+    if (!automatic && kMapboxEnabled && optimized.length >= 2 &&
+        optimized.length <= 10 && day.returnLatitude != null &&
+        day.returnLongitude != null) {
+      final mapboxInput = <List<double>>[
+        <double>[anchor[0], anchor[1]],
+        ...optimized.map((item) {
+          final location = _locationById(item.locationId)!;
+          return <double>[location.latitude!, location.longitude!];
+        }),
+        <double>[day.returnLatitude!, day.returnLongitude!],
+      ];
+      final proposedIndices = await _mapboxServices.optimizedOrder(mapboxInput);
+      if (proposedIndices != null && proposedIndices.length == mapboxInput.length) {
+        final proposal = proposedIndices.skip(1).take(optimized.length)
+            .map((index) => optimized[index - 1]).toList();
+        final originalIds = optimized.map((e) => e.locationId).toList();
+        final proposalIds = proposal.map((e) => e.locationId).toList();
+        if (proposalIds.toSet().length == originalIds.length &&
+            proposalIds.toSet().containsAll(originalIds) &&
+            proposalIds.join('|') != originalIds.join('|')) {
+          final oldRoadKm = await _mapboxServices.drivingKm(mapboxInput);
+          final newRoadKm = await _mapboxServices.drivingKm(<List<double>>[
+            mapboxInput.first,
+            ...proposedIndices.skip(1).take(optimized.length)
+                .map((index) => mapboxInput[index]),
+            mapboxInput.last,
+          ]);
+          // Acceptăm sugestia doar dacă Mapbox confirmă economie rutieră;
+          // utilizatorul trebuie în continuare să o aprobe în dialog.
+          if (oldRoadKm != null && newRoadKm != null &&
+              newRoadKm + 0.1 < oldRoadKm) {
+            optimized..clear()..addAll(proposal);
+            mapboxSuggested = true;
+          }
+        }
+      }
+    }
     optimized.addAll(withoutGps);
+    // Nu salvăm și nu notificăm dacă ordinea propusă este identică.
+    final unchanged = movable.length == optimized.length &&
+        List.generate(movable.length, (i) => movable[i].locationId == optimized[i].locationId).every((same) => same);
+    if (unchanged) {
+      if (!automatic && mounted) showSuccessMessage(context, 'Traseul rămas este deja în ordinea recomandată.');
+      return false;
+    }
     final oldKm = _routeKmFrom(anchor[0], anchor[1], movable);
     final newKm = _routeKmFrom(anchor[0], anchor[1], optimized);
     if (!automatic) {
@@ -6131,6 +6552,7 @@ class _ProgramPageState extends State<ProgramPage> {
         content: SizedBox(width:560,child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text('Traseu rămas: ${oldKm.toStringAsFixed(1)} km → ${newKm.toStringAsFixed(1)} km estimați.'),
           const SizedBox(height:8),
+          if (mapboxSuggested) const Text('Propunere Mapbox bazată pe drumuri reale; necesită aprobare.', style: TextStyle(fontWeight:FontWeight.w600)),
           const Text('Ordinea propusă:',style:TextStyle(fontWeight:FontWeight.bold)),
           const SizedBox(height:6),
           ...optimized.take(8).toList().asMap().entries.map((e)=>Text('${e.key+1}. ${e.value.locationNameSnapshot}')),
@@ -6155,8 +6577,11 @@ class _ProgramPageState extends State<ProgramPage> {
     updated.learningSamples = completedSamples + transitionSamples;
     updated.learningConfidence = movable.isEmpty ? 0 : ((learnedDecisions / movable.length) * 0.65 + (completedSamples.clamp(0, 30) / 30) * 0.35).clamp(0.0, 1.0);
     updated.learningExplanation = learnedDecisions > 0
-      ? 'Ordinea combină ${transitionSamples} tranziții istorice/alegeri ale echipei cu distanța GPS. Toate cele ${movable.length} locații au minimum 3 execuții.'
-      : 'Nu există încă tranziții repetate între aceste locații; toate au minimum 3 execuții, iar GPS-ul a fost folosit ca departajare până când Learning acumulează alegeri de traseu.';
+      ? 'Ordinea combină istoricul echipei cu optimizarea 2-opt a distanțelor GPS, inclusiv destinația finală. Toate cele ${movable.length} locații au minimum 3 execuții.'
+      : 'Nu există încă tranziții repetate; optimizarea 2-opt folosește distanțe GPS aproximative, inclusiv destinația finală. Fiecare locație are minimum 3 execuții.';
+    if (mapboxSuggested) {
+      updated.learningExplanation = '${updated.learningExplanation} Propunere Mapbox verificată rutier și aprobată de utilizator.';
+    }
     await widget.saveSchedule(updated);
     unawaited(_recordRoutingChoice(updated, automatic ? 'automatic_route_applied' : 'assisted_route_applied'));
     final label = automatic ? 'Recalculare automată traseu' : 'Recalculare asistată traseu';
@@ -6212,6 +6637,7 @@ class _ProgramPageState extends State<ProgramPage> {
     final head = graphHead;
     final car = assignedCar;
     final km = estimateGraphDistanceKm(graphSchedules, widget.locations);
+    final routeData = graphRoutePoints(graphSchedules, widget.locations);
     final liters = car != null && car.averageConsumption > 0 ? km * car.averageConsumption / 100 : 0.0;
     final cost = car != null && car.fuelPricePerLiter > 0 ? liters * car.fuelPricePerLiter : 0.0;
     final now = DateTime.now();
@@ -6225,7 +6651,9 @@ class _ProgramPageState extends State<ProgramPage> {
     final todayEstimate = todayDay == null ? null : _estimatedEndForDay(todayDay, now);
     final planRisk = todayDay == null ? null : _planRiskReason(todayDay, now);
     final lastRecalculatedAt = todayDay?.lastRecalculatedAt;
-    if (todayDay != null && planRisk != null && todayDay.planAlertAt == null && !_planAlertInFlight.contains(todayDay.id)) {
+    if (todayDay != null && planRisk != null && !_planAlertInFlight.contains(todayDay.id) &&
+        (todayDay.planAlertAt == null || now.difference(todayDay.planAlertAt!).inMinutes >= 60) &&
+        (todayDay.planAlertReason != planRisk || todayDay.planAlertAt == null || now.difference(todayDay.planAlertAt!).inHours >= 4)) {
       final alertSchedule = todayDay;
       final alertReason = planRisk;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -6256,7 +6684,7 @@ class _ProgramPageState extends State<ProgramPage> {
             Wrap(spacing:8,runSpacing:8,children:[
               _StatMini(label:'Zile',value:'${graphSchedules.length}',icon:Icons.calendar_view_week),
               _StatMini(label:'Locații',value:'${graphSchedules.fold<int>(0,(a,b)=>a+b.items.length)}',icon:Icons.storefront),
-              _StatMini(label:'Km estimați',value:'${km.toStringAsFixed(1)} km',icon:Icons.route),
+              _StatMini(label:'Km GPS (linie dreaptă)',value:'${km.toStringAsFixed(1)} km',icon:Icons.route),
               _StatMini(label:'Consum',value:liters>0?'${liters.toStringAsFixed(1)} l':'nesetat',icon:Icons.local_gas_station),
               _StatMini(label:'Cost carburant',value:cost>0?'${cost.toStringAsFixed(2)} lei':'nesetat',icon:Icons.payments_outlined),
               if(todayDay!=null)_StatMini(label:'Azi',value:'$todayDone/${todayDay.items.length} făcute',icon:Icons.task_alt),
@@ -6304,6 +6732,39 @@ class _ProgramPageState extends State<ProgramPage> {
             ),
           ],
           const SizedBox(height:8),
+          if (!routeData.complete) Card(child: ListTile(leading: const Icon(Icons.warning_amber_rounded), title: const Text('Traseu GPS incomplet'), subtitle: Text('Completează coordonatele pentru: ${[if(routeData.missingDeparture) 'plecare', ...routeData.missingLocations, if(routeData.missingDestination) 'destinație'].join(', ')}. Km și consumul nu pot fi estimate corect.'))),
+          if (routeData.complete && routeData.points.length >= 2)
+            FutureBuilder<double?>(
+              future: _roadDistanceForGraph(graphSchedules),
+              builder: (context, snapshot) {
+                final roadKm = snapshot.data;
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const ListTile(
+                    leading: Icon(Icons.route),
+                    title: Text('Se calculează kilometrii rutieri…'),
+                  );
+                }
+                if (roadKm == null) {
+                  return const ListTile(
+                    leading: Icon(Icons.info_outline),
+                    title: Text('Rutarea rutieră nu este disponibilă'),
+                    subtitle: Text('Valorile de mai sus sunt în linie dreaptă, nu kilometri rutieri. Consumul real poate fi mai mare.'),
+                  );
+                }
+                final roadLiters = car != null && car.averageConsumption > 0
+                    ? roadKm * car.averageConsumption / 100 : null;
+                final roadCost = roadLiters != null && car != null && car.fuelPricePerLiter > 0
+                    ? roadLiters * car.fuelPricePerLiter : null;
+                return _InfoCard(
+                  icon: Icons.route,
+                  title: 'Traseu rutier complet',
+                  text: '${roadKm.toStringAsFixed(1)} km pe drumuri · '
+                      'Consum: ${roadLiters?.toStringAsFixed(1) ?? 'nesetat'} L · '
+                      'Cost: ${roadCost?.toStringAsFixed(2) ?? 'nesetat'} lei. '
+                      'Include plecarea, toate sălile și destinația finală.',
+                );
+              },
+            ),
           _InfoCard(icon:Icons.info_outline,title:'Estimare traseu complet',text:head.departureName.isNotEmpty&&head.returnName.isNotEmpty?'${head.departureName} → toate sălile din grafic → ${head.returnName}. ${km.toStringAsFixed(1)} km estimați; plecarea și întoarcerea sunt folosite numai la deplasare și nu intră în Centralizator.':'La START GRAFIC alegi plecarea și punctul final. Km, consumul și costul se calculează pe întregul traseu. Numărul de zile rămâne strict numărul zilelor de lucru.'),
         ],
       ]),
@@ -6845,53 +7306,57 @@ class _MapPageState extends State<MapPage> {
   Color _color(Location l) => categoryColor(widget.categories, l.categoryId, fallbackType: l.type);
   String _categoryName(Location l) => categoryName(widget.categories, l.categoryId, fallbackType: l.type);
 
+  // Include graficele închise în ziua de lucru: markerul rămâne verde
+  // după închiderea graficului, nu dispare din hartă.
   List<WorkSchedule> get _todayOperationalSchedules {
     final workDate = operationalWorkDate(DateTime.now());
     final teamId = widget.currentUser.teamId;
     return widget.schedules.where((s) =>
-      s.started && !s.closed && sameDay(s.date, workDate) && (teamId == null || s.teamId == teamId)
+      s.started && sameDay(s.date, workDate) &&
+      (widget.isAdmin || (teamId != null && s.teamId == teamId))
     ).toList();
   }
 
-  CentralizerRecord? _todayRecordFor(Location l, String teamId) {
+  List<CentralizerRecord> _todayRecordsFor(String locationId, String teamId) {
     final workDate = operationalWorkDate(DateTime.now());
-    final rs = widget.records.where((r) =>
-      r.teamId == teamId && r.locationId == l.id && recordBelongsToWorkDate(r, workDate)
-    ).toList()..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
-    return rs.isEmpty ? null : rs.last;
+    return widget.records.where((r) =>
+      r.teamId == teamId && r.locationId == locationId &&
+      recordBelongsToWorkDate(r, workDate)
+    ).toList();
   }
 
   Color? _workBadgeColor(Location l) {
     final schedules = _todayOperationalSchedules;
     if (schedules.isEmpty) return null;
-    var scheduled = false;
-    var next = false;
-    var completed = false;
+    var assignments = 0;
+    var finishedAssignments = 0;
+    var nextOrRunning = false;
     for (final day in schedules) {
       final ordered = [...day.items]..sort((a, b) => a.order.compareTo(b.order));
       ScheduleItem? nextItem;
       for (final item in ordered) {
-        Location? loc;
-        for (final candidate in widget.locations) {
-          if (candidate.id == item.locationId) { loc = candidate; break; }
-        }
-        if (loc == null) continue;
-        final r = _todayRecordFor(loc, day.teamId);
+        final records = _todayRecordsFor(item.locationId, day.teamId);
+        final done = records.any((r) => r.completed);
+        final running = records.any((r) =>
+          r.status == WorkAttemptStatus.running ||
+          r.status == WorkAttemptStatus.waitingAccess);
+        final cancelled = records.isNotEmpty && records.every((r) =>
+          r.status == WorkAttemptStatus.refused ||
+          r.status == WorkAttemptStatus.notCompleted);
         if (item.locationId == l.id) {
-          scheduled = true;
-          if (r?.completed == true) completed = true;
-          if (r?.status == WorkAttemptStatus.running || r?.status == WorkAttemptStatus.waitingAccess) next = true;
+          assignments++;
+          if (done) finishedAssignments++;
+          if (!done && running) nextOrRunning = true;
         }
-        if (nextItem == null && r?.completed != true && r?.status != WorkAttemptStatus.refused && r?.status != WorkAttemptStatus.notCompleted) {
-          nextItem = item;
-        }
+        if (nextItem == null && !done && !cancelled) nextItem = item;
       }
-      if (nextItem?.locationId == l.id) next = true;
+      if (nextItem?.locationId == l.id) nextOrRunning = true;
     }
-    if (completed) return Colors.green;
-    if (next) return Colors.orange;
-    if (scheduled) return Colors.red;
-    return null;
+    if (assignments == 0) return null;
+    // Nu afișăm verde dacă aceeași locație mai are o intervenție restantă.
+    if (finishedAssignments == assignments) return Colors.green;
+    if (nextOrRunning) return Colors.orange;
+    return Colors.red;
   }
 
   String _workBadgeText(Location l) {
@@ -6943,28 +7408,13 @@ class _MapPageState extends State<MapPage> {
   List<Polyline> _rainbowRouteLines() {
     if (!_showGraphRoute) return const <Polyline>[];
     const colors = <Color>[Colors.red, Colors.orange, Colors.amber, Colors.green, Colors.blue, Colors.indigo, Colors.purple];
-    final byId = {for (final l in widget.locations) l.id: l};
-    final days = _routeDays;
-    if (days.isEmpty) return const <Polyline>[];
-    final head=days.first;
+    final route = graphRoutePoints(_routeDays, widget.locations);
+    // Nu desenăm segmente false peste locațiile fără GPS.
+    if (!route.complete) return const <Polyline>[];
     final lines = <Polyline>[];
-    LatLng? previous = head.departureLatitude!=null&&head.departureLongitude!=null ? LatLng(head.departureLatitude!,head.departureLongitude!) : null;
-    var segment = 0;
-    for (final day in days) {
-      final items = [...day.items]..sort((a,b)=>a.order.compareTo(b.order));
-      for (final item in items) {
-        final l = byId[item.locationId];
-        if (l?.latitude == null || l?.longitude == null) continue;
-        final current = LatLng(l!.latitude!, l.longitude!);
-        if (previous != null) {
-          lines.add(Polyline(points:[previous, current],color:colors[segment % colors.length],strokeWidth:6));
-          segment++;
-        }
-        previous = current;
-      }
-    }
-    if(previous!=null&&head.returnLatitude!=null&&head.returnLongitude!=null){
-      lines.add(Polyline(points:[previous,LatLng(head.returnLatitude!,head.returnLongitude!)],color:colors[segment % colors.length],strokeWidth:6));
+    for (var i = 1; i < route.points.length; i++) {
+      lines.add(Polyline(points: [route.points[i - 1], route.points[i]],
+          color: colors[(i - 1) % colors.length], strokeWidth: 6));
     }
     return lines;
   }
@@ -7260,7 +7710,7 @@ class _MapPageState extends State<MapPage> {
                 onTap: widget.isAdmin && !saving && !findingAddress ? (_, point) => _chooseLocationAt(point) : null,
               ),
               children: [
-                TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'ro.andicarpeta.app'),
+                TileLayer(urlTemplate: kMapTileUrl, userAgentPackageName: 'ro.andicarpeta.app'),
                 if (_rainbowRouteLines().isNotEmpty) PolylineLayer(polylines: _rainbowRouteLines()),
                 MarkerLayer(markers: [
                   ..._routeEndpointMarkers(),
@@ -7340,7 +7790,7 @@ class _MapPageState extends State<MapPage> {
                     return MarkerLayer(markers: markers);
                   },
                 ),
-                RichAttributionWidget(attributions: const [TextSourceAttribution('OpenStreetMap contributors')]),
+                RichAttributionWidget(attributions: [TextSourceAttribution(kMapboxEnabled ? '© Mapbox © OpenStreetMap' : '© OpenStreetMap contributors')]),
               ],
             ),
           ),
@@ -7503,7 +7953,22 @@ class _MapPageState extends State<MapPage> {
     surfaceM2: l.surfaceM2, facadeM2: l.facadeM2, notes: l.notes, active: l.active,
   );
 
+  // Validare înainte de orice modificare a markerelor persistate.
+  bool _validMapPoint(LatLng point) =>
+      point.latitude.isFinite && point.longitude.isFinite &&
+      point.latitude >= -90 && point.latitude <= 90 &&
+      point.longitude >= -180 && point.longitude <= 180 &&
+      !(point.latitude == 0 && point.longitude == 0);
+
+  void _invalidMapPointNotice() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Punct GPS invalid. Alege o poziție reală pe hartă.'),
+    ));
+  }
+
   Future<void> _chooseLocationAt(LatLng point) async {
+    if (!_validMapPoint(point)) { _invalidMapPointNotice(); return; }
     if (selectedLocationId != null) {
       final selected = widget.locations.where((x) => x.id == selectedLocationId).toList();
       selectedLocationId = null;
@@ -7551,10 +8016,11 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _confirmAndPlace(Location chosen, LatLng point) async {
+    if (!_validMapPoint(point)) { _invalidMapPointNotice(); return; }
     if (chosen.latitude != null && chosen.longitude != null && mounted) {
       final replace = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
         title: const Text('Locația are deja coordonate'),
-        content: Text('${chosen.name} este deja poziționată. Muți markerul în punctul nou?'),
+        content: Text('${chosen.name} este deja poziționată la ${chosen.latitude!.toStringAsFixed(6)}, ${chosen.longitude!.toStringAsFixed(6)}.\nNoua poziție: ${point.latitude.toStringAsFixed(6)}, ${point.longitude.toStringAsFixed(6)}.\nMuți markerul?'),
         actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Nu')), FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Da, mută'))],
       ));
       if (replace != true) return;
@@ -7563,6 +8029,10 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _placeLocation(Location source, LatLng point) async {
+    if (!widget.isAdmin || saving || !_validMapPoint(point)) {
+      _invalidMapPointNotice();
+      return;
+    }
     final updated = _copyLocation(source, latitude: point.latitude, longitude: point.longitude);
     setState(() => saving = true);
     try {
@@ -7754,10 +8224,10 @@ class _LocationAdjustPageState extends State<LocationAdjustPage> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate: kMapTileUrl,
                       userAgentPackageName: 'com.example.andi_carpeta',
                     ),
-                    RichAttributionWidget(attributions: const [TextSourceAttribution('OpenStreetMap contributors')]),
+                    RichAttributionWidget(attributions: [TextSourceAttribution(kMapboxEnabled ? '© Mapbox © OpenStreetMap' : '© OpenStreetMap contributors')]),
                   ],
                 ),
                 IgnorePointer(
@@ -8213,6 +8683,7 @@ class _ExpensePageState extends State<ExpensePage> {
   String? selectedSettlementId;
   bool exporting = false;
   bool scanning = false;
+  final Set<String> _savingPerDiemIds = <String>{};
   final ImagePicker _imagePicker = ImagePicker();
 
   List<Team> get visibleTeams => (widget.isAdmin || widget.canViewOtherDecont)
@@ -8287,10 +8758,83 @@ class _ExpensePageState extends State<ExpensePage> {
   List<PerDiemEntry> get di => widget.perDiems.where((e) => e.teamId == team.id && _belongsToSelected(e.settlementId)).toList()
     ..sort((a, b) => b.date.compareTo(a.date));
   List<PerDiemEntry> get pendingOwnPerDiems => widget.perDiems
-      .where((e) => e.teamId == team.id && e.memberId == widget.currentUser.id && e.status == PerDiemStatus.awaitingConfirmation && e.received != true)
+      .where((e) => e.memberId == widget.currentUser.id && e.status == PerDiemStatus.awaitingConfirmation && e.actualReceivedAmount == null)
       .toList()
     ..sort((a, b) => b.date.compareTo(a.date));
-  double get spent => ex.fold<double>(0, (a, b) => a + b.amount) + di.where((d) => d.status == PerDiemStatus.confirmed).fold<double>(0, (a, b) => a + b.amount);
+  // Sold informativ pe toate deplasările, inclusiv cele închise.
+  // Diferențele contestate nu sunt compensate automat.
+  int _perDiemDifferenceBani(String beneficiaryId, String distributorId) {
+    var balance = 0;
+    for (final entry in widget.perDiems) {
+      if (entry.memberId != beneficiaryId || entry.distributedBy != distributorId ||
+          entry.status != PerDiemStatus.confirmed || entry.actualReceivedAmount == null) continue;
+      final receivedBani = parsePerDiemBani(entry.actualReceivedAmount!.toString());
+      final declaredBani = parsePerDiemBani(entry.amount.toString());
+      if (receivedBani == null || declaredBani == null) continue;
+      // A supplementary distribution is cash paid toward a prior debt,
+      // not an additional daily allowance.
+      balance += (entry.supplementaryFor == null ? declaredBani : 0) - receivedBani;
+    }
+    return balance;
+  }
+
+  double _perDiemDifference(String beneficiaryId, String distributorId) =>
+      _perDiemDifferenceBani(beneficiaryId, distributorId) / 100;
+
+  Widget _perDiemCarryoverCard() {
+    // Soldurile urmează persoanele, nu echipa sau decontul selectat.
+    // Grupăm separat fiecare pereche distribuitor-beneficiar, pentru a nu
+    // amesteca obligațiile a doi distribuitori diferiți.
+    final pairs = <String, MapEntry<String, String>>{};
+    for (final entry in widget.perDiems) {
+      final distributor = entry.distributedBy;
+      if (distributor == null || distributor.isEmpty) continue;
+      if (!widget.isAdmin && entry.memberId != widget.currentUser.id &&
+          distributor != widget.currentUser.id) continue;
+      pairs['$distributor|${entry.memberId}'] = MapEntry(distributor, entry.memberId);
+    }
+    final rows = <Widget>[];
+    for (final pair in pairs.values) {
+      final difference = _perDiemDifference(pair.value, pair.key);
+      // Solicitările încă neconfirmate NU sunt datorii sau avansuri
+      // validate. Le afișăm separat pentru a nu induce în eroare.
+      final pending = widget.perDiems.where((entry) =>
+        entry.memberId == pair.value &&
+        entry.distributedBy == pair.key &&
+        entry.status == PerDiemStatus.awaitingConfirmation &&
+        entry.actualReceivedAmount == null).toList();
+      if (difference.abs() >= 0.01) {
+        rows.add(Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text('${name(pair.key)} → ${name(pair.value)}: '
+            '${difference > 0 ? 'diferență de achitat' : 'avans de verificat'} '
+            '${difference.abs().toStringAsFixed(2)} lei (confirmat)'),
+        ));
+      }
+      if (pending.isNotEmpty) {
+        final pendingAmount = pending.fold<double>(0, (sum, entry) => sum + entry.amount);
+        rows.add(Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text('${name(pair.key)} → ${name(pair.value)}: '
+            '${pending.length} ${pending.length == 1 ? 'distribuire neconfirmată' : 'distribuiri neconfirmate'} '
+            '(${pendingAmount.toStringAsFixed(2)} lei declarați; nu intră în sold)'),
+        ));
+      }
+    }
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Solduri reportate între deconturi și echipe', style: TextStyle(fontWeight: FontWeight.bold)),
+        ...rows,
+        const SizedBox(height: 6),
+        const Text('Sold informativ doar din încasări confirmate. Distribuirile în așteptare '
+          'sunt afișate separat și nu se compensează automat. Contestațiile necesită reconciliere.'),
+      ],
+    )));
+  }
+
+  double get spent => ex.fold<double>(0, (a, b) => a + b.amount) + di.fold<double>(0, (a, d) => a + (d.status == PerDiemStatus.confirmed && d.received == true ? (d.actualReceivedAmount ?? 0.0) : 0.0));
   double get balance => received - spent;
   double get liters => ex.where((e) => e.category == 'Combustibil').fold<double>(0, (a, b) => a + (b.liters ?? 0));
   double get fuel => ex.where((e) => e.category == 'Combustibil').fold<double>(0, (a, b) => a + b.amount);
@@ -8299,7 +8843,26 @@ class _ExpensePageState extends State<ExpensePage> {
   @override
   Widget build(BuildContext context) {
     if (visibleTeams.isEmpty) {
-      return const _Page(title: 'Decont', subtitle: 'Cheltuieli, documente, diurne și sold', child: _Empty(icon: Icons.groups_outlined, text: 'Contul nu este încă atribuit unei echipe.'));
+      // Confirmările rămân accesibile și după mutarea membrului în altă echipă
+      // sau eliminarea temporară din echipe. Nu depind de decontul selectat.
+      final pending = pendingOwnPerDiems;
+      return _Page(
+        title: 'Decont',
+        subtitle: 'Diurne de confirmat',
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (pending.isNotEmpty) ...[
+            const Text('Diurne care așteaptă confirmarea ta',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ...pending.map(_pendingPerDiemCard),
+            const SizedBox(height: 12),
+          ],
+          const _InfoCard(
+            icon: Icons.groups_outlined,
+            title: 'Fără echipă activă',
+            text: 'Nu ești atribuit unei echipe în acest moment. Confirmările de diurnă existente rămân accesibile.'),
+        ]),
+      );
     }
     if (teamIndex >= visibleTeams.length) teamIndex = 0;
     final resolved = _resolvedSettlementId();
@@ -8383,12 +8946,28 @@ class _ExpensePageState extends State<ExpensePage> {
             const Expanded(child: Text('Diurnă', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
             TextButton(onPressed: isManager && !selectedClosed ? _perDiemRate : null, child: Text('${perDiemRate.toStringAsFixed(2)} lei/zi')),
           ]),
-          if (isManager && !selectedClosed) FilledButton.icon(onPressed: _distribute, icon: const Icon(Icons.payments), label: const Text('Distribuie diurnă')),
+          if (isManager && !selectedClosed) Wrap(spacing: 8, children: [
+            FilledButton.icon(onPressed: _distribute, icon: const Icon(Icons.payments), label: const Text('Distribuie diurnă')),
+            OutlinedButton.icon(onPressed: _supplementaryPayment, icon: const Icon(Icons.add_card), label: const Text('Plată suplimentară')),
+          ]),
+          _perDiemCarryoverCard(),
           const SizedBox(height: 12),
+          if (di.any((d) => d.supplementaryFor == null && d.status == PerDiemStatus.confirmed && d.actualReceivedAmount != null && (d.amount - d.actualReceivedAmount!).abs() >= 0.01))
+            Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Diferențe diurne declarate / primite', style: TextStyle(fontWeight: FontWeight.bold)),
+              ...di.where((d) => d.supplementaryFor == null && d.status == PerDiemStatus.confirmed && d.actualReceivedAmount != null && (d.amount - d.actualReceivedAmount!).abs() >= 0.01).map((d) {
+                final difference = d.amount - d.actualReceivedAmount!;
+                return Text('${name(d.memberId)}: ${difference > 0 ? 'Diferență neachitată' : 'Avans declarat'} ${difference.abs().toStringAsFixed(2)} lei');
+              }),
+              ...di.where((d) => d.supplementaryFor == null && d.status == PerDiemStatus.confirmed && d.actualReceivedAmount != null && (d.amount - d.actualReceivedAmount!).abs() >= 0.01).map(_perDiemDisputeActions),
+              const Text('Diferențele sunt informative până la reconcilierea soldurilor între deconturi.'),
+            ]))),
           ...di.map((d) => ListTile(
-            leading: Icon(d.status == PerDiemStatus.confirmed ? Icons.check_circle : Icons.schedule, color: d.status == PerDiemStatus.confirmed ? Colors.green : Colors.orange),
-            title: Text('${name(d.memberId)} · ${formatDate(d.date)}'),
-            subtitle: Text('${d.amount.toStringAsFixed(2)} lei · ${d.received == true ? 'Primit' : d.received == false ? 'Nu am primit' : d.status.label} · ${d.method?.label ?? ''}'),
+            leading: Icon(d.received == false ? Icons.report_outlined : d.status == PerDiemStatus.confirmed ? Icons.check_circle : Icons.schedule, color: d.received == false ? Colors.red : d.status == PerDiemStatus.confirmed ? Colors.green : Colors.orange),
+            title: Text('${d.supplementaryFor == null ? 'Diurnă' : 'Plată suplimentară'} · ${name(d.memberId)} · ${formatDate(d.date)}'),
+            subtitle: Text('${d.amount.toStringAsFixed(2)} lei declarați · ${d.actualReceivedAmount == null ? d.status.label : '${d.actualReceivedAmount!.toStringAsFixed(2)} lei primiți${d.actualReceivedAmount == 0 ? ' (neprimită)' : ''}'} · ${d.method?.label ?? ''}'),
+            trailing: d.memberId == widget.currentUser.id && d.status == PerDiemStatus.awaitingConfirmation && d.actualReceivedAmount == null
+              ? IconButton(tooltip: 'Confirmă primirea', icon: const Icon(Icons.fact_check_outlined), onPressed: () => _confirmPerDiemAmount(d)) : null,
           )),
           const Divider(height: 32),
           Wrap(spacing: 10, runSpacing: 8, children: [
@@ -8504,7 +9083,7 @@ class _ExpensePageState extends State<ExpensePage> {
   Future<void> _showGeneralCalculations() async {
     final years=<int>{};
     for(final e in widget.expenses.where((x)=>x.teamId==team.id)){years.add(e.date.year);}
-    for(final d in widget.perDiems.where((x)=>x.teamId==team.id)){years.add(d.date.year);}
+    for(final d in widget.perDiems.where((x)=>x.teamId==team.id)){years.add((d.confirmedAt ?? d.date).year);}
     for(final st in widget.settlements.where((x)=>x.teamId==team.id)){years.add(st.startDate.year);}
     final orderedYears=years.toList()..sort((a,b)=>b.compareTo(a));
     int? selectedYear=orderedYears.isEmpty?DateTime.now().year:orderedYears.first;
@@ -8512,18 +9091,35 @@ class _ExpensePageState extends State<ExpensePage> {
 
     Map<String,double> calculate(){
       bool dateOk(DateTime d)=>allTime||d.year==selectedYear;
-      final teamExpenses=widget.expenses.where((e)=>e.teamId==team.id&&e.confirmed&&dateOk(e.date)).toList();
-      final teamPerDiems=widget.perDiems.where((d)=>d.teamId==team.id&&d.status==PerDiemStatus.confirmed&&dateOk(d.date)).toList();
+      final expenseIds=<String>{};
+      final teamExpenses=widget.expenses.where((e)=>e.teamId==team.id&&e.confirmed&&
+          e.amount.isFinite&&e.amount>=0&&dateOk(e.date)&&expenseIds.add(e.id)).toList();
+      final paymentIds=<String>{};
+      final teamPerDiems=widget.perDiems.where((d)=>d.teamId==team.id&&
+          d.status==PerDiemStatus.confirmed&&d.received==true&&
+          d.actualReceivedAmount!=null&&d.actualReceivedAmount!.isFinite&&
+          d.actualReceivedAmount!>=0&&dateOk(d.confirmedAt??d.date)&&paymentIds.add(d.id)).toList();
       final fuelTotal=teamExpenses.where((e)=>e.category=='Combustibil').fold<double>(0,(a,b)=>a+b.amount);
-      final invoiceTotal=teamExpenses.where((e)=>e.documentType==ExpenseDocumentType.invoice||e.category=='Facturi').fold<double>(0,(a,b)=>a+b.amount);
+      final invoiceTotal=teamExpenses.where((e)=>e.category!='Combustibil'&&(e.documentType==ExpenseDocumentType.invoice||e.category=='Facturi')).fold<double>(0,(a,b)=>a+b.amount);
       final otherTotal=teamExpenses.where((e)=>e.category!='Combustibil'&&e.documentType!=ExpenseDocumentType.invoice&&e.category!='Facturi').fold<double>(0,(a,b)=>a+b.amount);
-      final perDiemTotal=teamPerDiems.fold<double>(0,(a,b)=>a+b.amount);
+      final perDiemTotal=teamPerDiems.fold<double>(0,(a,b)=>a+b.actualReceivedAmount!);
 
+      // Deduplicate individual transfers across legacy team finances and
+      // settlement records. Historical aggregate-only records have no transfer
+      // identifiers and therefore cannot be safely deduplicated.
       double receivedTotal=0;
+      final seenTransferIds=<String>{};
+      void addTransfers(List<ReceivedMoneyEntry> transfers){
+        for(final transfer in transfers){
+          if(!dateOk(transfer.date) || !transfer.amount.isFinite || transfer.amount < 0) continue;
+          if(!seenTransferIds.add(transfer.id)) continue;
+          receivedTotal+=transfer.amount;
+        }
+      }
       for(final st in widget.settlements.where((x)=>x.teamId==team.id)){
         if(st.receivedEntries.isNotEmpty){
-          receivedTotal+=st.receivedEntries.where((e)=>allTime||e.date.year==selectedYear).fold<double>(0,(a,b)=>a+b.amount);
-        }else if(allTime||st.startDate.year==selectedYear){
+          addTransfers(st.receivedEntries);
+        }else if(dateOk(st.startDate)){
           receivedTotal+=st.totalReceived;
         }
       }
@@ -8531,9 +9127,9 @@ class _ExpensePageState extends State<ExpensePage> {
       if(f.isNotEmpty){
         final tf=f.first;
         if(tf.receivedEntries.isNotEmpty){
-          receivedTotal+=tf.receivedEntries.where((e)=>allTime||e.date.year==selectedYear).fold<double>(0,(a,b)=>a+b.amount);
+          addTransfers(tf.receivedEntries);
         }else if(allTime){
-          // Datele financiare legacy nu au dată; le includem doar în totalul general.
+          // Legacy totals without dates appear only in the all-time report.
           receivedTotal+=tf.totalReceived;
         }
       }
@@ -8687,7 +9283,7 @@ class _ExpensePageState extends State<ExpensePage> {
           Text('Data distribuirii: ${formatDate(entry.distributedAt ?? entry.date)}'),
           if (alreadyReportedMissing) ...[
             const SizedBox(height: 6),
-            const Text('Ai declarat că nu ai primit încă această diurnă. Confirmă atunci când banii ajung la tine.', style: TextStyle(fontWeight: FontWeight.w700)),
+            const Text('Ai raportat că nu ai primit banii. Solicitarea rămâne deschisă; confirmă suma doar după încasare.', style: TextStyle(fontWeight: FontWeight.w700)),
           ] else ...[
             const SizedBox(height: 6),
             const Text('Confirmă dacă ai primit efectiv suma.', style: TextStyle(fontWeight: FontWeight.w700)),
@@ -8695,13 +9291,13 @@ class _ExpensePageState extends State<ExpensePage> {
           const SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
             FilledButton.icon(
-              onPressed: () => _answerPerDiem(entry, true),
+              onPressed: () => _confirmPerDiemAmount(entry),
               icon: const Icon(Icons.check_circle_outline),
-              label: const Text('Am primit'),
+              label: const Text('Confirmă suma primită'),
             ),
             if (!alreadyReportedMissing)
               OutlinedButton.icon(
-                onPressed: () => _answerPerDiem(entry, false),
+                onPressed: () => _answerPerDiem(entry, 0),
                 icon: const Icon(Icons.cancel_outlined),
                 label: const Text('Nu am primit'),
               ),
@@ -8711,29 +9307,111 @@ class _ExpensePageState extends State<ExpensePage> {
     );
   }
 
-  Future<void> _answerPerDiem(PerDiemEntry entry, bool received) async {
+  Future<void> _confirmPerDiemAmount(PerDiemEntry entry) async {
+    // O confirmare trebuie să reflecte suma verificată de beneficiar, nu o valoare precompletată.
+    final controller = TextEditingController();
+    final value = await showDialog<double>(context: context, builder: (dialogContext) => AlertDialog(
+      title: const Text('Confirmare sumă primită'),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Distribuitorul a declarat ${entry.amount.toStringAsFixed(2)} lei.'),
+        const SizedBox(height: 12),
+        TextField(controller: controller, autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Suma primită efectiv', hintText: 'Introdu suma numărată', suffixText: 'lei')),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Anulează')),
+        FilledButton(onPressed: () {
+          final bani = parsePerDiemBani(controller.text);
+          if (bani == null) {
+            showErrorMessage(dialogContext, 'Introdu o sumă validă, cu maximum două zecimale.');
+            return;
+          }
+          Navigator.pop(dialogContext, bani / 100);
+        }, child: const Text('Confirmă')),
+      ],
+    ));
+    controller.dispose();
+    if (value == null) return;
+    // Diferențele sunt confirmate explicit pentru a evita greșelile de tastare.
+    if ((value - entry.amount).abs() >= 0.01) {
+      if (!mounted) return;
+      final difference = value - entry.amount;
+      final accepted = await showDialog<bool>(context: context, builder: (d) => AlertDialog(
+        title: Text(difference > 0 ? 'Atenție: plată în avans' : 'Atenție: sumă incompletă'),
+        content: Text(difference > 0
+          ? 'Ai introdus ${value.toStringAsFixed(2)} lei, cu ${difference.toStringAsFixed(2)} lei peste suma declarată. Diferența va apărea ca avans de verificat.'
+          : 'Ai introdus ${value.toStringAsFixed(2)} lei, cu ${difference.abs().toStringAsFixed(2)} lei sub suma declarată. Diferența va apărea ca restanță de verificat.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Corectează')),
+          FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Confirmă diferența')),
+        ],
+      )) ?? false;
+      if (!accepted) return;
+    }
+    await _answerPerDiem(entry, value);
+  }
+
+  Future<void> _answerPerDiem(PerDiemEntry entry, double amountReceived) async {
+    // Previne confirmări duble și rescrierea unei plăți deja confirmate.
+    if (entry.memberId != widget.currentUser.id ||
+        entry.status != PerDiemStatus.awaitingConfirmation ||
+        entry.actualReceivedAmount != null ||
+        _savingPerDiemIds.contains(entry.id)) {
+      if (mounted) showErrorMessage(context, 'Această diurnă nu mai poate fi confirmată din contul curent.');
+      return;
+    }
+    if (!amountReceived.isFinite || amountReceived < 0 || amountReceived > 100000000 || (amountReceived * 100 - (amountReceived * 100).round()).abs() > 0.000001) return;
+    if (amountReceived == 0 && entry.received == false) {
+      if (mounted) showErrorMessage(context, 'Neprimirea a fost deja declarată. Poți confirma ulterior suma încasată.');
+      return;
+    }
+    _savingPerDiemIds.add(entry.id);
     final previousReceived = entry.received;
     final previousStatus = entry.status;
     final previousConfirmedAt = entry.confirmedAt;
-    entry.received = received;
-    entry.status = received ? PerDiemStatus.confirmed : PerDiemStatus.awaitingConfirmation;
-    entry.confirmedAt = received ? DateTime.now() : null;
+    final previousAmount = entry.actualReceivedAmount;
+    // Zero lei este un refuz, nu o confirmare definitivă: solicitarea
+    // rămâne deschisă și poate fi confirmată după plata efectivă.
+    // Nu marcăm zero ca sumă încasată, pentru a nu bloca plata ulterioară.
+    entry.actualReceivedAmount = amountReceived == 0 ? null : amountReceived;
+    entry.received = amountReceived > 0;
+    entry.status = amountReceived == 0
+        ? PerDiemStatus.awaitingConfirmation
+        : PerDiemStatus.confirmed;
+    entry.confirmedAt = amountReceived == 0 ? null : DateTime.now();
+    final difference = entry.amount - amountReceived;
     try {
       await widget.savePerDiem(entry);
-      widget.log(received ? 'Diurnă confirmată ca primită' : 'Diurnă declarată neprimita', '${entry.amount.toStringAsFixed(2)} lei · ${name(entry.memberId)}');
+      widget.log(amountReceived == 0 ? 'Diurnă: primire refuzată' : 'Diurnă: sumă efectiv primită',
+        '${name(entry.memberId)} · declarat ${entry.amount.toStringAsFixed(2)} lei · primit ${amountReceived.toStringAsFixed(2)} lei · diferență ${difference.toStringAsFixed(2)} lei');
+      if (entry.distributedBy != null && (amountReceived == 0 || difference.abs() >= 0.01)) {
+        final title = amountReceived == 0 ? 'Diurnă declarată neprimită' : 'Diferență diurnă';
+        final detail = amountReceived == 0
+            ? '${name(entry.memberId)} a declarat că nu a primit diurna de ${entry.amount.toStringAsFixed(2)} lei. Solicitarea rămâne deschisă.'
+            : '${name(entry.memberId)} a confirmat ${amountReceived.toStringAsFixed(2)} lei față de ${entry.amount.toStringAsFixed(2)} lei declarați. ${difference > 0 ? 'Diferență de plată' : 'Posibil avans'}: ${difference.abs().toStringAsFixed(2)} lei. Verifică situația în Decont.';
+        widget.notifyUser(entry.distributedBy!, title, detail);
+      }
       widget.onChanged();
       if (mounted) {
         setState(() {});
-        showSuccessMessage(context, received ? 'Diurna a fost confirmată.' : 'Am salvat că diurna nu a fost primită încă.');
+        showSuccessMessage(context, difference.abs() < 0.01
+          ? 'Diurna a fost confirmată integral.'
+          : amountReceived == 0
+            ? 'Neprimirea diurnei a fost înregistrată. Distribuitorul a fost notificat.'
+            : 'Suma efectiv primită a fost salvată. Diferența a fost semnalată.');
       }
     } catch (e) {
       entry.received = previousReceived;
       entry.status = previousStatus;
       entry.confirmedAt = previousConfirmedAt;
+      entry.actualReceivedAmount = previousAmount;
       if (mounted) {
         setState(() {});
         showErrorMessage(context, 'Nu s-a putut salva confirmarea diurnei: $e');
       }
+    } finally {
+      _savingPerDiemIds.remove(entry.id);
     }
   }
 
@@ -8764,13 +9442,196 @@ class _ExpensePageState extends State<ExpensePage> {
     catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva: $e'); }
   }
 
+  Future<void> _respondToPerDiemDifference(PerDiemEntry entry, {required bool dispute}) async {
+    if (entry.distributedBy != widget.currentUser.id && !widget.isAdmin) return;
+    if (entry.supplementaryFor != null || entry.status != PerDiemStatus.confirmed ||
+        entry.actualReceivedAmount == null ||
+        (entry.amount - entry.actualReceivedAmount!).abs() < 0.01) return;
+    String reason = '';
+    if (dispute) {
+      final controller = TextEditingController();
+      final response = await showDialog<String>(context: context, builder: (d) => AlertDialog(
+        title: const Text('Contestă diferența de diurnă'),
+        content: TextField(controller: controller, maxLines: 3,
+          decoration: const InputDecoration(labelText: 'Motiv obligatoriu')),
+        actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')),
+          FilledButton(onPressed: () {
+            if (controller.text.trim().isEmpty) {
+              showErrorMessage(d, 'Motivul este obligatoriu.'); return;
+            }
+            Navigator.pop(d, controller.text.trim());
+          }, child: const Text('Contestă'))]));
+      controller.dispose();
+      if (response == null) return;
+      reason = response;
+    }
+    final ref = FirebaseFirestore.instance.collection('perDiemDisputes').doc(entry.id);
+    try {
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final previous = await tx.get(ref);
+        if (previous.exists) throw StateError('Diferența are deja o decizie sau contestație.');
+        tx.set(ref, {
+          'perDiemId': entry.id,
+          'distributorId': entry.distributedBy,
+          'beneficiaryId': entry.memberId,
+          'declaredBani': parsePerDiemBani(entry.amount.toString()),
+          'receivedBani': parsePerDiemBani(entry.actualReceivedAmount!.toString()),
+          'status': dispute ? 'disputed' : 'accepted',
+          'reason': reason,
+          'actorUid': widget.currentUser.id,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      });
+      widget.notifyUser(entry.memberId, dispute ? 'Diferență contestată' : 'Diferență acceptată',
+        dispute ? 'Distribuitorul a contestat diferența de diurnă. Motiv: $reason' :
+          'Distribuitorul a acceptat diferența de diurnă.');
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) showErrorMessage(context, 'Nu s-a putut înregistra decizia: $e');
+    }
+  }
+
+  Future<void> _resolvePerDiemDispute(PerDiemEntry entry, String decision) async {
+    if (!widget.isAdmin) return;
+    final ref = FirebaseFirestore.instance.collection('perDiemDisputes').doc(entry.id);
+    try {
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final snap = await tx.get(ref);
+        if (!snap.exists || snap.data()?['status'] != 'disputed') {
+          throw StateError('Contestația nu mai este deschisă.');
+        }
+        tx.update(ref, {
+          'status': decision,
+          'resolvedBy': widget.currentUser.id,
+          'resolvedAt': FieldValue.serverTimestamp(),
+        });
+      });
+      widget.notifyUser(entry.memberId, 'Contestație diurnă soluționată',
+        'Adminul a soluționat contestația: $decision. Suma confirmată rămâne nemodificată.');
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) showErrorMessage(context, 'Nu s-a putut soluționa contestația: $e');
+    }
+  }
+
+  Widget _perDiemDisputeActions(PerDiemEntry entry) {
+    if (entry.supplementaryFor != null || entry.status != PerDiemStatus.confirmed ||
+        entry.actualReceivedAmount == null ||
+        (entry.amount - entry.actualReceivedAmount!).abs() < 0.01) {
+      return const SizedBox.shrink();
+    }
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('perDiemDisputes').doc(entry.id).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return const Text('Contestația nu poate fi încărcată.');
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final dispute = snapshot.data!.data();
+        if (dispute == null && (entry.distributedBy == widget.currentUser.id || widget.isAdmin)) {
+          return Wrap(spacing: 4, children: [
+            TextButton(onPressed: () => _respondToPerDiemDifference(entry, dispute: false),
+              child: const Text('Accept diferența')),
+            TextButton(onPressed: () => _respondToPerDiemDifference(entry, dispute: true),
+              child: const Text('Contest diferența')),
+          ]);
+        }
+        if (dispute == null) return const SizedBox.shrink();
+        final status = (dispute['status'] ?? '').toString();
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Diferență: $status${(dispute['reason'] ?? '').toString().isEmpty ? '' : ' · ${dispute['reason']}'}'),
+          if (widget.isAdmin && status == 'disputed')
+            Wrap(spacing: 4, children: [
+              TextButton(onPressed: () => _resolvePerDiemDispute(entry, 'resolved_accepted'),
+                child: const Text('Validează diferența')),
+              TextButton(onPressed: () => _resolvePerDiemDispute(entry, 'resolved_rejected'),
+                child: const Text('Respinge contestația')),
+            ]),
+        ]);
+      });
+  }
+
+  Future<void> _supplementaryPayment() async {
+    if (!isManager || managerId == null || selectedClosed) return;
+    final eligible = widget.perDiems.where((e) =>
+      e.distributedBy == managerId && e.memberId != managerId &&
+      e.supplementaryFor == null && e.status == PerDiemStatus.confirmed &&
+      e.actualReceivedAmount != null && e.amount > e.actualReceivedAmount!).toList();
+    if (eligible.isEmpty) {
+      if (mounted) showErrorMessage(context, 'Nu există diferențe confirmate pentru acest distribuitor.');
+      return;
+    }
+    PerDiemEntry original = eligible.first;
+    final amount = TextEditingController();
+    String method = 'Numerar';
+    final payment = await showDialog<PerDiemEntry>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) =>
+      AlertDialog(title: const Text('Plată suplimentară diurnă'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          DropdownButtonFormField<String>(initialValue: original.id,
+            decoration: const InputDecoration(labelText: 'Diferența inițială'),
+            items: eligible.map((e) => DropdownMenuItem(value: e.id,
+              child: Text('${name(e.memberId)} · ${e.id.substring(0, e.id.length > 8 ? 8 : e.id.length)}'))).toList(),
+            onChanged: (v) => setD(() => original = eligible.firstWhere((e) => e.id == v))),
+          TextField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Sumă trimisă', suffixText: 'lei')),
+          DropdownButtonFormField<String>(initialValue: method,
+            items: const [DropdownMenuItem(value: 'Numerar', child: Text('Numerar')),
+              DropdownMenuItem(value: 'Transfer bancar', child: Text('Transfer bancar'))],
+            onChanged: (v) { if (v != null) setD(() => method = v); }),
+        ]), actions: [
+          TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')),
+          FilledButton(onPressed: () {
+            final bani = parsePerDiemBani(amount.text, allowZero: false);
+            if (bani == null) { showErrorMessage(d, 'Introdu o sumă pozitivă validă.'); return; }
+            Navigator.pop(d, PerDiemEntry(id: idNow(), teamId: team.id,
+              settlementId: settlement?.id, memberId: original.memberId,
+              date: DateTime.now(), amount: bani / 100,
+              status: PerDiemStatus.awaitingConfirmation,
+              distributedBy: managerId, distributedAt: DateTime.now(),
+              method: method == 'Numerar' ? PerDiemPaymentMethod.cash : PerDiemPaymentMethod.bankTransfer,
+              supplementaryFor: original.id));
+          }, child: const Text('Trimite')), ])));
+    amount.dispose();
+    if (payment == null) return;
+    try {
+      await widget.savePerDiem(payment);
+      widget.notifyUser(payment.memberId, 'Plată suplimentară de confirmat',
+        'Ai o plată suplimentară de ${payment.amount.toStringAsFixed(2)} lei de confirmat.');
+      widget.onChanged();
+    } catch (e) {
+      if (mounted) showErrorMessage(context, 'Plata suplimentară nu a putut fi salvată: $e');
+    }
+  }
+
   Future<void> _distribute() async {
     if (managerId == null) { if (mounted) showErrorMessage(context, 'Setează mai întâi gestionarul financiar.'); return; }
-    String? beneficiary = visibleTeamMemberIds.where((x) => x != managerId).isEmpty ? (visibleTeamMemberIds.isEmpty ? null : visibleTeamMemberIds.first) : visibleTeamMemberIds.where((x) => x != managerId).first;
+    String? beneficiary = visibleTeamMemberIds.where((x) => x != managerId).isEmpty ? null : visibleTeamMemberIds.where((x) => x != managerId).first;
     String method = 'Numerar';
     final amount = TextEditingController(text: perDiemRate.toStringAsFixed(2));
-    final r = await showDialog<PerDiemEntry>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) => AlertDialog(title: const Text('Distribuire diurnă'), content: Column(mainAxisSize: MainAxisSize.min, children: [DropdownButtonFormField<String>(initialValue: beneficiary, decoration: const InputDecoration(labelText: 'Trimite către'), items: visibleTeamMemberIds.map((id) => DropdownMenuItem(value: id, child: Text(name(id)))).toList(), onChanged: (v) => setD(() => beneficiary = v)), const SizedBox(height: 8), TextField(controller: amount, decoration: const InputDecoration(labelText: 'Sumă'), keyboardType: const TextInputType.numberWithOptions(decimal: true)), const SizedBox(height: 8), DropdownButtonFormField<String>(initialValue: method, decoration: const InputDecoration(labelText: 'Metodă'), items: const [DropdownMenuItem(value: 'Numerar', child: Text('Numerar')), DropdownMenuItem(value: 'Transfer bancar', child: Text('Transfer bancar'))], onChanged: (v) { if (v != null) setD(() => method = v); })]), actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')), FilledButton(onPressed: beneficiary == null ? null : () { final value = double.tryParse(amount.text.replaceAll(',', '.')); if (value == null || value <= 0) return; Navigator.pop(d, PerDiemEntry(id: idNow(), teamId: team.id, settlementId: settlement?.id, memberId: beneficiary!, date: DateTime.now(), amount: value, status: PerDiemStatus.awaitingConfirmation, method: method == 'Numerar' ? PerDiemPaymentMethod.cash : PerDiemPaymentMethod.bankTransfer, distributedBy: managerId, distributedAt: DateTime.now())); }, child: const Text('Distribuie'))])));
+    final r = await showDialog<PerDiemEntry>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) => AlertDialog(title: const Text('Distribuire diurnă'), content: Column(mainAxisSize: MainAxisSize.min, children: [DropdownButtonFormField<String>(initialValue: beneficiary, decoration: const InputDecoration(labelText: 'Trimite către'), items: visibleTeamMemberIds.map((id) => DropdownMenuItem(value: id, child: Text(name(id)))).toList(), onChanged: (v) => setD(() => beneficiary = v)), const SizedBox(height: 8), TextField(controller: amount, decoration: const InputDecoration(labelText: 'Sumă'), keyboardType: const TextInputType.numberWithOptions(decimal: true)), const SizedBox(height: 8), DropdownButtonFormField<String>(initialValue: method, decoration: const InputDecoration(labelText: 'Metodă'), items: const [DropdownMenuItem(value: 'Numerar', child: Text('Numerar')), DropdownMenuItem(value: 'Transfer bancar', child: Text('Transfer bancar'))], onChanged: (v) { if (v != null) setD(() => method = v); })]), actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')), FilledButton(onPressed: beneficiary == null ? null : () { final bani = parsePerDiemBani(amount.text, allowZero: false);
+      if (bani == null) { showErrorMessage(d, 'Suma trebuie să fie pozitivă și să aibă maximum două zecimale.'); return; }
+      if (beneficiary == managerId) { showErrorMessage(d, 'Distribuitorul nu poate fi propriul beneficiar.'); return; }
+      final value = bani / 100;
+      Navigator.pop(d, PerDiemEntry(id: idNow(), teamId: team.id, settlementId: settlement?.id, memberId: beneficiary!, date: DateTime.now(), amount: value, status: PerDiemStatus.awaitingConfirmation, method: method == 'Numerar' ? PerDiemPaymentMethod.cash : PerDiemPaymentMethod.bankTransfer, distributedBy: managerId, distributedAt: DateTime.now())); }, child: const Text('Distribuie'))])));
     amount.dispose(); if (r == null) return;
+    if (r.distributedBy == r.memberId || r.amount <= 0 || !r.amount.isFinite ||
+        (r.amount * 100 - (r.amount * 100).round()).abs() > 0.000001) {
+      if (mounted) showErrorMessage(context, 'Distribuirea nu este validă.');
+      return;
+    }
+    final carryover = _perDiemDifference(r.memberId, managerId!);
+    if (carryover.abs() >= 0.01) {
+      final proceed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+        title: Text(carryover < 0 ? 'Atenție: avans existent' : 'Atenție: diferență restantă'),
+        content: Text('${name(r.memberId)} are ${carryover.abs().toStringAsFixed(2)} lei '
+          '${carryover < 0 ? 'avans înregistrat' : 'diferență de achitat'} '
+          'din confirmări anterioare. Verifică soldul înainte de o nouă distribuire. '
+          'Noua distribuire nu va compensa automat această diferență.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Anulează')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Continuă')),
+        ],
+      )) ?? false;
+      if (!proceed) return;
+    }
     try { await widget.savePerDiem(r); widget.notifyUser(r.memberId, 'Diurnă de confirmat', 'Ai primit ${r.amount.toStringAsFixed(2)} lei diurnă pentru ${settlement?.name ?? 'decontul anterior'}.'); widget.log('Diurnă distribuită', '${name(r.memberId)} · ${settlement?.name ?? 'istoric anterior'}'); }
     catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva diurna: $e'); }
   }
@@ -8892,6 +9753,19 @@ class _ExpensePageState extends State<ExpensePage> {
     if (expense != null) await _saveNewExpense(expense);
   }
 
+  // Monetary input is validated as decimal text before conversion to double.
+  // This prevents NaN, infinity, exponential notation and sub-ban amounts.
+  int? _expenseAmountBani(String raw) {
+    final normalized = raw.trim().replaceAll(',', '.');
+    if (!RegExp(r'^\d{1,9}(?:\.\d{1,2})?\$').hasMatch(normalized)) return null;
+    final parts = normalized.split('.');
+    final lei = int.tryParse(parts.first);
+    if (lei == null) return null;
+    final bani = parts.length == 1 ? 0 : int.parse(parts.last.padRight(2, '0'));
+    final total = lei * 100 + bani;
+    return total > 0 ? total : null;
+  }
+
   Future<Expense?> _expenseDialog({FiscalOcrData? ocr, Uint8List? imageBytes}) async {
     final formKey = GlobalKey<FormState>();
     final number = TextEditingController(text: ocr?.documentNumber ?? '');
@@ -8923,13 +9797,13 @@ class _ExpensePageState extends State<ExpensePage> {
           _InfoCard(icon: Icons.document_scanner, title: 'OCR ${(ocr.confidence * 100).round()}%', text: ocr.rawText.isEmpty ? 'Textul nu a putut fi extras. Completează manual.' : 'Datele au fost completate automat. Verifică-le înainte de salvare. Fotografia este temporară și nu va fi salvată.'),
           const SizedBox(height: 8),
         ],
-        DropdownButtonFormField<ExpenseDocumentType>(initialValue: docType, decoration: const InputDecoration(labelText: 'Tip document'), items: const [DropdownMenuItem(value: ExpenseDocumentType.fiscalReceipt, child: Text('Bon Fiscal')), DropdownMenuItem(value: ExpenseDocumentType.invoice, child: Text('Factură'))], onChanged: (v) { if (v != null) setD(() { docType = v; if (v == ExpenseDocumentType.invoice && cat == 'Alte cheltuieli') cat = 'Facturi'; }); }),
+        DropdownButtonFormField<ExpenseDocumentType>(initialValue: docType, decoration: const InputDecoration(labelText: 'Tip document'), items: const [DropdownMenuItem(value: ExpenseDocumentType.fiscalReceipt, child: Text('Bon Fiscal')), DropdownMenuItem(value: ExpenseDocumentType.invoice, child: Text('Factură'))], onChanged: (v) { if (v != null) setD(() { docType = v; if (v == ExpenseDocumentType.invoice && cat == 'Alte cheltuieli') cat = 'Facturi'; if (v == ExpenseDocumentType.fiscalReceipt && cat == 'Facturi') cat = 'Alte cheltuieli'; }); }),
         const SizedBox(height: 8),
         TextFormField(controller: number, decoration: InputDecoration(labelText: docType == ExpenseDocumentType.fiscalReceipt ? 'Nr. bon' : 'Nr. factură'), validator: (v) => v == null || v.trim().isEmpty ? 'Numărul documentului este obligatoriu.' : null),
         const SizedBox(height: 8),
         TextFormField(controller: supplier, decoration: const InputDecoration(labelText: 'Furnizor / comerciant')),
         const SizedBox(height: 8),
-        TextFormField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Sumă', suffixText: 'lei'), validator: (v) { final n = double.tryParse((v ?? '').replaceAll(',', '.')); return n == null || n <= 0 ? 'Introdu o sumă validă.' : null; }),
+        TextFormField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Sumă', suffixText: 'lei'), validator: (v) => _expenseAmountBani(v ?? '') == null ? 'Introdu o sumă pozitivă, cu maximum 2 zecimale.' : null),
         const SizedBox(height: 8),
         ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event), title: const Text('Data documentului'), subtitle: Text(_shortDate(docDate)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: docDate); if (x != null) setD(() => docDate = x); }, child: const Text('Alege'))),
         DropdownButtonFormField<String>(initialValue: cat, decoration: const InputDecoration(labelText: 'Categorie'), items: const [DropdownMenuItem(value: 'Combustibil', child: Text('Combustibil')), DropdownMenuItem(value: 'Facturi', child: Text('Facturi')), DropdownMenuItem(value: 'Alte cheltuieli', child: Text('Alte cheltuieli'))], onChanged: (v) { if (v != null) setD(() => cat = v); }),
@@ -8945,7 +9819,13 @@ class _ExpensePageState extends State<ExpensePage> {
         TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')),
         FilledButton(onPressed: () {
           if (!(formKey.currentState?.validate() ?? false)) return;
-          final value = double.parse(amount.text.replaceAll(',', '.'));
+          if (docDate.isAfter(DateTime.now().add(const Duration(days: 1)))) {
+            ScaffoldMessenger.of(d).showSnackBar(const SnackBar(content: Text('Data documentului nu poate fi în viitor.')));
+            return;
+          }
+          final bani = _expenseAmountBani(amount.text);
+          if (bani == null) return;
+          final value = bani / 100.0;
           Navigator.pop(d, Expense(
             id: idNow(), teamId: team.id, settlementId: settlement?.id, category: cat,
             description: desc.text.trim().isEmpty ? cat : desc.text.trim(), amount: value, date: docDate,
@@ -9480,7 +10360,8 @@ class _SettingsPageState extends State<SettingsPage>{
       Card(child:ExpansionTile(leading:Badge(isLabelVisible:unread.isNotEmpty,label:Text('${unread.length}'),child:const Icon(Icons.notifications_outlined)),title:const Text('Istoric notificări'),subtitle:Text('${unread.length} necitite · ${mine.length} total'),children:mine.isEmpty?[const ListTile(title:Text('Nu ai notificări.'))]:mine.take(30).map((n)=>ListTile(title:Text(n.title,style:TextStyle(fontWeight:n.read?FontWeight.w500:FontWeight.w900)),subtitle:Text('${n.message}\n${formatDate(n.createdAt)} · ${timeText(n.createdAt)}'),isThreeLine:true,onTap:n.read?null:()async{n.read=true;await FirebaseFirestore.instance.collection('notifications').doc(n.id).set({'read':true,'updatedAt':FieldValue.serverTimestamp()},SetOptions(merge:true));widget.onChanged();})).toList())),
       const SizedBox(height:10),
       if(widget.onAdmin!=null)...[
-        Card(child:SwitchListTile(value:d['hiddenFromMembers']==true,onChanged:(v)=>_updateOwn({'hiddenFromMembers':v},success:v?'Contul Admin este ascuns membrilor.':'Contul Admin este vizibil membrilor.'),secondary:const Icon(Icons.visibility_off_outlined),title:const Text('Ascunde contul Admin de ceilalți membri'),subtitle:const Text('Afectează numai contul Admin; contul de lucrător rămâne separat și vizibil.'))),
+        // Contul Admin nu poate fi făcut vizibil din profil.
+        // Protecția la nivel de citire Firestore necesită migrarea interogărilor users.
         const SmsManagerGatewayCard(),const SizedBox(height:10),
       ],
       Card(child:ListTile(leading:const Icon(Icons.notifications_active_outlined),title:const Text('Diagnostic Push'),subtitle:const Text('Verifică permisiunea și înregistrarea dispozitivului.'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>PushDiagnosticsPage(userId:widget.user.id))))),
@@ -10512,7 +11393,7 @@ class MemberProfilePage extends StatelessWidget {
 
   @override Widget build(BuildContext context){
     return Scaffold(appBar:AppBar(title:const Text('Profil membru')),body:StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(
-      stream:FirebaseFirestore.instance.collection('users').doc(memberId).snapshots(),
+      stream:FirebaseFirestore.instance.collection(currentUser.role == UserRole.director || memberId == currentUser.id ? 'users' : 'memberDirectory').doc(memberId).snapshots(),
       builder:(context,snap){
         if(snap.hasError)return Center(child:Text('Nu am putut încărca profilul: ${snap.error}'));
         if(!snap.hasData)return const Center(child:CircularProgressIndicator());
@@ -10608,7 +11489,7 @@ class _MembersDirectoryPageState extends State<MembersDirectoryPage> {
 
   @override Widget build(BuildContext context){
     return Scaffold(appBar:AppBar(title:Text(widget.chatMode?'Chat live':'Membrii')),body:SafeArea(child:StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
-      stream:FirebaseFirestore.instance.collection('users').where('active',isEqualTo:true).snapshots(),
+      stream:(widget.currentUser.role == UserRole.director ? FirebaseFirestore.instance.collection('users') : FirebaseFirestore.instance.collection('memberDirectory')).where('active',isEqualTo:true).snapshots(),
       builder:(context,snap){
         if(snap.hasError)return Center(child:Text('Nu am putut încărca membrii: ${snap.error}'));
         if(!snap.hasData)return const Center(child:CircularProgressIndicator());
@@ -10940,7 +11821,25 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
               border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: .55)),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .07), blurRadius: 18, offset: const Offset(0, 6))],
             ),
-            child: _content(),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              if (mobile) ...[
+                DropdownButtonFormField<int>(
+                  key: ValueKey('admin-section-$section'),
+                  initialValue: section,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Secțiune Admin',
+                    prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [for (var i = 0; i < names.length; i++)
+                    DropdownMenuItem<int>(value: i, child: Text(names[i], overflow: TextOverflow.ellipsis))],
+                  onChanged: (value) { if (value != null) setState(() => section = value); },
+                ),
+                const SizedBox(height: 12),
+              ],
+              _content(),
+            ]),
           ),
         )),
       );
@@ -10979,7 +11878,48 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
     case 6:return _programs(); case 7:return _records(); case 8:return _finance(); case 9:return _learning(false); case 10:return _learning(true); case 11:return _notifications();
     case 12:return _reports(); case 13:return _audit(); case 14:return _functionRights(); case 15:return _settings(); default:return _backup();
   }}
-  Widget _dashboard()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Dashboard Admin',style:Theme.of(context).textTheme.headlineSmall),const SizedBox(height:12),Wrap(spacing:12,runSpacing:12,children:[_StatCard(title:'Membri',value:'${users.length}',asset:'assets/ui/members.png'),_StatCard(title:'Echipe',value:'${teams.length}',asset:'assets/ui/teams.png'),_StatCard(title:'Locații',value:'${locations.length}',asset:'assets/ui/tab_harta.png'),_StatCard(title:'Grafice de lucru',value:'${schedules.length}',asset:'assets/ui/tab_grafic.png'),_StatCard(title:'Execuții',value:'${records.length}',asset:'assets/ui/tab_centralizator.png'),_StatCard(title:'Audit',value:'${audit.length}',icon:Icons.history)])]);
+  Widget _dashboard()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+    Text('Dashboard Admin',style:Theme.of(context).textTheme.headlineSmall),
+    const SizedBox(height:12),
+    Wrap(spacing:12,runSpacing:12,children:[_StatCard(title:'Membri',value:'${users.length}',asset:'assets/ui/members.png'),_StatCard(title:'Echipe',value:'${teams.length}',asset:'assets/ui/teams.png'),_StatCard(title:'Locații',value:'${locations.length}',asset:'assets/ui/tab_harta.png'),_StatCard(title:'Grafice de lucru',value:'${schedules.length}',asset:'assets/ui/tab_grafic.png'),_StatCard(title:'Execuții',value:'${records.length}',asset:'assets/ui/tab_centralizator.png'),_StatCard(title:'Audit',value:'${audit.length}',icon:Icons.history)]),
+    const SizedBox(height:16),
+    Text('Acces rapid', style: Theme.of(context).textTheme.titleMedium),
+    const SizedBox(height:8),
+    Wrap(spacing:8,runSpacing:8,children:[
+      for (final i in [1,2,4,6,8,11,13,14,15])
+        ActionChip(
+          avatar: Icon(_icon(i), size:18),
+          label: Text(names[i]),
+          onPressed: () => setState(() => section = i),
+        ),
+    ]),
+    const SizedBox(height:20),
+    _mapboxUsagePanel(),
+  ]);
+
+  Widget _mapboxUsagePanel() {
+    const budget = 50000;
+    final counts = _mapboxServices.requestsByService;
+    final total = _mapboxServices.totalRequests;
+    final ratio = total / budget;
+    final warning = ratio >= .95 ? 'Avertizare: 95% din buget' : ratio >= .85 ? 'Avertizare: 85% din buget' : ratio >= .70 ? 'Avertizare: 70% din buget' : null;
+    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Mapbox – monitor orientativ', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height:8),
+        Text('Buget orientativ: $budget solicitări/lună (nu blochează serviciile).'),
+        Text('Solicitări observate pe acest dispozitiv, în sesiunea curentă: $total'),
+        const SizedBox(height:8),
+        LinearProgressIndicator(value: ratio.clamp(0.0, 1.0)),
+        const SizedBox(height:8),
+        for (final entry in counts.entries) Text('${entry.key}: ${entry.value}'),
+        if (warning != null) Padding(padding: const EdgeInsets.only(top:8), child: Text(warning, style: const TextStyle(fontWeight:FontWeight.bold))),
+        const SizedBox(height:8),
+        const Text('Contor local, resetat la repornire; NU reprezintă consumul lunar al contului sau facturarea. Pentru totalul real al ambelor echipe verificați statisticile Mapbox.', style: TextStyle(fontSize:12)),
+      ],
+    )));
+  }
   String _safeName(String id){try{return users.firstWhere((u)=>u.id==id).name;}catch(_){return id;}}
   String _safeTeam(String id){try{return teams.firstWhere((t)=>t.id==id).name;}catch(_){return id;}}
   FunctionDefinition? _functionByIdLocal(String id) { for (final f in functionDefinitions) { if (f.id == id) return f; } return null; }

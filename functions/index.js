@@ -781,3 +781,25 @@ exports.ackManagerSmsJob = onRequest({ region: REGION, cors: false }, async (req
     return res.status(500).json({ error: 'internal' });
   }
 });
+
+
+// ADMIN PRIVACY: only the backend can project member data to the readable directory.
+// Deleting/marking hidden removes the document so hidden Admin profiles cannot be enumerated.
+const { projectMember } = require('./member_directory_projection');
+exports.syncMemberDirectory = onDocumentWritten(
+  { document: 'users/{userId}', region: REGION },
+  async (event) => {
+    const userId = event.params.userId;
+    // Firestore events may be delivered more than once or out of order.
+    // Read the CURRENT private profile inside the transaction so a delayed
+    // event cannot republish a member who was subsequently hidden or deleted.
+    const userRef = db.collection('users').doc(userId);
+    const directoryRef = db.collection('memberDirectory').doc(userId);
+    return db.runTransaction(async (transaction) => {
+      const current = await transaction.get(userRef);
+      const projection = projectMember(current.exists ? current.data() : null);
+      if (projection === null) transaction.delete(directoryRef);
+      else transaction.set(directoryRef, projection);
+    });
+  }
+);

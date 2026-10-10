@@ -89,7 +89,8 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if signedIn() && (request.auth.uid == userId || isActive());
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
 
       allow create: if signedIn()
         && request.auth.uid == userId
@@ -104,6 +105,13 @@ service cloud.firestore {
           'hireDate', 'contractFunction', 'theme', 'backgroundId', 'fontFamily', 'locationMode', 'locationIntervalMinutes', 'notificationPreferences', 'lastGroupChatSeenAt', 'updatedAt'
         ]));
       allow delete: if isAdmin();
+    }
+
+    // Director minimal publicat exclusiv de backend; niciun client nu poate scrie aici.
+    // Profilurile private users/{uid} sunt accesibile doar proprietarului si Adminului.
+    match /memberDirectory/{userId} {
+      allow get, list: if isActive();
+      allow create, update, delete: if false;
     }
 
     match /locations/{locationId} {
@@ -173,8 +181,16 @@ service cloud.firestore {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
-      allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
+      allow create: if (isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId)
+          && request.resource.data.distributedBy == request.auth.uid))
+        && (!('supplementaryFor' in request.resource.data)
+          || request.resource.data.supplementaryFor == null
+          || (request.resource.data.supplementaryFor is string
+            && exists(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor))
+            && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.memberId == request.resource.data.memberId
+            && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.distributedBy == request.resource.data.distributedBy
+            && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.status == 'confirmed'));
       allow update: if isAdmin()
         || (hasPermission('viewOwnDecont')
           && isTeamMember(resource.data.teamId)
@@ -182,24 +198,105 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Registrul financiar v2: acces numai participanților; fără ștergere.
+    // Aceste reguli nu înlocuiesc autorizarea pe server pentru compensări
+    // sau soluționarea contestațiilor. Nu activați fluxul v2 în producție
+    // înainte de testele emulatorului.
+    match /per_diem_settlements_v2/{settlementId} {
+      allow read: if isAdmin() || (isActive() &&
+        (resource.data.distributorId == request.auth.uid ||
+         resource.data.beneficiaryId == request.auth.uid));
+      // FAIL CLOSED: registrul v2 nu este încă conectat și validat.
+      // Păstrăm citirea pentru diagnostic, dar nu permitem mutații client-side
+      // până când tranzacțiile + auditul sunt verificate în Firebase Emulator.
+      allow create, update, delete: if false;
+      match /audit/{auditId} {
+        allow read: if isAdmin() || (isActive() &&
+          (get(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)).data.distributorId == request.auth.uid ||
+           get(/databases/$(database)/documents/per_diem_settlements_v2/$(settlementId)).data.beneficiaryId == request.auth.uid));
+        allow create, update, delete: if false;
+      }
+    }
+
+    match /perDiemDisputes/{perDiemId} {
+      function original() {
+        return get(/databases/$(database)/documents/perDiems/$(perDiemId)).data;
+      }
+      allow read: if isAdmin() || (isActive() && (
+        resource.data.beneficiaryId == request.auth.uid ||
+        resource.data.distributorId == request.auth.uid));
+      allow create: if isActive()
+        && exists(/databases/$(database)/documents/perDiems/$(perDiemId))
+        && original().distributedBy == request.auth.uid
+        && original().memberId != request.auth.uid
+        && original().status == 'confirmed'
+        && original().actualReceivedAmount is number
+        && request.resource.data.keys().hasOnly([
+          'perDiemId','distributorId','beneficiaryId','declaredBani',
+          'receivedBani','status','reason','actorUid','createdAt'])
+        && request.resource.data.perDiemId == perDiemId
+        && request.resource.data.distributorId == request.auth.uid
+        && request.resource.data.beneficiaryId == original().memberId
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.declaredBani == int(original().amount * 100)
+        && request.resource.data.receivedBani == int(original().actualReceivedAmount * 100)
+        && request.resource.data.status in ['accepted','disputed']
+        && request.resource.data.reason is string
+        && (request.resource.data.status == 'accepted' || request.resource.data.reason.size() > 0);
+      allow update: if isAdmin()
+        && resource.data.status == 'disputed'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status','resolvedBy','resolvedAt'])
+        && request.resource.data.status in ['resolved_accepted','resolved_rejected']
+        && request.resource.data.resolvedBy == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /perDiems/{perDiemId}/receiptAudit/{auditId} {
+      allow read: if isAdmin() || (isActive() &&
+        (get(/databases/$(database)/documents/perDiems/$(perDiemId)).data.memberId == request.auth.uid ||
+         get(/databases/$(database)/documents/perDiems/$(perDiemId)).data.distributedBy == request.auth.uid));
+      allow create: if isActive() &&
+        get(/databases/$(database)/documents/perDiems/$(perDiemId)).data.memberId == request.auth.uid &&
+        request.resource.data.actorUid == request.auth.uid &&
+        request.resource.data.beneficiaryId == request.auth.uid &&
+        request.resource.data.keys().hasOnly(['actorUid','action','distributorId','beneficiaryId','declaredAmountBani','actualReceivedBani','differenceBani','createdAt']) &&
+        request.resource.data.action in ['reported_missing','confirmed_received']
+        && request.resource.data.declaredAmountBani == int(get(/databases/$(database)/documents/perDiems/$(perDiemId)).data.amount * 100)
+        && getAfter(/databases/$(database)/documents/perDiems/$(perDiemId)).data.receiptUpdatedAt == request.resource.data.createdAt
+        && getAfter(/databases/$(database)/documents/perDiems/$(perDiemId)).data.memberId == request.auth.uid
+        && getAfter(/databases/$(database)/documents/perDiems/$(perDiemId)).data.distributedBy == request.resource.data.distributorId;
+      allow update, delete: if false;
+    }
+
     match /perDiems/{perDiemId} {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId)
-        || (isActive() && resource.data.memberId == request.auth.uid);
+        || (isActive() && (resource.data.memberId == request.auth.uid
+          || resource.data.distributedBy == request.auth.uid));
       allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
+        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId)
+          && request.resource.data.distributedBy == request.auth.uid);
       allow update: if isAdmin()
-        || (hasPermission('viewOwnDecont')
-          && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId))
-        || (isActive()
-          && resource.data.memberId == request.auth.uid
-          && request.resource.data.memberId == request.auth.uid
-          && request.resource.data.teamId == resource.data.teamId
+        || (isActive() && resource.data.memberId == request.auth.uid
+          && resource.data.distributedBy is string
+          && resource.data.distributedBy != request.auth.uid
+          && resource.data.status == 'awaitingConfirmation'
+          && resource.data.actualReceivedAmount == null
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'status', 'received', 'confirmedAt', 'updatedAt'
-          ]));
+            'status','received','actualReceivedAmount','confirmedAt','receiptUpdatedAt'
+          ])
+          && (
+            (request.resource.data.status == 'awaitingConfirmation'
+              && request.resource.data.received == false
+              && request.resource.data.actualReceivedAmount == null)
+            ||
+            (request.resource.data.status == 'confirmed'
+              && request.resource.data.received == true
+              && request.resource.data.actualReceivedAmount is number
+              && request.resource.data.actualReceivedAmount > 0)
+          ));
       allow delete: if isAdmin();
     }
 
