@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/finance/per_diem_operations.dart';
-import '../lib/finance/per_diem_settlement.dart';
+import 'package:andi_carpeta/finance/per_diem_operations.dart';
+import 'package:andi_carpeta/finance/per_diem_settlement.dart';
 
 void main() {
   final at = DateTime.utc(2026, 10, 10);

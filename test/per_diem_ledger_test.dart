@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/finance/per_diem_ledger.dart';
+import 'package:andi_carpeta/finance/per_diem_ledger.dart';
 
 void main() {
   mainAllBalancesTests();

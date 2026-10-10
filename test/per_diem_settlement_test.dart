@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/finance/per_diem_settlement.dart';
+import 'package:andi_carpeta/finance/per_diem_settlement.dart';
 
 void main() {
   const original = Settlement(id: 's1', distributorId: 'd', beneficiaryId: 'b', declaredBani: 10000);
