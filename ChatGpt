@@ -194,3 +194,21 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - **La redactarea actualizării, run-ul CI `38141900421` era încă queued.** Verifică obligatoriu concluzia înainte de a considera extragerea validată.
 - Scanare preliminară: `_safeFilePart`, `_pdfDate`, `_Empty`, `_InstallAppButtons`, `_AppBackdrop`, `_VerifiedLocationFix`, `_andiStickerAssets` au referințe multiple în `main.dart` și **nu sunt candidați siguri la ștergere**. Simplul număr de apariții nu este o analiză completă a dependențelor.
 - **Următorii pași**: verifică CI verde; inventariază blocurile mari de PDF și modelele, extrage în loturi sigure, adaugă teste; identifică cod mort prin căutare în toate fișierele și platformele înainte de eliminare; păstrează comportamentul actual, diurna în avans și asseturile.
+
+## 12. Actualizare după continuarea modularizării — 11.10.2026
+
+**Modificări efective, în ordinea realizării:**
+1. `ffd1c8e`: creat **`lib/reports/pdf_reports.dart`** ca `part of '../main.dart';`, cu **5 funcții de export PDF**: `downloadWorkGraphPdf`, `downloadCentralizerPdf`, `downloadDecontPdf`, `downloadAuditPdf`, `downloadFinancialSummaryPdf`. Bloc extras din `main.dart`: **26.978 caractere**.
+2. `9a25b08`: eliminat blocul din `main.dart`, conectat `part 'reports/pdf_reports.dart';`.
+3. `3e06f35`: test de integritate în `test/repository_hygiene_test.py` pentru cele cinci generatoare.
+4. `5e0e4fd`: creat **`lib/models/app_data_models.dart`** ca `part of '../main.dart';`, extras blocul de **13.744 caractere** cu **17 clase**: `AppUser`, `Team`, `Car`, `LocationContact`, `Location`, `ScheduleItem`, `WorkSchedule`, `CentralizerRecord`, `Expense`, `PerDiemEntry`, `ReceivedMoneyEntry`, `TravelSettlement`, `TeamFinance`, `AppNotification`, `AuditEntry`, `LearningSetting`, `AppSettings`.
+5. `2cfbb47`: eliminate cele 17 clase din `main.dart` și adăugat `part 'models/app_data_models.dart';`.
+6. `b928cfa`: teste pentru prezența unică și conectarea tuturor celor 17 clase.
+
+**Stare CI:** la momentul actualizării, run-ul **38142062939** pentru commitul `b928cfa` era **queued**; commiturile intermediare au avut run-uri anulate de mecanismul `cancel-in-progress`. **Nu declara acest lot verde înainte de verificarea ultimului run**. Anterior, run-ul `38141770938` al notei inițiale a trecut. 
+
+**Starea modularizării:** module extrase acum: `lib/ui/dashboard_map_components.dart`, `lib/ui/auth_status_components.dart`, `lib/map/verified_location_fix.dart`, `lib/map/graph_route_calculations.dart`, `lib/reports/pdf_reports.dart`, `lib/models/app_data_models.dart`. **6 module noi** în total, cu clase și funcții extrase, dar `main.dart` încă mare. Acestea sunt `part` ale aceleiași biblioteci Dart, pentru compatibilitate temporară.
+
+**Curățare:** nu s-au șters asseturi sau cod presupus inutil; doar mutări fără schimbări intenționate de comportament. Avertismentele de duplicate hash rămân explicate în raport. `_safeFilePart`, `_pdfDate`, `_Empty`, `_InstallAppButtons`, `_AppBackdrop`, `_VerifiedLocationFix` și `_andiStickerAssets` au utilizări și nu trebuie eliminate fără analiză completă.
+
+**Următorul pas obligatoriu:** verifică run-ul **38142062939**. Dacă apare eroare de compilare/test, repar-o înainte de alte extrageri. După verde, separă alte blocuri bine delimitate (auth, dashboard, componente chat), cu teste. Analizează cod mort prin referințe la nivel de repo, inclusiv builduri/platforme, înainte de orice ștergere. Nu publica în producție fără cerere.
