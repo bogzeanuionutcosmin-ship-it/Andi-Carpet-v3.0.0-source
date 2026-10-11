@@ -51,3 +51,10 @@ Toate cele 12 sunt **candidate false-positive**, nu fișiere de șters fără te
 - **Risc de produs:** un test verde pentru `per_diem_settlements_v2` nu dovedește că ecranul real al diurnei, bazat pe `perDiems`, folosește același flux de confirmare. Testele trebuie etichetate după modelul de date.
 - Verificarea completă a commitului `4eef412` a trecut: **5/5 joburi**, inclusiv emulatorul Firestore și compilarea Flutter web.
 - **Decizie:** fără migrare sau ștergere automată; înainte de unificare sunt necesare inventarierea datelor reale, compatibilitatea regulilor și verificarea fluxurilor de utilizator.
+
+## Regulă de business confirmată de beneficiar — avans diurnă
+Utilizatorul a confirmat explicit că **acordarea diurnei în avans este permisă**. În consecință:
+- Nu se introduce o regulă care interzice automat `actualReceivedAmount > amount` în fluxul activ `perDiems`.
+- Se păstrează separat suma cuvenită, suma efectiv confirmată și avansul rezultat; regularizarea ulterioară nu trebuie să șteargă sau să rescrie confirmările anterioare.
+- Testul emulatorului pentru confirmarea unei sume peste cea declarată este o **regresie de business acceptată**, nu o vulnerabilitate de corectat prin plafonare.
+- Modelul `per_diem_settlements_v2` are în continuare plafon `receivedBani <= declaredBani`. Dacă acest model va fi conectat în viitor la UI, trebuie clarificată semantica lui (plată punctuală versus soldul total cu avans) înainte de migrare; nu se modifică automat.
