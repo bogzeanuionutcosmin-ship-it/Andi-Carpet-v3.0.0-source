@@ -10236,9 +10236,10 @@ class MessagesContactsPage extends StatefulWidget {
 }
 
 class _MessagesContactsPageState extends State<MessagesContactsPage>{
+  static String _lastSelectedCategory = '';
   final search=TextEditingController();
   String query='';
-  String selectedCategory = '';
+  String selectedCategory = _lastSelectedCategory;
   @override void dispose(){search.dispose();super.dispose();}
 
   Future<void> _call(String phone) async {
@@ -10261,9 +10262,9 @@ class _MessagesContactsPageState extends State<MessagesContactsPage>{
       TextField(controller:search,onChanged:(v)=>setState(()=>query=v),decoration:InputDecoration(prefixIcon:const Icon(Icons.search),labelText:'Caută locație, manager sau număr',suffixIcon:query.isEmpty?null:IconButton(tooltip:'Șterge căutarea',onPressed:(){search.clear();setState(()=>query='');},icon:const Icon(Icons.close)))),
       const SizedBox(height:10),
       SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[
-        Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Toate'),selected:selectedCategory.isEmpty,onSelected:(_)=>setState(()=>selectedCategory=''))),
-        Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Membri'),selected:selectedCategory=='__members',onSelected:(_)=>setState(()=>selectedCategory='__members'))),
-        ...widget.categories.where((c)=>c.active).map((c)=>Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:Text(c.name),selected:selectedCategory==c.id,onSelected:(_)=>setState(()=>selectedCategory=c.id)))),
+        Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Toate'),selected:selectedCategory.isEmpty,onSelected:(_)=>setState((){selectedCategory='';_lastSelectedCategory='';}))),
+        Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Membri'),selected:selectedCategory=='__members',onSelected:(_)=>setState((){selectedCategory='__members';_lastSelectedCategory='__members';}))),
+        ...widget.categories.where((c)=>c.active).map((c)=>Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:Text(c.name),selected:selectedCategory==c.id,onSelected:(_)=>setState((){selectedCategory=c.id;_lastSelectedCategory=c.id;})))),
       ])),
       const SizedBox(height:10),
       const _InfoCard(icon:Icons.info_outline,title:'Acces rapid',text:'Apasă butonul verde pentru a deschide apelarea. Agenda este doar pentru consultare; contactele se modifică din detaliile locației.'),
@@ -11465,12 +11466,13 @@ class GroupChatPage extends StatefulWidget {
 }
 
 class _GroupChatPageState extends State<GroupChatPage> {
+  static int _lastChatTab = 0;
   static const int _historyLimit = 50;
   static const int _retentionDays = 7;
   final TextEditingController _text = TextEditingController();
   final ScrollController _scroll = ScrollController();
   bool _sending = false;
-  int _selectedChatTab = 0;
+  int _selectedChatTab = _lastChatTab;
   Future<void> _editChatAppearance() async {
     if(widget.currentUser.role!=UserRole.director)return;
     final doc=FirebaseFirestore.instance.collection('meta').doc('uiSettings');
@@ -11604,8 +11606,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
       appBar: AppBar(
         title: const Text('Chat'),
         bottom:widget.agenda==null?null:PreferredSize(preferredSize:const Size.fromHeight(48),child:Row(children:[
-          Expanded(child:TextButton(onPressed:()=>setState(()=>_selectedChatTab=0),child:Text('Mesagerie',style:TextStyle(fontWeight:_selectedChatTab==0?FontWeight.bold:FontWeight.normal)))),
-          Expanded(child:TextButton(onPressed:()=>setState(()=>_selectedChatTab=1),child:Text('Agendă',style:TextStyle(fontWeight:_selectedChatTab==1?FontWeight.bold:FontWeight.normal)))),
+          Expanded(child:TextButton(onPressed:()=>setState((){_selectedChatTab=0;_lastChatTab=0;}),child:Text('Mesagerie',style:TextStyle(fontWeight:_selectedChatTab==0?FontWeight.bold:FontWeight.normal)))),
+          Expanded(child:TextButton(onPressed:()=>setState((){_selectedChatTab=1;_lastChatTab=1;}),child:Text('Agendă',style:TextStyle(fontWeight:_selectedChatTab==1?FontWeight.bold:FontWeight.normal)))),
         ])),
         actions: [
           if(widget.currentUser.role==UserRole.director)IconButton(tooltip:'Setări Chat live',onPressed:_editChatAppearance,icon:const Icon(Icons.settings_outlined)),
