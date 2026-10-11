@@ -20,6 +20,13 @@ void main() {
     expect(source, contains('Contact indisponibil'));
   });
 
+  test('Member agenda uses permission-aware directory and hides restricted members', () {
+    expect(source, contains("selectedCategory=='__members'"));
+    expect(source, contains("?'users':'memberDirectory'"));
+    expect(source, contains("d['hiddenFromMembers']==true"));
+    expect(source, contains("phone.isEmpty?'Contact indisponibil':phone"));
+  });
+
   test('Dashboard reveal keeps reduced-motion accessibility', () {
     expect(source, contains('MediaQuery.disableAnimationsOf(context)'));
     expect(source, contains('AnimatedOpacity('));
