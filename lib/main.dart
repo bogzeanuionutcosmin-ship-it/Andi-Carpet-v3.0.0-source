@@ -2698,6 +2698,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int tab = 0;
+  Timer? _dashboardRevealTimer;
+  bool _dashboardRevealed = false;
   late final String currentUserId;
   AppSettings get settings => widget.settings;
   late final List<AppUser> users;
@@ -2755,6 +2757,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _dashboardRevealTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _dashboardRevealed = true);
+    });
     currentUserId = widget.profile.uid;
     final current = AppUser(
       id: widget.profile.uid,
@@ -5336,6 +5341,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _dashboardRevealTimer?.cancel();
     for (final sub in _coreSubscriptions) { sub.cancel(); }
     for (final sub in _financialSubscriptions) { sub.cancel(); }
     _liveLocationTimer?.cancel();
@@ -5625,7 +5631,18 @@ class _HomePageState extends State<HomePage> {
               ],
             ]),
           ),
-          Expanded(child: pages[tab]),
+          Expanded(child: tab == 0 && hasPermission(FunctionPermission.viewDashboard)
+              ? AnimatedOpacity(
+                  opacity: _dashboardRevealed ? 1 : 0,
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero : const Duration(milliseconds: 700),
+                  curve: Curves.easeInOut,
+                  child: IgnorePointer(
+                    ignoring: !_dashboardRevealed,
+                    child: pages[tab],
+                  ),
+                )
+              : pages[tab]),
         ])),
       ),
       bottomNavigationBar: NavigationBar(
