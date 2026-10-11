@@ -5130,7 +5130,7 @@ class _HomePageState extends State<HomePage> {
         }
         if (previous['distributedBy'] is! String ||
             (previous['distributedBy'] as String).isEmpty) {
-          throw StateError('Distribuitorul acestei diurne este invalid.');
+          throw StateError('Diurnă istorică: identificatorul distribuitorului lipsește sau nu este valid. Este necesară reconcilierea de către administrator înainte de confirmare; suma și documentul original rămân neschimbate.');
         }
         final declared = previous['amount'];
         if (declared is! num || !declared.toDouble().isFinite ||
