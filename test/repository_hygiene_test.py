@@ -119,6 +119,24 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("Future<void> main() async", main)
         self.assertNotIn("Future<void> main() async", module)
 
+    def test_operational_date_helpers_extracted_without_duplicates(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'utils/operational_dates.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("String two(int n)", "String formatDate(DateTime d)",
+                       "String formatMonth(DateTime d)", "String timeText(DateTime? d)",
+                       "String durationText(Duration? d)", "bool sameDay(DateTime a, DateTime b)",
+                       "DateTime operationalWorkDate(DateTime now)",
+                       "DateTime workWindowStart(DateTime workDate)",
+                       "DateTime workWindowEnd(DateTime workDate)",
+                       "bool isInsideWorkWindow(", "bool recordBelongsToWorkDate(",
+                       "DateTime recordEventTime("):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("Duration(hours: 23, minutes: 30)", module)
+        self.assertIn("DateTime(workDate.year, workDate.month, workDate.day, 9, 30)", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
