@@ -199,7 +199,23 @@ service cloud.firestore {
         || (isActive()
           && resource.data.teamId == request.resource.data.teamId
           && exists(/databases/$(database)/documents/finance/$(resource.data.teamId))
-          && get(/databases/$(database)/documents/finance/$(resource.data.teamId)).data.managerId == request.auth.uid);
+          && get(/databases/$(database)/documents/finance/$(resource.data.teamId)).data.managerId == request.auth.uid
+          && (
+            // Un document deja aprobat nu poate fi readus in asteptare.
+            resource.data.confirmed != true
+            || request.resource.data.confirmed == true
+          )
+          && (
+            !('reviewStatus' in request.resource.data)
+            || request.resource.data.reviewStatus in ['approved', 'rejected', 'pending']
+          )
+          && (
+            request.resource.data.get('reviewStatus', '') != 'rejected'
+            || (request.resource.data.confirmed == false
+              && request.resource.data.rejectionReason is string
+              && request.resource.data.rejectionReason.size() >= 5
+              && request.resource.data.reviewedBy == request.auth.uid)
+          ));
       allow delete: if isAdmin()
         || (isActive()
           && exists(/databases/$(database)/documents/finance/$(resource.data.teamId))
