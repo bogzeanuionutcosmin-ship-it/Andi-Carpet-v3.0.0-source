@@ -12,7 +12,7 @@ InvoiceFields parseInvoiceFields(String raw) {
   final lines = raw.split(RegExp(r'[\r\n]+')).map((s) => s.trim()).toList();
   String number = '';
   final explicit = RegExp(
-    r'\b(?:FACTUR[ĂA]|INVOICE)\s*(?:FISCAL[ĂA]?\s*)?(?:SERIA\s+([A-Z0-9\-/]+)\s*)?(?:NR\.?|NUM[ĂA]R|NO\.?)\s*[:#-]?\s*([A-Z0-9\-/]+)',
+    r'\b(?:FACTUR[ĂA]|INVOICE)\s*(?:FISCAL[ĂA]?\s*)?(?:SERIA\s+([A-Z0-9/-]+)\s*)?(?:NR\.?|NUM[ĂA]R|NO\.?)\s*[:#-]?\s*([A-Z0-9/-]+)',
     caseSensitive: false,
   );
   for (final line in lines) {
