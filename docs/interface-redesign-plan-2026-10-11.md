@@ -69,3 +69,11 @@
 - Fără editare în Agendă; modificarea contactelor locațiilor se face numai în editorul detaliilor locației, cu autorizare de administrator.
 - Panoul reține subtabul și filtrul selectat la revenire. Teste pentru filtre, membri, contacte lipsă și autorizare.
 - Această secțiune înlocuiește propunerea anterioară de buton Agendă separat.
+
+## Căutare rapidă în Agendă — aprobată
+- În subtabul **Chat → Agendă**, afișează o bară de căutare ușor accesibilă.
+- Caută după numele locației, numele managerului, numele membrului și, dacă există, denumirea celorlalte contacte.
+- Căutarea se combină cu filtrul de categorie selectat (Toate/Million/Magic/HoReCa/Sediu/Membri), fără a reseta filtrul sau subtabul la revenire.
+- Rezultatele se filtrează pe măsură ce utilizatorul tastează; afișează stare clară pentru zero rezultate și opțiune de golire a căutării.
+- Căutarea este exclusiv de consultare, fără drepturi de editare și fără afișarea datelor neautorizate.
+- Teste pentru căutare fără diacritice, nume parțiale, filtre combinate și rezultate inexistente.
