@@ -100,6 +100,21 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertNotIn("Future<void> " + name + "(", main)
             self.assertEqual(reports.count("Future<void> " + name + "("), 1)
 
+    def test_core_models_extracted_once(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        models = (ROOT / "lib/models/app_data_models.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'models/app_data_models.dart';", main)
+        self.assertIn("part of '../main.dart';", models)
+        names = ("AppUser", "Team", "Car", "LocationContact", "Location",
+                 "ScheduleItem", "WorkSchedule", "CentralizerRecord", "Expense",
+                 "PerDiemEntry", "ReceivedMoneyEntry", "TravelSettlement",
+                 "TeamFinance", "AppNotification", "AuditEntry",
+                 "LearningSetting", "AppSettings")
+        for name in names:
+            with self.subTest(model=name):
+                self.assertNotIn("class " + name + " ", main)
+                self.assertEqual(models.count("class " + name + " "), 1)
+
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertIn("RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)", source)
