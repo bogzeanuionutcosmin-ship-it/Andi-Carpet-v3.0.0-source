@@ -4930,8 +4930,30 @@ class _HomePageState extends State<HomePage> {
     if (!canEditTeam(expense.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici Decontul acestei echipe.');
     }
+    final db = FirebaseFirestore.instance;
+    final financeDoc = await db.collection('finance').doc(expense.teamId).get();
+    final isFinanceManager = financeDoc.data()?['managerId'] == currentUserId;
+    final canApprove = isAdmin || isFinanceManager;
     final data = _expenseMap(expense);
-    await FirebaseFirestore.instance.collection('expenses').doc(expense.id).set(data, SetOptions(merge: true));
+    final ref = db.collection('expenses').doc(expense.id);
+    await db.runTransaction((tx) async {
+      final existing = await tx.get(ref);
+      if (existing.exists) {
+        if (!canApprove) {
+          throw StateError('Doar gestionarul poate modifica sau aproba documentul.');
+        }
+        // Nu suprascriem alte câmpuri dintr-o propunere când o aprobăm.
+        if (existing.data()?['confirmed'] == false && expense.confirmed) {
+          tx.update(ref, {'confirmed': true, 'updatedAt': FieldValue.serverTimestamp()});
+        } else {
+          tx.update(ref, data);
+        }
+      } else {
+        data['confirmed'] = canApprove && expense.confirmed;
+        data['createdBy'] = currentUserId;
+        tx.set(ref, data);
+      }
+    });
     unawaited(_writeLearningEvent(category: expense.ocrRawText.trim().isNotEmpty ? 'ocr' : 'finance', event: 'expense_saved', teamId: expense.teamId, data: {
       'category': expense.category, 'amount': expense.amount, 'documentType': expense.documentType.name,
       'ocrConfidence': expense.ocrConfidence, 'confirmed': expense.confirmed, 'hasImage': expense.hasImage,
