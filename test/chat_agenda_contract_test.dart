@@ -48,7 +48,7 @@ void main() {
     expect(source, contains('widget.currentUser.role==UserRole.director'));
     expect(source, contains("'chatBackgroundBase64'"));
     expect(source, contains("'chatBackgroundOpacity'"));
-    expect(source, contains('FilePicker.platform.pickFiles(type:FileType.image'));
+    expect(source, contains('ImagePicker().pickImage(source:ImageSource.gallery'));
     expect(source, contains('Opacity(opacity:opacity'));
   });
 
