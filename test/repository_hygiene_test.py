@@ -150,6 +150,21 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("return 'Decont / Financiar';", module)
         self.assertIn("PerDiemStatus.awaitingConfirmation => 'În așteptare confirmare'", module)
 
+    def test_learning_duration_estimates_are_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/learning/duration_estimates.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'learning/duration_estimates.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class LearnedDurationEstimate {",
+                       "LearnedDurationEstimate? learnedDurationEstimate(",
+                       "Duration? learnedAverageDuration("):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("r.keptForLearning", module)
+        self.assertIn("history.length < 3", module)
+        self.assertIn("Duration(hours: 24)", module)
+        self.assertIn("LearningMode.automatic", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
