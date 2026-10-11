@@ -17,6 +17,14 @@ void main() {
     expect(decembrie, isNot(equals(ianuarie)));
   });
 
+  test('formatarea lunilor ianuarie și februarie este distinctă', () {
+    final ianuarie = formatDate(DateTime(2026, 1, 15));
+    final februarie = formatDate(DateTime(2026, 2, 15));
+    expect(ianuarie, contains('ianuarie'));
+    expect(februarie, contains('februarie'));
+    expect(ianuarie, isNot(equals(februarie)));
+  });
+
   test('funcțiile implicite au identificatori unici și drepturi definite', () {
     final defs = defaultFunctionDefinitions();
     expect(defs, isNotEmpty);
