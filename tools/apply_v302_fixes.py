@@ -14,7 +14,7 @@ changes = [
      "const String _appVersionLabel = '3.0.2+34';"),
     ("Text('Fereastră standard: ${timeText(workWindowStart(workDate))} → ${timeText(workWindowEnd(workDate))}'),",
      ""),
-    ("_StatMini(label:'Km GPS (linie dreaptă)',value:", "_StatMini(label:'Km GPS estimativi (linie dreaptă)',value:"),
+
     ("_InfoCard(icon:Icons.info_outline,title:'Estimare traseu complet',text:", "_InfoCard(icon:Icons.info_outline,title:'Estimare geometrică (nu rutieră)',text:"),
     ("Card(child:Padding(padding:const EdgeInsets.all(16),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[",
      "Card(child:Padding(padding:const EdgeInsets.all(16),child:Wrap(spacing:14,runSpacing:12,crossAxisAlignment:WrapCrossAlignment.start,children:["),
@@ -49,6 +49,22 @@ changes = [
      "required this.currentUser, required this.canEditProgram, required this.liveLocalityLabel, required this.userName, required this.onChanged, required this.saveRecord,"),
     ("(inWindow ? 'Locația echipei: consultă poziția live' : 'Liber'), asset: 'assets/ui/tab_harta.png')",
      "(inWindow ? (widget.liveLocalityLabel.trim().isNotEmpty ? widget.liveLocalityLabel : 'Oraș/județ indisponibil') : 'Liber'), asset: 'assets/ui/tab_harta.png')"),
+    ("_StatMini(label:'Km GPS (linie dreaptă)',value:'${km.toStringAsFixed(1)} km',icon:Icons.route),\n              _StatMini(label:'Consum',value:liters>0?'${liters.toStringAsFixed(1)} l':'nesetat',icon:Icons.local_gas_station),\n              _StatMini(label:'Cost carburant',value:cost>0?'${cost.toStringAsFixed(2)} lei':'nesetat',icon:Icons.payments_outlined),",
+     """FutureBuilder<double?>(
+                future: routeData.complete && routeData.points.length >= 2 ? _roadDistanceForGraph(graphSchedules) : Future<double?>.value(null),
+                builder: (context, snapshot) {
+                  final roadKm = snapshot.data;
+                  final available = roadKm != null && snapshot.connectionState == ConnectionState.done;
+                  final distance = available ? roadKm : km;
+                  final roadLiters = car != null && car.averageConsumption > 0 ? distance * car.averageConsumption / 100 : 0.0;
+                  final roadCost = car != null && car.fuelPricePerLiter > 0 ? roadLiters * car.fuelPricePerLiter : 0.0;
+                  return Wrap(spacing:8,runSpacing:8,children:[
+                    _StatMini(label: available ? 'Km rutieri' : 'Km GPS (linie dreaptă)',value:'${distance.toStringAsFixed(1)} km',icon:Icons.route),
+                    _StatMini(label: available ? 'Consum rutier estimat' : 'Consum geometric estimat',value:roadLiters>0?'${roadLiters.toStringAsFixed(1)} l':'nesetat',icon:Icons.local_gas_station),
+                    _StatMini(label: available ? 'Cost rutier estimat' : 'Cost geometric estimat',value:roadCost>0?'${roadCost.toStringAsFixed(2)} lei':'nesetat',icon:Icons.payments_outlined),
+                  ]);
+                },
+              ),"""),
 ]
 for before, after in changes:
     count = data.count(before)
