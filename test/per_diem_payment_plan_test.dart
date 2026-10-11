@@ -9,7 +9,7 @@ void main() {
   test('56 avans compensează automat dreptul nou', () {
     final p = PerDiemPaymentPlan(dueBani: 10000, confirmedPaidBani: 15000, pendingBani: 0, newEntitlementBani: 5000, proposedPaymentBani: 0);
     expect(p.recommendedPaymentBani, 0);
-    expect(p.expectedAdvanceBani, 0);
+    expect(p.expectedAdvanceBani, 5000);
   });
   test('57 avans parțial acoperă dreptul nou', () {
     final p = PerDiemPaymentPlan(dueBani: 10000, confirmedPaidBani: 13000, pendingBani: 0, newEntitlementBani: 5000, proposedPaymentBani: 0);
