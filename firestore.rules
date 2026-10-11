@@ -519,7 +519,10 @@ service cloud.firestore {
         || (hasPermission('viewOwnDecont')
           && isTeamMember(resource.data.teamId)
           && isTeamMember(request.resource.data.teamId)
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['managerId', 'teamId']));
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['managerId', 'teamId'])
+          && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'startDate', 'endDate', 'updatedAt'])
+            || (exists(/databases/$(database)/documents/finance/$(resource.data.teamId))
+              && get(/databases/$(database)/documents/finance/$(resource.data.teamId)).data.managerId == request.auth.uid)));
       allow delete: if isAdmin();
     }
 
