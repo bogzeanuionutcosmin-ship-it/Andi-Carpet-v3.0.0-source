@@ -14,13 +14,13 @@ class FuelReceiptLearningResult {
 }
 
 final _fuelName = RegExp(
-  r'\\b(?:MOTORIN[ĂA]|DIESEL|BENZIN[ĂA]|GASOLINA|GPL|CARBURANT|ADBLUE)\\b',
+  r'\b(?:MOTORIN[ĂA]|DIESEL|BENZIN[ĂA]|GASOLINA|GPL|CARBURANT|ADBLUE)\b',
   caseSensitive: false,
 );
-final _moneyAtEnd = RegExp(r'([0-9]{1,7}[.,][0-9]{2})\\s*(?:RON|LEI)?\\s*$',
+final _moneyAtEnd = RegExp(r'([0-9]{1,7}[.,][0-9]{2})\s*(?:RON|LEI)?\s*$',
     caseSensitive: false);
 final _summary = RegExp(
-  r'\\b(?:TOTAL|SUBTOTAL|TVA|REST|CARD|NUMERAR|PLATA|PLATĂ|REDUCERE|DISCOUNT|PRET|PREȚ|LITRI)\\b',
+  r'\b(?:TOTAL|SUBTOTAL|TVA|REST|CARD|NUMERAR|PLATA|PLATĂ|REDUCERE|DISCOUNT|PRET|PREȚ|LITRI)\b',
   caseSensitive: false,
 );
 
@@ -28,7 +28,7 @@ FuelReceiptLearningResult classifyFuelReceipt(String rawText) {
   final matched = <String>[];
   var sumBani = 0;
   var missingAmount = false;
-  for (final original in rawText.split(RegExp(r'[\\r\\n]+'))) {
+  for (final original in rawText.split(RegExp(r'[\r\n]+'))) {
     final line = original.trim();
     if (!_fuelName.hasMatch(line) || _summary.hasMatch(line)) continue;
     matched.add(line);
