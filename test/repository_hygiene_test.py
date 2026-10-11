@@ -248,6 +248,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         for category in ("million", "magic", "horeca", "cazari"):
             self.assertIn("id: '" + category + "'", module)
 
+    def test_location_status_and_function_models_are_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/models/location_status_and_functions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'models/location_status_and_functions.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("extension LocationStatusX on LocationStatus",
+                       "class LocationCategory {", "class FunctionDefinition {"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn(".take(3).toList()", module)
+        self.assertIn("iconKey = this.badgeKeys.first;", module)
+        self.assertIn("permissions = permissions ?? <String>{}", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
