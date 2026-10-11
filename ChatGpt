@@ -270,3 +270,8 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - CI `38176590017` pe `d7472ae3` a terminat **success, 5/5 joburi**: Python source/security, Node, Firebase Functions, Firestore emulator, Flutter web. Este checkpointul verificat pentru primele 12 module.
 - Extras `lib/models/permission_status_labels.dart` (`part of '../main.dart';`) cu `functionPermissionGroup`, `PerDiemStatusX`, `PaymentMethodX`. **2.510 caractere** eliminate din `lib/main.dart`. Commituri `7186af69` (creare), `f9009ad1` (link), `9c5307ac` (test de regresie). **13 module extrase**.
 - Nu s-au modificat semantica permisiunilor, etichetele, calculele diurnei, regulile Firestore sau datele utilizatorilor. Verifică CI pe ultimul SHA după această notiță; noile commituri pot anula rulările intermediare.
+
+## 21. Actualizare 12.10.2026 — modul Learning pentru estimarea duratelor
+- Extras `lib/learning/duration_estimates.dart` ca `part of '../main.dart';`, cu `LearnedDurationEstimate`, `learnedDurationEstimate`, `learnedAverageDuration`. Păstrată exact logica de filtrare a istoricului (execuții încheiate, `keptForLearning`, durate valide max 24 h, doar trecut), selecția sezonieră și calculul mediei/confidenței. **3.429 caractere** scoase din `lib/main.dart`.
+- Commituri: `c00dd2c1` creare modul, `c7de2445` legare în main, `aee1630a` test static de regresie. **14 module extrase**.
+- La începutul lotului CI `38176980298` pe `2f346210` era încă `in_progress`. Verifică rezultatul ultimului CI după commitul acestei note, fără a declara build verde anticipat. Fără deploy, APK, modificări Firestore sau schimbări de reguli business.
