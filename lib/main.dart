@@ -4960,10 +4960,10 @@ class _HomePageState extends State<HomePage> {
       'category': expense.category, 'amount': expense.amount, 'documentType': expense.documentType.name,
       'ocrConfidence': expense.ocrConfidence, 'confirmed': expense.confirmed, 'hasImage': expense.hasImage,
     }));
-    // Cache-ul trebuie să reflecte starea efectiv salvată, nu valoarea
-    // inițială din formular (care poate avea confirmed=true pentru un membru).
-    final persisted = await ref.get();
-    if (persisted.exists) _expenseCache[expense.id] = _encoded(persisted.data()!);
+    // Nu facem un GET separat dupa tranzactie: un esec de citire
+    // nu trebuie sa transforme o salvare reusita intr-o eroare falsa.
+    // Cache-ul va fi sincronizat de listenerul Firestore.
+    _expenseCache.remove(expense.id);
   }
 
   Future<void> _savePerDiemDirect(PerDiemEntry entry) async {
