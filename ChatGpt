@@ -1,0 +1,188 @@
+# ChatGpt — MEMORIE OPERAȚIONALĂ COMPLETĂ / HANDOFF ANDICARPET
+
+> **DOCUMENT DE CONTINUITATE OBLIGATORIU.** Creat la cererea expresă a proprietarului proiectului la 11.10.2026. Scop: un alt chat ChatGPT trebuie să poată relua dezvoltarea fără a pierde deciziile, istoricul, problemele, planul sau limitele. Acest document este un **instantaneu**, nu o dovadă că fiecare cerință este implementată. Verifică întotdeauna sursa și CI curente. **Citește acest document înainte de orice modificare viitoare** și actualizează-l după loturi importante. Nu conține parole, tokenuri, chei private ori date personale din producție.
+
+## 0. Cerința directă a proprietarului / stil de lucru
+
+- Utilizatorul dorește să **lucrezi efectiv în GitHub**, nu să-i dai instrucțiuni pentru modificări pe care le poți face tu.
+- Limba: română; răspunsuri directe, scurte dar concrete; raportează commituri, teste și ce rămâne. Îi place să faci **cât mai multe acțiuni într-o sesiune**, dar **cu validare și fără schimbări hazardate**.
+- A cerut explicit pauză de la modificările funcționale pentru această notiță. După salvarea ei, următoarea sesiune poate continua de aici.
+- Nu spune „verde”, „rezolvat”, „publicat”, „instalat” dacă nu ai verificat concret. Un build GitHub verde **nu înseamnă deploy** și nu înseamnă test real pe telefon.
+- Nu șterge fișiere după aparență, fără analiza referințelor, diferențelor de platformă și teste.
+- Nu publica web/Firebase, nu migra date și nu distribui APK fără cerere/confirmare adecvată. Nu folosi date reale pentru teste neautorizate.
+- **Regulă esențială: diurna poate fi acordată în avans**, chiar peste suma cuvenită în momentul respectiv. Nu introduce plafon general de interzicere a avansului.
+- Preferă test automat pentru orice funcție nouă sau reparată; dorește acoperire largă, inclusiv comportament, securitate și integrare.
+- A solicitat ca proiectul final să poată fi întreținut: cod separat pe module, modificări/reparații rapide și sigure, fără regresii.
+
+## 1. Identificare exactă și acces
+
+- Repository GitHub: **bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source**
+- Branch principal: **main**.
+- Aplicație: **AndiCarpet / Andi Carpet / Andi Carpetă**, aplicație internă pentru echipa unei firme de curățenie: program, echipe, locații, rute, executări, centralizator, cheltuieli, diurnă/decont, documente, comunicare, administrare.
+- Stack: **Flutter/Dart** (Android + web; schelet iOS/macOS în repository), **Firebase Auth, Firestore, Cloud Messaging, Functions, Hosting**; hartă Flutter Map/Mapbox, OCR și PDF.
+- Firebase proiect **andicarpet-e777e**; Hosting cunoscut: https://andicarpet-e777e.web.app .
+- Repository poate fi lucrat direct prin GitHub connector (în sesiuni cu acces): `tools.mcp__GitHub__fetch_file`, `fetch_blob`, `fetch`, `create_file`, `update_file`, `fetch_workflow_run_jobs`, `fetch_workflow_job_logs`, prin `functions.exec`. Descoperă schema reală înainte de apeluri dacă este necesar.
+- Nu presupune că ai acces la Firebase Console, date live sau telefon doar pentru că ai acces la GitHub. Solicită integrare separată pentru date reale numai când devine necesar.
+
+## 2. Stare exactă la scrierea acestei note
+
+- **Ultimul commit verificat înainte de această notă:** `c05fd6f19641523c7392a61e017e15c40727339d` (teste pentru module extrase).
+- **Ultimul CI complet verificat:** GitHub Actions run **38141505324**, SHA `c05fd6f1`, status **completed / success**. Sunt 5 joburi în workflow-ul general, toate trebuie să treacă. După commitul acestei note va porni un alt CI; verifică rezultatul nou.
+- `lib/main.dart`: **799.730 bytes** la commitul de mai sus. A avut anterior **802.711 bytes**, **13.780 linii** la măsurătoarea precedentă. Nu este un fișier de 15 MB; este ~0,8 MB. După extrageri mărimea a scăzut puțin. Este încă monolitic, multe mii de linii.
+- `pubspec.yaml` are **`version: 3.0.1+33`** la această dată. În `main.dart` există eticheta internă **`_appVersionLabel = '3.0.0+32'`**: **inconsistență de investigat**, nu inventa versiunea corectă. Utilizatorul a cerut incrementare de versiune la fiecare build APK instalabil, pentru a nu descărca același pachet. Numele APK final trebuie să fie clar, fără „test”; valoarea reală trebuie stabilită înainte de release.
+- Raport existent: **`AUDIT_TEHNIC_2026-10-11.md`**. Script inventar: **`scripts/audit_repository.py`**, produce `repository-audit.json` ca artifact CI.
+- Inventar anterior: ~**301 fișiere**; **12 grupuri de fișiere cu hash identic**, explicate în raport, predominant asseturi/configuri distincte pe platforme. **Nu șterge** pe baza hashului.
+- **32 stickere PNG**, ~5,38 MB, toate folosite și referite în `main.dart`, `assets/stickers/`. Păstrează-le.
+
+## 3. Ce s-a realizat efectiv și de ce
+
+### Igienă și corecții
+1. **`6b6a7c5`** — eliminată duplicare accidentală mare din `lib/main.dart`.
+2. **`a7b9ad7`** — reparat regex-ul sumei din chitanță/cheltuială introdusă manual (`_expenseAmountBani`).
+3. Teste de igienă în **`test/repository_hygiene_test.py`**, inclusiv anti-duplicare, manifest 32 stickere, randare sticker în chat, drawer categorii pe web, validare JSON, regex sumă, fallback hartă, legături module.
+4. **`4eef412672397b4b270ab6178ba947deb5f0044a`** — teste de regresie stickere și meniu lateral; run CI **38140776008** 5/5 reușit.
+5. **`0cfe4fe`** — emulator Firestore introdus în poarta de validare generală.
+6. **`0b70fc65d63b2702c10ccc94d3604e503a5c727c`** — investigație și documentare a celor două fluxuri financiare; vezi secțiunea 5.
+7. **`7cc6b57aba593f8538de06d8bb32114fb1239729`** — trei teste emulator pentru colecția legacy `perDiems`: beneficiar poate confirma sumă pozitivă; persoană străină nu poate confirma; sumă primită peste suma declarată este acceptată. Testele dedicate Firestore au trecut în run **38141076698**.
+8. **`a6b3b170955dcd49b0a80d88b4184dd67edd8801`** — documentată decizia proprietarului: avansul la diurnă este permis.
+
+### Modularizare făcută efectiv (nu doar propusă)
+9. **`8e8b874`** — creat `lib/ui/dashboard_map_components.dart` ca Dart `part of '../main.dart';`, mutând **`_StatMini`** și **`_MapStatusLegend`**.
+10. **`d6134c6`** — eliminate cele două clase din `main.dart` și conectat `part 'ui/dashboard_map_components.dart';`.
+11. **`648e0fc4`** — teste pentru conectarea modulului și lipsa duplicării.
+12. **`aa4b9337`** — creat `lib/ui/auth_status_components.dart` cu **`_FirebaseLoading`**, **`_FirebaseError`**.
+13. **`23727d0e`** — conectat modulul auth în `main.dart`, fără dublarea claselor.
+14. **`5710121d`** — creat `lib/map/verified_location_fix.dart` cu **`_VerifiedLocationFix`**.
+15. **`209dfe23`** — conectat modelul de hartă în `main.dart`.
+16. **`c05fd6f1`** — teste anti-duplicare pentru auth și GPS. **CI complet reușit** pe acest SHA.
+- **Important**: folosirea Dart `part` este **etapă intermediară**, păstrează accesul la identificatorii privați `_` din aceeași bibliotecă și minimizează riscul. Nu reprezintă încă arhitectură independentă cu importuri/API-uri curate. Nu transforma brusc în `import` fără inventarierea dependențelor.
+- Au fost extrase doar **5 clase mici** în 3 fișiere; **NU spune că monolitul este deja modularizat complet**.
+
+## 4. CI / cum verifici fiecare schimbare
+
+Workflow general **`.github/workflows/validate.yml`**, trigger push pe `main`, PR și manual. Are **concurrency `cancel-in-progress: true`**: la commituri consecutive rulările anterioare pot fi **cancelled**; asta nu înseamnă eroare de build. Verifică ultimul run corespunzător ultimului SHA, nu pe cel anulat.
+
+Cele 5 joburi:
+1. **Flutter web build**: Flutter **3.47.5**, `flutter pub get`, teste Python hygiene, `flutter test test/`, `flutter build web --release`, artifact `web-build` 7 zile.
+2. **Python source and security contracts**: `python3 -m unittest discover -s test -p '*test.py' -v`, `python3 scripts/audit_repository.py`, artifact `repository-audit` 14 zile.
+3. **Node projection tests**: `node --test test/member_directory_projection.test.js`.
+4. **Firebase Functions syntax and dependencies**: `npm ci` în `functions/`, `node --check index.js`.
+5. **Firestore emulator authorization tests**: Node 22 + Java 21, `firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test tests/firestore/diurna.test.cjs'`.
+
+Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli/teste. Alte workflow-uri existente: `build-android.yml`, `firebase-oidc-deploy.yml`, `publish-authorized-release.yml`, `restore-member-directory.yml`, `import-v3.0.1.yml`, `setup-source.yml`. **Nu șterge workflow-urile istorice fără verificarea dependențelor**.
+
+**Un build verde nu publică automat aplicația**. `publish-authorized-release.yml` are condiții de publicare limitate, `firebase-oidc-deploy.yml` cere lansare manuală și confirmare `DEPLOY`. Nu pretinde că UI live reflectă `main` fără comparație build/deploy. Nu confunda APK debug, APK release, web build și Hosting.
+
+## 5. Finanțe / diurnă — cel mai sensibil flux
+
+### Două implementări diferite, NU le amesteca
+- **Aplicația principală `lib/main.dart` folosește Firestore `perDiems`** (43 apariții identificate în audit).
+- Modulele din **`lib/finance/`** implementează modele noi, inclusiv **`PerDiemFirestoreRepository`** care folosește **`per_diem_settlements_v2`**. `main.dart` **nu importă direct** `lib/finance/`. Sunt totuși folosite de alte module și teste. Nu sunt automat „gunoi”.
+- `firestore.rules` conține reguli pentru **ambele** colecții.
+- `lib/finance/per_diem_payment_plan.dart` calculează soldul în **bani întregi**, separat `dueBani`, `confirmedPaidBani`, `pendingBani`, `newEntitlementBani`, `proposedPaymentBani`. Are `currentOutstandingBani`, `currentAdvanceBani`, `recommendedPaymentBani`, `expectedOutstandingBani`, `expectedAdvanceBani`. Plățile în așteptare nu sunt tratate drept confirmate.
+- Alte module: `per_diem_money.dart`, `per_diem_ledger.dart`, `per_diem_settlement.dart`, `per_diem_reconciliation.dart`, `per_diem_operations.dart`, `per_diem_payment_intent.dart`, `per_diem_repository_reads.dart`, `per_diem_confirmation_card.dart`, `per_diem_balance_card.dart`, `per_diem_dispute_summary.dart`, `per_diem_legacy_adapter.dart` și teste.
+
+### Decizie financiară explicită
+- **Diurna în avans ESTE permisă.** Nu bloca `actualReceivedAmount > amount` în fluxul legacy. Testul pentru suma 75 față de suma declarată 50 este intenționat și trebuie să rămână permis până la schimbarea explicită a regulii.
+- Ține distinct: diurnă **cuvenită**, **plătită/confirmată**, **în așteptare**, **avans** și **regularizări**. Nu rescrie istoricul confirmărilor.
+- **Modelul v2 are în prezent o limită `receivedBani <= declaredBani`**; asta poate avea semnificație per-tranzacție, dar este incompatibil cu interpretarea simplă de avans general. Înainte de integrare sau migrare, definește clar contractul financiar, fără să rupi legacy.
+- Fluxul legacy `_savePerDiemDirect` folosește tranzacție Firestore, verifică beneficiar/status/sumă și scrie audit de primire `receiptAudit` cu diferența bani. **Risc de investigat:** regulile permit confirmarea legacy fără a obliga existența în aceeași operație a unui document `receiptAudit`. Testele actuale arată că update-ul simplu poate reuși. Nu impune schimbări de reguli care ar bloca clienții instalați fără migrare compatibilă.
+- Bug raportat în utilizare reală: gestionarul putea distribui propria diurnă, dar către alt membru primea **`missing or insufficient permissions`**. Au existat corecții și teste în sesiuni anterioare, dar **retestarea reală cu doi utilizatori rămâne necesară**. Nu considera doar emulatorul dovadă suficientă.
+- Alte scenarii de testat: distribuire de către gestionar, confirmare beneficiar, refuz/contestare, audit imutabil, sume zero/negative, avans, recalcul sold, acces neautorizat, utilizatori dezactivați, documente în lipsă, tranzacții concurente.
+
+## 6. Cerințe de produs, interfață și defecte raportate (status NECONFIRMAT dacă nu este indicat)
+
+### Navigație / UI
+- Utilizatorul vrea **bara glisantă cu categorii din dreapta** pe web, deschisă dintr-un buton lateral, și interfață coerentă cu Android. A raportat explicit pe 11.10 că interfața publicată **nu arăta cum ceruse**, fără bară slide.
+- Testul static verifică în `main.dart` `endDrawer: kIsWeb ? Drawer(`, `Scaffold.of(menuContext).openEndDrawer()`, `endDrawerEnableOpenDragGesture: true`, text `Categorii`. **Acest test NU dovedește că buildul web publicat are efectiv drawerul**, nici că UX este corect. Compară commitul deployat și testează în browser.
+- Taburile de jos au fost cerute pe **două rânduri**; mesageria ca panou glisant din dreapta, cu fereastră popup și X; sus doar poză profil + nume; Setări cu icon nou; profilul necesită redesign.
+- Temă vizuală: o versiune era maro închis, utilizatorul a cerut și apoi a văzut verde. Păstrează verdele conform cerințelor actuale, nu restaura tema maro fără cerere.
+- Memorie cont / **rapid switch**: comutare rapidă între conturi; s-a raportat eroare roșie deși datele se salvau. Verifică securitatea stocării și feedbackul. `main.dart` folosește `FlutterSecureStorage`; nu salva parole în clar în documente sau loguri.
+- 5 utilizatori au `admin=true` conform contextului istoric; **verifică din date autorizate înainte de afirmații actuale**. Butonul „ascundere admin” a dispărut la un moment dat.
+
+### Dashboard / program / randament
+- Graficul trebuie să compare **estimare vs timp real**, cu zilele curentă/precedentă corecte și săgeți mari de navigare; textul fix „fereastra standard 23:30–09:30” trebuie eliminat.
+- Randament echipă în dashboard ca **procent**, calculat din indicatori precum durata medie/sală, deplasare, start ~00:00, cazare, suprafețe; indicator vizibil și buton info care arată numărul/semnificația indicatorilor. **Formula exactă trebuie verificată/validată**, nu inventată.
+- Program, locații, execuții, centralizator, documente, OCR, PDF și cheltuieli necesită teste funcționale și de permisiuni.
+
+### Hartă / rute
+- **Traseu rutier real**, nu doar linii între coordonate; filtre pe categorii.
+- Culori dorite: **verde** pentru traseul parcurs, **galben** până la următorul oraș, **mov** pentru rest, **verde** la retur. Atenție la fallback schematic dacă Mapbox nu livrează geometria drumului.
+- Butoane mari doar cu pictograme pentru **Google Maps/Waze**; verifică deep linkuri și comportamentul Android/web.
+- Modelul `_VerifiedLocationFix` a fost separat în `lib/map/verified_location_fix.dart`, dar restul hărții este încă în `main.dart`.
+
+### Comunicare / notificări / membri
+- Chat privat și de grup, mesagerie live, stickere 32 PNG și emoji personalizate; verifică afișarea reală în ambele suprafețe. Nu elimina imaginile dacă unele mesaje apar ca text în APK vechi.
+- Notificări: buton **„Marchează ca citit”**, indicator/icon numai când există notificări; teste push, token, permisiuni și sincronizare.
+- Director membri: inițial doar admin îi vedea, ulterior a fost corectat pentru lucrători; există teste de proiecție și minimizare date. Verifică din nou vizibilitatea pe roluri și confidențialitatea.
+- Widget Android: la un moment dat nu afișa date; tap trebuie să deschidă dashboard. Necesită test pe dispozitiv.
+
+### Admin / securitate
+- Roluri și funcții multiple; permisiuni efective în `users/{uid}.effectivePermissions`, fallback legacy bazat pe funcție; Firestore `isActive()`, `isAdmin()`, `hasPermission()`, `isTeamMember()`. Nu simplifica regulile fără teste.
+- Gestionar, admin, lucrător au drepturi diferite. Testează fiecare operație reală și separă vizualizarea de modificare.
+- Protejează informațiile membrilor, auditul financiar și administrarea. Nu trata „date informative” ca justificare pentru acces public necontrolat.
+
+### Build / instalare / publicare
+- Au existat builduri verzi, erori de instalare APK remediate în trecut, cheie de build păstrată și OIDC configurat; **nu modifica semnarea fără motiv**.
+- Utilizatorul vrea ca fiecare versiune instalabilă să fie clar mai nouă, cu `versionCode` crescut și nume fișier coerent. Nu ghici dacă este 3.0.3, 3.0.6 etc.; identifică versiunea efectivă.
+- Au existat erori GitHub Actions și Firebase Deploy, inclusiv încercări care păreau reușite dar UI nu se schimba. Verifică logurile și **ce SHA a fost publicat**, nu doar dacă workflow e verde.
+- Utilizatorul dorește pe viitor integrare mai directă a asistentului cu aplicația/administrarea ei, dar **accesul GitHub nu înseamnă acces la Firestore live**. Orice connector nou necesită autorizarea utilizatorului.
+
+## 7. Ce trebuie să iasă la final — criterii de acceptare
+
+1. **Aplicație AndiCarpet stabilă și coerentă** pe Android și web, cu aceleași funcții de bază și adaptări responsiv corecte.
+2. **Interfața solicitată** implementată efectiv și verificată vizual: meniu lateral categorii dreapta pe web, mesagerie laterală/popup, profil refăcut, navigare lizibilă, temă verde, butoane potrivite.
+3. **Module separate pe domenii**, nu un `main.dart` uriaș: bootstrap/config, auth și conturi, modele, UI comun, dashboard/randament, program, hărți/rute, locații, documente/OCR, centralizator, cheltuieli, diurnă/decont, mesagerie/stickere, notificări, membri/roluri, administrare, setări. Cu dependențe explicite și teste. Dart `part` doar tranziție; țintă module cu API-uri/importuri curate când este sigur.
+4. **Finanțe corecte și auditabile**, diurnă cu avans permis, sume în bani întregi, confirmări/refuzuri, evidență avans și regularizări, fără acces neautorizat sau pierdere de istoric.
+5. **Trasee reale și clare**, filtre, culori de progres, navigare externă Maps/Waze și fallback explicit.
+6. **Mesagerie și notificări funcționale**, stickere afișate ca imagini, marcarea citit, chat privat/grup, UX bun pe mobil și web.
+7. **CI și teste automate relevante pentru fiecare funcție**: Dart unit/widget, contracte Python, JS, Firestore emulator, Functions, Flutter web, Android build, plus teste de integrare/end-to-end unde se poate. Teste reale pe telefon și web înainte de lansare; emulatorul singur nu ajunge.
+8. **Release reproductibil**, versionare coerentă, APK instalabil și update real, deploy Firebase controlat, verificarea commitului deployat, documentație de operare și rollback.
+9. **Curățenie fără pierderi**: ștergere numai a codului/asseturilor dovedit nefolosite, după inventar și teste; nu elimina configurări necesare platformelor.
+10. **Documentație de mentenanță**: acest fișier `ChatGpt` actualizat, raport audit, hartă module, checklist release, probleme cunoscute și decizii de business.
+
+## 8. Plan de lucru recomandat, în ordine și cu criterii de stop
+
+**Faza A — modularizare sigură**
+- Verifică ultimul CI. Creează listă exactă a claselor/functiilor și dependențelor din `main.dart`.
+- Extrage **grupuri mici și coerente** în `lib/ui/`, `lib/models/`, `lib/auth/`, `lib/dashboard/`, `lib/map/`, `lib/messages/`, `lib/notifications/`, `lib/finance/`, `lib/admin/`, `lib/settings/`; începe cu widgeturi stateless/model pure. `part of '../main.dart';` pentru pasul intermediar.
+- La fiecare lot: creare fișier, mutare exactă (nu duplicare), `part`, test de integritate, commit, **așteaptă CI verde**. Nu lansa multe push-uri succesive fără verificare; concurrency anulează rulările vechi.
+- Prioritizează separarea componentelor care se schimbă frecvent (meniuri, mesagerie, dashboard, diurnă). Clasele mari Stateful au dependențe sensibile; inventariază înainte de extracție.
+- Ulterior migrează treptat la biblioteci Dart independente cu importuri/API-uri curate; nu rupe identificatorii `_` fără plan.
+
+**Faza B — audit funcțional și corecții**
+- Pentru fiecare domeniu: inventar cerințe vs cod existent vs comportament real; bug reproductibil; test care pică înainte; fix minim; test verde după.
+- Verifică meniu dreapta web vs Hosting, permisiuni gestionar diurnă, mesagerie, notificări, randament, hartă, widget, versiune APK.
+- Nu face migrare automată `perDiems` -> `per_diem_settlements_v2` înainte de mapare, backup, compatibilitate și aprobare.
+
+**Faza C — livrare**
+- Teste complete și smoke tests pe web + Android, scenarii multi-utilizator cu permisiuni.
+- Fixare versiune reală, build semnat corect, deploy controlat, verificare URL live/versiune și rollback.
+- Documentează release-ul și actualizează acest fișier.
+
+## 9. Puncte de risc / lucruri pe care NU trebuie să le uiți
+
+- **Nu plafona avansul diurnei**.
+- **Nu șterge cele 32 de stickere**.
+- **Nu șterge cele 12 grupuri de fișiere identice** fără motiv verificat.
+- **Nu șterge `lib/finance/`** doar pentru că `main.dart` nu-l importă.
+- **Nu considera testul static de drawer echivalent cu test vizual web live**.
+- **Nu considera testul v2 Firestore echivalent cu testul fluxului legacy activ**.
+- **Nu confunda anularea automată a CI cu test eșuat**.
+- **Nu confunda compilarea cu publicarea**.
+- **Nu modifica versiunea arbitrar**; există diferență `pubspec.yaml` vs eticheta internă.
+- **Nu promite acces permanent/memorie garantată**. Fișierul din repo este sursa de continuitate pe care un chat viitor trebuie s-o citească explicit.
+- **Nu pune parole, chei, date personale reale în acest document**.
+- Dacă raportul de audit sau această notă diferă de codul curent, **codul și testele curente sunt sursa tehnică de adevăr**, iar deciziile de business confirmate de utilizator au prioritate pentru comportamentul dorit.
+
+## 10. Protocol de reluare pentru următorul chat ChatGPT
+
+1. Citește integral **`ChatGpt`** și **`AUDIT_TEHNIC_2026-10-11.md`** din repo.
+2. Citește tree-ul repo, `pubspec.yaml`, `.github/workflows/validate.yml`, ultimele commituri și ultimele run-uri CI.
+3. Verifică dacă **commitul care a creat/actualizat această notă** are CI verde.
+4. Confirmă în `main.dart` cele 3 directive `part` și existența modulelor; verifică `test/repository_hygiene_test.py`.
+5. Continuă de la **Faza A**, fără să reiei sau să anulezi munca deja făcută; explică pe scurt utilizatorului unde ești și fă modificări reale.
+6. După fiecare sesiune importantă actualizează această notă: data, commituri, teste, cerințe noi, blocaje, pași următori.
+
+---
+**Status la momentul redactării:** modularizare începută și testată (3 module, 5 clase), audit și CI extinse, decizie diurnă în avans confirmată. **Nu este încă un proiect complet modularizat sau finalizat; nu s-a făcut deploy ca parte a acestei etape.**
