@@ -1,0 +1,119 @@
+[
+  {
+    "source": "synthetic",
+    "brand": "OMV",
+    "case": "fuel-only",
+    "rawText": "OMV - EXEMPLU FICTIV\nBON FISCAL NR 10001\n11.10.2026\nMOTORINA 120,10\nTOTAL 120,10",
+    "expected": {
+      "bf": "10001",
+      "date": "2026-10-11",
+      "containsFuel": true,
+      "fuelAmountBani": 12010,
+      "needsReview": false
+    }
+  },
+  {
+    "source": "synthetic",
+    "brand": "Petrom",
+    "case": "fuel-only",
+    "rawText": "Petrom - EXEMPLU FICTIV\nBON FISCAL NR 10002\n11.10.2026\nMOTORINA 140,11\nTOTAL 140,11",
+    "expected": {
+      "bf": "10002",
+      "date": "2026-10-11",
+      "containsFuel": true,
+      "fuelAmountBani": 14011,
+      "needsReview": false
+    }
+  },
+  {
+    "source": "synthetic",
+    "brand": "MOL",
+    "case": "fuel-only",
+    "rawText": "MOL - EXEMPLU FICTIV\nBON FISCAL NR 10003\n11.10.2026\nMOTORINA 160,12\nTOTAL 160,12",
+    "expected": {
+      "bf": "10003",
+      "date": "2026-10-11",
+      "containsFuel": true,
+      "fuelAmountBani": 16012,
+      "needsReview": false
+    }
+  },
+  {
+    "source": "synthetic",
+    "brand": "Rompetrol",
+    "case": "fuel-only",
+    "rawText": "Rompetrol - EXEMPLU FICTIV\nBON FISCAL NR 10004\n11.10.2026\nMOTORINA 180,13\nTOTAL 180,13",
+    "expected": {
+      "bf": "10004",
+      "date": "2026-10-11",
+      "containsFuel": true,
+      "fuelAmountBani": 18013,
+      "needsReview": false
+    }
+  },
+  {
+    "source": "synthetic",
+    "brand": "SOCAR",
+    "case": "fuel-only",
+    "rawText": "SOCAR - EXEMPLU FICTIV\nBON FISCAL NR 10005\n11.10.2026\nMOTORINA 200,14\nTOTAL 200,14",
+    "expected": {
+      "bf": "10005",
+      "date": "2026-10-11",
+      "containsFuel": true,
+      "fuelAmountBani": 20014,
+      "needsReview": false
+    }
+  },
+  {
+    "source": "synthetic",
+    "brand": "Lukoil",
+    "case": "fuel-only",
+    "rawText": "Lukoil - EXEMPLU FICTIV\nBON FISCAL NR 10006\n11.10.2026\nMOTORINA 220,15\nTOTAL 220,15",
+    "expected": {
+      "bf": "10006",
+      "date": "2026-10-11",
+      "containsFuel": true,
+      "fuelAmountBani": 22015,
+      "needsReview": false
+    }
+  },
+  {
+    "source": "synthetic",
+    "brand": "generic",
+    "case": "mixed",
+    "rawText": "BON FISCAL NR 90001\n11.10.2026\nMOTORINA 250,75\nCAFEA 12,50\nTOTAL 263,25",
+    "expected": {
+      "bf": "90001",
+      "date": "2026-10-11",
+      "containsFuel": true,
+      "fuelAmountBani": 25075,
+      "needsReview": false
+    }
+  },
+  {
+    "source": "synthetic",
+    "brand": "generic",
+    "case": "non-fuel",
+    "rawText": "BON FISCAL NR 90002\n11.10.2026\nAPA 5,00\nTOTAL 5,00",
+    "expected": {
+      "bf": "90002",
+      "date": "2026-10-11",
+      "containsFuel": false,
+      "fuelAmountBani": 0,
+      "needsReview": true
+    }
+  },
+  {
+    "source": "synthetic",
+    "brand": "generic",
+    "case": "unreadable-fuel",
+    "rawText": "BON FISCAL NR 90003\n11.10.2026\nMOTORINA SUMA ILIZIBILA\nTOTAL 263,25",
+    "expected": {
+      "bf": "90003",
+      "date": "2026-10-11",
+      "containsFuel": true,
+      "fuelAmountBani": null,
+      "needsReview": true
+    }
+  }
+]
