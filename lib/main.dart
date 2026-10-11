@@ -9808,7 +9808,7 @@ class _ExpensePageState extends State<ExpensePage> {
   // This prevents NaN, infinity, exponential notation and sub-ban amounts.
   int? _expenseAmountBani(String raw) {
     final normalized = raw.trim().replaceAll(',', '.');
-    if (!RegExp(r'^\d{1,9}(?:\.\d{1,2})?\$').hasMatch(normalized)) return null;
+    if (!RegExp(r'^\d{1,9}(?:\.\d{1,2})?$').hasMatch(normalized)) return null;
     final parts = normalized.split('.');
     final lei = int.tryParse(parts.first);
     if (lei == null) return null;
