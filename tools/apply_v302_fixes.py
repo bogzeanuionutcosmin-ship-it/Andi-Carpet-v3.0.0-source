@@ -30,7 +30,17 @@ changes = [
      "const Expanded(child: Text('Notificări', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),\n                    TextButton(onPressed: () async {\n                      final unread = mine.where((n) => !n.read).toList();\n                      if (unread.isEmpty) return;\n                      try {\n                        final db = FirebaseFirestore.instance;\n                        for (var offset = 0; offset < unread.length; offset += 400) {\n                          final batch = db.batch();\n                          for (final n in unread.skip(offset).take(400)) {\n                            batch.set(db.collection('notifications').doc(n.id), {'read': true, 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));\n                          }\n                          await batch.commit();\n                        }\n                        for (final n in unread) { n.read = true; }\n                        if (mounted) setState(() {});\n                        if (c.mounted) Navigator.pop(c);\n                      } catch (e) {\n                        if (mounted) showErrorMessage(context, 'Nu s-au putut marca notificările: $e');\n                      }\n                    }, child: const Text('Toate citite')),\n                    IconButton(tooltip: 'Închide', onPressed: () => Navigator.pop(c), icon: const Icon(Icons.close)),"),
     ("    {'version':'3.0.0+32','title':'Finalizare v3.0.0 · mesaje automate și curățare'", "    {'version':'3.0.2+34','title':'Îmbunătățiri Android și interfață','summary':'Versiune de test: profil adaptat pentru telefon, accesul lucrătorilor la directorul de membri, marcarea notificărilor ca citite, etichete mai clare pentru distanțele geometrice și eliminarea ferestrei standard din Dashboard. Alte funcții sunt în curs de verificare.'},\n    {'version':'3.0.0+32','title':'Finalizare v3.0.0 · mesaje automate și curățare'"),
     ("const Text('Schimbare rapidă între conturi',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),",
-     "if(widget.user.role == UserRole.director) SwitchListTile.adaptive(\\n          title: const Text('Ascunde contul Admin din lista membrilor'),\\n          subtitle: const Text('Contul rămâne activ și poate fi afișat din nou oricând.'),\\n          value: d['hiddenFromMembers'] == true,\\n          onChanged: (value) async {\\n            try { await _updateOwn({'hiddenFromMembers': value}); }\\n            catch (e) { if (context.mounted) showErrorMessage(context, 'Nu s-a putut schimba vizibilitatea: $e'); }\\n          },\\n        ),\\n        const Text('Schimbare rapidă între conturi',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),").replaceAll("\\n","\n"),
+     """if(widget.user.role == UserRole.director) SwitchListTile.adaptive(
+          title: const Text('Ascunde contul Admin din lista membrilor'),
+          subtitle: const Text('Contul rămâne activ și poate fi afișat din nou oricând.'),
+          value: d['hiddenFromMembers'] == true,
+          onChanged: (value) async {
+            try { await _updateOwn({'hiddenFromMembers': value}); }
+            catch (e) { if (context.mounted) showErrorMessage(context, 'Nu s-a putut schimba vizibilitatea: $e'); }
+          },
+        ),
+        const Text('Schimbare rapidă între conturi',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),"""),
+
 ]
 for before, after in changes:
     count = data.count(before)
