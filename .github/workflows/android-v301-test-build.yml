@@ -25,6 +25,7 @@ jobs:
           path.write_text(src.replace(needle, needle + '\n  OcrLearningStatistics();', 1), encoding='utf-8')
           PY
           python3 tools/apply_v302_fixes.py
+          python3 tools/apply_widget_layout_v302.py
           test -f lib/ocr_position_learning.dart
           test -f android/app/src/main/kotlin/com/example/andi_carpeta/RouteWidgetProvider.kt
       - uses: actions/setup-java@v4
