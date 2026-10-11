@@ -4985,6 +4985,42 @@ class _HomePageState extends State<HomePage> {
     _expenseCache.remove(expense.id);
   }
 
+  Future<void> _correctExpenseDirect(Expense corrected) async {
+    final ref = FirebaseFirestore.instance.collection('expenses').doc(corrected.id);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) throw StateError('Documentul nu mai exista.');
+      final previous = snap.data()!;
+      if (previous['createdBy'] != currentUserId ||
+          previous['teamId'] != corrected.teamId ||
+          previous['settlementId'] != corrected.settlementId ||
+          previous['confirmed'] != false ||
+          previous['reviewStatus'] != 'rejected' ||
+          !canEditTeam(corrected.teamId)) {
+        throw StateError('Doar autorul poate corecta un document respins.');
+      }
+      if (!corrected.amount.isFinite || corrected.amount <= 0) {
+        throw StateError('Suma corectata nu este valida.');
+      }
+      tx.update(ref, {
+        'category': corrected.category,
+        'description': corrected.description,
+        'amount': corrected.amount,
+        'date': Timestamp.fromDate(corrected.date),
+        'documentType': corrected.documentType.name,
+        'documentNumber': corrected.documentNumber,
+        'supplier': corrected.supplier,
+        'liters': corrected.liters,
+        'pricePerLiter': corrected.pricePerLiter,
+        'reviewStatus': 'pending',
+        'rejectionReason': null,
+        'reviewedBy': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _expenseCache.remove(corrected.id);
+  }
+
   Future<void> _resubmitExpenseDirect(String expenseId) async {
     final ref = FirebaseFirestore.instance.collection('expenses').doc(expenseId);
     await FirebaseFirestore.instance.runTransaction((tx) async {
@@ -5489,7 +5525,7 @@ class _HomePageState extends State<HomePage> {
       CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_centralizator.png', size: 24, accent: centralizerColor), selectedIcon: appAssetIcon('assets/ui/tab_centralizator.png', size: 27, accent: centralizerColor, selected: true), label: compactNav ? 'Central.' : 'Centralizator'), centralizerColor);
     addPage(hasPermission(FunctionPermission.viewOwnDecont) || hasPermission(FunctionPermission.viewOtherDecont),
-      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, rejectExpense: _rejectExpenseDirect, resubmitExpense: _resubmitExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
+      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, correctExpense: _correctExpenseDirect, rejectExpense: _rejectExpenseDirect, resubmitExpense: _resubmitExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_decont.png', size: 24, accent: decontColor), selectedIcon: appAssetIcon('assets/ui/tab_decont.png', size: 27, accent: decontColor, selected: true), label: 'Decont'), decontColor);
     addPage(hasPermission(FunctionPermission.viewContacts),
       MessagesContactsPage(locations:locations,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
@@ -8838,12 +8874,13 @@ class ExpensePage extends StatefulWidget {
   final void Function(String,String,String) notifyUser;
   final void Function(String,String) log;
   final Future<void> Function(Expense) saveExpense;
+  final Future<void> Function(Expense) correctExpense;
   final Future<void> Function(String, String) rejectExpense;
   final Future<void> Function(String) resubmitExpense;
   final Future<void> Function(PerDiemEntry) savePerDiem;
   final Future<void> Function(TeamFinance) saveFinance;
   final Future<void> Function(TravelSettlement) saveSettlement;
-  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.rejectExpense,required this.resubmitExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
+  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.correctExpense,required this.rejectExpense,required this.resubmitExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 
@@ -9949,17 +9986,17 @@ class _ExpensePageState extends State<ExpensePage> {
     return total > 0 ? total : null;
   }
 
-  Future<Expense?> _expenseDialog({FiscalOcrData? ocr, Uint8List? imageBytes}) async {
+  Future<Expense?> _expenseDialog({FiscalOcrData? ocr, Uint8List? imageBytes, Expense? existing}) async {
     final formKey = GlobalKey<FormState>();
-    final number = TextEditingController(text: ocr?.documentNumber ?? '');
-    final amount = TextEditingController(text: ocr?.amount == null ? '' : ocr!.amount!.toStringAsFixed(2));
-    final supplier = TextEditingController(text: ocr?.supplier ?? '');
-    final desc = TextEditingController();
-    final litersC = TextEditingController(text: ocr?.liters == null ? '' : ocr!.liters!.toStringAsFixed(2));
-    final priceC = TextEditingController(text: ocr?.pricePerLiter == null ? '' : ocr!.pricePerLiter!.toStringAsFixed(2));
-    String cat = ocr?.looksLikeFuel == true ? 'Combustibil' : 'Alte cheltuieli';
-    ExpenseDocumentType docType = (ocr?.rawText.toUpperCase().contains('FACTUR') ?? false) ? ExpenseDocumentType.invoice : ExpenseDocumentType.fiscalReceipt;
-    DateTime docDate = ocr?.date ?? DateTime.now();
+    final number = TextEditingController(text: existing?.documentNumber ?? ocr?.documentNumber ?? '');
+    final amount = TextEditingController(text: existing != null ? existing.amount.toStringAsFixed(2) : (ocr?.amount == null ? '' : ocr!.amount!.toStringAsFixed(2)));
+    final supplier = TextEditingController(text: existing?.supplier ?? ocr?.supplier ?? '');
+    final desc = TextEditingController(text: existing?.description ?? '');
+    final litersC = TextEditingController(text: existing?.liters != null ? existing!.liters!.toStringAsFixed(2) : (ocr?.liters == null ? '' : ocr!.liters!.toStringAsFixed(2)));
+    final priceC = TextEditingController(text: existing?.pricePerLiter != null ? existing!.pricePerLiter!.toStringAsFixed(2) : (ocr?.pricePerLiter == null ? '' : ocr!.pricePerLiter!.toStringAsFixed(2)));
+    String cat = existing?.category ?? (ocr?.looksLikeFuel == true ? 'Combustibil' : 'Alte cheltuieli');
+    ExpenseDocumentType docType = existing?.documentType ?? ((ocr?.rawText.toUpperCase().contains('FACTUR') ?? false) ? ExpenseDocumentType.invoice : ExpenseDocumentType.fiscalReceipt);
+    DateTime docDate = existing?.date ?? ocr?.date ?? DateTime.now();
     Uint8List? compressed;
     if(imageBytes!=null){
       try{compressed=_compressDocumentImage(imageBytes);}catch(e){if(mounted)showErrorMessage(context,'Fotografia nu a putut fi comprimată și nu va fi atașată: $e');}
@@ -10010,14 +10047,14 @@ class _ExpensePageState extends State<ExpensePage> {
           if (bani == null) return;
           final value = bani / 100.0;
           Navigator.pop(d, Expense(
-            id: idNow(), teamId: team.id, settlementId: settlement?.id, category: cat,
+            id: existing?.id ?? idNow(), teamId: team.id, settlementId: existing?.settlementId ?? settlement?.id, category: cat,
             description: desc.text.trim().isEmpty ? cat : desc.text.trim(), amount: value, date: docDate,
             documentType: docType, documentNumber: number.text.trim(), supplier: supplier.text.trim(),
             liters: double.tryParse(litersC.text.replaceAll(',', '.')), pricePerLiter: double.tryParse(priceC.text.replaceAll(',', '.')),
             documentImageBase64: photoBase64, imageFingerprint: fingerprint, ocrRawText: '', ocrConfidence: ocr?.confidence ?? 0,
-            confirmed: isManager,
+            confirmed: existing == null && isManager,
           ));
-        }, child: Text(isManager ? 'Confirmă' : 'Trimite spre confirmare')),
+        }, child: Text(existing != null ? 'Salvează corecția' : (isManager ? 'Confirmă' : 'Trimite spre confirmare'))),
       ],
     )));
     for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }
@@ -10049,7 +10086,7 @@ class _ExpensePageState extends State<ExpensePage> {
           ? const Chip(label: Text('Confirmat'))
           : e.reviewStatus == 'rejected'
             ? (e.createdBy == widget.currentUser.id
-                ? TextButton(onPressed: () => _resubmitExpense(e), child: const Text('Retrimite'))
+                ? TextButton(onPressed: () => _correctAndResubmitExpense(e), child: const Text('Corectează'))
                 : const Chip(label: Text('Respins')))
             : isManager
               ? Wrap(spacing: 4, children: [
@@ -10088,6 +10125,17 @@ class _ExpensePageState extends State<ExpensePage> {
       if (mounted) showSuccessMessage(context, 'Document respins. Motivul a fost salvat.');
     } catch (err) {
       if (mounted) showErrorMessage(context, 'Respingerea a eșuat: $err');
+    }
+  }
+
+  Future<void> _correctAndResubmitExpense(Expense e) async {
+    final corrected = await _expenseDialog(existing: e);
+    if (corrected == null) return;
+    try {
+      await widget.correctExpense(corrected);
+      if (mounted) showSuccessMessage(context, 'Corecția a fost trimisă gestionarului.');
+    } catch (err) {
+      if (mounted) showErrorMessage(context, 'Corecția a eșuat: $err');
     }
   }
 
