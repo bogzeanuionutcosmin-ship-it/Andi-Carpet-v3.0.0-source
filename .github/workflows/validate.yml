@@ -71,5 +71,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Validate rules using local Firestore emulator
-        run: npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-andi-carpet 'echo Firestore rules loaded successfully'
+      - name: Install Firestore test dependencies
+        run: npm install --no-save --package-lock=false @firebase/rules-unit-testing@4 firebase@11
+      - name: Test rules with local Firestore emulator
+        run: npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-andi-carpet-rules 'node --test tests/firestore-permissions.test.cjs'
