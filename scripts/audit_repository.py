@@ -20,8 +20,8 @@ TEXT_EXT = {".dart", ".js", ".cjs", ".py", ".json", ".yaml", ".yml", ".md", ".ht
             ".xml", ".gradle", ".kts", ".kt", ".swift", ".plist", ".properties",
             ".rules", ".txt", ".cmake", ".cc", ".cpp", ".h", ".sh", ".xcconfig",
             ".pbxproj", ".entitlements", ".storyboard", ".xib", ".rc"}
-known_binary = {".png": b"\\x89PNG\\r\\n\\x1a\\n", ".jpg": b"\\xff\\xd8\\xff",
-                ".pdf": b"%PDF-", ".zip": b"PK\\x03\\x04"}
+known_binary = {".png": b"\x89PNG\r\n\x1a\n", ".jpg": b"\xff\xd8\xff",
+                ".pdf": b"%PDF-", ".zip": b"PK\x03\x04"}
 rows, warnings = [], []
 by_hash = defaultdict(list)
 source_texts = {}
@@ -59,14 +59,14 @@ for paths in by_hash.values():
 asset_refs = set()
 for name, body in source_texts.items():
     if name.startswith(("lib/", "web/")):
-        asset_refs.update(re.findall(r"assets/[A-Za-z0-9_./-]+\\.(?:png|jpg|jpeg|webp|pdf)", body))
+        asset_refs.update(re.findall(r"assets/[A-Za-z0-9_./-]+\.(?:png|jpg|jpeg|webp|pdf)", body))
 for asset in sorted(asset_refs - FILES):
     warnings.append({"type": "referenced_asset_missing", "path": asset})
 
 for name, body in source_texts.items():
     if not name.endswith(".dart"):
         continue
-    for imp in re.findall(r"^import\\s+['\\\"]([^'\\\"]+)['\\\"]", body, re.M):
+    for imp in re.findall(r"^import\s+['\\"]([^'\\"]+)['\\"]", body, re.M):
         if imp.startswith(("dart:", "package:")):
             continue
         target = (ROOT / name).parent.joinpath(imp).resolve()
@@ -77,7 +77,7 @@ for name, body in source_texts.items():
 for name, body in source_texts.items():
     if not name.startswith(".github/workflows/"):
         continue
-    for reference in re.findall(r"(?:run:|working-directory:|path:)\\s*([^\\n]+)", body):
+    for reference in re.findall(r"(?:run:|working-directory:|path:)\s*([^\n]+)", body):
         if "flutter " in reference or "python " in reference or "node " in reference:
             continue
         # Workflow inputs and globs need semantic inspection, not automatic deletion.
