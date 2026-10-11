@@ -1,0 +1,88 @@
+name: Firebase OIDC deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Choose authentication test or deployment"
+        required: true
+        type: choice
+        default: auth-only
+        options:
+          - auth-only
+          - hosting
+          - functions
+      confirm_production:
+        description: 'For hosting/functions deployments, type DEPLOY'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: firebase-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  firebase:
+    runs-on: ubuntu-latest
+    environment: firebase-production
+    if: inputs.target == 'auth-only' || (github.ref == 'refs/heads/main' && inputs.confirm_production == 'DEPLOY')
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud via OIDC
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/141489733149/locations/global/workloadIdentityPools/github-actions-andicarpet/providers/github-actions
+          service_account: andicarpet-github-deploy@andicarpet-e777e.iam.gserviceaccount.com
+
+      - name: Verify authentication
+        env:
+          CREDENTIALS_FILE: ${{ steps.auth.outputs.credentials_file_path }}
+        run: |
+          test -n "$CREDENTIALS_FILE"
+          test -f "$CREDENTIALS_FILE"
+          echo "OIDC credentials issued successfully."
+
+      - name: Set up Flutter
+        if: inputs.target == 'hosting'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.5'
+          cache: true
+
+      - name: Build Flutter web
+        if: inputs.target == 'hosting'
+        run: |
+          flutter pub get
+          flutter build web --release
+
+      - name: Set up Node.js
+        if: inputs.target != 'auth-only'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Firebase CLI
+        if: inputs.target != 'auth-only'
+        run: npm install --global firebase-tools
+
+      - name: Deploy Firebase Hosting
+        if: inputs.target == 'hosting'
+        run: firebase deploy --only hosting --project andicarpet-e777e --non-interactive
+
+      - name: Install Functions dependencies
+        if: inputs.target == 'functions'
+        working-directory: functions
+        run: npm install
+
+      - name: Deploy Firebase Functions
+        if: inputs.target == 'functions'
+        run: firebase deploy --only functions --project andicarpet-e777e --non-interactive
