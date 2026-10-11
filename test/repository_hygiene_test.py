@@ -178,6 +178,17 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("Colors.white", module)
 
+    def test_app_backdrop_is_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/app_backdrop.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'ui/app_backdrop.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("class _AppBackdrop extends StatelessWidget", main)
+        self.assertEqual(module.count("class _AppBackdrop extends StatelessWidget"), 1)
+        self.assertIn("_plainBackgroundColor(settings, brightness)", module)
+        self.assertIn("settings.customBackgrounds[customId]", module)
+        self.assertIn("settings.backgroundOpacity.clamp(0.0, 0.70)", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
