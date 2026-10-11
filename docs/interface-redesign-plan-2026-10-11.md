@@ -92,3 +92,9 @@
 - După finalizarea tuturor modificărilor, se rulează **o singură suită completă** de teste (Flutter, Firestore rules, Functions, responsive, regresie), apoi se corectează erorile și se reexecută verificările relevante.
 - Dacă CI pornește automat la push, rulările intermediare nu sunt tratate ca puncte de blocare; nu se pretinde că pot fi împiedicate fără schimbarea workflow-ului.
 - Fără merge, APK sau publicare web până la validarea finală și aprobarea utilizatorului.
+
+## Pictograme 3D aprobate
+- Utilizatorul a aprobat setul vizual generat de pictograme 3D colorate pentru taburi, subtaburi, filtre și acțiuni.
+- S-au extras 48 pictograme WebP într-o arhivă locală `AndiCarpet_3D_Icons.zip`, cu `assets/icons3d/manifest.json`.
+- Integrare rămasă: transferul fișierelor binare WebP în repo, înregistrarea directorului în `pubspec.yaml`, înlocuirea iconurilor din navigație și pagini cu imagini responsiv scalate, fallback pentru iconurile lipsă, apoi teste responsive și de contrast.
+- Nu marca integrarea ca finalizată până când fișierele binare sunt efectiv în repo și referințele Flutter sunt legate de ele.
