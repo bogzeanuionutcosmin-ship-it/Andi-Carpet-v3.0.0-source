@@ -38,6 +38,22 @@ class RepositoryHygieneTests(unittest.TestCase):
                 self.assertTrue(asset.is_file())
                 self.assertEqual(asset.read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
 
+    def test_sticker_picker_and_both_chat_surfaces_render_images(self):
+        source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        self.assertIn("final keys = <String>[..._andiStickerAssets.keys, ..._andiCustomEmojis.keys];", source)
+        self.assertIn("Image.asset(asset, width: size, height: size, fit: BoxFit.contain)", source)
+        self.assertGreaterEqual(source.count("_andiReactionWidget("), 4)
+        self.assertGreaterEqual(source.count("if (_andiHasReaction("), 1)
+        self.assertIn("if(_andiHasReaction(", source)
+        self.assertIn("'customEmoji'", source)
+
+    def test_web_right_side_category_drawer_is_wired(self):
+        source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        self.assertIn("endDrawer: kIsWeb ? Drawer(", source)
+        self.assertIn("Scaffold.of(menuContext).openEndDrawer()", source)
+        self.assertIn("endDrawerEnableOpenDragGesture: true", source)
+        self.assertIn("title: const Text('Categorii'", source)
+
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertIn("RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)", source)
