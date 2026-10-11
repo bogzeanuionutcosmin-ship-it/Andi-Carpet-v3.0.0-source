@@ -1,4 +1,4 @@
-name: Android v3.0.2 test build
+name: Android v3.0.3 test build
 on:
   workflow_dispatch:
 
@@ -45,8 +45,26 @@ jobs:
       - name: Analyze
         run: flutter analyze
         continue-on-error: true
+      - name: Set Android release version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('pubspec.yaml')
+          s = p.read_text(encoding='utf-8')
+          import re
+          s, count = re.subn(r'(?m)^version:\s*[^\n]+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndiCarpet-v3.0.3-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+, 'version: 3.0.3+35', s)
+          assert count == 1, 'Missing unique pubspec version'
+          p.write_text(s, encoding='utf-8')
+          PY
       - name: Build debug APK
-        run: flutter build apk --debug
+        run: flutter build apk --debug --build-name=3.0.3 --build-number=35
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
