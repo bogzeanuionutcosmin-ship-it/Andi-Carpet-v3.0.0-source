@@ -77,3 +77,89 @@ test('lucrătorul nu poate modifica încasările gestionarului', async () => {
 test('gestionarul nu poate schimba singur identitatea gestionarului', async () => {
   await assertFails(db('manager').doc('finance/team-1').update({ managerId: ids.worker }));
 });
+
+
+test('beneficiarul nu poate confirma diurna cu sumă zero', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('perDiems/zero-confirm').set(diem());
+  });
+  await assertFails(db('worker').doc('perDiems/zero-confirm').update({
+    status: 'confirmed', received: true, actualReceivedAmount: 0,
+  }));
+});
+test('beneficiarul nu poate confirma diurna de două ori', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('perDiems/double-confirm').set(diem({
+      status: 'confirmed', received: true, actualReceivedAmount: 100,
+    }));
+  });
+  await assertFails(db('worker').doc('perDiems/double-confirm').update({
+    actualReceivedAmount: 200,
+  }));
+});
+test('gestionarul nu poate distribui diurnă cu status deja confirmat', async () => {
+  await assertFails(db('manager').doc('perDiems/early-confirm').set(diem({
+    status: 'confirmed', actualReceivedAmount: 100,
+  })));
+});
+test('lucrătorul nu poate șterge diurna', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('perDiems/delete-worker').set(diem());
+  });
+  await assertFails(db('worker').doc('perDiems/delete-worker').delete());
+});
+test('gestionarul nu poate șterge diurna fără drepturi admin', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('perDiems/delete-manager').set(diem());
+  });
+  await assertFails(db('manager').doc('perDiems/delete-manager').delete());
+});
+test('beneficiarul nu poate crea contestație în numele distribuitorului', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('perDiems/dispute-worker').set(diem({
+      status: 'confirmed', actualReceivedAmount: 50,
+    }));
+  });
+  await assertFails(db('worker').doc('perDiemDisputes/dispute-worker').set({
+    perDiemId: 'dispute-worker', distributorId: ids.manager,
+    beneficiaryId: ids.worker, declaredBani: 10000, receivedBani: 5000,
+    status: 'disputed', reason: 'Diferență', actorUid: ids.worker,
+  }));
+});
+test('gestionarul poate deschide contestație justificată', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('perDiems/dispute-manager').set(diem({
+      status: 'confirmed', actualReceivedAmount: 50,
+    }));
+  });
+  await assertSucceeds(db('manager').doc('perDiemDisputes/dispute-manager').set({
+    perDiemId: 'dispute-manager', distributorId: ids.manager,
+    beneficiaryId: ids.worker, declaredBani: 10000, receivedBani: 5000,
+    status: 'disputed', reason: 'Diferență de sumă', actorUid: ids.manager,
+  }));
+});
+test('gestionarul nu poate deschide contestație fără motiv', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('perDiems/dispute-empty').set(diem({
+      status: 'confirmed', actualReceivedAmount: 50,
+    }));
+  });
+  await assertFails(db('manager').doc('perDiemDisputes/dispute-empty').set({
+    perDiemId: 'dispute-empty', distributorId: ids.manager,
+    beneficiaryId: ids.worker, declaredBani: 10000, receivedBani: 5000,
+    status: 'disputed', reason: '', actorUid: ids.manager,
+  }));
+});
+test('doar administratorul poate soluționa contestația', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('perDiemDisputes/resolve').set({
+      status: 'disputed', distributorId: ids.manager, beneficiaryId: ids.worker,
+    });
+  });
+  await assertFails(db('manager').doc('perDiemDisputes/resolve').update({
+    status: 'resolved_accepted', resolvedBy: ids.manager,
+  }));
+  await assertSucceeds(db('admin').doc('perDiemDisputes/resolve').update({
+    status: 'resolved_accepted', resolvedBy: ids.admin,
+  }));
+});
