@@ -85,3 +85,10 @@
 - Widgetul de ecran principal este exclusiv Android; comenzile de intervenție echivalente trebuie să fie accesibile în aplicația web/iOS, fără a promite widget nativ iOS.
 - Teste responsive pentru lățimi mici, tablete și desktop; verifică overflow, accesibilitate, scroll, navigare înapoi, tastatura mobilă, apelarea tel: și orientarea ecranului.
 - Nu se publică web și nu se generează APK fără validare și aprobarea utilizatorului.
+
+## Flux de dezvoltare și testare — decizie utilizator
+- Ciclul de lucru: **implementăm → pregătim testul automat aferent (fără rulare) → implementăm următoarea funcție → pregătim testul**.
+- Nu se așteaptă verdictul GitHub Actions după fiecare commit; se pregătesc teste unitare, widget și integrare pe parcurs.
+- După finalizarea tuturor modificărilor, se rulează **o singură suită completă** de teste (Flutter, Firestore rules, Functions, responsive, regresie), apoi se corectează erorile și se reexecută verificările relevante.
+- Dacă CI pornește automat la push, rulările intermediare nu sunt tratate ca puncte de blocare; nu se pretinde că pot fi împiedicate fără schimbarea workflow-ului.
+- Fără merge, APK sau publicare web până la validarea finală și aprobarea utilizatorului.
