@@ -342,6 +342,21 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("FirebaseAuth.instance.signOut()", module)
         self.assertIn("FirebaseUserProfile profile", module)
 
+    def test_home_orchestration_is_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'home/home_page.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class HomePage extends StatefulWidget",
+                       "class _HomePageState extends State<HomePage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for feature in ("_startAdaptiveLiveLocation(",
+                        "_initPushNotifications(", "_startCoreSync(",
+                        "_savePerDiemDirect(", "_openAdmin(",
+                        "NavigationBar("):
+            self.assertIn(feature, module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
