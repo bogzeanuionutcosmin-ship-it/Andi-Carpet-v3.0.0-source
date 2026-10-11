@@ -286,3 +286,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `lib/ui/section_visual_helpers.dart` (`part of '../main.dart';`) cu `sectionAccent`, `showSuccessMessage`, `showErrorMessage`, `_plainBackgroundColor`; **2.853 caractere** eliminate din `lib/main.dart`, fără schimbări de logică/stil. `graphDefaultName` și `idNow` rămân în main pentru lot ulterior.
 - Commituri `b5845be3` (modul), `2fe2d938` (legare), `0e6025ef` (test de regresie). **15 module extrase**.
 - Verifică CI după această actualizare; nu declara verde înainte de finalizare. Nu s-a făcut deploy/APK/migrare sau schimbare de date. Următoarele candidate: `_AppBackdrop`, iconuri/badge assets și componente UI mari, cu atenție la testele sursă ce caută definiții în main.
+
+## 24. Decizie documentație permanentă — cerință utilizator
+- După curățarea completă, documentăm explicit regulile fiecărei funcționalități, nu doar arhitectura. Structură propusă: `docs/ARHITECTURA.md`, `docs/REGULI_FUNCTIONALE.md`, `docs/PERMISIUNI.md`, `docs/FLUXURI.md`, `docs/TESTARE.md`.
+- `ChatGpt` rămâne jurnalul de predare între conversații. Pentru fiecare funcție: scop, actori, condiții de acces, date citite/scrise, reguli/validări, cazuri-limită, erori, dependențe, teste, comportament acceptat.
+- Regulă permanentă propusă: fiecare schimbare funcțională actualizează documentația relevantă și testele în același lot. Păstrăm deosebirea între comportament verificat și cerințe încă neimplementate.
+- Exemplu critic: diurnele pot fi acordate în avans inclusiv peste acumulat; documentați separat fluxurile active și experimentale, fără a introduce plafon accidental.
