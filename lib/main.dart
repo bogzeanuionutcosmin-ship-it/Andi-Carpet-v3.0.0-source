@@ -34,6 +34,7 @@ part 'ui/auth_status_components.dart';
 part 'auth/quick_accounts.dart';
 part 'ui/branding_theme_helpers.dart';
 part 'ui/install_app_buttons.dart';
+part 'bootstrap/firebase_initialization.dart';
 part 'map/verified_location_fix.dart';
 part 'map/graph_route_calculations.dart';
 part 'reports/pdf_reports.dart';
@@ -45,25 +46,6 @@ const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.
 const String _disableSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/disableSmsGateway';
 const String _geocodeRomaniaPlaceUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/geocodeRomaniaPlace';
 const String _appVersionLabel = '3.0.0+32';
-
-const String _webPushVapidKey = String.fromEnvironment(
-  'FCM_WEB_VAPID_KEY',
-  defaultValue: 'BMJikC3fON4-4uwRuMOzZRXYjQCbp2ftRsSt_PcBOpf9sTCv4VkwEkzxerxSZCMd5dyooMtHhU6hvLDeqWUkFHw',
-);
-
-Future<void> _initializeFirebaseForPlatform() async {
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS && !DefaultFirebaseOptions.hasIosDartConfig) {
-    // Pe iOS acceptăm configurația nativă standard GoogleService-Info.plist.
-    await Firebase.initializeApp();
-    return;
-  }
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-}
-
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (Firebase.apps.isEmpty) await _initializeFirebaseForPlatform();
-}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
