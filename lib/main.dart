@@ -11504,6 +11504,13 @@ class _GroupChatPageState extends State<GroupChatPage> {
           }catch(e){if(dialogContext.mounted)showErrorMessage(dialogContext,'Fundalul nu a putut fi încărcat: $e');}
         },icon:const Icon(Icons.image_outlined),label:const Text('Încarcă imagine')),
         TextButton.icon(onPressed:()=>setDialog((){imageData=null;remove=true;}),icon:const Icon(Icons.delete_outline),label:const Text('Elimină fundalul')),
+        const SizedBox(height:12),
+        if(imageData!=null && imageData!.isNotEmpty)
+          SizedBox(height:160,width:double.infinity,child:ClipRRect(borderRadius:BorderRadius.circular(14),child:Stack(fit:StackFit.expand,children:[
+            ColoredBox(color:Theme.of(dialogContext).colorScheme.surfaceContainerHighest),
+            Opacity(opacity:opacity,child:Image.memory(base64Decode(imageData!),fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Center(child:Text('Previzualizare indisponibilă')))),
+            const Align(alignment:Alignment.bottomCenter,child:Padding(padding:EdgeInsets.all(8),child:Text('Previzualizare fundal',style:TextStyle(fontWeight:FontWeight.bold)))),
+          ]))),
         const SizedBox(height:12),Text('Opacitate: ${(opacity*100).round()}%'),
         Slider(value:opacity,min:0,max:0.85,divisions:17,label:'${(opacity*100).round()}%',onChanged:(v)=>setDialog(()=>opacity=v)),
         const Text('0% = fundal ascuns · 85% = fundal vizibil intens'),
