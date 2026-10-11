@@ -5447,7 +5447,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openGroupChat() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => GroupChatPage(currentUser: me, users: users, functionDefinitions: functionDefinitions, agenda: MessagesContactsPage(locations:locations,categories:categories,settings:settings,canEditContacts:false,canManageTemplates:false,onChanged:refresh,log:log)))).then((_) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => GroupChatPage(currentUser: me, users: users, functionDefinitions: functionDefinitions, agenda: MessagesContactsPage(locations:locations,categories:categories,currentUser:me,settings:settings,canEditContacts:false,canManageTemplates:false,onChanged:refresh,log:log)))).then((_) {
       _unreadGroupMessageCount = 0;
       _refreshUnreadMessageCount();
     });
@@ -5565,7 +5565,7 @@ class _HomePageState extends State<HomePage> {
       ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, assignFinanceManager: _assignFinanceManagerDirect, saveExpense: _saveExpenseDirect, correctExpense: _correctExpenseDirect, rejectExpense: _rejectExpenseDirect, resubmitExpense: _resubmitExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_decont.png', size: 24, accent: decontColor), selectedIcon: appAssetIcon('assets/ui/tab_decont.png', size: 27, accent: decontColor, selected: true), label: 'Decont'), decontColor);
     addPage(hasPermission(FunctionPermission.viewContacts),
-      MessagesContactsPage(locations:locations,categories:categories,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
+      MessagesContactsPage(locations:locations,categories:categories,currentUser:me,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
       NavigationDestination(icon: appAssetIcon('assets/ui/chat_live.png', size: 24, accent: messagesColor), selectedIcon: appAssetIcon('assets/ui/chat_live.png', size: 27, accent: messagesColor, selected: true), label: 'Agendă'), messagesColor);
     addPage(true, DocumentsPage(isAdmin: isAdmin),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_documente.png', size: 24, accent: docsColor), selectedIcon: appAssetIcon('assets/ui/tab_documente.png', size: 27, accent: docsColor, selected: true), label: compactNav ? 'Doc.' : 'Documente'), docsColor);
@@ -10225,12 +10225,13 @@ class _ExpensePageState extends State<ExpensePage> {
 class MessagesContactsPage extends StatefulWidget {
   final List<Location> locations;
   final List<LocationCategory> categories;
+  final AppUser? currentUser;
   final AppSettings settings;
   final bool canEditContacts;
   final bool canManageTemplates;
   final VoidCallback onChanged;
   final void Function(String,String) log;
-  const MessagesContactsPage({super.key,required this.locations,required this.categories,required this.settings,required this.canEditContacts,required this.canManageTemplates,required this.onChanged,required this.log});
+  const MessagesContactsPage({super.key,required this.locations,required this.categories,this.currentUser,required this.settings,required this.canEditContacts,required this.canManageTemplates,required this.onChanged,required this.log});
   @override State<MessagesContactsPage> createState()=>_MessagesContactsPageState();
 }
 
@@ -10354,13 +10355,34 @@ class _MessagesContactsPageState extends State<MessagesContactsPage>{
       const SizedBox(height:10),
       SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[
         Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Toate'),selected:selectedCategory.isEmpty,onSelected:(_)=>setState(()=>selectedCategory=''))),
+        Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Membri'),selected:selectedCategory=='__members',onSelected:(_)=>setState(()=>selectedCategory='__members'))),
         ...widget.categories.where((c)=>c.active).map((c)=>Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:Text(c.name),selected:selectedCategory==c.id,onSelected:(_)=>setState(()=>selectedCategory=c.id)))),
       ])),
       const SizedBox(height:10),
       const _InfoCard(icon:Icons.info_outline,title:'Acces rapid',text:'Apasă butonul verde pentru a deschide apelarea. Agenda este doar pentru consultare; contactele se modifică din detaliile locației.'),
       const SizedBox(height:10),
-      if(list.isEmpty)const _Empty(icon:Icons.contact_phone_outlined,text:'Nu există locații pentru căutarea curentă.'),
-      ...list.map((l)=>Card(child:ExpansionTile(
+      if(selectedCategory=='__members' && widget.currentUser!=null)
+        StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
+          stream:FirebaseFirestore.instance.collection(widget.currentUser!.role==UserRole.director?'users':'memberDirectory').where('active',isEqualTo:true).snapshots(),
+          builder:(context,snapshot){
+            if(snapshot.hasError)return const Text('Membrii nu sunt disponibili momentan.');
+            if(!snapshot.hasData)return const Center(child:CircularProgressIndicator());
+            final members=snapshot.data!.docs.where((doc){
+              final d=doc.data();
+              if(widget.currentUser!.role!=UserRole.director && doc.id!=widget.currentUser!.id && d['hiddenFromMembers']==true)return false;
+              final name=(d['name']??d['email']??'').toString();
+              final phone=(d['phone']??'').toString();
+              return needle.isEmpty || '$name $phone'.toLowerCase().contains(needle);
+            }).toList()..sort((a,b)=>(a.data()['name']??'').toString().compareTo((b.data()['name']??'').toString()));
+            if(members.isEmpty)return const _Empty(icon:Icons.people_outline,text:'Nu există membri pentru căutarea curentă.');
+            return Column(children:members.map((doc){
+              final d=doc.data();final phone=(d['phone']??'').toString().trim();
+              return Card(child:ListTile(leading:const Icon(Icons.person_outline),title:Text((d['name']??d['email']??'Membru').toString()),subtitle:Text(phone.isEmpty?'Contact indisponibil':phone),trailing:phone.isEmpty?null:IconButton(tooltip:'Sună $phone',onPressed:()=>_call(phone),icon:const Icon(Icons.call,color:Colors.green))));
+            }).toList());
+          },
+        ),
+      if(selectedCategory!='__members' && list.isEmpty)const _Empty(icon:Icons.contact_phone_outlined,text:'Nu există locații pentru căutarea curentă.'),
+      ...((selectedCategory=='__members')?<Location>[]:list).map((l)=>Card(child:ExpansionTile(
         leading:const CircleAvatar(backgroundColor:Color(0x1A00A86B),child:Icon(Icons.store_mall_directory_outlined,color:Colors.green)),
         title:Text(l.name,maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text(l.address,maxLines:2,overflow:TextOverflow.ellipsis),
         
