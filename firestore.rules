@@ -181,16 +181,15 @@ service cloud.firestore {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
-      allow create: if (isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId)
-          && request.resource.data.distributedBy == request.auth.uid))
-        && (!('supplementaryFor' in request.resource.data)
-          || request.resource.data.supplementaryFor == null
-          || (request.resource.data.supplementaryFor is string
-            && exists(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor))
-            && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.memberId == request.resource.data.memberId
-            && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.distributedBy == request.resource.data.distributedBy
-            && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.status == 'confirmed'));
+      // Cheltuielile nu au câmpurile distributedBy / supplementaryFor.
+      // Condiția veche era copiată din validarea diurnelor și bloca
+      // încărcarea bonurilor de către membrii obișnuiți.
+      allow create: if isAdmin()
+        || (hasPermission('viewOwnDecont')
+          && isTeamMember(request.resource.data.teamId)
+          && request.resource.data.teamId is string
+          && request.resource.data.amount is number
+          && request.resource.data.amount >= 0);
       allow update: if isAdmin()
         || (hasPermission('viewOwnDecont')
           && isTeamMember(resource.data.teamId)
