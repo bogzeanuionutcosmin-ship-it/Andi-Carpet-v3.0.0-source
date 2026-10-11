@@ -98,3 +98,9 @@
 - S-au extras 48 pictograme WebP într-o arhivă locală `AndiCarpet_3D_Icons.zip`, cu `assets/icons3d/manifest.json`.
 - Integrare rămasă: transferul fișierelor binare WebP în repo, înregistrarea directorului în `pubspec.yaml`, înlocuirea iconurilor din navigație și pagini cu imagini responsiv scalate, fallback pentru iconurile lipsă, apoi teste responsive și de contrast.
 - Nu marca integrarea ca finalizată până când fișierele binare sunt efectiv în repo și referințele Flutter sunt legate de ele.
+
+## Pachet nou de stickere foto pentru Chat live
+- Au fost generate 24 stickere individuale `andi_01.webp` ... `andi_24.webp`, din colajul aprobat de utilizator; pachetul există momentan ca artefact de conversație, nu ca asset în repository.
+- Integrarea trebuie să adauge chei stabile distincte (`andi_photo_01` ... `andi_photo_24`) în selectorul comun pentru chat de grup și privat, păstrând stickerele BRC existente.
+- Încărcarea fișierelor binare în `assets/stickers/` și declararea lor în `pubspec.yaml` sunt condiții obligatorii înainte de a considera implementarea completă. Nu introduce căi spre fișiere inexistente și nu declara finalizată integrarea doar pe baza planului.
+- Teste de pregătit: fiecare asset există, poate fi decodat, este inclus în bundle, cheia poate fi selectată și trimisă, iar receptorul afișează același sticker pe Android/iOS/web.
