@@ -77,3 +77,11 @@
 - Rezultatele se filtrează pe măsură ce utilizatorul tastează; afișează stare clară pentru zero rezultate și opțiune de golire a căutării.
 - Căutarea este exclusiv de consultare, fără drepturi de editare și fără afișarea datelor neautorizate.
 - Teste pentru căutare fără diacritice, nume parțiale, filtre combinate și rezultate inexistente.
+
+## Paritate de interfață între platforme — aprobată
+- Designul, navigarea, panourile laterale, subtaburile, filtrele, Agenda și animația Dashboard trebuie să fie consistente în Android APK, browser pe Android, Safari/iOS și browser desktop.
+- Folosește aceeași logică Flutter responsive, adaptată doar la lățime, safe areas, input tactil/tastatură și posibilitățile platformei; evită ecrane separate cu funcții divergente.
+- Fade-in-ul Dashboard după 3 secunde funcționează pe toate platformele, cu respectarea preferinței de reducere a animațiilor.
+- Widgetul de ecran principal este exclusiv Android; comenzile de intervenție echivalente trebuie să fie accesibile în aplicația web/iOS, fără a promite widget nativ iOS.
+- Teste responsive pentru lățimi mici, tablete și desktop; verifică overflow, accesibilitate, scroll, navigare înapoi, tastatura mobilă, apelarea tel: și orientarea ecranului.
+- Nu se publică web și nu se generează APK fără validare și aprobarea utilizatorului.
