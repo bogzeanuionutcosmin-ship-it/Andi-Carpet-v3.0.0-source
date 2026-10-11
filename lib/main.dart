@@ -4090,7 +4090,10 @@ class _HomePageState extends State<HomePage> {
     final db=FirebaseFirestore.instance;
     final Query<Map<String,dynamic>> expensesQuery = canViewAll ? db.collection('expenses') : db.collection('expenses').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> perDiemQuery = canViewAll ? db.collection('perDiems') : db.collection('perDiems').where('teamId',isEqualTo:scope);
-    final Query<Map<String,dynamic>> financeQuery = canViewAll ? db.collection('finance') : db.collection('finance').where('teamId',isEqualTo:scope);
+    // finance/{teamId} foloseste chiar ID-ul echipei ca ID de document.
+    // Documentele istorice pot sa nu contina campul teamId, iar filtrarea
+    // dupa acest camp le ascundea dupa migrare.
+    final Query<Map<String,dynamic>> financeQuery = canViewAll ? db.collection('finance') : db.collection('finance').where(FieldPath.documentId,isEqualTo:scope);
     final Query<Map<String,dynamic>> settlementQuery = canViewAll ? db.collection('settlements') : db.collection('settlements').where('teamId',isEqualTo:scope);
     _financialSubscriptions.add(expensesQuery.snapshots().listen((snap){
       final list=snap.docs.map(_expenseFromDoc).toList()..sort((a,b)=>a.date.compareTo(b.date));
