@@ -32,4 +32,20 @@ void main() {
     expect(defs.firstWhere((e) => e.id == 'admin').permissions, isNotEmpty);
     expect(defs.any((e) => e.id == 'worker'), isFalse);
   });
+  test('identificatorii de funcții nu sunt goi', () {
+    final defs = defaultFunctionDefinitions();
+    expect(defs.every((e) => e.id.trim().isNotEmpty), isTrue);
+  });
+
+  test('fiecare funcție are o listă de permisiuni', () {
+    final defs = defaultFunctionDefinitions();
+    expect(defs.every((e) => e.permissions is List), isTrue);
+  });
+
+  test('formatarea datei funcționează pentru anul bisect', () {
+    final value = formatDate(DateTime(2024, 2, 29));
+    expect(value, contains('2024'));
+    expect(value, contains('februarie'));
+  });
+
 }
