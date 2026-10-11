@@ -305,3 +305,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - **5.744 caractere** eliminate din `lib/main.dart`. Commituri `106a0ba8` (modul), `e263eba0` (legare), `38e0a349` (test). **17 module extrase**.
 - Testul `test_icon_badge_catalog_is_extracted` verifică part, absența definițiilor duplicate și aliasul de compatibilitate. CI după acest lot încă de verificat; nu declara verde prematur.
 - Următor: extragere `_InteractiveBadgeIcon` și componente vizuale vecine după inspecția limitelor; apoi documentație funcțională completă, cu reguli/teste pentru fiecare funcție, conform cerinței utilizatorului.
+
+## 27. Curățare ecusoane interactive (18 module)
+- CI `38178996854` pe `cddb1baf`: **success 5/5**, confirmă modulul #17.
+- Extras `lib/ui/interactive_member_badges.dart` cu widgeturile `_InteractiveBadgeIcon`, `_InteractiveBadgeIconState`, `functionKeyWidget`, `effectiveBadgeKeysForFunctionIds`, `badgeStripWidget`, `memberBadgeStripWidget`. Păstrate overlay/hover/tap, maxim 3 ecusoane, alias `badge_machine` → `badge_worker`, filtrarea `badge_coordinator` și deduplicarea.
+- Eliminat bloc de **5.057 caractere** din `lib/main.dart`; commituri `d0688f2e` (modul), `6b5cf83b` (legare), `95034987` (test de regresie). **18 module extrase**.
+- Verifică CI nou înainte de a declara verde. Fără deploy/APK/modificări date. Următoarele loturi: categorii locații, funcții permisiuni, componente UI rămase, apoi documentarea completă a regulilor în `docs/`.
