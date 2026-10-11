@@ -29,14 +29,15 @@ beforeEach(async () => {
 });
 
 async function declareTransfer() {
-  const batch = db('distributor').batch();
-  batch.set(db('distributor').doc(path), {
+  const distributorDb = db('distributor');
+  const batch = distributorDb.batch();
+  batch.set(distributorDb.doc(path), {
     distributorId: ids.distributor, beneficiaryId: ids.beneficiary,
     declaredBani: 12500, receivedBani: null, status: 'pending',
     paymentMethod: 'cash', revision: 0,
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
   });
-  batch.set(db('distributor').doc(path + '/audit/declare'), {
+  batch.set(distributorDb.doc(path + '/audit/declare'), {
     action: 'declare', actorId: ids.distributor, amountBani: 12500,
     previousStatus: null, newStatus: 'pending', revision: 0,
     at: serverTimestamp(),
@@ -48,11 +49,12 @@ test('distribuire diurnă: creare atomică, vizibilitate beneficiar, confirmare 
   await declareTransfer();
   const beneficiaryView = await assertSucceeds(db('beneficiary').doc(path).get());
   if (beneficiaryView.data().declaredBani !== 12500) throw Error('Suma declarată nu este vizibilă beneficiarului');
-  const batch = db('beneficiary').batch();
-  batch.update(db('beneficiary').doc(path), {
+  const beneficiaryDb = db('beneficiary');
+  const batch = beneficiaryDb.batch();
+  batch.update(beneficiaryDb.doc(path), {
     receivedBani: 12500, status: 'received', revision: 1, updatedAt: serverTimestamp(),
   });
-  batch.set(db('beneficiary').doc(path + '/audit/revision-1'), {
+  batch.set(beneficiaryDb.doc(path + '/audit/revision-1'), {
     action: 'acknowledge', actorId: ids.beneficiary, receivedBani: 12500,
     previousReceivedBani: null, previousStatus: 'pending',
     newStatus: 'received', revision: 1, at: serverTimestamp(),
