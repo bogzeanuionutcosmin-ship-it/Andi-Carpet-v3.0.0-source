@@ -467,11 +467,15 @@ service cloud.firestore {
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
       allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
+        || (hasPermission('viewOwnDecont')
+          && isTeamMember(request.resource.data.teamId)
+          && (!('managerId' in request.resource.data)
+            || request.resource.data.managerId == null));
       allow update: if isAdmin()
         || (hasPermission('viewOwnDecont')
           && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+          && isTeamMember(request.resource.data.teamId)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['managerId', 'teamId']));
       allow delete: if isAdmin();
     }
 
