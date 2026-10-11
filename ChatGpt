@@ -212,3 +212,13 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 **Curățare:** nu s-au șters asseturi sau cod presupus inutil; doar mutări fără schimbări intenționate de comportament. Avertismentele de duplicate hash rămân explicate în raport. `_safeFilePart`, `_pdfDate`, `_Empty`, `_InstallAppButtons`, `_AppBackdrop`, `_VerifiedLocationFix` și `_andiStickerAssets` au utilizări și nu trebuie eliminate fără analiză completă.
 
 **Următorul pas obligatoriu:** verifică run-ul **38142062939**. Dacă apare eroare de compilare/test, repar-o înainte de alte extrageri. După verde, separă alte blocuri bine delimitate (auth, dashboard, componente chat), cu teste. Analizează cod mort prin referințe la nivel de repo, inclusiv builduri/platforme, înainte de orice ștergere. Nu publica în producție fără cerere.
+
+## 13. Actualizare 12.10.2026 — corecție regresie teste după modularizarea PDF
+
+- La reluare, **run `38142083916` pe commit `c0a0eac9` s-a încheiat cu FAILURE**, însă **Flutter web build, Firestore emulator, Node projection și Firebase Functions au trecut**. Singurul job eșuat: **Python source and security contracts**.
+- Eroarea reală: două teste din `test/decont_05_08_source_contract_test.py`, `test_pdf_received_totals_derive_from_unique_entries` și `test_pdf_sections`, căutau literal expresiile `uniqueReceiptIds.add(e.id)` și etichetele secțiunilor PDF exclusiv în `lib/main.dart`. Acestea au fost mutate legitim în `lib/reports/pdf_reports.dart` prin extragerea precedentă.
+- **Commit `2d99c19a5829bbef229a48290943690d34a57b49`**: contractul Python citește acum concatenarea sursei `lib/main.dart` și `lib/reports/pdf_reports.dart`. **Nu s-a modificat calculul financiar sau comportamentul PDF**, doar calea testului.
+- Run nou `38175780714` a fost **queued** imediat după commit; **verifică finalizarea și toate cele 5 joburi înainte de alte schimbări riscante**.
+- Atenție pentru viitoarele extrageri: testele de contract sursă au multe verificări textuale pe `main.dart`. Când muți implementarea, **actualizează toate testele dependente să citească modulul real**. Un test de tip `assertIn(..., main.dart)` poate eșua după o mutare corectă fără să existe bug funcțional.
+- La această etapă există **6 module extrase**: două `ui`, două `map`, unul `reports`, unul `models`. Nu s-a făcut deploy, nu s-au șters asseturi. Cerința de avans diurnă permis rămâne obligatorie.
+- Următorul lucru: confirmă CI pe `2d99c19`; apoi inventariază contractele statice care presupun tot codul în `main.dart`, înainte de următoarea separare. Continuă cu module mici, documentează commiturile aici.
