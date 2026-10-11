@@ -89,6 +89,20 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(symbol, module)
         self.assertIn("Image.asset(_activeLogoAsset(settings)", module)
 
+    def test_install_buttons_are_extracted_without_behavior_loss(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/install_app_buttons.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'ui/install_app_buttons.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("Future<void> _showAndroidInstallFlow(",
+                       "Future<void> _showAppleInstallFlow(",
+                       "class _InstallAppButtons extends StatelessWidget"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("launchUrl(uri,mode:LaunchMode.externalApplication)", module)
+        self.assertIn("Auto Blocker", module)
+        self.assertIn("Adaugă pe ecranul principal", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
