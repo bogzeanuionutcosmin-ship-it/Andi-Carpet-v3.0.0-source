@@ -52,6 +52,18 @@ void main() {
     expect(source, contains('Opacity(opacity:opacity'));
   });
 
+  test('Chat remembers selected tab and Agenda remembers category', () {
+    expect(source, contains('static int _lastChatTab = 0;'));
+    expect(source, contains('int _selectedChatTab = _lastChatTab;'));
+    expect(source, contains('static String _lastSelectedCategory'));
+    expect(source, contains('String selectedCategory = _lastSelectedCategory;'));
+  });
+
+  test('Chat background opacity has live preview', () {
+    expect(source, contains('Previzualizare fundal'));
+    expect(source, contains('Opacity(opacity:opacity,child:Image.memory(base64Decode(imageData!)'));
+  });
+
   test('Chat background upload is responsive and keeps image proportions', () {
     expect(source, contains('MediaQuery.sizeOf(dialogContext).width*.78'));
     expect(source, contains('math.max(decoded.width,decoded.height)'));
