@@ -400,12 +400,20 @@ service cloud.firestore {
         || (isActive() && (resource.data.memberId == request.auth.uid
           || resource.data.distributedBy == request.auth.uid));
       allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId)
-          && request.resource.data.distributedBy == request.auth.uid);
+        || (isActive()
+          && isTeamMember(request.resource.data.teamId)
+          && request.resource.data.distributedBy == request.auth.uid
+          && request.resource.data.memberId is string
+          && request.resource.data.amount is number
+          && request.resource.data.amount > 0
+          && request.resource.data.status == 'awaitingConfirmation'
+          && request.resource.data.get('actualReceivedAmount', null) == null
+          && (hasPermission('viewOwnDecont')
+            || (exists(/databases/$(database)/documents/finance/$(request.resource.data.teamId))
+              && get(/databases/$(database)/documents/finance/$(request.resource.data.teamId)).data.managerId == request.auth.uid)));
       allow update: if isAdmin()
         || (isActive() && resource.data.memberId == request.auth.uid
           && resource.data.distributedBy is string
-          && resource.data.distributedBy != request.auth.uid
           && resource.data.status == 'awaitingConfirmation'
           && resource.data.get('actualReceivedAmount', null) == null
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
