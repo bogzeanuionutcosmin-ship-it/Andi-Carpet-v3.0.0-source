@@ -61,7 +61,27 @@ after = """  String? _roadRouteKey;
       _roadRouteError = null;
       unawaited(_loadRoadRoute(key, route.points, days));
     }
-    return _roadRoutePolylines;
+    // Approximate live progress on the current road leg only when GPS is close
+    // to the routed geometry; never invent a travelled road when GPS is absent.
+    final position = _myPosition;
+    if (position == null || position.accuracy > 100 || _roadRoutePolylines.isEmpty) {
+      return _roadRoutePolylines;
+    }
+    final activeIndex = _roadRoutePolylines.indexWhere((line) => line.color == Colors.amber);
+    if (activeIndex < 0) return _roadRoutePolylines;
+    final segment = _roadRoutePolylines[activeIndex].points;
+    var nearest = -1;
+    var distance = double.infinity;
+    for (var i = 0; i < segment.length; i++) {
+      final point = segment[i];
+      final d = Geolocator.distanceBetween(position.latitude,position.longitude,
+          point.latitude,point.longitude);
+      if (d < distance) { distance = d; nearest = i; }
+    }
+    if (distance > 150 || nearest < 1) return _roadRoutePolylines;
+    return [..._roadRoutePolylines,
+      Polyline(points:segment.take(nearest + 1).toList(),
+          color:Colors.green,strokeWidth:7)];
   }
 
   Future<void> _loadRoadRoute(String key, List<LatLng> points, List<WorkSchedule> days) async {
