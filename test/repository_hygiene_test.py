@@ -302,6 +302,21 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("data['functionIds'] is List", module)
         self.assertIn("if (useNickname && nickname.isNotEmpty) name = nickname;", module)
 
+    def test_auth_gate_is_extracted_without_lifecycle_changes(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/auth/auth_gate.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'auth/auth_gate.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class AuthGate extends StatefulWidget",
+                       "class _AuthGateState extends State<AuthGate>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for feature in ("authStateChanges().listen(",
+                        "FirebaseAuth.instance.currentUser",
+                        "collection('meta').doc('uiSettings')",
+                        "MissingProfilePage(", "PendingApprovalPage(", "HomePage("):
+            self.assertIn(feature, module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
