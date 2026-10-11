@@ -54,6 +54,34 @@ test('financial roles and protected writes', async () => {
     await assertSucceeds(db('worker').doc('settlements/trip1').update({ name: 'Updated itinerary' }));
     await assertFails(db('worker').doc('settlements/trip1').update({ receivedDeparture: 900 }));
     await assertSucceeds(db('manager').doc('settlements/trip1').update({ receivedDeparture: 100 }));
+    // Team scheduling and records: members can edit their own team's data.
+    await assertSucceeds(db('worker').doc('schedules/s1').set({ teamId: 'team1', name: 'Night route' }));
+    await assertSucceeds(db('manager').doc('schedules/s1').update({ name: 'Reordered route' }));
+    await assertFails(db('outsider').doc('schedules/s1').update({ name: 'Unauthorized' }));
+    await assertSucceeds(db('worker').doc('records/r1').set({ teamId: 'team1', note: 'Start' }));
+    await assertFails(db('outsider').doc('records/r1').set({ teamId: 'team1' }));
+
+    // Administrative resources must not be modified by ordinary members.
+    await assertFails(db('worker').doc('teams/team1').update({ members: ['worker'] }));
+    await assertFails(db('worker').doc('cars/car1').set({ plate: 'TEST' }));
+    await assertSucceeds(db('admin').doc('cars/car1').set({ plate: 'TEST' }));
+    await assertSucceeds(db('worker').doc('cars/car1').get());
+
+    // Users can read their own profile, but not enumerate private profiles.
+    await assertSucceeds(db('worker').doc('users/worker').get());
+    await assertFails(db('worker').doc('users/manager').get());
+    await assertFails(db('worker').collection('users').get());
+    await assertSucceeds(db('admin').doc('users/manager').get());
+
+    // A worker can mark only their own notifications as read.
+    await env.withSecurityRulesDisabled(async ctx => {
+      await ctx.firestore().doc('notifications/n1').set({
+        userId: 'worker', title: 'Info', message: 'Test', read: false,
+      });
+    });
+    await assertSucceeds(db('worker').doc('notifications/n1').update({ read: true }));
+    await assertFails(db('manager').doc('notifications/n1').update({ read: false }));
+    await assertFails(db('worker').doc('notifications/n1').update({ userId: 'manager' }));
     await assertFails(db('worker').doc('finance/team1').update({ managerId: 'worker' }));
     await assertSucceeds(db('admin').doc('finance/team1').update({ managerId: 'worker' }));
   } finally {
