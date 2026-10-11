@@ -200,6 +200,25 @@ service cloud.firestore {
           && isTeamMember(resource.data.teamId)
           && resource.data.confirmed == false
           && resource.data.reviewStatus == 'rejected'
+          && request.resource.data.teamId == resource.data.teamId
+          && request.resource.data.settlementId == resource.data.settlementId
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.confirmed == false
+          && request.resource.data.reviewStatus == 'pending'
+          && request.resource.data.get('rejectionReason', null) == null
+          && request.resource.data.get('reviewedBy', null) == null
+          && request.resource.data.amount is number
+          && request.resource.data.amount > 0
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['category', 'description', 'amount', 'date',
+              'documentType', 'documentNumber', 'supplier', 'liters',
+              'pricePerLiter', 'reviewStatus', 'rejectionReason',
+              'reviewedBy', 'updatedAt']))
+        || (isActive()
+          && resource.data.createdBy == request.auth.uid
+          && isTeamMember(resource.data.teamId)
+          && resource.data.confirmed == false
+          && resource.data.reviewStatus == 'rejected'
           && request.resource.data.confirmed == false
           && request.resource.data.reviewStatus == 'pending'
           && request.resource.data.get('rejectionReason', null) == null
