@@ -105,6 +105,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("Auto Blocker", module)
         self.assertIn("Adaugă pe ecranul principal", module)
 
+    def test_firebase_bootstrap_is_extracted_and_entrypoint_stays_in_main(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/bootstrap/firebase_initialization.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'bootstrap/firebase_initialization.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("const String _webPushVapidKey =",
+                       "Future<void> _initializeFirebaseForPlatform()",
+                       "Future<void> _firebaseMessagingBackgroundHandler("):
+            self.assertEqual(module.count(symbol), 1)
+            self.assertNotIn(symbol, main)
+        self.assertIn("@pragma('vm:entry-point')", module)
+        self.assertIn("Future<void> main() async", main)
+        self.assertNotIn("Future<void> main() async", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
