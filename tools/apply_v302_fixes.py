@@ -118,6 +118,16 @@ changes = [
         return;
       }
       if (!await Geolocator.isLocationServiceEnabled()) return;"""),
+    ("""            _lastLiveLocalityLabel = label;
+            _lastLiveLocalityResolvedAt = now;
+            _lastLiveLocalityPosition = p;
+            return label;""",
+     """            final changed = _lastLiveLocalityLabel != label;
+            _lastLiveLocalityLabel = label;
+            _lastLiveLocalityResolvedAt = now;
+            _lastLiveLocalityPosition = p;
+            if (changed && mounted) setState(() {});
+            return label;"""),
 ]
 for before, after in changes:
     count = data.count(before)
