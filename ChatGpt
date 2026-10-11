@@ -365,3 +365,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `lib/auth/account_access_pages.dart`: `PendingApprovalPage`, `MissingProfilePage`, informații profil și deconectare; **2.812 caractere** eliminate din `lib/main.dart`, fără modificare logică.
 - Commituri `fabef47f` (modul), `d0b13fb9` (legare), `d37d671f` (test contract). **27 module separate**.
 - CI nou încă neconfirmat. Fără deploy/APK/date/migrare. Urmează analizarea `HomePage` pe subcomponente pentru separare incrementală, păstrând fluxurile și testele; apoi documentația completă a regulilor în `docs/`.
+
+## 37. Izolare HomePage / orchestrator principal (28 module)
+- CI `38182191517` pe `71d7c45a`: **success 5/5** pentru modul #27.
+- Extras `lib/home/home_page.dart`: `HomePage` + `_HomePageState` cu toate fluxurile principale (Firebase sync, locație live, notificări, operațiuni CRUD/financiare, navigare, administrare), **144.289 caractere** mutate textual din `lib/main.dart`. Nu s-a schimbat intenționat comportamentul; separarea mare permite refactorizare ulterioară în extensii/servicii mai mici, cu atenție la accesul la state și lifecycle.
+- Commituri `95745499` (modul), `2fb3986d` (legare), `4773e80e` (test contract). **28 module separate**.
+- CI pentru modul #28 încă neconfirmat. Fără deploy/APK/date/migrare. Verifică toate cele 5 jobs înainte de următoarea schimbare; apoi segmentează incremental HomePage și celelalte ecrane mari, fără a rupe state/permissions. Documentația exhaustivă a regulilor funcționale în `docs/` rămâne obligatorie.
