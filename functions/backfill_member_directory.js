@@ -2,11 +2,12 @@
 
 // One-time backfill for users created before syncMemberDirectory was deployed.
 // Run with authenticated Google Cloud credentials for the Firebase project.
-const admin = require('firebase-admin');
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 const { projectMember } = require('./member_directory_projection');
 
-admin.initializeApp({ projectId: 'andicarpet-e777e' });
-const db = admin.firestore();
+initializeApp({ projectId: 'andicarpet-e777e' });
+const db = getFirestore();
 
 async function main() {
   const snapshot = await db.collection('users').get();
