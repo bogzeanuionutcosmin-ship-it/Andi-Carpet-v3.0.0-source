@@ -7240,6 +7240,19 @@ class _MapPageState extends State<MapPage> {
   final Set<LocationStatus> _selectedStatuses = <LocationStatus>{...LocationStatus.values};
   bool _showGraphRoute = true;
   String? _routeGraphId;
+  String? _roadGeometryKey;
+  Future<List<List<double>>?>? _roadGeometryFuture;
+
+  Future<List<List<double>>?> _loadRoadGeometry(List<LatLng> points) {
+    final key = points.map((p) => '${p.latitude.toStringAsFixed(6)},${p.longitude.toStringAsFixed(6)}').join('|');
+    if (_roadGeometryKey != key || _roadGeometryFuture == null) {
+      _roadGeometryKey = key;
+      _roadGeometryFuture = _mapboxServices.drivingGeometry(
+        points.map((p) => <double>[p.latitude, p.longitude]).toList(),
+      );
+    }
+    return _roadGeometryFuture!;
+  }
 
   @override
   void initState() {
@@ -7711,7 +7724,22 @@ class _MapPageState extends State<MapPage> {
               ),
               children: [
                 TileLayer(urlTemplate: kMapTileUrl, userAgentPackageName: 'ro.andicarpeta.app'),
-                if (_rainbowRouteLines().isNotEmpty) PolylineLayer(polylines: _rainbowRouteLines()),
+                if (_showGraphRoute && graphRoutePoints(_routeDays, widget.locations).complete &&
+                    graphRoutePoints(_routeDays, widget.locations).points.length >= 2)
+                  FutureBuilder<List<List<double>>?>(
+                    future: _loadRoadGeometry(graphRoutePoints(_routeDays, widget.locations).points),
+                    builder: (context, snapshot) {
+                      final coords = snapshot.data;
+                      if (coords == null || coords.length < 2) return const SizedBox.shrink();
+                      return PolylineLayer(polylines: [
+                        Polyline(
+                          points: coords.map((p) => LatLng(p[0], p[1])).toList(),
+                          color: Colors.deepOrangeAccent,
+                          strokeWidth: 6,
+                        ),
+                      ]);
+                    },
+                  ),
                 MarkerLayer(markers: [
                   ..._routeEndpointMarkers(),
                   ...positioned.map((l) => Marker(
