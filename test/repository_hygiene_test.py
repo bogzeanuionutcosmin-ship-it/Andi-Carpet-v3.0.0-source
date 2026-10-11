@@ -317,6 +317,19 @@ class RepositoryHygieneTests(unittest.TestCase):
                         "MissingProfilePage(", "PendingApprovalPage(", "HomePage("):
             self.assertIn(feature, module)
 
+    def test_login_registration_page_is_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/auth/login_registration_page.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'auth/login_registration_page.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class LoginPage extends StatefulWidget",
+                       "class _LoginPageState extends State<LoginPage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for feature in ("TextEditingController()", "confirmPassword",
+                        "createMode", "FirebaseAuth.instance"):
+            self.assertIn(feature, module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
