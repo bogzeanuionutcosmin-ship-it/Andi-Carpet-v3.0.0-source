@@ -177,24 +177,27 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Doar administratorul si gestionarul financiar desemnat pot modifica
+    // registrul financiar definitiv. Propunerile lucratorilor vor fi
+    // stocate separat si aprobate explicit, nu direct in expenses.
     match /expenses/{expenseId} {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
-      // Cheltuielile nu au câmpurile distributedBy / supplementaryFor.
-      // Condiția veche era copiată din validarea diurnelor și bloca
-      // încărcarea bonurilor de către membrii obișnuiți.
       allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont')
-          && isTeamMember(request.resource.data.teamId)
+        || (isActive()
           && request.resource.data.teamId is string
-          && request.resource.data.amount is number
-          && request.resource.data.amount >= 0);
+          && exists(/databases/$(database)/documents/finance/$(request.resource.data.teamId))
+          && get(/databases/$(database)/documents/finance/$(request.resource.data.teamId)).data.managerId == request.auth.uid);
       allow update: if isAdmin()
-        || (hasPermission('viewOwnDecont')
-          && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
-      allow delete: if isAdmin();
+        || (isActive()
+          && resource.data.teamId == request.resource.data.teamId
+          && exists(/databases/$(database)/documents/finance/$(resource.data.teamId))
+          && get(/databases/$(database)/documents/finance/$(resource.data.teamId)).data.managerId == request.auth.uid);
+      allow delete: if isAdmin()
+        || (isActive()
+          && exists(/databases/$(database)/documents/finance/$(resource.data.teamId))
+          && get(/databases/$(database)/documents/finance/$(resource.data.teamId)).data.managerId == request.auth.uid);
     }
 
     // Registrul financiar v2: acces numai participanților; fără ștergere.
