@@ -14,6 +14,14 @@ on:
           - check-functions
           - hosting
           - functions
+      source_ref:
+        description: 'Web source branch (workflow must run from main)'
+        required: true
+        type: choice
+        default: main
+        options:
+          - main
+          - fix/per-diem-manager-authorization-20261011
       confirm_production:
         description: 'For hosting/functions deployments, type DEPLOY'
         required: false
@@ -36,6 +44,8 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ (inputs.target == 'hosting' || inputs.target == 'build-web') && inputs.source_ref || github.ref_name }}
 
       - name: Authenticate to Google Cloud via OIDC
         id: auth
