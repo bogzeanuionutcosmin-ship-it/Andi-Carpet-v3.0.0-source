@@ -189,6 +189,21 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("settings.customBackgrounds[customId]", module)
         self.assertIn("settings.backgroundOpacity.clamp(0.0, 0.70)", module)
 
+    def test_icon_badge_catalog_is_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/icon_badge_catalog.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'ui/icon_badge_catalog.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("const Map<String, IconData> appIconChoices",
+                       "const Map<String, String> badgeAssetChoices",
+                       "const List<String> availableBadgeKeys",
+                       "const Map<String, String> categoryBrandAssets",
+                       "Widget _badgeGraphic(", "Widget categoryBrandWidget(",
+                       "Widget sectionAssetWidget(", "String badgeLabel("):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
