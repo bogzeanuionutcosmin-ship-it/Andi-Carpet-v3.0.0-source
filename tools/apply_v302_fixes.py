@@ -14,6 +14,8 @@ changes = [
      "const String _appVersionLabel = '3.0.2+34';"),
     ("Text('Fereastră standard: ${timeText(workWindowStart(workDate))} → ${timeText(workWindowEnd(workDate))}'),",
      ""),
+    ("_StatMini(label:'Km GPS (linie dreaptă)',value:", "_StatMini(label:'Km GPS estimativi (linie dreaptă)',value:"),
+    ("_InfoCard(icon:Icons.info_outline,title:'Estimare traseu complet',text:", "_InfoCard(icon:Icons.info_outline,title:'Estimare geometrică (nu rutieră)',text:"),
 ]
 for before, after in changes:
     count = data.count(before)
