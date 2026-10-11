@@ -5099,6 +5099,12 @@ class _HomePageState extends State<HomePage> {
       throw StateError('Nu ai dreptul să modifici datele financiare ale acestei echipe.');
     }
     final data = _financeMap(finance);
+    if (!isAdmin) {
+      final managerSnapshot = await FirebaseFirestore.instance.collection('finance').doc(finance.teamId).get();
+      if (managerSnapshot.data()?['managerId'] != currentUserId) {
+        throw StateError('Doar gestionarul financiar poate modifica sumele echipei.');
+      }
+    }
     // Pentru membrii obisnuiti managerId este imuabil in reguli.
     // Nu il retrimitem la fiecare modificare a sumelor.
     final financeRef = FirebaseFirestore.instance.collection('finance').doc(finance.teamId);
