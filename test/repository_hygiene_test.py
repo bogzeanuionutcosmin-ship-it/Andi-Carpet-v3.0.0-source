@@ -233,6 +233,21 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("if (categoryId == 'million') return Colors.red;", module)
         self.assertIn("if (categoryId == 'magic') return Colors.black87;", module)
 
+    def test_default_categories_and_functions_are_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/models/default_categories_functions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'models/default_categories_functions.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("String functionPermissionId(",
+                       "List<LocationCategory> defaultLocationCategories(",
+                       "List<FunctionDefinition> defaultFunctionDefinitions(",
+                       "FunctionDefinition? functionById("):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("FunctionPermission.values.map((e) => e.name).toSet()", module)
+        for category in ("million", "magic", "horeca", "cazari"):
+            self.assertIn("id: '" + category + "'", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
