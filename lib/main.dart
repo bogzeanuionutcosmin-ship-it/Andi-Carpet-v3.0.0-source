@@ -11471,12 +11471,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
   final ScrollController _scroll = ScrollController();
   bool _sending = false;
   int _selectedChatTab = 0;
-  bool _savingChatBackground = false;
-
   Future<void> _editChatAppearance() async {
     if(widget.currentUser.role!=UserRole.director)return;
     final doc=FirebaseFirestore.instance.collection('meta').doc('uiSettings');
-    final current=await doc.get();
+    DocumentSnapshot<Map<String,dynamic>> current;
+    try{current=await doc.get();}catch(e){if(mounted)showErrorMessage(context,'Nu pot încărca setările Chat live: $e');return;}
     if(!mounted)return;
     final existing=current.data()??<String,dynamic>{};
     var opacity=((existing['chatBackgroundOpacity'] as num?)?.toDouble()??0.28).clamp(0.0,0.85).toDouble();
@@ -11484,10 +11483,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
     var remove=false;
     await showDialog<void>(context:context,builder:(dialogContext)=>StatefulBuilder(builder:(dialogContext,setDialog)=>AlertDialog(
       title:const Text('Setări Chat live'),
-      content:SizedBox(width:440,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+      content:SizedBox(width:math.min(440.0,MediaQuery.sizeOf(dialogContext).width*.78),child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
         const Text('Fundalul este comun pentru toți membrii, inclusiv în browser.'),
         const SizedBox(height:12),
-        FilledButton.tonalIcon(onPressed:_savingChatBackground?null:()async{
+        FilledButton.tonalIcon(onPressed:()async{
           try{
             final picked=await FilePicker.platform.pickFiles(type:FileType.image,withData:true);
             if(picked==null||picked.files.isEmpty)return;
@@ -11495,7 +11494,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
             if(bytes==null)throw const FormatException('Nu s-a putut citi imaginea.');
             final decoded=img.decodeImage(bytes);
             if(decoded==null)throw const FormatException('Format imagine nesuportat.');
-            final resized=decoded.width>1200?img.copyResize(decoded,width:1200):decoded;
+            final longest=math.max(decoded.width,decoded.height);
+            final resized=longest>1200?img.copyResize(decoded,width:(decoded.width*1200/longest).round(),height:(decoded.height*1200/longest).round()):decoded;
             final encoded=img.encodeJpg(resized,quality:65);
             if(encoded.length>450000)throw const FormatException('Imaginea este prea mare; încearcă una mai mică.');
             setDialog((){imageData=base64Encode(encoded);remove=false;});
@@ -11504,6 +11504,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         TextButton.icon(onPressed:()=>setDialog((){imageData=null;remove=true;}),icon:const Icon(Icons.delete_outline),label:const Text('Elimină fundalul')),
         const SizedBox(height:12),Text('Opacitate: ${(opacity*100).round()}%'),
         Slider(value:opacity,min:0,max:0.85,divisions:17,label:'${(opacity*100).round()}%',onChanged:(v)=>setDialog(()=>opacity=v)),
+        const Text('0% = fundal ascuns · 85% = fundal vizibil intens'),
       ]))),
       actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext),child:const Text('Anulează')),FilledButton(onPressed:()async{
         try{
@@ -11622,7 +11623,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           try{final raw=(data['chatBackgroundBase64']??'').toString();if(raw.isNotEmpty)bg=base64Decode(raw);}catch(_){}
           final opacity=((data['chatBackgroundOpacity'] as num?)?.toDouble()??0.28).clamp(0.0,0.85).toDouble();
           return IndexedStack(index:_selectedChatTab,children:[Stack(children:[
-            if(bg!=null)Positioned.fill(child:Opacity(opacity:opacity,child:Image.memory(bg,fit:BoxFit.cover))),
+            if(bg!=null)Positioned.fill(child:Opacity(opacity:opacity,child:Image.memory(bg,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()))),
             Column(
         children: [
           Expanded(
