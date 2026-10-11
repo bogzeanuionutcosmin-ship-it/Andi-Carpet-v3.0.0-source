@@ -44,3 +44,11 @@
 3. Teste automate pentru permisiuni de pornire, închidere, STOP, diurne și modificări de locații; teste widget și navigare.
 4. Verificare că niciun ecran/flux existent nu a fost pierdut în reorganizare.
 5. Nu se face merge, deploy sau APK fără verificările verzi și aprobarea utilizatorului.
+
+## Animație la lansare — cerință aprobată
+- Dashboard-ul își păstrează exact conținutul și aspectul actual.
+- La deschiderea aplicației, fundalul temei este vizibil imediat, la fel și comenzile laterale pentru panouri, profilul, chatul și membrii; acestea rămân interactive.
+- Dashboard-ul este inițial ascuns și începe să apară prin fade-in după 3 secunde, cu durată țintă ~700 ms.
+- Întârzierea se aplică o singură dată per lansare a aplicației, nu la navigare sau revenire dintr-un panou; timerul se anulează corect la dispose.
+- Respectă preferința de reducere a animațiilor; evită întârzieri suplimentare pentru interacțiuni, mesaje urgente sau stări critice.
+- Teste: controalele sunt accesibile imediat; Dashboard ascuns înainte de 3 secunde, vizibil după fade; navigarea nu repornește întârzierea; fără setState după dispose.
