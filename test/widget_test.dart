@@ -37,9 +37,10 @@ void main() {
     expect(defs.every((e) => e.id.trim().isNotEmpty), isTrue);
   });
 
-  test('fiecare funcție are o listă de permisiuni', () {
+  test('fiecare funcție are un set de permisiuni', () {
     final defs = defaultFunctionDefinitions();
-    expect(defs.every((e) => e.permissions is List), isTrue);
+    expect(defs, isNotEmpty);
+    expect(defs.every((e) => e.permissions is Set<String>), isTrue);
   });
 
   test('formatarea datei funcționează pentru anul bisect', () {
