@@ -329,3 +329,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `lib/models/location_status_and_functions.dart`: `LocationStatusX`, `LocationCategory`, `FunctionDefinition`; **1.764 caractere** eliminate din `lib/main.dart`.
 - Păstrate stările/culorile locațiilor, `FunctionDefinition.badgeKeys` max 3, fallback `iconKey` vechi, primul ecuson ca iconKey, permisiuni implicite goale, active implicit true. Commituri `4775d627` (modul), `80df1440` (legare), `c7958ce9` (test). **21 module extrase**.
 - CI pentru noul lot neconfirmat încă. Nu deploy/APK/date. Următorul lot: utilitare PDF sau bootstrap/UI cu limite clare; după curățare, documentează regulile funcționale complete în `docs/` și acoperă-le cu teste.
+
+## 31. Curățare utilitare PDF (22 module)
+- CI anterior `38180818347` pe `b2e9d895`: **success 5/5** pentru modul #21.
+- Extras `lib/reports/pdf_format_helpers.dart`: `_buildPdfTheme` (Open Sans regular/bold/italic), `_safeFilePart` și `_pdfDate`; **513 caractere** eliminate din `lib/main.dart`, logică neschimbată.
+- Fișierul a fost creat în GitHub, apoi conectat prin commit `45c36a64`; test regresie `40e05bd7`. **22 module separate**. O încercare inițială de operație combinată a fost întreruptă, însă fișierul a fost verificat existent și conectarea a reușit.
+- CI pentru noul lot încă neconfirmat. Fără deploy/APK/migrare. Continuă cu separarea altor componente independente; la final documentează arhitectura, regulile funcționale, permisiunile, fluxurile și testele în `docs/`.
