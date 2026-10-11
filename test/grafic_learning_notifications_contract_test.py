@@ -3,12 +3,13 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 MAIN = (ROOT / "lib" / "main.dart").read_text()
+LEARNING = (ROOT / "lib" / "learning" / "duration_estimates.dart").read_text()
 FUNCTIONS = (ROOT / "functions" / "index.js").read_text()
 
 class GraficLearningNotificationsContract(unittest.TestCase):
     def test_learning_minimum_three(self):
-        self.assertIn("if (history.length < 3) return null;", MAIN)
-        self.assertIn("duration.inSeconds <= 0", MAIN)
+        self.assertIn("if (history.length < 3) return null;", LEARNING)
+        self.assertIn("duration.inSeconds <= 0", LEARNING)
     def test_recalculation_preserves_active_items(self):
         self.assertIn("_pendingItemsForDay(day, workDate, includeActive: false)", MAIN)
     def test_alert_cooldown(self):
