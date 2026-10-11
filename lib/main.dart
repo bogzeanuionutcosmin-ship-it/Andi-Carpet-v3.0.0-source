@@ -5177,6 +5177,33 @@ class _HomePageState extends State<HomePage> {
     _perDiemCache[entry.id] = _encoded(data);
   }
 
+  Future<void> _assignFinanceManagerDirect(String teamId, String managerUid, String? settlementId) async {
+    if (!isAdmin || !canEditTeam(teamId)) {
+      throw StateError('Doar administratorul poate desemna gestionarul.');
+    }
+    final db = FirebaseFirestore.instance;
+    final financeRef = db.collection('finance').doc(teamId);
+    final settlementRef = settlementId == null ? null : db.collection('settlements').doc(settlementId);
+    await db.runTransaction((tx) async {
+      final financeSnap = await tx.get(financeRef);
+      final settlementSnap = settlementRef == null ? null : await tx.get(settlementRef);
+      if (settlementRef != null &&
+          (!settlementSnap!.exists || settlementSnap.data()?['teamId'] != teamId)) {
+        throw StateError('Deplasarea nu apartine echipei selectate.');
+      }
+      if (financeSnap.exists) {
+        tx.update(financeRef, {'managerId': managerUid, 'updatedAt': FieldValue.serverTimestamp()});
+      } else {
+        tx.set(financeRef, {'teamId': teamId, 'managerId': managerUid,
+          'updatedAt': FieldValue.serverTimestamp()});
+      }
+      if (settlementRef != null) {
+        tx.update(settlementRef, {'managerId': managerUid, 'updatedAt': FieldValue.serverTimestamp()});
+      }
+    });
+    _financeCache.remove(teamId);
+  }
+
   Future<void> _saveSettlementDirect(TravelSettlement settlement) async {
     if (!canEditTeam(settlement.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici această deplasare.');
@@ -5525,7 +5552,7 @@ class _HomePageState extends State<HomePage> {
       CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_centralizator.png', size: 24, accent: centralizerColor), selectedIcon: appAssetIcon('assets/ui/tab_centralizator.png', size: 27, accent: centralizerColor, selected: true), label: compactNav ? 'Central.' : 'Centralizator'), centralizerColor);
     addPage(hasPermission(FunctionPermission.viewOwnDecont) || hasPermission(FunctionPermission.viewOtherDecont),
-      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, correctExpense: _correctExpenseDirect, rejectExpense: _rejectExpenseDirect, resubmitExpense: _resubmitExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
+      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, assignFinanceManager: _assignFinanceManagerDirect, saveExpense: _saveExpenseDirect, correctExpense: _correctExpenseDirect, rejectExpense: _rejectExpenseDirect, resubmitExpense: _resubmitExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_decont.png', size: 24, accent: decontColor), selectedIcon: appAssetIcon('assets/ui/tab_decont.png', size: 27, accent: decontColor, selected: true), label: 'Decont'), decontColor);
     addPage(hasPermission(FunctionPermission.viewContacts),
       MessagesContactsPage(locations:locations,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
@@ -8873,6 +8900,7 @@ class ExpensePage extends StatefulWidget {
   final VoidCallback onChanged;
   final void Function(String,String,String) notifyUser;
   final void Function(String,String) log;
+  final Future<void> Function(String, String, String?) assignFinanceManager;
   final Future<void> Function(Expense) saveExpense;
   final Future<void> Function(Expense) correctExpense;
   final Future<void> Function(String, String) rejectExpense;
@@ -8880,7 +8908,7 @@ class ExpensePage extends StatefulWidget {
   final Future<void> Function(PerDiemEntry) savePerDiem;
   final Future<void> Function(TeamFinance) saveFinance;
   final Future<void> Function(TravelSettlement) saveSettlement;
-  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.correctExpense,required this.rejectExpense,required this.resubmitExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
+  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.assignFinanceManager,required this.saveExpense,required this.correctExpense,required this.rejectExpense,required this.resubmitExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 
@@ -9631,24 +9659,15 @@ class _ExpensePageState extends State<ExpensePage> {
     String? selected = managerId;
     final r = await showDialog<String>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) => AlertDialog(title: const Text('Gestionar financiar'), content: Column(mainAxisSize: MainAxisSize.min, children: visibleTeamMemberIds.map((id) => RadioListTile<String>(value: id, groupValue: selected, title: Text(name(id)), onChanged: (v) => setD(() => selected = v))).toList()), actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')), FilledButton(onPressed: selected == null ? null : () => Navigator.pop(d, selected), child: const Text('Salvează'))])));
     if (r == null) return;
-    if (settlement != null) {
-      final previousManager = settlement!.managerId;
-      final previousFinanceManager = finance.managerId;
-      settlement!.managerId = r;
+    try {
+      await widget.assignFinanceManager(team.id, r, settlement?.id);
       finance.managerId = r;
-      try {
-        // Aceeasi identitate este folosita de interfata si de regulile
-        // Firestore pentru aprobarea bonurilor si distribuirea diurnei.
-        await widget.saveFinance(finance);
-        await widget.saveSettlement(settlement!);
-        widget.log('Gestionar financiar schimbat', '${settlement!.name} · ${name(r)}');
-      } catch (e) {
-        settlement!.managerId = previousManager;
-        finance.managerId = previousFinanceManager;
-        if (mounted) showErrorMessage(context, 'Nu s-a putut salva: $e');
-      }
-    } else {
-      finance.managerId = r; team.financialManagerId = r; await _saveFinance(finance, 'Gestionar financiar schimbat'); widget.onChanged();
+      if (settlement != null) settlement!.managerId = r;
+      widget.log('Gestionar financiar schimbat', name(r));
+      widget.onChanged();
+      if (mounted) showSuccessMessage(context, 'Gestionarul a fost actualizat.');
+    } catch (e) {
+      if (mounted) showErrorMessage(context, 'Nu s-a putut salva gestionarul: $e');
     }
   }
 
