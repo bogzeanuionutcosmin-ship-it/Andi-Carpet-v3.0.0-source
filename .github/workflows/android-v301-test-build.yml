@@ -1,0 +1,47 @@
+name: Android v3.0.1 test build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - update-v3.0.1-import-testare
+    paths:
+      - 'AndiCarpet-v3.0.1-IMPORT-TESTARE.zip'
+      - '.github/workflows/android-v301-test-build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply exact v3.0.1 candidate patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f AndiCarpet-v3.0.1-IMPORT-TESTARE.zip || { echo "Missing patch ZIP in repository root"; exit 1; }
+          unzip -o AndiCarpet-v3.0.1-IMPORT-TESTARE.zip -d .
+          test -f lib/ocr_position_learning.dart
+          test -f android/app/src/main/kotlin/com/example/andi_carpeta/RouteWidgetProvider.kt
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+        continue-on-error: true
+      - name: Build debug APK
+        run: flutter build apk --debug
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndiCarpet-v3.0.1-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
