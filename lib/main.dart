@@ -11490,7 +11490,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         const SizedBox(height:12),
         FilledButton.tonalIcon(onPressed:()async{
           try{
-            final picked=await FilePicker.platform.pickFiles(type:FileType.image,withData:true);
+            final picked=await FilePicker().pickFiles(type:FileType.image,withData:true);
             if(picked==null||picked.files.isEmpty)return;
             final bytes=picked.files.first.bytes;
             if(bytes==null)throw const FormatException('Nu s-a putut citi imaginea.');
