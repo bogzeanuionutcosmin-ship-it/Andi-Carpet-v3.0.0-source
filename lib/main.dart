@@ -5181,6 +5181,10 @@ class _HomePageState extends State<HomePage> {
     if (!isAdmin || !canEditTeam(teamId)) {
       throw StateError('Doar administratorul poate desemna gestionarul.');
     }
+    if (managerUid.isEmpty || !users.any((u) => u.id == managerUid && u.active) ||
+        !teams.any((t) => t.id == teamId && t.members.contains(managerUid))) {
+      throw StateError('Gestionarul selectat nu este un membru activ al echipei.');
+    }
     final db = FirebaseFirestore.instance;
     final financeRef = db.collection('finance').doc(teamId);
     final settlementRef = settlementId == null ? null : db.collection('settlements').doc(settlementId);
