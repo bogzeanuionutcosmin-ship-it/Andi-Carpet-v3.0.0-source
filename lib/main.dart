@@ -1237,6 +1237,9 @@ class Expense {
   String ocrRawText;
   double ocrConfidence;
   bool confirmed;
+  String reviewStatus;
+  String rejectionReason;
+  String? createdBy;
   Expense({
     required this.id,
     required this.teamId,
@@ -1255,6 +1258,9 @@ class Expense {
     this.ocrRawText = '',
     this.ocrConfidence = 0,
     this.confirmed = true,
+    this.reviewStatus = 'pending',
+    this.rejectionReason = '',
+    this.createdBy,
   });
   bool get hasImage => documentImageBase64.isNotEmpty;
 }
@@ -3913,6 +3919,9 @@ class _HomePageState extends State<HomePage> {
       ocrRawText: (d['ocrRawText'] ?? '').toString(),
       ocrConfidence: _doubleFrom(d['ocrConfidence']),
       confirmed: d['confirmed'] != false,
+      reviewStatus: (d['reviewStatus'] ?? 'pending').toString(),
+      rejectionReason: (d['rejectionReason'] ?? '').toString(),
+      createdBy: d['createdBy']?.toString(),
     );
   }
 
@@ -4962,6 +4971,7 @@ class _HomePageState extends State<HomePage> {
       } else {
         data['confirmed'] = canApprove && expense.confirmed;
         data['createdBy'] = currentUserId;
+        data['reviewStatus'] = data['confirmed'] == true ? 'approved' : 'pending';
         tx.set(ref, data);
       }
     });
@@ -4973,6 +4983,26 @@ class _HomePageState extends State<HomePage> {
     // nu trebuie sa transforme o salvare reusita intr-o eroare falsa.
     // Cache-ul va fi sincronizat de listenerul Firestore.
     _expenseCache.remove(expense.id);
+  }
+
+  Future<void> _resubmitExpenseDirect(String expenseId) async {
+    final ref = FirebaseFirestore.instance.collection('expenses').doc(expenseId);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) throw StateError('Documentul nu mai exista.');
+      final d = snap.data()!;
+      if (d['createdBy'] != currentUserId || d['confirmed'] != false ||
+          d['reviewStatus'] != 'rejected' || !canEditTeam((d['teamId'] ?? '').toString())) {
+        throw StateError('Doar autorul poate retrimite un document respins.');
+      }
+      tx.update(ref, {
+        'reviewStatus': 'pending',
+        'rejectionReason': null,
+        'reviewedBy': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _expenseCache.remove(expenseId);
   }
 
   Future<void> _rejectExpenseDirect(String expenseId, String reason) async {
@@ -5459,7 +5489,7 @@ class _HomePageState extends State<HomePage> {
       CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_centralizator.png', size: 24, accent: centralizerColor), selectedIcon: appAssetIcon('assets/ui/tab_centralizator.png', size: 27, accent: centralizerColor, selected: true), label: compactNav ? 'Central.' : 'Centralizator'), centralizerColor);
     addPage(hasPermission(FunctionPermission.viewOwnDecont) || hasPermission(FunctionPermission.viewOtherDecont),
-      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
+      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, rejectExpense: _rejectExpenseDirect, resubmitExpense: _resubmitExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_decont.png', size: 24, accent: decontColor), selectedIcon: appAssetIcon('assets/ui/tab_decont.png', size: 27, accent: decontColor, selected: true), label: 'Decont'), decontColor);
     addPage(hasPermission(FunctionPermission.viewContacts),
       MessagesContactsPage(locations:locations,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
@@ -8808,10 +8838,12 @@ class ExpensePage extends StatefulWidget {
   final void Function(String,String,String) notifyUser;
   final void Function(String,String) log;
   final Future<void> Function(Expense) saveExpense;
+  final Future<void> Function(String, String) rejectExpense;
+  final Future<void> Function(String) resubmitExpense;
   final Future<void> Function(PerDiemEntry) savePerDiem;
   final Future<void> Function(TeamFinance) saveFinance;
   final Future<void> Function(TravelSettlement) saveSettlement;
-  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
+  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.rejectExpense,required this.resubmitExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 
@@ -10011,9 +10043,20 @@ class _ExpensePageState extends State<ExpensePage> {
       out.addAll(items.map((e) => Card(child: ListTile(
         leading: e.hasImage ? InkWell(onTap: () => _showExpenseImage(e), child: ClipRRect(borderRadius: BorderRadius.circular(7), child: Image.memory(base64Decode(e.documentImageBase64), width: 48, height: 48, fit: BoxFit.cover))) : const CircleAvatar(child: Icon(Icons.receipt_long)),
         title: Text('${e.documentType == ExpenseDocumentType.fiscalReceipt ? 'Bon Fiscal' : 'Factură'} nr ${e.documentNumber.isEmpty ? '—' : e.documentNumber}'),
-        subtitle: Text('${formatDate(e.date)} · ${e.amount.toStringAsFixed(2)} lei${e.supplier.isEmpty ? '' : ' · ${e.supplier}'}${e.description == g ? '' : '\n${e.description}'}${e.ocrRawText.isEmpty ? '' : ' · OCR ${(e.ocrConfidence * 100).round()}%'}'),
-        isThreeLine: e.description != g,
-        trailing: e.confirmed ? const Chip(label: Text('Confirmat')) : isManager ? FilledButton(onPressed: () => _confirmExpense(e), child: const Text('Confirmă')) : const Chip(label: Text('În așteptare')),
+        subtitle: Text('${formatDate(e.date)} · ${e.amount.toStringAsFixed(2)} lei${e.supplier.isEmpty ? '' : ' · ${e.supplier}'}${e.description == g ? '' : '\n${e.description}'}${e.ocrRawText.isEmpty ? '' : ' · OCR ${(e.ocrConfidence * 100).round()}%'}${e.reviewStatus == 'rejected' ? '\nMotiv respingere: ${e.rejectionReason}' : ''}'),
+        isThreeLine: e.description != g || e.reviewStatus == 'rejected',
+        trailing: e.confirmed
+          ? const Chip(label: Text('Confirmat'))
+          : e.reviewStatus == 'rejected'
+            ? (e.createdBy == widget.currentUser.id
+                ? TextButton(onPressed: () => _resubmitExpense(e), child: const Text('Retrimite'))
+                : const Chip(label: Text('Respins')))
+            : isManager
+              ? Wrap(spacing: 4, children: [
+                  TextButton(onPressed: () => _rejectExpense(e), child: const Text('Respinge')),
+                  FilledButton(onPressed: () => _confirmExpense(e), child: const Text('Confirmă')),
+                ])
+              : const Chip(label: Text('În așteptare')),
       ))));
     }
     return out;
@@ -10025,6 +10068,36 @@ class _ExpensePageState extends State<ExpensePage> {
     try { bytes = base64Decode(e.documentImageBase64); } catch (_) {}
     if (bytes == null) return;
     await showDialog<void>(context: context, builder: (d) => Dialog(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 900, maxHeight: 800), child: Column(mainAxisSize: MainAxisSize.min, children: [AppBar(title: Text(e.documentNumber.isEmpty ? 'Document' : e.documentNumber), automaticallyImplyLeading: false, actions: [IconButton(onPressed: () => Navigator.pop(d), icon: const Icon(Icons.close))]), Flexible(child: InteractiveViewer(minScale: .5, maxScale: 5, child: Image.memory(bytes!, fit: BoxFit.contain)))]))));
+  }
+
+  Future<void> _rejectExpense(Expense e) async {
+    if (!isManager) return;
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(context: context, builder: (d) => AlertDialog(
+      title: const Text('Respinge documentul'),
+      content: TextField(controller: controller, maxLines: 3, decoration: const InputDecoration(labelText: 'Motivul respingerii')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')),
+        FilledButton(onPressed: () => Navigator.pop(d, controller.text.trim()), child: const Text('Respinge')),
+      ],
+    ));
+    controller.dispose();
+    if (reason == null) return;
+    try {
+      await widget.rejectExpense(e.id, reason);
+      if (mounted) showSuccessMessage(context, 'Document respins. Motivul a fost salvat.');
+    } catch (err) {
+      if (mounted) showErrorMessage(context, 'Respingerea a eșuat: $err');
+    }
+  }
+
+  Future<void> _resubmitExpense(Expense e) async {
+    try {
+      await widget.resubmitExpense(e.id);
+      if (mounted) showSuccessMessage(context, 'Document retrimis spre aprobare.');
+    } catch (err) {
+      if (mounted) showErrorMessage(context, 'Retrimiterea a eșuat: $err');
+    }
   }
 
   Future<void> _confirmExpense(Expense e) async {
