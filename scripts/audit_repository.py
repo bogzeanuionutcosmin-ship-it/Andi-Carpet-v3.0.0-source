@@ -66,7 +66,7 @@ for asset in sorted(asset_refs - FILES):
 for name, body in source_texts.items():
     if not name.endswith(".dart"):
         continue
-    for imp in re.findall(r"^import\s+['\\"]([^'\\"]+)['\\"]", body, re.M):
+    for imp in re.findall(r"^import\s+['\"]([^'\"]+)['\"]", body, re.M):
         if imp.startswith(("dart:", "package:")):
             continue
         target = (ROOT / name).parent.joinpath(imp).resolve()
