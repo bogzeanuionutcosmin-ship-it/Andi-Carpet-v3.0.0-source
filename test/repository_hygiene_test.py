@@ -137,6 +137,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("Duration(hours: 23, minutes: 30)", module)
         self.assertIn("DateTime(workDate.year, workDate.month, workDate.day, 9, 30)", module)
 
+    def test_permission_groups_and_payment_labels_are_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/models/permission_status_labels.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'models/permission_status_labels.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("String functionPermissionGroup(FunctionPermission permission)",
+                       "extension PerDiemStatusX on PerDiemStatus",
+                       "extension PaymentMethodX on PerDiemPaymentMethod"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("return 'Decont / Financiar';", module)
+        self.assertIn("PerDiemStatus.awaitingConfirmation => 'În așteptare confirmare'", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
