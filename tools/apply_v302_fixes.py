@@ -65,6 +65,8 @@ changes = [
                   ]);
                 },
               ),"""),
+    ("Expanded(child:ListView.builder(padding:const EdgeInsets.all(12),itemCount:docs.length + (widget.chatMode ? 1 : 0),itemBuilder:(context,index){",
+     "Expanded(child:docs.isEmpty && !widget.chatMode ? const Center(child:Padding(padding:EdgeInsets.all(20),child:Text('Directorul membrilor este gol. Dacă există angajați activi, administratorul trebuie să verifice sincronizarea colecției memberDirectory din Firebase.',textAlign:TextAlign.center))) : ListView.builder(padding:const EdgeInsets.all(12),itemCount:docs.length + (widget.chatMode ? 1 : 0),itemBuilder:(context,index){"),
 ]
 for before, after in changes:
     count = data.count(before)
