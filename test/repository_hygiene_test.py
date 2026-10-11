@@ -261,6 +261,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("iconKey = this.badgeKeys.first;", module)
         self.assertIn("permissions = permissions ?? <String>{}", module)
 
+    def test_pdf_format_helpers_are_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/reports/pdf_format_helpers.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'reports/pdf_format_helpers.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("Future<pw.ThemeData> _buildPdfTheme(",
+                       "String _safeFilePart(", "String _pdfDate("):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("PdfGoogleFonts.openSansRegular()", module)
+        self.assertIn("PdfGoogleFonts.openSansBold()", module)
+        self.assertIn("PdfGoogleFonts.openSansItalic()", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
