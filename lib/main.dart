@@ -7625,13 +7625,13 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     final positioned = widget.locations.where((l) =>
       l.latitude != null && l.longitude != null &&
-      (_selectedCategoryIds.isEmpty || _selectedCategoryIds.contains(l.categoryId)) &&
-      (_selectedStatuses.isEmpty || _selectedStatuses.contains(l.status))
+      _selectedCategoryIds.contains(l.categoryId) &&
+      _selectedStatuses.contains(l.status)
     ).toList();
     final unpositioned = widget.locations.where((l) =>
       (l.latitude == null || l.longitude == null) &&
-      (_selectedCategoryIds.isEmpty || _selectedCategoryIds.contains(l.categoryId)) &&
-      (_selectedStatuses.isEmpty || _selectedStatuses.contains(l.status))
+      _selectedCategoryIds.contains(l.categoryId) &&
+      _selectedStatuses.contains(l.status)
     ).length;
     final compact = MediaQuery.sizeOf(context).width < 650;
     return _Page(
@@ -7809,8 +7809,8 @@ class _MapPageState extends State<MapPage> {
   Widget _unpositionedPanel() {
     final items = widget.locations.where((l) =>
       (l.latitude == null || l.longitude == null) &&
-      (_selectedCategoryIds.isEmpty || _selectedCategoryIds.contains(l.categoryId)) &&
-      (_selectedStatuses.isEmpty || _selectedStatuses.contains(l.status))
+      _selectedCategoryIds.contains(l.categoryId) &&
+      _selectedStatuses.contains(l.status)
     ).toList()..sort((a,b) {
       final cat = _categoryName(a).toLowerCase().compareTo(_categoryName(b).toLowerCase());
       return cat != 0 ? cat : a.name.toLowerCase().compareTo(b.name.toLowerCase());
@@ -7869,7 +7869,7 @@ class _MapPageState extends State<MapPage> {
         l.categoryId == cat.id &&
         l.latitude != null && l.longitude != null &&
         (_selectedCategoryIds.isEmpty || _selectedCategoryIds.contains(cat.id)) &&
-        (_selectedStatuses.isEmpty || _selectedStatuses.contains(l.status))
+        _selectedStatuses.contains(l.status)
       ).toList()..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       if (items.isEmpty) return const SizedBox.shrink();
       return Card(
