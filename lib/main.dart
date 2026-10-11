@@ -4931,6 +4931,8 @@ class _HomePageState extends State<HomePage> {
       throw StateError('Nu ai dreptul să modifici Decontul acestei echipe.');
     }
     final db = FirebaseFirestore.instance;
+    // Gestorul poate fi desemnat pe deplasarea curentă sau pe echipă.
+    // Permisiunile Firestore trebuie să confirme același manager.
     final financeDoc = await db.collection('finance').doc(expense.teamId).get();
     final isFinanceManager = financeDoc.data()?['managerId'] == currentUserId;
     final canApprove = isAdmin || isFinanceManager;
@@ -4958,7 +4960,10 @@ class _HomePageState extends State<HomePage> {
       'category': expense.category, 'amount': expense.amount, 'documentType': expense.documentType.name,
       'ocrConfidence': expense.ocrConfidence, 'confirmed': expense.confirmed, 'hasImage': expense.hasImage,
     }));
-    _expenseCache[expense.id] = _encoded(data);
+    // Cache-ul trebuie să reflecte starea efectiv salvată, nu valoarea
+    // inițială din formular (care poate avea confirmed=true pentru un membru).
+    final persisted = await ref.get();
+    if (persisted.exists) _expenseCache[expense.id] = _encoded(persisted.data()!);
   }
 
   Future<void> _savePerDiemDirect(PerDiemEntry entry) async {
@@ -9912,7 +9917,7 @@ class _ExpensePageState extends State<ExpensePage> {
     try {
       await widget.saveExpense(e);
       widget.log('${e.documentType == ExpenseDocumentType.fiscalReceipt ? 'Bon Fiscal' : 'Factură'} introdus', '${e.category} · ${settlement?.name ?? 'istoric anterior'}');
-      if (mounted) showSuccessMessage(context, e.confirmed ? 'Documentul a fost salvat.' : 'Documentul a fost trimis gestionarului pentru confirmare.');
+      if (mounted) showSuccessMessage(context, isManager ? 'Documentul a fost salvat.' : 'Documentul a fost trimis gestionarului pentru confirmare.');
     } catch (err) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva documentul: $err'); }
   }
 
