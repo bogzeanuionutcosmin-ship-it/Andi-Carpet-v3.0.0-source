@@ -62,6 +62,33 @@ class MapboxServices {
     return km;
   }
 
+  /// Road-following geometry for an ordered route (not straight-line segments).
+  /// Returns null when Mapbox cannot provide a complete route.
+  Future<List<List<double>>?> drivingGeometry(List<List<double>> latLon) async {
+    if (!enabled || latLon.length < 2 || latLon.length > 75 || !_valid(latLon)) return null;
+    final path = <List<double>>[];
+    for (var start = 0; start < latLon.length - 1; start += 24) {
+      final chunk = latLon.sublist(start, (start + 25).clamp(0, latLon.length));
+      final coords = chunk.map((p) => '${p[1]},${p[0]}').join(';');
+      final data = await _get(Uri.https('api.mapbox.com', '/directions/v5/mapbox/driving/$coords', {
+        'access_token': token, 'overview': 'full', 'geometries': 'geojson',
+        'steps': 'false',
+      }));
+      final routes = data?['routes'];
+      if (routes is! List || routes.isEmpty || routes.first is! Map) return null;
+      final geometry = (routes.first as Map)['geometry'];
+      if (geometry is! Map || geometry['coordinates'] is! List) return null;
+      final segment = <List<double>>[];
+      for (final coordinate in geometry['coordinates'] as List) {
+        if (coordinate is! List || coordinate.length < 2 || coordinate[0] is! num || coordinate[1] is! num) return null;
+        segment.add([(coordinate[1] as num).toDouble(), (coordinate[0] as num).toDouble()]);
+      }
+      if (segment.length < 2 || !_valid(segment)) return null;
+      path.addAll(path.isEmpty ? segment : segment.skip(1));
+    }
+    return path.length >= 2 ? path : null;
+  }
+
   /// Snaps a short ordered GPS trace to roads. No automatic upload or tracking.
   /// Returns [lat, lon] positions or null when matching is not reliable.
   Future<List<List<double>>?> matchTrace(List<List<double>> latLon) async {
