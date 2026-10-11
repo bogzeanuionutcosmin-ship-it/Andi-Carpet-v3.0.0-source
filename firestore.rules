@@ -447,8 +447,18 @@ service cloud.firestore {
         || hasPermission('viewOtherDecont')
         || isTeamMember(teamId)
         || (isActive() && resource.data.managerId == request.auth.uid);
-      allow create, update: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(teamId));
+      // Un membru nu poate sa se desemneze singur gestionar.
+      // Numai administratorul poate crea sau schimba managerId.
+      allow create: if isAdmin()
+        || (hasPermission('viewOwnDecont')
+          && isTeamMember(teamId)
+          && (!('managerId' in request.resource.data)
+            || request.resource.data.managerId == null));
+      allow update: if isAdmin()
+        || (hasPermission('viewOwnDecont')
+          && isTeamMember(teamId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['receivedDeparture', 'receivedDuring', 'receivedEntries', 'perDiemRate', 'updatedAt']));
       allow delete: if isAdmin();
     }
 
