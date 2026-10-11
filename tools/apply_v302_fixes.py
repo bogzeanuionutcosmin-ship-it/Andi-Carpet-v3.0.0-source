@@ -67,6 +67,57 @@ changes = [
               ),"""),
     ("Expanded(child:ListView.builder(padding:const EdgeInsets.all(12),itemCount:docs.length + (widget.chatMode ? 1 : 0),itemBuilder:(context,index){",
      "Expanded(child:docs.isEmpty && !widget.chatMode ? const Center(child:Padding(padding:EdgeInsets.all(20),child:Text('Directorul membrilor este gol. Dacă există angajați activi, administratorul trebuie să verifice sincronizarea colecției memberDirectory din Firebase.',textAlign:TextAlign.center))) : ListView.builder(padding:const EdgeInsets.all(12),itemCount:docs.length + (widget.chatMode ? 1 : 0),itemBuilder:(context,index){"),
+    ("""    unawaited(_shareLiveLocationIfAllowed());
+    if (kIsWeb) {
+      // Browserele/PWA pot suspenda complet execuția când aplicația este închisă.
+      // Cât timp pagina rulează folosim intervalul adaptiv de mai jos.
+      _liveLocationTimer = Timer.periodic(const Duration(minutes: 1), (_) => unawaited(_shareLiveLocationIfAllowed()));
+      return;
+    }
+    unawaited(_startNativeBackgroundLocationStream());""",
+     """    unawaited(_shareLiveLocationIfAllowed());
+    // Un stream Android cu foregroundNotificationConfig produce notificare
+    // permanentă. Îl activăm doar în timpul unui grafic pornit; în rest
+    // păstrăm actualizările economice, fără serviciu foreground.
+    _liveLocationTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      unawaited(_shareLiveLocationIfAllowed());
+      if (!kIsWeb) unawaited(_reconcileNativeLocationStream());
+    });
+    if (!kIsWeb) unawaited(_reconcileNativeLocationStream());"""),
+    ("""  Future<void> _startNativeBackgroundLocationStream() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return;""",
+     """  bool _needsNativeLocationForeground() {
+    final now = DateTime.now();
+    final workDate = operationalWorkDate(now);
+    final myTeam = me.teamId;
+    if (myTeam == null || myTeam.isEmpty) return false;
+    return schedules.any((s) =>
+      s.teamId == myTeam && sameDay(s.date, workDate) &&
+      s.started && !s.closed && !s.paused && !s.postponed);
+  }
+
+  Future<void> _reconcileNativeLocationStream() async {
+    if (kIsWeb || !mounted) return;
+    if (!_needsNativeLocationForeground()) {
+      await _backgroundLocationSubscription?.cancel();
+      _backgroundLocationSubscription = null;
+      _nativeLocationProximityBoost = false;
+      return;
+    }
+    if (_backgroundLocationSubscription == null) {
+      await _startNativeBackgroundLocationStream();
+    }
+  }
+
+  Future<void> _startNativeBackgroundLocationStream() async {
+    try {
+      if (!_needsNativeLocationForeground()) {
+        await _backgroundLocationSubscription?.cancel();
+        _backgroundLocationSubscription = null;
+        return;
+      }
+      if (!await Geolocator.isLocationServiceEnabled()) return;"""),
 ]
 for before, after in changes:
     count = data.count(before)
