@@ -186,3 +186,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 
 ---
 **Status la momentul redactării:** modularizare începută și testată (3 module, 5 clase), audit și CI extinse, decizie diurnă în avans confirmată. **Nu este încă un proiect complet modularizat sau finalizat; nu s-a făcut deploy ca parte a acestei etape.**
+
+## 11. Actualizare de continuitate — extragerea calculelor de traseu (11.10.2026)
+- Reluarea a început prin verificarea acestei note și a CI. Run-ul notei `38141770938` era încă în desfășurare la începutul lucrului.
+- Extras **`lib/map/graph_route_calculations.dart`**, ca `part of '../main.dart';`, cu `GraphRoutePoints`, `graphRoutePoints`, `estimateGraphDistanceKm`, `estimateGraphRoadDistanceKm` și funcțiile auxiliare din blocul aferent. Extragere de **4.181 caractere** din `lib/main.dart`, fără intenția de a modifica algoritmul. **`downloadWorkGraphPdf` rămâne momentan în `main.dart`**.
+- Commituri: `99a8819` (fișier nou), `4f58d82` (part în main), `a665bef` (test de integritate).
+- **La redactarea actualizării, run-ul CI `38141900421` era încă queued.** Verifică obligatoriu concluzia înainte de a considera extragerea validată.
+- Scanare preliminară: `_safeFilePart`, `_pdfDate`, `_Empty`, `_InstallAppButtons`, `_AppBackdrop`, `_VerifiedLocationFix`, `_andiStickerAssets` au referințe multiple în `main.dart` și **nu sunt candidați siguri la ștergere**. Simplul număr de apariții nu este o analiză completă a dependențelor.
+- **Următorii pași**: verifică CI verde; inventariază blocurile mari de PDF și modelele, extrage în loturi sigure, adaugă teste; identifică cod mort prin căutare în toate fișierele și platformele înainte de eliminare; păstrează comportamentul actual, diurna în avans și asseturile.
