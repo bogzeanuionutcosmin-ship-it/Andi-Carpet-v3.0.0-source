@@ -1,6 +1,9 @@
 name: Android v3.0.2 test build
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - update-v3.0.1-import-testare
 
 jobs:
   build:
