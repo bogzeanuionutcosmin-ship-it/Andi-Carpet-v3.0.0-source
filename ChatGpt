@@ -243,3 +243,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - **Obligatoriu înainte de extragerea următoare:** verifică CI complet pe ultimul SHA; dacă apar contracte statice care caută simbolurile mutate în main, corectează testele pentru a verifica modulul real. Nu pretinde build verde fără verificare.
 - Urmează inventarierea blocurilor UI auth/dashboard/mesagerie și extrageri mici, cu teste și documentarea commiturilor. Nu șterge stickere, finanțe v2, workflow-uri sau asseturi fără analiza referințelor. Păstrează diurna în avans.
 - Cerință istorică suplimentară: utilizatorul dorește ulterior o integrare de administrare/monitorizare mai directă (numită Guardian în conversații anterioare), după stabilizarea testelor și a interfeței; nu presupune acces live doar din GitHub.
+
+## 16. Actualizare 12.10.2026 — verificare CI și extragere branding
+- La run `38176152491` pe `b77258da`, la prima verificare: Python, Node, Functions, Firestore **success**; Flutter Web **in_progress**. Nu declara rularea verde până la final. Rularea anterioară `38175942536` pe `9758e578` a încheiat cu **success**.
+- Extragere UI suplimentară: `lib/ui/branding_theme_helpers.dart` (`part of '../main.dart';`) cu normalizarea fonturilor, familiile de font, asseturile și etichetele fundalurilor/logourilor, `_activeLogoAsset`, `appBrandLogo`. Eliminat blocul original de 2.363 caractere din `main.dart`; directivă `part` adăugată. Comportamentul rămâne intenționat identic.
+- Commituri: `049c2082` (modul), `574c51b4` (conectare), `d7ba6bba` (test sursă). **9 module extrase**.
+- Atenție: noul CI pentru `d7ba6bba` poate fi anulat de actualizarea acestei note. Verifică ultima rulare după acest commit și repară eventuale teste care încă se așteaptă la definițiile din `main.dart`. Nu s-a făcut deploy, APK, migrare sau modificare Firestore.
