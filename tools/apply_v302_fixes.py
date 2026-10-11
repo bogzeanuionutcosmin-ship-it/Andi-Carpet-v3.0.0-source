@@ -55,7 +55,7 @@ changes = [
                 builder: (context, snapshot) {
                   final roadKm = snapshot.data;
                   final available = roadKm != null && snapshot.connectionState == ConnectionState.done;
-                  final distance = available ? roadKm : km;
+                  final distance = roadKm ?? km;
                   final roadLiters = car != null && car.averageConsumption > 0 ? distance * car.averageConsumption / 100 : 0.0;
                   final roadCost = car != null && car.fuelPricePerLiter > 0 ? roadLiters * car.fuelPricePerLiter : 0.0;
                   return Wrap(spacing:8,runSpacing:8,children:[
