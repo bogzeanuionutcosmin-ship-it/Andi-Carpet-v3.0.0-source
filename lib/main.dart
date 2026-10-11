@@ -11511,6 +11511,49 @@ class _GroupChatPageState extends State<GroupChatPage> {
   final ScrollController _scroll = ScrollController();
   bool _sending = false;
   int _selectedChatTab = 0;
+  bool _savingChatBackground = false;
+
+  Future<void> _editChatAppearance() async {
+    if(widget.currentUser.role!=UserRole.director)return;
+    final doc=FirebaseFirestore.instance.collection('meta').doc('uiSettings');
+    final current=await doc.get();
+    if(!mounted)return;
+    final existing=current.data()??<String,dynamic>{};
+    var opacity=((existing['chatBackgroundOpacity'] as num?)?.toDouble()??0.28).clamp(0.0,0.85).toDouble();
+    String? imageData=existing['chatBackgroundBase64']?.toString();
+    var remove=false;
+    await showDialog<void>(context:context,builder:(dialogContext)=>StatefulBuilder(builder:(dialogContext,setDialog)=>AlertDialog(
+      title:const Text('Setări Chat live'),
+      content:SizedBox(width:440,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        const Text('Fundalul este comun pentru toți membrii, inclusiv în browser.'),
+        const SizedBox(height:12),
+        FilledButton.tonalIcon(onPressed:_savingChatBackground?null:()async{
+          try{
+            final picked=await FilePicker.platform.pickFiles(type:FileType.image,withData:true);
+            if(picked==null||picked.files.isEmpty)return;
+            final bytes=picked.files.first.bytes;
+            if(bytes==null)throw const FormatException('Nu s-a putut citi imaginea.');
+            final decoded=img.decodeImage(bytes);
+            if(decoded==null)throw const FormatException('Format imagine nesuportat.');
+            final resized=decoded.width>1200?img.copyResize(decoded,width:1200):decoded;
+            final encoded=img.encodeJpg(resized,quality:65);
+            if(encoded.length>450000)throw const FormatException('Imaginea este prea mare; încearcă una mai mică.');
+            setDialog((){imageData=base64Encode(encoded);remove=false;});
+          }catch(e){if(dialogContext.mounted)showErrorMessage(dialogContext,'Fundalul nu a putut fi încărcat: $e');}
+        },icon:const Icon(Icons.image_outlined),label:const Text('Încarcă imagine')),
+        TextButton.icon(onPressed:()=>setDialog((){imageData=null;remove=true;}),icon:const Icon(Icons.delete_outline),label:const Text('Elimină fundalul')),
+        const SizedBox(height:12),Text('Opacitate: ${(opacity*100).round()}%'),
+        Slider(value:opacity,min:0,max:0.85,divisions:17,label:'${(opacity*100).round()}%',onChanged:(v)=>setDialog(()=>opacity=v)),
+      ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext),child:const Text('Anulează')),FilledButton(onPressed:()async{
+        try{
+          await doc.set({'chatBackgroundBase64':remove?'':(imageData??''),'chatBackgroundOpacity':opacity,'updatedAt':FieldValue.serverTimestamp()},SetOptions(merge:true));
+          if(dialogContext.mounted)Navigator.pop(dialogContext);
+        }catch(e){if(dialogContext.mounted)showErrorMessage(dialogContext,'Setările Chat live nu au putut fi salvate: $e');}
+      },child:const Text('Salvează'))],
+    )));
+  }
+
 
   CollectionReference<Map<String,dynamic>> get _messages => FirebaseFirestore.instance.collection('groupChatMessages');
   Stream<QuerySnapshot<Map<String, dynamic>>> get _stream => _messages
@@ -11604,13 +11647,23 @@ class _GroupChatPageState extends State<GroupChatPage> {
           Expanded(child:TextButton(onPressed:()=>setState(()=>_selectedChatTab=1),child:Text('Agendă',style:TextStyle(fontWeight:_selectedChatTab==1?FontWeight.bold:FontWeight.normal)))),
         ])),
         actions: [
+          if(widget.currentUser.role==UserRole.director)IconButton(tooltip:'Setări Chat live',onPressed:_editChatAppearance,icon:const Icon(Icons.settings_outlined)),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Center(child: Text('50 mesaje · 7 zile', style: Theme.of(context).textTheme.labelSmall)),
           ),
         ],
       ),
-      body: IndexedStack(index:_selectedChatTab,children:[Column(
+      body: StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(
+        stream:FirebaseFirestore.instance.collection('meta').doc('uiSettings').snapshots(),
+        builder:(context,appearance){
+          final data=appearance.data?.data()??<String,dynamic>{};
+          Uint8List? bg;
+          try{final raw=(data['chatBackgroundBase64']??'').toString();if(raw.isNotEmpty)bg=base64Decode(raw);}catch(_){}
+          final opacity=((data['chatBackgroundOpacity'] as num?)?.toDouble()??0.28).clamp(0.0,0.85).toDouble();
+          return IndexedStack(index:_selectedChatTab,children:[Stack(children:[
+            if(bg!=null)Positioned.fill(child:Opacity(opacity:opacity,child:Image.memory(bg,fit:BoxFit.cover))),
+            Column(
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -11730,7 +11783,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
           ),
         ],
-      ), if(widget.agenda!=null)widget.agenda!]),
+      ),]), if(widget.agenda!=null)widget.agenda!]);
+        }),
     );
   }
 }
