@@ -48,4 +48,21 @@ void main() {
     expect(value, contains('februarie'));
   });
 
+  test('funcțiile implicite au permisiuni fără duplicate', () {
+    final defs = defaultFunctionDefinitions();
+    for (final definition in defs) {
+      final permissions = definition.permissions;
+      expect(permissions.toSet().length, permissions.length,
+          reason: 'Permisiuni duplicate pentru ${definition.id}');
+    }
+  });
+
+  test('formatDate diferențiază prima și ultima zi a lunii', () {
+    final first = formatDate(DateTime(2026, 10, 1));
+    final last = formatDate(DateTime(2026, 10, 31));
+    expect(first, isNot(equals(last)));
+    expect(first, contains('octombrie'));
+    expect(last, contains('octombrie'));
+  });
+
 }
