@@ -15,7 +15,8 @@ changes = [
 ]
 for before, after in changes:
     count = s.count(before)
-    if count not in (1, 2) if before.startswith("(_selected") else count != 1:
+    expected = 3 if before.startswith("(_selectedCategoryIds") else (4 if before.startswith("(_selectedStatuses") else 1)
+    if count != expected:
         raise SystemExit(f"Unexpected count {count}: {before[:85]}")
     s = s.replace(before, after)
 
