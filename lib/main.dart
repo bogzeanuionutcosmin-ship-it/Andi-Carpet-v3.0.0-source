@@ -11053,6 +11053,59 @@ const Map<String,String> _andiStickerAssets=<String,String>{
   'brc_32':'assets/stickers/sticker_32.png',
 };
 
+const Map<String,String> _andiPortraitStickerAssets=<String,String>{
+  'andi_01':'assets/stickers/andi_01.webp',
+  'andi_02':'assets/stickers/andi_02.webp',
+  'andi_03':'assets/stickers/andi_03.webp',
+  'andi_04':'assets/stickers/andi_04.webp',
+  'andi_05':'assets/stickers/andi_05.webp',
+  'andi_06':'assets/stickers/andi_06.webp',
+  'andi_07':'assets/stickers/andi_07.webp',
+  'andi_08':'assets/stickers/andi_08.webp',
+  'andi_09':'assets/stickers/andi_09.webp',
+  'andi_10':'assets/stickers/andi_10.webp',
+  'andi_11':'assets/stickers/andi_11.webp',
+  'andi_12':'assets/stickers/andi_12.webp',
+  'andi_13':'assets/stickers/andi_13.webp',
+  'andi_14':'assets/stickers/andi_14.webp',
+  'andi_15':'assets/stickers/andi_15.webp',
+  'andi_16':'assets/stickers/andi_16.webp',
+  'andi_17':'assets/stickers/andi_17.webp',
+  'andi_18':'assets/stickers/andi_18.webp',
+  'andi_19':'assets/stickers/andi_19.webp',
+  'andi_20':'assets/stickers/andi_20.webp',
+  'andi_21':'assets/stickers/andi_21.webp',
+  'andi_22':'assets/stickers/andi_22.webp',
+  'andi_23':'assets/stickers/andi_23.webp',
+  'andi_24':'assets/stickers/andi_24.webp',
+};
+const Map<String,String> _andiPortraitStickerLabels=<String,String>{
+  'andi_01':'HAI CU TREABĂ!',
+  'andi_02':'BINE BĂ!',
+  'andi_03':'CAFEA ÎNTÂI',
+  'andi_04':'SOMN PUȚIN...',
+  'andi_05':'NU AZI',
+  'andi_06':'TE PUP',
+  'andi_07':'MMM... INTERESANT',
+  'andi_08':'AI IDEI',
+  'andi_09':'RESPECT',
+  'andi_10':'PROST!',
+  'andi_11':'NU ȘTIU FRATE...',
+  'andi_12':'CLASIC...',
+  'andi_13':'LA TREABĂ',
+  'andi_14':'PISI',
+  'andi_15':'BOSS',
+  'andi_16':'SE POATE',
+  'andi_17':'PAUZĂ MERITATĂ',
+  'andi_18':'O REZOLVĂM',
+  'andi_19':'SERIOS ACUM?',
+  'andi_20':'PE DRUM',
+  'andi_21':'SE REZOLVĂ',
+  'andi_22':'TE PUP',
+  'andi_23':'GATA PE AZI',
+  'andi_24':'TOTUL OK!',
+};
+
 const Map<String,String> _andiStickerFallback=<String,String>{
   'brc_01':'MU!E!',
   'brc_02':'MARȘ!',
@@ -11088,19 +11141,19 @@ const Map<String,String> _andiStickerFallback=<String,String>{
   'brc_32':'AȘA DA!',
 };
 
-String? _andiReactionFallback(String key) => _andiStickerFallback[key] ?? _andiCustomEmojis[key];
+String? _andiReactionFallback(String key) => _andiPortraitStickerLabels[key] ?? _andiStickerFallback[key] ?? _andiCustomEmojis[key];
 
-bool _andiHasReaction(String key) => _andiStickerAssets.containsKey(key) || _andiCustomEmojis.containsKey(key);
+bool _andiHasReaction(String key) => _andiPortraitStickerAssets.containsKey(key) || _andiStickerAssets.containsKey(key) || _andiCustomEmojis.containsKey(key);
 
 Widget _andiReactionWidget(String key, {double size = 104}) {
-  final asset = _andiStickerAssets[key];
-  if (asset != null) return Image.asset(asset, width: size, height: size, fit: BoxFit.contain);
+  final asset = _andiPortraitStickerAssets[key] ?? _andiStickerAssets[key];
+  if (asset != null) return Image.asset(asset, width: size, height: size, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Text(_andiReactionFallback(key) ?? 'Sticker', textAlign: TextAlign.center, style: TextStyle(fontSize:size*.12,fontWeight:FontWeight.bold)));
   final emoji = _andiCustomEmojis[key] ?? '';
   return Text(emoji, style: TextStyle(fontSize: size * .38));
 }
 
 Future<String?> _showAndiReactionPicker(BuildContext context, {String? subtitle}) {
-  final keys = <String>[..._andiStickerAssets.keys, ..._andiCustomEmojis.keys];
+  final keys = <String>[..._andiPortraitStickerAssets.keys, ..._andiStickerAssets.keys, ..._andiCustomEmojis.keys];
   return showModalBottomSheet<String>(
     context: context,
     showDragHandle: true,
