@@ -42,3 +42,12 @@ Toate cele 12 sunt **candidate false-positive**, nu fișiere de șters fără te
 5. Verificarea diferențelor dintre versiunea publicată pe Firebase Hosting și sursa din `main`.
 
 **Nu considerați un avertisment de hash duplicat drept aprobare pentru ștergere.**
+
+## Investigație suplimentară: traseul real al diurnei și cele două modele de date
+- Auditul importurilor directe arată că `lib/main.dart` **nu importă** niciun fișier din `lib/finance/`. Modulele financiare sunt totuși folosite între ele și de teste Flutter; **nu trebuie șterse**.
+- Aplicația principală folosește colecția Firestore `perDiems` (43 apariții ale termenului în `main.dart`). În schimb, `PerDiemFirestoreRepository` din `lib/finance/per_diem_firestore_repository.dart` folosește colecția `per_diem_settlements_v2`, care nu apare deloc în `main.dart`.
+- `firestore.rules` conține reguli pentru **ambele** colecții (`perDiems` și `per_diem_settlements_v2`). Prin urmare, există două modele de diurnă în sursă, dar numai primul este legat direct de ecranul principal. Al doilea poate reprezenta un flux în dezvoltare sau unul accesat din alt punct; nu presupunem că este activ în producție.
+- `PerDiemConfirmationCard` importă `PerDiemFirestoreRepository`, care importă `per_diem_settlement.dart`. `per_diem_operations.dart`, `per_diem_legacy_adapter.dart` și alte modele sunt acoperite de teste. Acest graf de dependențe justifică păstrarea lor până la o decizie de migrare.
+- **Risc de produs:** un test verde pentru `per_diem_settlements_v2` nu dovedește că ecranul real al diurnei, bazat pe `perDiems`, folosește același flux de confirmare. Testele trebuie etichetate după modelul de date.
+- Verificarea completă a commitului `4eef412` a trecut: **5/5 joburi**, inclusiv emulatorul Firestore și compilarea Flutter web.
+- **Decizie:** fără migrare sau ștergere automată; înainte de unificare sunt necesare inventarierea datelor reale, compatibilitatea regulilor și verificarea fluxurilor de utilizator.
