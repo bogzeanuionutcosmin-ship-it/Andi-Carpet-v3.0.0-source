@@ -4940,9 +4940,26 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _savePerDiemDirect(PerDiemEntry entry) async {
-    final canWrite = isAdmin || entry.memberId == currentUserId ||
-        (canEditTeam(entry.teamId) && hasPermission(FunctionPermission.viewOwnDecont));
+    // Confirmările sunt autorizate separat, exclusiv pentru beneficiar.
+    // Pentru distribuirile noi, gestionarului financiar desemnat în
+    // finance/{teamId} i se permite distribuirea către membrii echipei.
+    final isReceiptAttempt = entry.status == PerDiemStatus.confirmed ||
+        (entry.status == PerDiemStatus.awaitingConfirmation && entry.received == false);
+    var isAssignedFinanceManager = false;
+    if (!isReceiptAttempt && entry.distributedBy == currentUserId) {
+      final managerSnap = await FirebaseFirestore.instance
+          .collection('finance').doc(entry.teamId).get();
+      isAssignedFinanceManager = managerSnap.data()?['managerId'] == currentUserId;
+    }
+    final canWrite = isAdmin ||
+        (isReceiptAttempt && entry.memberId == currentUserId) ||
+        (!isReceiptAttempt && entry.distributedBy == currentUserId &&
+          (isAssignedFinanceManager ||
+           (canEditTeam(entry.teamId) && hasPermission(FunctionPermission.viewOwnDecont))));
     if (!canWrite) throw StateError('Nu ai dreptul să modifici această diurnă.');
+    if (!isReceiptAttempt && entry.distributedBy != currentUserId && !isAdmin) {
+      throw StateError('Distribuitorul nu corespunde contului autentificat.');
+    }
     final data = _perDiemMap(entry);
     // Confirmarea sau refuzul se salvează atomic. Verificarea exclusiv în UI
     // nu poate preveni două confirmări simultane de pe dispozitive diferite.
