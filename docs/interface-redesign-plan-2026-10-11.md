@@ -1,0 +1,46 @@
+# AndiCarpet v3 — plan reorganizare interfață (decizii aprobate 2026-10-11)
+
+## Navigare
+- Dashboard rămâne ecranul principal, cu datele existente. Profilul rămâne în poziția și forma actuală.
+- Grupuri laterale glisante din dreapta, cu butoane proeminente: **Tură**, **Hartă**, **Centralizator**, **Setări**; chatul rămâne accesibil separat.
+- Fiecare grup reține ultimul subtab deschis; navigarea înapoi nu resetează selecția.
+
+## Tură
+- Subtaburi: Grafic activ editabil; Locații în grafic; Decont echipă (vizibil numai membrilor echipei).
+- Graficul poate fi **pornit de orice membru al echipei**; operațiunea trebuie autorizată server-side pentru membrul echipei respective, cu prevenirea pornirilor concurente/dublurilor și jurnal de audit.
+- Graficul rămâne deschis peste miezul nopții, schimbarea datei și închiderea aplicației.
+- Închidere automată când **toate intervențiile** sunt finalizate și nu există activități/așteptări în curs; administratorul poate închide manual, cu confirmare, fără a marca intervențiile incomplete ca finalizate.
+- **STOP** marchează intervenția ca finalizată. Întrebările obligatorii („Ai intrat pe sală?”, „Ai făcut fațada?”) rămân înregistrate și vizibile până primesc răspuns; nu se pierd la STOP. Dacă răspunsurile sunt necesare pentru raportare, semnalizează lipsurile separat, fără a schimba arbitrar starea intervenției.
+- Locații: bifă verde pentru rezolvate; clepsidră galbenă pentru următoarele ore/zi; clepsidră roșie pentru celelalte. Iconuri clare cu relief discret și contrast.
+- La pornirea graficului, decontul preia orele **planificate** de început și sfârșit; orele reale se înregistrează separat, fără suprascriere.
+
+## Hartă
+- Harta este primul și cel mai important element vizual; dedesubt legendă și filtre selectabile.
+- Membri: afișează **toți membrii**, cu ultima poziție disponibilă și indicator explicit al vechimii poziției; verde = Live, galben = Economic. Nu prezenta poziții vechi ca poziții în timp real.
+- Listă de locații pe categorii: Million, Magic, HoReCa, Sediu, Membri.
+- Administratorul poate edita locațiile; ceilalți membri pot sugera modificări spre aprobare, fără a modifica direct datele.
+- Traseele și categoriile păstrează comportamentul existent până la validarea modificărilor.
+
+## Centralizator
+- Centralizatorul complet existent.
+- Decont informativ: statistici complete, fără acțiuni de editare.
+- Buletin diurne și printare numai pentru rolurile/utilizatorii autorizați explicit de administrator.
+- Documente.
+
+## Setări
+- Preferințe personale: notificări, locație, culoarea numelui în chat/profil, font/stil unde este compatibil cu lizibilitatea.
+- Setări aplicație: temă luminoasă/întunecată și alte opțiuni existente.
+- Panou Admin accesibil numai administratorilor, inclusiv protecție în regulile backend.
+
+## Widget Android
+- **Un widget mare combinat**, în loc de două widgeturi separate: grafic/tură, sală apropiată detectată, START verde, AȘTEPTARE galben, STOP roșu după START, întrebări obligatorii cu DA/NU.
+- Când nu există sală în apropiere, afișează sigla AndiCarpet; când există, numele sălii și starea detectării. Proximitatea nu pornește automat intervenția.
+- Butoane și săgeți cu suprafețe de atingere mari; aspect modern cu ramă luminoasă discretă, fundal distinct pe sală, contrast text garantat.
+- Tratare explicită a lipsei conexiunii, prevenirii comenzilor duplicate și sincronizării sigure înainte de activarea acțiunilor offline.
+
+## Audit și criterii de acceptare
+1. Rezolvare eroare roșie la memorarea conturilor / navigare, inclusiv verificare mounted/dispose.
+2. Remediere overflow în formulare, liste, navigare și ferestre pe ecrane înguste.
+3. Teste automate pentru permisiuni de pornire, închidere, STOP, diurne și modificări de locații; teste widget și navigare.
+4. Verificare că niciun ecran/flux existent nu a fost pierdut în reorganizare.
+5. Nu se face merge, deploy sau APK fără verificările verzi și aprobarea utilizatorului.
