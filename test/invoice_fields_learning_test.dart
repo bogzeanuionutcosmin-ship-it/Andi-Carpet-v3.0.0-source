@@ -40,7 +40,12 @@ TOTAL CU TVA 121,00
   });
 
   test('OCR factura nu confunda totalul cu combustibilul', () {
-    final invoice = parseInvoiceFields('FACTURA NR 0044\\nDATA EMITERII 11.10.2026\\nMOTORINA 120,00\\nTOTAL DE PLATA 150,00');
+    final invoice = parseInvoiceFields('''
+FACTURA NR 0044
+DATA EMITERII 11.10.2026
+MOTORINA 120,00
+TOTAL DE PLATA 150,00
+''');
     expect(invoice.totalBani, 15000);
   });
 
