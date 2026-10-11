@@ -5241,12 +5241,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openMembersDirectory({bool chatMode=false}) {
-    // Accesul la directorul de membri respectă permisiunile configurate de Admin.
-    // Chatul rămâne separat și nu acordă implicit dreptul de a consulta directorul.
-    if (!chatMode && !hasPermission(FunctionPermission.viewMembers)) {
-      showErrorMessage(context, 'Nu ai permisiunea de a vedea directorul membrilor.');
-      return;
-    }
+    // Directorul membrilor este disponibil tuturor utilizatorilor autentificați.
+    // Documentele sunt proiectate în memberDirectory fără date private.
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => MembersDirectoryPage(currentUser: me, functionDefinitions: functionDefinitions, chatMode: chatMode),
     ));
@@ -5413,10 +5409,10 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(width:6),
               if(compactNav)...[
-                if (hasPermission(FunctionPermission.viewMembers)) IconButton(tooltip:'Membrii',onPressed:()=>_openMembersDirectory(),icon:sectionAssetWidget('Membri', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.people_outline)),
+                IconButton(tooltip:'Membrii',onPressed:()=>_openMembersDirectory(),icon:sectionAssetWidget('Membri', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.people_outline)),
                 Badge(isLabelVisible:_unreadMessageCount>0,label:Text(_unreadMessageCount>99?'99+':'$_unreadMessageCount'),child:IconButton(tooltip:'Chat live',onPressed:_openGroupChat,icon:sectionAssetWidget('Chat live', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.forum_outlined))),
               ]else...[
-                if (hasPermission(FunctionPermission.viewMembers)) FilledButton.tonalIcon(onPressed:()=>_openMembersDirectory(),icon:sectionAssetWidget('Membri', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.people_outline),label:const Text('Membrii')),
+                FilledButton.tonalIcon(onPressed:()=>_openMembersDirectory(),icon:sectionAssetWidget('Membri', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.people_outline),label:const Text('Membrii')),
                 const SizedBox(width:8),
                 Badge(isLabelVisible:_unreadMessageCount>0,label:Text(_unreadMessageCount>99?'99+':'$_unreadMessageCount'),child:FilledButton.tonalIcon(onPressed:_openGroupChat,icon:sectionAssetWidget('Chat live', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.forum_outlined),label:const Text('Chat live'))),
               ],
