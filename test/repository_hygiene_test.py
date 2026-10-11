@@ -204,6 +204,22 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", module)
 
+    def test_interactive_member_badges_are_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/interactive_member_badges.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'ui/interactive_member_badges.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class _InteractiveBadgeIcon extends StatefulWidget",
+                       "class _InteractiveBadgeIconState extends State<_InteractiveBadgeIcon>",
+                       "Widget functionKeyWidget(",
+                       "List<String> effectiveBadgeKeysForFunctionIds(",
+                       "Widget badgeStripWidget(", "Widget memberBadgeStripWidget("):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("if (widgets.length >= 3) break;", module)
+        self.assertIn("badge == 'badge_machine' ? 'badge_worker' : badge", module)
+        self.assertIn("if (_entry == null)", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
