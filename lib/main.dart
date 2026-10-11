@@ -5565,8 +5565,8 @@ class _HomePageState extends State<HomePage> {
       ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, assignFinanceManager: _assignFinanceManagerDirect, saveExpense: _saveExpenseDirect, correctExpense: _correctExpenseDirect, rejectExpense: _rejectExpenseDirect, resubmitExpense: _resubmitExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_decont.png', size: 24, accent: decontColor), selectedIcon: appAssetIcon('assets/ui/tab_decont.png', size: 27, accent: decontColor, selected: true), label: 'Decont'), decontColor);
     addPage(hasPermission(FunctionPermission.viewContacts),
-      MessagesContactsPage(locations:locations,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
-      NavigationDestination(icon: appAssetIcon('assets/ui/chat_live.png', size: 24, accent: messagesColor), selectedIcon: appAssetIcon('assets/ui/chat_live.png', size: 27, accent: messagesColor, selected: true), label: compactNav ? 'Contacte' : 'Mesaje'), messagesColor);
+      MessagesContactsPage(locations:locations,categories:categories,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
+      NavigationDestination(icon: appAssetIcon('assets/ui/chat_live.png', size: 24, accent: messagesColor), selectedIcon: appAssetIcon('assets/ui/chat_live.png', size: 27, accent: messagesColor, selected: true), label: 'Agendă'), messagesColor);
     addPage(true, DocumentsPage(isAdmin: isAdmin),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_documente.png', size: 24, accent: docsColor), selectedIcon: appAssetIcon('assets/ui/tab_documente.png', size: 27, accent: docsColor, selected: true), label: compactNav ? 'Doc.' : 'Documente'), docsColor);
     addPage(true,
@@ -10224,18 +10224,20 @@ class _ExpensePageState extends State<ExpensePage> {
 
 class MessagesContactsPage extends StatefulWidget {
   final List<Location> locations;
+  final List<LocationCategory> categories;
   final AppSettings settings;
   final bool canEditContacts;
   final bool canManageTemplates;
   final VoidCallback onChanged;
   final void Function(String,String) log;
-  const MessagesContactsPage({super.key,required this.locations,required this.settings,required this.canEditContacts,required this.canManageTemplates,required this.onChanged,required this.log});
+  const MessagesContactsPage({super.key,required this.locations,required this.categories,required this.settings,required this.canEditContacts,required this.canManageTemplates,required this.onChanged,required this.log});
   @override State<MessagesContactsPage> createState()=>_MessagesContactsPageState();
 }
 
 class _MessagesContactsPageState extends State<MessagesContactsPage>{
   final search=TextEditingController();
   String query='';
+  String selectedCategory = '';
   @override void dispose(){search.dispose();super.dispose();}
 
   Future<void> _call(String phone) async {
@@ -10341,9 +10343,19 @@ class _MessagesContactsPageState extends State<MessagesContactsPage>{
 
   @override Widget build(BuildContext context){
     final needle=query.trim().toLowerCase();
-    final list=widget.locations.where((l){if(!l.active)return false;if(needle.isEmpty)return true;return '${l.name} ${l.address} ${l.contacts.map((e)=>'${e.name} ${e.phone} ${e.role}').join(' ')}'.toLowerCase().contains(needle);}).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    return _Page(title:'Mesaje & Contacte',subtitle:'Telefoane locații și mesaje automate Andi Carpet',child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+    final list=widget.locations.where((l){
+      if(!l.active)return false;
+      if(selectedCategory.isNotEmpty && l.categoryId != selectedCategory)return false;
+      if(needle.isEmpty)return true;
+      return '${l.name} ${l.address} ${l.contacts.map((e)=>'${e.name} ${e.phone} ${e.role}').join(' ')}'.toLowerCase().contains(needle);
+    }).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return _Page(title:'Agendă',subtitle:'Contacte telefonice pe locații',child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Row(children:[Expanded(child:TextField(controller:search,onChanged:(v)=>setState(()=>query=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),labelText:'Caută locație, contact sau număr'))),if(widget.canManageTemplates)...[const SizedBox(width:8),FilledButton.tonalIcon(onPressed:_editTemplates,icon:const Icon(Icons.sms_outlined),label:const Text('Șabloane mesaje'))]]),
+      const SizedBox(height:10),
+      SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[
+        Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Toate'),selected:selectedCategory.isEmpty,onSelected:(_)=>setState(()=>selectedCategory=''))),
+        ...widget.categories.where((c)=>c.active).map((c)=>Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:Text(c.name),selected:selectedCategory==c.id,onSelected:(_)=>setState(()=>selectedCategory=c.id)))),
+      ])),
       const SizedBox(height:10),
       const _InfoCard(icon:Icons.info_outline,title:'Acces rapid',text:'Butonul verde apelează direct numărul. Contactele marcate „SMS automat” sunt cele folosite de gateway-ul Android când un grafic intră în condițiile de notificare. Editarea este controlată prin drepturile funcției.'),
       const SizedBox(height:10),
