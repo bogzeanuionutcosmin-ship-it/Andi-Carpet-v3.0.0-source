@@ -401,7 +401,9 @@ service cloud.firestore {
           || resource.data.distributedBy == request.auth.uid));
       allow create: if isAdmin()
         || (isActive()
-          && isTeamMember(request.resource.data.teamId)
+          && (isTeamMember(request.resource.data.teamId)
+            || (exists(/databases/$(database)/documents/finance/$(request.resource.data.teamId))
+              && get(/databases/$(database)/documents/finance/$(request.resource.data.teamId)).data.managerId == request.auth.uid))
           && request.resource.data.distributedBy == request.auth.uid
           && request.resource.data.memberId is string
           && request.resource.data.amount is number
