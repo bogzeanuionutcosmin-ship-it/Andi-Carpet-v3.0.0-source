@@ -19,11 +19,11 @@ final _accommodationLabel = RegExp(
   caseSensitive: false,
 );
 final _excludedSummary = RegExp(
-  r'^(?:TOTAL|SUBTOTAL|TVA|REST|PLAT[ĂA]|DISCOUNT|REDUCERE)\\b',
+  r'^(?:TOTAL|SUBTOTAL|TVA|REST|PLAT[ĂA]|DISCOUNT|REDUCERE)\b',
   caseSensitive: false,
 );
 final _money = RegExp(
-  r'([0-9]{1,7}[.,][0-9]{2})\\s*(?:RON|LEI)?\\s*$',
+  r'([0-9]{1,7}[.,][0-9]{2})\s*(?:RON|LEI)?\s*$',
   caseSensitive: false,
 );
 
@@ -31,7 +31,7 @@ AccommodationInvoiceResult classifyAccommodationInvoice(String rawText) {
   final matched = <String>[];
   var bani = 0;
   var ambiguous = false;
-  for (final original in rawText.split(RegExp(r'[\\r\\n]+'))) {
+  for (final original in rawText.split(RegExp(r'[\r\n]+'))) {
     final line = original.trim();
     if (!_accommodationLabel.hasMatch(line) || _excludedSummary.hasMatch(line)) continue;
     matched.add(line);
