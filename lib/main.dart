@@ -47,6 +47,7 @@ part 'ui/section_visual_helpers.dart';
 part 'ui/app_backdrop.dart';
 part 'ui/icon_badge_catalog.dart';
 part 'ui/interactive_member_badges.dart';
+part 'models/location_category_helpers.dart';
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';
@@ -161,30 +162,6 @@ class FunctionDefinition {
     }
   }
   Color get color => Color(colorValue);
-}
-
-String defaultCategoryIdForType(LocationType type) => switch (type) {
-  LocationType.magic => 'magic',
-  LocationType.million => 'million',
-  LocationType.horeca => 'horeca',
-  LocationType.other => 'cazari',
-};
-LocationType legacyTypeForCategory(String categoryId) => switch (categoryId) {
-  'magic' => LocationType.magic,
-  'million' => LocationType.million,
-  'horeca' => LocationType.horeca,
-  _ => LocationType.other,
-};
-Color categoryColor(List<LocationCategory> categories, String categoryId, {LocationType? fallbackType}) {
-  // Culorile de brand stabilite inițial rămân fixe peste tot în aplicație.
-  if (categoryId == 'million') return Colors.red;
-  if (categoryId == 'magic') return Colors.black87;
-  for (final c in categories) { if (c.id == categoryId) return c.color; }
-  return (fallbackType ?? legacyTypeForCategory(categoryId)).color;
-}
-String categoryName(List<LocationCategory> categories, String categoryId, {LocationType? fallbackType}) {
-  for (final c in categories) { if (c.id == categoryId) return c.name; }
-  return (fallbackType ?? legacyTypeForCategory(categoryId)).label;
 }
 
 String functionPermissionId(FunctionPermission p) => p.name;
