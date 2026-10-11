@@ -280,3 +280,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - CI `38177054281` pe `3d609b77`: **failure** doar la Python source/security; Node, Flutter web build, Firestore emulator și Firebase Functions au fost **success**.
 - Cauza: testul existent `test/grafic_learning_notifications_contract_test.py::test_learning_minimum_three` căuta șirurile `if (history.length < 3) return null;` și `duration.inSeconds <= 0` în `lib/main.dart`, deși logica fusese mutată fără schimbare în `lib/learning/duration_estimates.dart`.
 - Corectat testul să citească `LEARNING` din noul modul; celelalte contracte rămân în `MAIN`. Commit `313ae062`. Verifică noul CI înainte de a declara 5/5 verde; evită alte push-uri până se termină.
+
+## 23. Actualizare 12.10.2026 — funcții vizuale comune
+- Checkpoint confirmat: CI `38177421922` pe `23fd16c1` **success 5/5** (Flutter web, Firebase Functions, Node, Python source/security, Firestore emulator).
+- Extras `lib/ui/section_visual_helpers.dart` (`part of '../main.dart';`) cu `sectionAccent`, `showSuccessMessage`, `showErrorMessage`, `_plainBackgroundColor`; **2.853 caractere** eliminate din `lib/main.dart`, fără schimbări de logică/stil. `graphDefaultName` și `idNow` rămân în main pentru lot ulterior.
+- Commituri `b5845be3` (modul), `2fe2d938` (legare), `0e6025ef` (test de regresie). **15 module extrase**.
+- Verifică CI după această actualizare; nu declara verde înainte de finalizare. Nu s-a făcut deploy/APK/migrare sau schimbare de date. Următoarele candidate: `_AppBackdrop`, iconuri/badge assets și componente UI mari, cu atenție la testele sursă ce caută definiții în main.
