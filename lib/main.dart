@@ -10334,7 +10334,7 @@ class _SettingsPageState extends State<SettingsPage>{
   List<_QuickAccount> _quickAccounts=<_QuickAccount>[];bool _quickAccountsLoading=true;bool _quickAccountBusy=false;
   @override void initState(){super.initState();unawaited(_refreshQuickAccounts());}
   String _themeLabel(AppThemeChoice v)=>switch(v){AppThemeChoice.light=>'Luminos',AppThemeChoice.dark=>'Întunecat',AppThemeChoice.system=>'Sistem'};
-  Future<void> _refreshQuickAccounts()async{try{final x=await _loadQuickAccounts();if(mounted)setState((){_quickAccounts=x;_quickAccountsLoading=false;});}catch(_){if(mounted)setState(()=>_quickAccountsLoading=false);}}
+  Future<void> _refreshQuickAccounts()async{try{final x=await _loadQuickAccounts();if(mounted)setState((){_quickAccounts=x;_quickAccountsLoading=false;});}catch(e){if(mounted){setState(()=>_quickAccountsLoading=false);showErrorMessage(context,'Nu pot citi conturile memorate din stocarea securizată: $e');}}}
   Future<void> _updateOwn(Map<String,dynamic> data,{String? success})async{try{await FirebaseFirestore.instance.collection('users').doc(widget.user.id).set({...data,'updatedAt':FieldValue.serverTimestamp()},SetOptions(merge:true));if(success!=null&&mounted)showSuccessMessage(context,success);}catch(e){if(mounted)showErrorMessage(context,'Nu s-a putut salva: $e');}}
   Future<void> _rememberCurrentQuickAccount()async{
     final authUser=FirebaseAuth.instance.currentUser;final mail=(authUser?.email??widget.user.email).trim();if(authUser==null||mail.isEmpty||_quickAccountBusy)return;
