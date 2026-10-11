@@ -9623,6 +9623,10 @@ class _ExpensePageState extends State<ExpensePage> {
   }
 
   Future<void> _manager() async {
+    if (!widget.isAdmin) {
+      if (mounted) showErrorMessage(context, 'Doar administratorul poate desemna gestionarul financiar.');
+      return;
+    }
     String? selected = managerId;
     final r = await showDialog<String>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) => AlertDialog(title: const Text('Gestionar financiar'), content: Column(mainAxisSize: MainAxisSize.min, children: visibleTeamMemberIds.map((id) => RadioListTile<String>(value: id, groupValue: selected, title: Text(name(id)), onChanged: (v) => setD(() => selected = v))).toList()), actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')), FilledButton(onPressed: selected == null ? null : () => Navigator.pop(d, selected), child: const Text('Salvează'))])));
     if (r == null) return;
