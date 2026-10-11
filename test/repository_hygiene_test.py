@@ -54,6 +54,15 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("endDrawerEnableOpenDragGesture: true", source)
         self.assertIn("title: const Text('Categorii'", source)
 
+    def test_extracted_dashboard_map_widgets_are_linked_once(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        component = (ROOT / "lib/ui/dashboard_map_components.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'ui/dashboard_map_components.dart';", main)
+        self.assertIn("part of '../main.dart';", component)
+        for widget in ("_StatMini", "_MapStatusLegend"):
+            self.assertEqual(main.count("class " + widget + " "), 0)
+            self.assertEqual(component.count("class " + widget + " "), 1)
+
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertIn("RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)", source)
