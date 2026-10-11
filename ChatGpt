@@ -371,3 +371,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `lib/home/home_page.dart`: `HomePage` + `_HomePageState` cu toate fluxurile principale (Firebase sync, locație live, notificări, operațiuni CRUD/financiare, navigare, administrare), **144.289 caractere** mutate textual din `lib/main.dart`. Nu s-a schimbat intenționat comportamentul; separarea mare permite refactorizare ulterioară în extensii/servicii mai mici, cu atenție la accesul la state și lifecycle.
 - Commituri `95745499` (modul), `2fb3986d` (legare), `4773e80e` (test contract). **28 module separate**.
 - CI pentru modul #28 încă neconfirmat. Fără deploy/APK/date/migrare. Verifică toate cele 5 jobs înainte de următoarea schimbare; apoi segmentează incremental HomePage și celelalte ecrane mari, fără a rupe state/permissions. Documentația exhaustivă a regulilor funcționale în `docs/` rămâne obligatorie.
+
+## 38. Hotfix teste după extragerea HomePage
+- CI `38182397444` pe `51aa06ce`: **failure 3/5**, eșec la Python contracts și Flutter web build (pre-check Python), din cauza a două teste ce căutau fragmente mutate din `main.dart`.
+- Corectat `test/repository_hygiene_test.py::test_web_right_side_category_drawer_is_wired` să verifice drawer în `lib/home/home_page.dart`, păstrând verificarea legăturii part în main. Commit `7c4b2aa7`.
+- Corectat `test/admin_privacy_contract_test.py::test_member_queries_migrated`: agregă codul `main.dart` + `home/home_page.dart` pentru verificarea contractelor memberDirectory. Commit `992aa1e0`.
+- Nu au fost schimbate reguli sau comportament, doar sursa verificată de teste. Așteaptă CI nou, **nu afirma verde până la confirmare**. După verde continuă refactorizarea incrementală și actualizează notița. Documentația completă a regulilor rămâne obligatorie.
