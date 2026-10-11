@@ -7892,7 +7892,7 @@ class _MapPageState extends State<MapPage> {
       final items = widget.locations.where((l) =>
         l.categoryId == cat.id &&
         l.latitude != null && l.longitude != null &&
-        (_selectedCategoryIds.isEmpty || _selectedCategoryIds.contains(cat.id)) &&
+        _selectedCategoryIds.contains(cat.id) &&
         _selectedStatuses.contains(l.status)
       ).toList()..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       if (items.isEmpty) return const SizedBox.shrink();
