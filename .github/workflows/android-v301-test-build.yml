@@ -21,6 +21,15 @@ jobs:
           set -euo pipefail
           test -f AndiCarpet-v3.0.1-IMPORT-TESTARE.zip || { echo "Missing patch ZIP in repository root"; exit 1; }
           unzip -o AndiCarpet-v3.0.1-IMPORT-TESTARE.zip -d .
+          # Patch the missing unnamed constructor in the supplied OCR source.
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('lib/ocr_position_learning.dart')
+          src = path.read_text(encoding='utf-8')
+          needle = 'class OcrLearningStatistics {'
+          assert src.count(needle) == 1, 'OCR statistics class changed; review required'
+          path.write_text(src.replace(needle, needle + '\n  OcrLearningStatistics();', 1), encoding='utf-8')
+          PY
           test -f lib/ocr_position_learning.dart
           test -f android/app/src/main/kotlin/com/example/andi_carpeta/RouteWidgetProvider.kt
       - uses: actions/setup-java@v4
