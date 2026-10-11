@@ -10344,29 +10344,29 @@ class _MessagesContactsPageState extends State<MessagesContactsPage>{
   @override Widget build(BuildContext context){
     final needle=query.trim().toLowerCase();
     final list=widget.locations.where((l){
-      if(!l.active)return false;
+      // Agenda lists every configured location, including temporarily inactive ones.
       if(selectedCategory.isNotEmpty && l.categoryId != selectedCategory)return false;
       if(needle.isEmpty)return true;
       return '${l.name} ${l.address} ${l.contacts.map((e)=>'${e.name} ${e.phone} ${e.role}').join(' ')}'.toLowerCase().contains(needle);
     }).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return _Page(title:'Agendă',subtitle:'Contacte telefonice pe locații',child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      Row(children:[Expanded(child:TextField(controller:search,onChanged:(v)=>setState(()=>query=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),labelText:'Caută locație, contact sau număr'))),if(widget.canManageTemplates)...[const SizedBox(width:8),FilledButton.tonalIcon(onPressed:_editTemplates,icon:const Icon(Icons.sms_outlined),label:const Text('Șabloane mesaje'))]]),
+      TextField(controller:search,onChanged:(v)=>setState(()=>query=v),decoration:InputDecoration(prefixIcon:const Icon(Icons.search),labelText:'Caută locație, manager sau număr',suffixIcon:query.isEmpty?null:IconButton(tooltip:'Șterge căutarea',onPressed:(){search.clear();setState(()=>query='');},icon:const Icon(Icons.close)))),
       const SizedBox(height:10),
       SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[
         Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Toate'),selected:selectedCategory.isEmpty,onSelected:(_)=>setState(()=>selectedCategory=''))),
         ...widget.categories.where((c)=>c.active).map((c)=>Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:Text(c.name),selected:selectedCategory==c.id,onSelected:(_)=>setState(()=>selectedCategory=c.id)))),
       ])),
       const SizedBox(height:10),
-      const _InfoCard(icon:Icons.info_outline,title:'Acces rapid',text:'Butonul verde apelează direct numărul. Contactele marcate „SMS automat” sunt cele folosite de gateway-ul Android când un grafic intră în condițiile de notificare. Editarea este controlată prin drepturile funcției.'),
+      const _InfoCard(icon:Icons.info_outline,title:'Acces rapid',text:'Apasă butonul verde pentru a deschide apelarea. Agenda este doar pentru consultare; contactele se modifică din detaliile locației.'),
       const SizedBox(height:10),
       if(list.isEmpty)const _Empty(icon:Icons.contact_phone_outlined,text:'Nu există locații pentru căutarea curentă.'),
       ...list.map((l)=>Card(child:ExpansionTile(
         leading:const CircleAvatar(backgroundColor:Color(0x1A00A86B),child:Icon(Icons.store_mall_directory_outlined,color:Colors.green)),
         title:Text(l.name,maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text(l.address,maxLines:2,overflow:TextOverflow.ellipsis),
-        trailing:widget.canEditContacts?IconButton(tooltip:'Editează telefoanele',onPressed:()=>_editLocationContacts(l),icon:const Icon(Icons.edit_outlined)):null,
+        
         children:[
-          if(l.contacts.isEmpty)const ListTile(title:Text('Niciun telefon salvat.')),
-          ...l.contacts.map((c)=>ListTile(leading:const CircleAvatar(backgroundColor:Color(0x1A00A86B),child:Icon(Icons.phone,color:Colors.green)),title:Text('${c.role} · ${c.name}'),subtitle:Text('${c.phone}${c.smsEnabled?' · SMS automat':' · doar apel'}'),trailing:IconButton(style:IconButton.styleFrom(backgroundColor:Colors.green,foregroundColor:Colors.white),tooltip:'Sună ${c.phone}',onPressed:()=>_call(c.phone),icon:const Icon(Icons.call)))),
+          if(l.contacts.isEmpty)const ListTile(title:Text('Contact indisponibil')),
+          ...l.contacts.map((c)=>ListTile(leading:const CircleAvatar(backgroundColor:Color(0x1A00A86B),child:Icon(Icons.phone,color:Colors.green)),title:Text('${c.role} · ${c.name}'),subtitle:Text(c.phone),trailing:IconButton(style:IconButton.styleFrom(backgroundColor:Colors.green,foregroundColor:Colors.white),tooltip:'Sună ${c.phone}',onPressed:()=>_call(c.phone),icon:const Icon(Icons.call)))),
         ],
       ))),
     ]));
