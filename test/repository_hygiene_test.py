@@ -147,6 +147,23 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("initialZoom: 17", module)
         self.assertIn("TileLayer(", module)
 
+    def test_documents_library_extracted_without_behavior_change(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/documents/documents_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'documents/documents_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class ManualAppDocument {", "class DocumentsPage extends StatefulWidget",
+                       "class _DocumentsPageState extends State<DocumentsPage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for contract in ("assets/pv_magic.pdf", "PV_MAGIC.pdf",
+                         "collection('documents').doc(result.id).set(",
+                         "collection('documents').orderBy('date',descending:true).snapshots()",
+                         "if(widget.isAdmin)FilledButton.icon(",
+                         "trailing:widget.isAdmin?IconButton(",
+                         "await doc.reference.delete();"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
