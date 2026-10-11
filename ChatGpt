@@ -353,3 +353,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `lib/auth/auth_gate.dart` cu `AuthGate` și `_AuthGateState`, ascultare auth/profile/uiSettings, persistență sesiune Chrome/PWA, rutare login/loading/profil lipsă/aprobare/HomePage. **6.251 caractere** eliminate din `lib/main.dart`; logică păstrată textual.
 - Commituri `699514ae` (modul), `62cbbeda` (legare), `da9a6875` (test contract). **25 module separate**.
 - CI nou neconfirmat. Fără deploy/APK/date/migrare. Urmează module independente LoginPage și componente autentificare; testează înainte de fiecare nou lot. Documentația completă a regulilor în `docs/` rămâne obligatorie.
+
+## 35. Curățare login și înregistrare (26 module)
+- CI `38181799906` pe `59bc7984`: **success 5/5** pentru modul #25.
+- Extras `lib/auth/login_registration_page.dart`: `LoginPage`, `_LoginPageState`, formulare, validare, creare cont, login și FirebaseAuth. **10.007 caractere** eliminate din `lib/main.dart`; cod mutat textual, fără schimbarea fluxului.
+- Commituri `992b2364` (modul), `48c56933` (legare), `aeba68e9` (test contract). **26 module separate**.
+- CI pentru noul lot încă de verificat. Fără deploy/APK/date/migrare. Urmează `PendingApprovalPage` și `MissingProfilePage` sau alte componente UI mici, cu teste; documentația completă a regulilor funcționale în `docs/` rămâne obligatorie.
