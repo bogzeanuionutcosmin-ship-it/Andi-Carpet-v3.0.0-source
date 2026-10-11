@@ -89,3 +89,47 @@ test('receiver cannot delete settlement', async () => {
   await assertFails(deleteDoc(doc(db('receiver'), path('no-delete'))));
 });
 
+
+test('legacy perDiems: beneficiary can confirm a positive received amount', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'perDiems', 'legacy-valid'), {
+      memberId: 'receiver', distributedBy: 'payer', teamId: 'team-a',
+      amount: 50, status: 'awaitingConfirmation',
+      actualReceivedAmount: null, received: false,
+    });
+  });
+  await assertSucceeds(updateDoc(doc(db('receiver'), 'perDiems/legacy-valid'), {
+    status: 'confirmed', received: true, actualReceivedAmount: 50,
+  }));
+});
+
+test('legacy perDiems: unrelated member cannot confirm receipt', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'perDiems', 'legacy-stranger'), {
+      memberId: 'receiver', distributedBy: 'payer', teamId: 'team-a',
+      amount: 50, status: 'awaitingConfirmation',
+      actualReceivedAmount: null, received: false,
+    });
+  });
+  await assertFails(updateDoc(doc(db('stranger'), 'perDiems/legacy-stranger'), {
+    status: 'confirmed', received: true, actualReceivedAmount: 50,
+  }));
+});
+
+test('legacy perDiems: characterize currently allowed over-declared receipt', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'perDiems', 'legacy-overdeclared'), {
+      memberId: 'receiver', distributedBy: 'payer', teamId: 'team-a',
+      amount: 50, status: 'awaitingConfirmation',
+      actualReceivedAmount: null, received: false,
+    });
+  });
+  // Characterization, not approval: legacy rules do not cap actualReceivedAmount.
+  // A product decision is required before changing accounting behavior.
+  await assertSucceeds(updateDoc(doc(db('receiver'), 'perDiems/legacy-overdeclared'), {
+    status: 'confirmed', received: true, actualReceivedAmount: 75,
+  }));
+});
