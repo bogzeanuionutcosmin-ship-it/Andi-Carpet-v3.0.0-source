@@ -317,3 +317,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `lib/models/location_category_helpers.dart` cu `defaultCategoryIdForType`, `legacyTypeForCategory`, `categoryColor`, `categoryName`; **1.104 caractere** eliminate din `lib/main.dart`.
 - Păstrate exact fallback-urile legacy și culorile fixe `million` roșu, `magic` negru. Commituri `0ded3281` (modul), `d4de9147` (legare), `0824b414` (test contract). **19 module separate**.
 - CI pe noul lot încă de verificat; fără deploy/APK/migrare. Continuă extragerea logicii de permisiuni și a componentelor independente în loturi testate. După curățare, documentația completă a regulilor funcționale și testelor în `docs/` rămâne obligatorie.
+
+## 29. Curățare categorii și funcții implicite (20 module)
+- CI `38180388033` pe `4d1fd59d`: **success 5/5** pentru modulul #19.
+- Extras `lib/models/default_categories_functions.dart` cu `functionPermissionId`, `defaultLocationCategories`, `defaultFunctionDefinitions`, `functionById`; **943 caractere** scoase din `lib/main.dart`.
+- Reguli păstrate: categorii implicite million/magic/horeca/cazari, funcție Admin cu toate `FunctionPermission.values`, căutare funcție după ID. Commituri `c3c58c96` (modul), `2328d0ce` (legare), `37824572` (test). **20 module separate**.
+- CI pentru noul lot trebuie verificat înainte de verde. Fără deploy/APK/migrare. Continuă loturi de extragere mici, actualizează testele și această notă; la final documentează toate regulile și testele în `docs/`.
