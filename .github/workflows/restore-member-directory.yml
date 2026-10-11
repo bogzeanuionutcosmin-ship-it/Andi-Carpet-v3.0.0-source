@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/restore-member-directory.yml'
+      - 'functions/backfill_member_directory.js'
+      - 'functions/member_directory_projection.js'
+      - 'functions/index.js'
 permissions:
   contents: read
   id-token: write
