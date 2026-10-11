@@ -384,3 +384,5 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Legat prin `part 'bootstrap/firebase_bootstrap_error_app.dart';` în `main.dart`. Commituri `a54fba5b`, `70cf500e`, `b8365b76`.
 - Ecranul afișat la eșecul inițializării Firebase păstrează mesajele și comportamentul; fără schimbări în date, reguli sau deploy.
 - **CI trebuie verificat** după acest lot; nu declara succes până la finalizarea ultimului workflow. Următorul pas: test regresie pentru modul, apoi separarea incrementală a altor componente și documentarea regulilor funcționale.
+
+- CI pentru checkpoint `191e6399`: run `38183372012`, completed/success. Test de regresie nou în `test/repository_hygiene_test.py` verifică legarea part, definiția unică, apelul din bootstrap și mesajele UI; commit `b3149b70`. Verifică CI pentru acest commit înainte de altă extracție.
