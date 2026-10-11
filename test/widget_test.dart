@@ -65,4 +65,35 @@ void main() {
     expect(last, contains('octombrie'));
   });
 
+  group('Date calendaristice', () {
+    for (final month in <int>[1, 3, 5, 7, 8, 10, 12]) {
+      test('luna $month cu 31 de zile', () {
+        final first = formatDate(DateTime(2026, month, 1));
+        final last = formatDate(DateTime(2026, month, 31));
+        expect(first, isNot(equals(last)));
+        expect(first, contains('2026'));
+        expect(last, contains('2026'));
+      });
+    }
+    for (final month in <int>[4, 6, 9, 11]) {
+      test('luna $month cu 30 de zile', () {
+        final first = formatDate(DateTime(2026, month, 1));
+        final last = formatDate(DateTime(2026, month, 30));
+        expect(first, isNot(equals(last)));
+        expect(first, contains('2026'));
+        expect(last, contains('2026'));
+      });
+    }
+    test('februarie nebisect', () {
+      final first = formatDate(DateTime(2026, 2, 1));
+      final last = formatDate(DateTime(2026, 2, 28));
+      expect(first, isNot(equals(last)));
+    });
+    test('februarie bisect', () {
+      final first = formatDate(DateTime(2024, 2, 1));
+      final last = formatDate(DateTime(2024, 2, 29));
+      expect(first, isNot(equals(last)));
+    });
+  });
+
 }
