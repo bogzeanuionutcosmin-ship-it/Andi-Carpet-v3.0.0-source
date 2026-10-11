@@ -24,6 +24,8 @@ jobs:
           assert src.count(needle) == 1, 'OCR statistics class changed; review required'
           path.write_text(src.replace(needle, needle + '\n  OcrLearningStatistics();', 1), encoding='utf-8')
           PY
+          python3 -m py_compile tools/apply_v302_fixes.py tools/apply_widget_layout_v302.py
+          node functions/scripts/check_member_directory_projection.js
           python3 tools/apply_v302_fixes.py
           python3 tools/apply_widget_layout_v302.py
           test -f lib/ocr_position_learning.dart
