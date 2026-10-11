@@ -96,4 +96,38 @@ void main() {
     });
   });
 
+  group('Integritatea funcțiilor și permisiunilor', () {
+    test('nu există permisiuni goale', () {
+      for (final definition in defaultFunctionDefinitions()) {
+        expect(
+          definition.permissions.every((permission) => permission.trim().isNotEmpty),
+          isTrue,
+          reason: 'Permisiune goală în ${definition.id}',
+        );
+      }
+    });
+
+    test('identificatorii sunt deja normalizați', () {
+      for (final definition in defaultFunctionDefinitions()) {
+        expect(definition.id, definition.id.trim());
+      }
+    });
+
+    test('definițiile implicite sunt deterministe', () {
+      final first = defaultFunctionDefinitions();
+      final second = defaultFunctionDefinitions();
+      expect(first.map((e) => e.id).toList(),
+          second.map((e) => e.id).toList());
+      for (var i = 0; i < first.length; i++) {
+        expect(first[i].permissions, orderedEquals(second[i].permissions));
+      }
+    });
+
+    test('funcția admin este definită exact o dată', () {
+      final admins = defaultFunctionDefinitions()
+          .where((definition) => definition.id == 'admin');
+      expect(admins.length, 1);
+    });
+  });
+
 }
