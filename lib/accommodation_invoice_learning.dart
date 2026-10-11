@@ -15,7 +15,7 @@ class AccommodationInvoiceResult {
 }
 
 final _accommodationLabel = RegExp(
-  r'CAZARE|CAMER[ĂA]|NOAPTE\\s+CAZARE|SERVICII\\s+HOTELIERE|ACCOMMODATION|ROOM\\s+CHARGE|LODGING',
+  r'CAZARE|CAMER[ĂA]|NOAPTE\s+CAZARE|SERVICII\s+HOTELIERE|ACCOMMODATION|ROOM\s+CHARGE|LODGING',
   caseSensitive: false,
 );
 final _excludedSummary = RegExp(
