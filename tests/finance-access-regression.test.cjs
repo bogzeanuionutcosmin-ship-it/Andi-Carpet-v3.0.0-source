@@ -82,3 +82,93 @@ test('persoana din afara echipei nu poate propune cheltuieli pentru echipă', as
     reviewStatus: 'pending', amount: 125,
   }));
 });
+
+
+test('gestionarul poate aproba cheltuiala echipei', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('expenses/approve').set({
+      teamId: 'team-1', createdBy: uid.worker, confirmed: false,
+      reviewStatus: 'pending', amount: 125,
+    });
+  });
+  await assertSucceeds(db('manager').doc('expenses/approve').update({
+    confirmed: true, reviewStatus: 'approved',
+  }));
+});
+test('gestionarul poate respinge cheltuiala cu motiv valid', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('expenses/reject').set({
+      teamId: 'team-1', createdBy: uid.worker, confirmed: false,
+      reviewStatus: 'pending', amount: 125,
+    });
+  });
+  await assertSucceeds(db('manager').doc('expenses/reject').update({
+    confirmed: false, reviewStatus: 'rejected',
+    rejectionReason: 'Lipsă document', reviewedBy: uid.manager,
+  }));
+});
+test('gestionarul nu poate respinge fără motiv', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('expenses/reject-empty').set({
+      teamId: 'team-1', createdBy: uid.worker, confirmed: false,
+      reviewStatus: 'pending', amount: 125,
+    });
+  });
+  await assertFails(db('manager').doc('expenses/reject-empty').update({
+    confirmed: false, reviewStatus: 'rejected',
+    rejectionReason: '', reviewedBy: uid.manager,
+  }));
+});
+test('lucrătorul nu poate aproba propria cheltuială', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('expenses/self-approve').set({
+      teamId: 'team-1', createdBy: uid.worker, confirmed: false,
+      reviewStatus: 'pending', amount: 125,
+    });
+  });
+  await assertFails(db('worker').doc('expenses/self-approve').update({
+    confirmed: true, reviewStatus: 'approved',
+  }));
+});
+test('lucrătorul poate retrimite o cheltuială respinsă', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('expenses/resubmit').set({
+      teamId: 'team-1', createdBy: uid.worker, confirmed: false,
+      reviewStatus: 'rejected', rejectionReason: 'Document lipsă',
+      reviewedBy: uid.manager, amount: 125, settlementId: 'settlement-1',
+    });
+  });
+  await assertSucceeds(db('worker').doc('expenses/resubmit').update({
+    reviewStatus: 'pending', rejectionReason: null, reviewedBy: null,
+    amount: 130,
+  }));
+});
+test('lucrătorul nu poate schimba echipa la retrimitere', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('expenses/change-team').set({
+      teamId: 'team-1', createdBy: uid.worker, confirmed: false,
+      reviewStatus: 'rejected', amount: 125, settlementId: 'settlement-1',
+    });
+  });
+  await assertFails(db('worker').doc('expenses/change-team').update({
+    teamId: 'other-team', reviewStatus: 'pending',
+  }));
+});
+test('lucrătorul nu poate șterge cheltuielile echipei', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('expenses/delete-worker').set({
+      teamId: 'team-1', createdBy: uid.worker, confirmed: false,
+      reviewStatus: 'pending', amount: 125,
+    });
+  });
+  await assertFails(db('worker').doc('expenses/delete-worker').delete());
+});
+test('gestionarul desemnat poate șterge cheltuiala echipei', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('expenses/delete-manager').set({
+      teamId: 'team-1', createdBy: uid.worker, confirmed: false,
+      reviewStatus: 'pending', amount: 125,
+    });
+  });
+  await assertSucceeds(db('manager').doc('expenses/delete-manager').delete());
+});
