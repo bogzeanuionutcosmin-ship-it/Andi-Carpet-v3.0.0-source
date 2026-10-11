@@ -232,3 +232,14 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - **`main.dart` = 749.385 bytes** după extracție. Acum există **7 module noi**: `ui/dashboard_map_components.dart`, `ui/auth_status_components.dart`, `map/verified_location_fix.dart`, `map/graph_route_calculations.dart`, `reports/pdf_reports.dart`, `models/app_data_models.dart`, `models/app_enums_permissions.dart`.
 - **Run CI `38175918835` pentru `555d004d` era queued** la verificare. Înainte de alte extrageri verifică acest run și corectează orice test care presupune greșit că enumerările încă sunt în `main.dart`.
 - Nu s-au eliminat funcționalități, nu s-au șters asseturi, nu s-a făcut deploy. În continuare trebuie audit de cod mort prin referințe la nivel de repository, nu pe baza numărului de apariții în `main.dart`.
+
+## 15. Actualizare 12.10.2026 — reluare din conversație nouă și modul auth
+
+- S-a recitit fișierul ChatGpt și auditul tehnic; s-a recuperat și contextul din conversațiile vechi ale proiectului AndiCarpet. Nu confunda memoria conversațiilor cu starea verificată în GitHub.
+- Run CI 38175918835: Python, Node și Firebase Functions success; Flutter web și Firestore cancelled (push ulterior), deci NU este validare completă a ultimului lot de enumuri.
+- Extragere nouă, fără schimbare intenționată de comportament: `lib/auth/quick_accounts.dart` ca `part of '../main.dart';`, conține `_quickAccountStorage`, `_quickAccountsStorageKey`, `_QuickAccount`, `_loadQuickAccounts`, `_saveQuickAccounts`. Codul original (1.623 caractere) a fost scos din `main.dart`, iar directiva `part 'auth/quick_accounts.dart';` adăugată.
+- Commituri: `512d35a7` creare modul; `ff4e5985` conectare și eliminare duplicat; `50d0e04f` test de regresie `test_quick_accounts_auth_module_extracted_once`.
+- Număr module extrase: **8**. Funcțiile de stocare securizată păstrează limita existentă de două conturi; nu s-au schimbat parole, date live, reguli Firebase, UI, APK sau deploy.
+- **Obligatoriu înainte de extragerea următoare:** verifică CI complet pe ultimul SHA; dacă apar contracte statice care caută simbolurile mutate în main, corectează testele pentru a verifica modulul real. Nu pretinde build verde fără verificare.
+- Urmează inventarierea blocurilor UI auth/dashboard/mesagerie și extrageri mici, cu teste și documentarea commiturilor. Nu șterge stickere, finanțe v2, workflow-uri sau asseturi fără analiza referințelor. Păstrează diurna în avans.
+- Cerință istorică suplimentară: utilizatorul dorește ulterior o integrare de administrare/monitorizare mai directă (numită Guardian în conversații anterioare), după stabilizarea testelor și a interfeței; nu presupune acces live doar din GitHub.
