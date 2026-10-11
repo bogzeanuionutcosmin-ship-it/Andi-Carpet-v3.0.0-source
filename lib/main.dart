@@ -10248,107 +10248,14 @@ class _MessagesContactsPageState extends State<MessagesContactsPage>{
     if(!await launchUrl(uri,mode:LaunchMode.externalApplication)&&mounted)showErrorMessage(context,'Telefonul nu poate deschide apelul pentru $clean.');
   }
 
-  Future<LocationContact?> _contactDialog([LocationContact? existing]) async {
-    final name=TextEditingController(text:existing?.name??'');
-    final phone=TextEditingController(text:existing?.phone??'');
-    var role=(existing?.role.trim().isNotEmpty??false)?existing!.role:'Manager';
-    if(!const ['Manager','Casierie','Alt contact'].contains(role))role='Alt contact';
-    var smsEnabled=existing?.smsEnabled??true;
-    final result=await showDialog<LocationContact>(context:context,builder:(c)=>StatefulBuilder(builder:(c,setD)=>AlertDialog(
-      title:Text(existing==null?'Adaugă număr locație':'Editează contact'),
-      content:SizedBox(width:480,child:Column(mainAxisSize:MainAxisSize.min,children:[
-        DropdownButtonFormField<String>(value:role,decoration:const InputDecoration(labelText:'Tip contact'),items:const[
-          DropdownMenuItem(value:'Manager',child:Text('Manager')),
-          DropdownMenuItem(value:'Casierie',child:Text('Casierie')),
-          DropdownMenuItem(value:'Alt contact',child:Text('Alt contact')),
-        ],onChanged:(v){if(v!=null)setD(()=>role=v);}),
-        const SizedBox(height:8),
-        TextField(controller:name,decoration:InputDecoration(labelText:role=='Casierie'?'Nume / denumire (opțional)':'Nume contact')),
-        const SizedBox(height:8),
-        TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'Telefon *')),
-        const SizedBox(height:4),
-        SwitchListTile(contentPadding:EdgeInsets.zero,value:smsEnabled,onChanged:(v)=>setD(()=>smsEnabled=v),title:const Text('Primește SMS automat'),subtitle:const Text('Dacă este oprit, numărul rămâne disponibil pentru apel, dar nu primește mesajele automate ale graficului.')),
-      ])),
-      actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),FilledButton(onPressed:(){
-        if(phone.text.trim().isEmpty){ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('Completează numărul de telefon.')));return;}
-        final displayName=name.text.trim().isEmpty?role:name.text.trim();
-        Navigator.pop(c,LocationContact(name:displayName,phone:phone.text.trim(),role:role,smsEnabled:smsEnabled));
-      },child:const Text('Salvează'))],
-    )));
-    name.dispose();phone.dispose();return result;
-  }
-
-  Future<void> _saveContacts(Location location,List<LocationContact> contacts) async {
-    try{
-      await FirebaseFirestore.instance.collection('locations').doc(location.id).set({
-        'contacts':contacts.map((c)=>{'name':c.name,'phone':c.phone,'role':c.role,'smsEnabled':c.smsEnabled}).toList(),
-        'phone':contacts.isEmpty?null:contacts.first.phone,
-        'updatedAt':FieldValue.serverTimestamp(),
-      },SetOptions(merge:true));
-      location.contacts=contacts;
-      location.phone=contacts.isEmpty?null:contacts.first.phone;
-      widget.onChanged();
-      widget.log('Contacte locație modificate',location.name);
-      if(mounted)showSuccessMessage(context,'Contactele pentru ${location.name} au fost salvate.');
-    }catch(e){if(mounted)showErrorMessage(context,'Contactele nu au putut fi salvate: $e');}
-  }
-
-  Future<void> _editLocationContacts(Location location) async {
-    if(!widget.canEditContacts)return;
-    final work=location.contacts.map((c)=>LocationContact(name:c.name,phone:c.phone,role:c.role,smsEnabled:c.smsEnabled)).toList();
-    final save=await showDialog<bool>(context:context,builder:(c)=>StatefulBuilder(builder:(c,setD)=>AlertDialog(
-      title:Text(location.name),
-      content:SizedBox(width:620,child:SingleChildScrollView(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        Text(location.address,style:Theme.of(c).textTheme.bodySmall),
-        const SizedBox(height:12),
-        Row(children:[const Expanded(child:Text('Telefoane locație',style:TextStyle(fontWeight:FontWeight.w800))),FilledButton.tonalIcon(onPressed:()async{final x=await _contactDialog();if(x!=null)setD(()=>work.add(x));},icon:const Icon(Icons.add_call),label:const Text('Adaugă'))]),
-        if(work.isEmpty)const Padding(padding:EdgeInsets.symmetric(vertical:16),child:Text('Nu există telefoane salvate.')),
-        ...List.generate(work.length,(i){final x=work[i];return ListTile(contentPadding:EdgeInsets.zero,leading:CircleAvatar(backgroundColor:Colors.green.withValues(alpha:.16),child:const Icon(Icons.phone,color:Colors.green)),title:Text('${x.role} · ${x.name}'),subtitle:Text('${x.phone}${x.smsEnabled?' · SMS automat':' · doar apel'}'),trailing:Wrap(spacing:2,children:[IconButton(tooltip:'Sună',onPressed:()=>_call(x.phone),icon:const Icon(Icons.call,color:Colors.green)),IconButton(tooltip:'Editează',onPressed:()async{final next=await _contactDialog(x);if(next!=null)setD(()=>work[i]=next);},icon:const Icon(Icons.edit_outlined)),IconButton(tooltip:'Șterge',onPressed:()=>setD(()=>work.removeAt(i)),icon:const Icon(Icons.delete_outline))]));}),
-      ]))),
-      actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Salvează'))],
-    )))??false;
-    if(save)await _saveContacts(location,work);
-  }
-
-  Future<void> _editTemplates() async {
-    if(!widget.canManageTemplates)return;
-    final initial=TextEditingController(text:widget.settings.smsTemplates['initial']??'');
-    final rescheduled=TextEditingController(text:widget.settings.smsTemplates['rescheduled']??'');
-    final postponed=TextEditingController(text:widget.settings.smsTemplates['postponed']??'');
-    final save=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
-      title:const Text('Șabloane SMS automate'),
-      content:SizedBox(width:760,child:SingleChildScrollView(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        _InfoCard(icon:Icons.data_object,title:'Variabile disponibile',text:'Folosește [data exactă] pentru data programată și [locație] dacă vrei să incluzi numele sălii. Mesajul inițial se trimite în ziua calendaristică anterioară intervenției, la ora ${widget.settings.smsPreviousDayTime} setată de Admin.'),
-        const SizedBox(height:10),
-        TextField(controller:initial,minLines:3,maxLines:6,decoration:InputDecoration(labelText:'Mesaj inițial · ziua precedentă la ${widget.settings.smsPreviousDayTime}')),
-        const SizedBox(height:10),
-        TextField(controller:rescheduled,minLines:3,maxLines:6,decoration:const InputDecoration(labelText:'Mesaj reprogramare pe altă dată')),
-        const SizedBox(height:10),
-        TextField(controller:postponed,minLines:3,maxLines:6,decoration:const InputDecoration(labelText:'Mesaj amânare')),
-      ]))),
-      actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Salvează'))],
-    ))??false;
-    if(save){
-      widget.settings.smsTemplates['initial']=initial.text.trim();
-      widget.settings.smsTemplates['rescheduled']=rescheduled.text.trim();
-      widget.settings.smsTemplates['postponed']=postponed.text.trim();
-      try{
-        await FirebaseFirestore.instance.collection('meta').doc('uiSettings').set({'smsTemplates':widget.settings.smsTemplates,'updatedAt':FieldValue.serverTimestamp()},SetOptions(merge:true));
-        widget.log('Șabloane SMS modificate','Mesaje automate locații');
-        widget.onChanged();
-        if(mounted)showSuccessMessage(context,'Șabloanele SMS au fost salvate.');
-      }catch(e){if(mounted)showErrorMessage(context,'Șabloanele nu au putut fi salvate: $e');}
-    }
-    initial.dispose();rescheduled.dispose();postponed.dispose();
-  }
-
   @override Widget build(BuildContext context){
-    final needle=query.trim().toLowerCase();
+    String normalize(String text)=>text.toLowerCase().replaceAll(RegExp('[ăâ]'),'a').replaceAll('î','i').replaceAll(RegExp('[șş]'),'s').replaceAll(RegExp('[țţ]'),'t');
+    final needle=normalize(query.trim());
     final list=widget.locations.where((l){
       // Agenda lists every configured location, including temporarily inactive ones.
       if(selectedCategory.isNotEmpty && l.categoryId != selectedCategory)return false;
       if(needle.isEmpty)return true;
-      return '${l.name} ${l.address} ${l.contacts.map((e)=>'${e.name} ${e.phone} ${e.role}').join(' ')}'.toLowerCase().contains(needle);
+      return normalize('${l.name} ${l.address} ${l.contacts.map((e)=>'${e.name} ${e.phone} ${e.role}').join(' ')}').contains(needle);
     }).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return _Page(title:'Agendă',subtitle:'Contacte telefonice pe locații',child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       TextField(controller:search,onChanged:(v)=>setState(()=>query=v),decoration:InputDecoration(prefixIcon:const Icon(Icons.search),labelText:'Caută locație, manager sau număr',suffixIcon:query.isEmpty?null:IconButton(tooltip:'Șterge căutarea',onPressed:(){search.clear();setState(()=>query='');},icon:const Icon(Icons.close)))),
@@ -10372,7 +10279,7 @@ class _MessagesContactsPageState extends State<MessagesContactsPage>{
               if(widget.currentUser!.role!=UserRole.director && doc.id!=widget.currentUser!.id && d['hiddenFromMembers']==true)return false;
               final name=(d['name']??d['email']??'').toString();
               final phone=(d['phone']??'').toString();
-              return needle.isEmpty || '$name $phone'.toLowerCase().contains(needle);
+              return needle.isEmpty || normalize('$name $phone').contains(needle);
             }).toList()..sort((a,b)=>(a.data()['name']??'').toString().compareTo((b.data()['name']??'').toString()));
             if(members.isEmpty)return const _Empty(icon:Icons.people_outline,text:'Nu există membri pentru căutarea curentă.');
             return Column(children:members.map((doc){
