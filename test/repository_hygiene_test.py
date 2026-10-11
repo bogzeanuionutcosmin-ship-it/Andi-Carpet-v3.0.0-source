@@ -115,6 +115,22 @@ class RepositoryHygieneTests(unittest.TestCase):
                 self.assertNotIn("class " + name + " ", main)
                 self.assertEqual(models.count("class " + name + " "), 1)
 
+    def test_enums_and_permissions_extracted_without_duplicates(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        enums = (ROOT / "lib/models/app_enums_permissions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'models/app_enums_permissions.dart';", main)
+        self.assertIn("part of '../main.dart';", enums)
+        for name in ("LocationType", "LocationStatus", "UserRole",
+                     "UserFunction", "FunctionPermission", "PerDiemStatus",
+                     "PerDiemPaymentMethod", "ExpenseDocumentType",
+                     "WorkAttemptStatus", "LearningMode", "AppThemeChoice"):
+            self.assertEqual(main.count("enum " + name + " "), 0)
+            self.assertEqual(enums.count("enum " + name + " "), 1)
+        for name in ("LocationTypeX", "UserRoleX", "UserFunctionX",
+                     "FunctionPermissionX"):
+            self.assertEqual(main.count("extension " + name + " "), 0)
+            self.assertEqual(enums.count("extension " + name + " "), 1)
+
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertIn("RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)", source)
