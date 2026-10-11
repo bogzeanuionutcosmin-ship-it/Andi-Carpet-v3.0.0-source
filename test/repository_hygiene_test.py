@@ -63,6 +63,21 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertEqual(main.count("class " + widget + " "), 0)
             self.assertEqual(component.count("class " + widget + " "), 1)
 
+    def test_auth_status_and_verified_location_modules_are_linked(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        parts = {
+            "ui/auth_status_components.dart": ("_FirebaseLoading", "_FirebaseError"),
+            "map/verified_location_fix.dart": ("_VerifiedLocationFix",),
+        }
+        for relative, classes in parts.items():
+            with self.subTest(module=relative):
+                source = (ROOT / "lib" / relative).read_text(encoding="utf-8")
+                self.assertIn("part '" + relative + "';", main)
+                self.assertIn("part of '../main.dart';", source)
+                for name in classes:
+                    self.assertEqual(main.count("class " + name + " "), 0)
+                    self.assertEqual(source.count("class " + name + " "), 1)
+
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertIn("RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)", source)
