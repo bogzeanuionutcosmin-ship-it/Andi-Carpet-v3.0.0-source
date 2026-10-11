@@ -31,6 +31,7 @@ import 'mapbox_services.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
+part 'map/verified_location_fix.dart';
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';
@@ -7082,28 +7083,6 @@ class _ProgramPageState extends State<ProgramPage> {
   Future<void> _exportJpeg()async{
     try{await Future<void>.delayed(const Duration(milliseconds:80));final boundary=_graphCaptureKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;if(boundary==null)throw StateError('Previzualizarea nu este gata.');final image=await boundary.toImage(pixelRatio:1.0);final data=await image.toByteData(format:ui.ImageByteFormat.png);if(data==null)throw StateError('Nu s-a putut randă imaginea.');final decoded=img.decodeImage(data.buffer.asUint8List());if(decoded==null)throw StateError('Imagine invalidă.');final jpg=Uint8List.fromList(img.encodeJpg(decoded,quality:92));await downloadFile(jpg,'grafic_${_safeFilePart(graphHead?.graphName??'grafic')}.jpg',mimeType:'image/jpeg');if(mounted)showSuccessMessage(context,'Graficul JPEG a fost pregătit pentru descărcare.');}catch(e){if(mounted)showErrorMessage(context,'Exportul JPEG a eșuat: $e');}
   }
-}
-
-class _VerifiedLocationFix {
-  final String id;
-  final double? latitude;
-  final double? longitude;
-  final LocationStatus? status;
-  final String verifiedAddress;
-  final String source = 'Google Maps / verificare web';
-  final String confidence;
-  final String note;
-  const _VerifiedLocationFix({
-    required this.id,
-    this.latitude,
-    this.longitude,
-    this.status,
-    required this.verifiedAddress,
-    this.confidence = 'ridicată',
-    this.note = '',
-  });
-
-  bool get hasGps => latitude != null && longitude != null;
 }
 
 // Puncte verificate pentru import controlat. Importul NU mută niciodată un marker
