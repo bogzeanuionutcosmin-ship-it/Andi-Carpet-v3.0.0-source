@@ -41,6 +41,14 @@ changes = [
         ),
         const Text('Schimbare rapidă între conturi',style:TextStyle(fontSize:18,fontWeight:FontWeight.w900)),"""),
 
+    ("canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh,",
+     "canEditProgram: hasPermission(FunctionPermission.editProgram), liveLocalityLabel: _lastLiveLocalityLabel, userName: userName, onChanged: refresh,"),
+    ("final AppUser currentUser; final bool canEditProgram; final String Function(String) userName;",
+     "final AppUser currentUser; final bool canEditProgram; final String liveLocalityLabel; final String Function(String) userName;"),
+    ("required this.currentUser, required this.canEditProgram, required this.userName, required this.onChanged, required this.saveRecord,",
+     "required this.currentUser, required this.canEditProgram, required this.liveLocalityLabel, required this.userName, required this.onChanged, required this.saveRecord,"),
+    ("(inWindow ? 'Locația echipei: consultă poziția live' : 'Liber'), asset: 'assets/ui/tab_harta.png')",
+     "(inWindow ? (widget.liveLocalityLabel.trim().isNotEmpty ? widget.liveLocalityLabel : 'Oraș/județ indisponibil') : 'Liber'), asset: 'assets/ui/tab_harta.png')"),
 ]
 for before, after in changes:
     count = data.count(before)
