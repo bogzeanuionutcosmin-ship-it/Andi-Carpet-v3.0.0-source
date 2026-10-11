@@ -323,3 +323,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `lib/models/default_categories_functions.dart` cu `functionPermissionId`, `defaultLocationCategories`, `defaultFunctionDefinitions`, `functionById`; **943 caractere** scoase din `lib/main.dart`.
 - Reguli păstrate: categorii implicite million/magic/horeca/cazari, funcție Admin cu toate `FunctionPermission.values`, căutare funcție după ID. Commituri `c3c58c96` (modul), `2328d0ce` (legare), `37824572` (test). **20 module separate**.
 - CI pentru noul lot trebuie verificat înainte de verde. Fără deploy/APK/migrare. Continuă loturi de extragere mici, actualizează testele și această notă; la final documentează toate regulile și testele în `docs/`.
+
+## 30. Curățare modele locații și funcții (21 module)
+- CI anterior `38180602104` pe `75b797f6`: **success 5/5** (modul #20).
+- Extras `lib/models/location_status_and_functions.dart`: `LocationStatusX`, `LocationCategory`, `FunctionDefinition`; **1.764 caractere** eliminate din `lib/main.dart`.
+- Păstrate stările/culorile locațiilor, `FunctionDefinition.badgeKeys` max 3, fallback `iconKey` vechi, primul ecuson ca iconKey, permisiuni implicite goale, active implicit true. Commituri `4775d627` (modul), `80df1440` (legare), `c7958ce9` (test). **21 module extrase**.
+- CI pentru noul lot neconfirmat încă. Nu deploy/APK/date. Următorul lot: utilitare PDF sau bootstrap/UI cu limite clare; după curățare, documentează regulile funcționale complete în `docs/` și acoperă-le cu teste.
