@@ -347,3 +347,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `lib/auth/firebase_user_profile.dart`: `FirebaseUserProfile`, mapping Firestore/auth user, `isAdmin`, `_functionFrom`, nume/poreclă/fallback, status activ, `functionIds` legacy. **2.042 caractere** eliminate din `lib/main.dart`.
 - Commituri `38ed3704` (modul), `8684c2ea` (legare), `f4ee51cf` (test regresie). **24 module separate**.
 - CI nou încă de verificat. Fără deploy/APK/migrare; nu schimba logica de autorizare. Următorul pas: componente independente ale AuthGate sau alte utilitare, cu teste și actualizare notiță; ulterior documentează regulile funcționale complete în `docs/`.
+
+## 34. Curățare AuthGate Firebase (25 module)
+- CI `38181591827` pe `589b3ad1`: **success 5/5** pentru modul #24.
+- Extras `lib/auth/auth_gate.dart` cu `AuthGate` și `_AuthGateState`, ascultare auth/profile/uiSettings, persistență sesiune Chrome/PWA, rutare login/loading/profil lipsă/aprobare/HomePage. **6.251 caractere** eliminate din `lib/main.dart`; logică păstrată textual.
+- Commituri `699514ae` (modul), `62cbbeda` (legare), `da9a6875` (test contract). **25 module separate**.
+- CI nou neconfirmat. Fără deploy/APK/date/migrare. Urmează module independente LoginPage și componente autentificare; testează înainte de fiecare nou lot. Documentația completă a regulilor în `docs/` rămâne obligatorie.
