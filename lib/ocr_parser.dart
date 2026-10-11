@@ -1,3 +1,5 @@
+import 'fuel_receipt_learning.dart';
+
 class FiscalOcrData {
   final String rawText;
   final String documentNumber;
@@ -123,6 +125,15 @@ FiscalOcrData parseFiscalOcr(String text) {
   }
 
   final fuel = RegExp(r'\b(MOTORIN[ĂA]|DIESEL|BENZIN[ĂA]|GPL|CARBURANT)\b', caseSensitive: false).hasMatch(upper);
+  // Pentru bonurile de carburant, TOTAL poate include produse non-carburant.
+  // Nu precompletam suma din TOTAL daca nu avem o valoare de carburant sigura.
+  final fuelExtraction = classifyFuelReceipt(raw);
+  if (fuel) {
+    amount = fuelExtraction.fuelAmountBani == null || fuelExtraction.needsReview
+        ? null
+        : fuelExtraction.fuelAmountBani! / 100.0;
+    if (amount == 0) amount = null;
+  }
   double? liters;
   double? price;
   final lm = RegExp(r'([0-9]{1,4}(?:[.,][0-9]{1,3})?)\s*(?:L|LITRI)\b', caseSensitive: false).firstMatch(raw);
