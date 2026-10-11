@@ -377,3 +377,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Corectat `test/repository_hygiene_test.py::test_web_right_side_category_drawer_is_wired` să verifice drawer în `lib/home/home_page.dart`, păstrând verificarea legăturii part în main. Commit `7c4b2aa7`.
 - Corectat `test/admin_privacy_contract_test.py::test_member_queries_migrated`: agregă codul `main.dart` + `home/home_page.dart` pentru verificarea contractelor memberDirectory. Commit `992aa1e0`.
 - Nu au fost schimbate reguli sau comportament, doar sursa verificată de teste. Așteaptă CI nou, **nu afirma verde până la confirmare**. După verde continuă refactorizarea incrementală și actualizează notița. Documentația completă a regulilor rămâne obligatorie.
+
+
+## 39. Curățare ecran eroare inițializare Firebase (29 module)
+- Extras textual `_FirebaseBootstrapErrorApp` din `lib/main.dart` în `lib/bootstrap/firebase_bootstrap_error_app.dart` cu `part of '../main.dart';`.
+- Legat prin `part 'bootstrap/firebase_bootstrap_error_app.dart';` în `main.dart`. Commituri `a54fba5b`, `70cf500e`, `b8365b76`.
+- Ecranul afișat la eșecul inițializării Firebase păstrează mesajele și comportamentul; fără schimbări în date, reguli sau deploy.
+- **CI trebuie verificat** după acest lot; nu declara succes până la finalizarea ultimului workflow. Următorul pas: test regresie pentru modul, apoi separarea incrementală a altor componente și documentarea regulilor funcționale.
