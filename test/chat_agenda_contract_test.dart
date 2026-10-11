@@ -20,6 +20,14 @@ void main() {
     expect(source, contains('Contact indisponibil'));
   });
 
+  test('Agenda is read-only and search ignores Romanian diacritics', () {
+    final agenda = source.substring(source.indexOf('class _MessagesContactsPageState'), source.indexOf('class AppInformationPage'));
+    expect(agenda, isNot(contains('_editLocationContacts(')));
+    expect(agenda, isNot(contains('_contactDialog(')));
+    expect(agenda, contains("replaceAll(RegExp('[ăâ]'),'a')"));
+    expect(agenda, contains("replaceAll(RegExp('[șş]'),'s')"));
+  });
+
   test('Member agenda uses permission-aware directory and hides restricted members', () {
     expect(source, contains("selectedCategory=='__members'"));
     expect(source, contains("?'users':'memberDirectory'"));
