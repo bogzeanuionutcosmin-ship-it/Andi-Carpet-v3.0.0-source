@@ -5447,7 +5447,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openGroupChat() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => GroupChatPage(currentUser: me, users: users, functionDefinitions: functionDefinitions))).then((_) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => GroupChatPage(currentUser: me, users: users, functionDefinitions: functionDefinitions, agenda: MessagesContactsPage(locations:locations,categories:categories,settings:settings,canEditContacts:false,canManageTemplates:false,onChanged:refresh,log:log)))).then((_) {
       _unreadGroupMessageCount = 0;
       _refreshUnreadMessageCount();
     });
