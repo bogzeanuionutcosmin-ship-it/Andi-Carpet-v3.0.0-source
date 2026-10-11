@@ -78,6 +78,17 @@ class RepositoryHygieneTests(unittest.TestCase):
                     self.assertEqual(main.count("class " + name + " "), 0)
                     self.assertEqual(source.count("class " + name + " "), 1)
 
+    def test_graph_route_calculations_extracted_and_linked(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/map/graph_route_calculations.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'map/graph_route_calculations.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for name in ("GraphRoutePoints", "graphRoutePoints",
+                     "estimateGraphDistanceKm", "estimateGraphRoadDistanceKm"):
+            self.assertNotIn("class " + name + " ", main)
+            self.assertNotIn("\\n" + name + "(", main)
+            self.assertIn(name, module)
+
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertIn("RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)", source)
