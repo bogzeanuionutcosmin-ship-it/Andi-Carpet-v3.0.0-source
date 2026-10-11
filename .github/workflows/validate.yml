@@ -30,6 +30,8 @@ jobs:
         run: flutter pub get
       - name: Repository hygiene regression tests
         run: python3 -m unittest discover -s test -p 'repository_hygiene_test.py'
+      - name: Run Flutter unit and widget tests
+        run: flutter test test/
       - name: Build web
         run: flutter build web --release
       - name: Upload web build
@@ -57,3 +59,24 @@ jobs:
         run: npm ci
       - name: Validate JavaScript syntax
         run: node --check index.js
+
+  source-contracts:
+    name: Python source and security contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run all Python source contracts
+        run: python3 -m unittest discover -s test -p '*test.py' -v
+
+  javascript-tests:
+    name: Node projection tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run member directory projection tests
+        run: node --test test/member_directory_projection.test.js
