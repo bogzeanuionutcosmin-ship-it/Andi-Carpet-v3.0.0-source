@@ -289,6 +289,19 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(feature, module)
         self.assertIn("runApp(const AndiCarpetaApp());", main)
 
+    def test_firebase_user_profile_is_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/auth/firebase_user_profile.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'auth/firebase_user_profile.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("class FirebaseUserProfile {", main)
+        self.assertEqual(module.count("class FirebaseUserProfile {"), 1)
+        self.assertIn("bool get isAdmin => role == 'admin';", module)
+        self.assertIn("if (role == 'admin') return UserFunction.director;", module)
+        self.assertIn("data['active'] == true", module)
+        self.assertIn("data['functionIds'] is List", module)
+        self.assertIn("if (useNickname && nickname.isNotEmpty) name = nickname;", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
