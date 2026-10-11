@@ -14,7 +14,7 @@ class FuelReceiptLearningResult {
 }
 
 final _fuelName = RegExp(
-  r'\b(?:MOTORIN[ĂA]|DIESEL|BENZIN[ĂA]|GASOLINA|GPL|CARBURANT|ADBLUE)\b',
+  r'\b(?:MOTORIN[ĂA]|DIESEL|BENZIN[ĂA]|GASOLINA|GPL|CARBURANT|ADBLUE|EURO\\s*DIESEL|EVO\\s*DIESEL|MAXXMOTION)\b',
   caseSensitive: false,
 );
 final _moneyAtEnd = RegExp(r'([0-9]{1,7}[.,][0-9]{2})\s*(?:RON|LEI)?\s*$',
