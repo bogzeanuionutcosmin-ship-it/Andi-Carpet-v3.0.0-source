@@ -186,9 +186,15 @@ service cloud.firestore {
         || isTeamMember(resource.data.teamId);
       allow create: if isAdmin()
         || (isActive()
+          && hasPermission('viewOwnDecont')
           && request.resource.data.teamId is string
-          && exists(/databases/$(database)/documents/finance/$(request.resource.data.teamId))
-          && get(/databases/$(database)/documents/finance/$(request.resource.data.teamId)).data.managerId == request.auth.uid);
+          && isTeamMember(request.resource.data.teamId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.amount is number
+          && request.resource.data.amount >= 0
+          && (request.resource.data.confirmed == false
+            || (exists(/databases/$(database)/documents/finance/$(request.resource.data.teamId))
+              && get(/databases/$(database)/documents/finance/$(request.resource.data.teamId)).data.managerId == request.auth.uid)));
       allow update: if isAdmin()
         || (isActive()
           && resource.data.teamId == request.resource.data.teamId
