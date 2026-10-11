@@ -22,6 +22,8 @@ changes = [
      "SizedBox(width:math.min(MediaQuery.sizeOf(context).width-80,340),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(display,softWrap:true,style:const TextStyle(fontSize:22,fontWeight:FontWeight.w900))"),
     ("isThreeLine: true,\n                            onTap: n.read ? null : () async {",
      "isThreeLine: true,\n                            trailing: n.read ? const Icon(Icons.check_circle_outline) : const Tooltip(message:'Marchează ca citit',child:Icon(Icons.mark_email_read_outlined)),\n                            onTap: n.read ? null : () async {"),
+    ("(inWindow ? 'Între locații' : 'Liber'), asset: 'assets/ui/tab_harta.png')",
+     "(inWindow ? 'Locația echipei: consultă poziția live' : 'Liber'), asset: 'assets/ui/tab_harta.png')"),
 ]
 for before, after in changes:
     count = data.count(before)
