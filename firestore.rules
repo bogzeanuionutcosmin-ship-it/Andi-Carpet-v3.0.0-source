@@ -447,16 +447,14 @@ service cloud.firestore {
         || hasPermission('viewOtherDecont')
         || isTeamMember(teamId)
         || (isActive() && resource.data.managerId == request.auth.uid);
-      // Un membru nu poate sa se desemneze singur gestionar.
-      // Numai administratorul poate crea sau schimba managerId.
-      allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont')
-          && isTeamMember(teamId)
-          && (!('managerId' in request.resource.data)
-            || request.resource.data.managerId == null));
+      // Doar administratorul initializeaza finantele si desemneaza
+      // gestionarul. Ulterior doar gestionarul poate modifica sumele.
+      allow create: if isAdmin();
       allow update: if isAdmin()
-        || (hasPermission('viewOwnDecont')
+        || (isActive()
+          && hasPermission('viewOwnDecont')
           && isTeamMember(teamId)
+          && resource.data.managerId == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['receivedDeparture', 'receivedDuring', 'receivedEntries', 'perDiemRate', 'updatedAt']));
       allow delete: if isAdmin();
