@@ -4949,7 +4949,13 @@ class _HomePageState extends State<HomePage> {
         }
         // La aprobare nu suprascriem fotografia, suma sau emitentul.
         if (existing.data()?['confirmed'] == false && expense.confirmed) {
-          tx.update(ref, {'confirmed': true, 'updatedAt': FieldValue.serverTimestamp()});
+          tx.update(ref, {
+            'confirmed': true,
+            'reviewStatus': 'approved',
+            'rejectionReason': null,
+            'reviewedBy': currentUserId,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
         } else {
           tx.update(ref, data);
         }
@@ -4967,6 +4973,35 @@ class _HomePageState extends State<HomePage> {
     // nu trebuie sa transforme o salvare reusita intr-o eroare falsa.
     // Cache-ul va fi sincronizat de listenerul Firestore.
     _expenseCache.remove(expense.id);
+  }
+
+  Future<void> _rejectExpenseDirect(String expenseId, String reason) async {
+    final trimmed = reason.trim();
+    if (trimmed.length < 5) throw StateError('Motivul respingerii trebuie sa aiba minimum 5 caractere.');
+    final ref = FirebaseFirestore.instance.collection('expenses').doc(expenseId);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) throw StateError('Documentul nu mai exista.');
+      final previous = snap.data()!;
+      final teamId = (previous['teamId'] ?? '').toString();
+      if (!canEditTeam(teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
+        throw StateError('Nu ai acces la decontul acestei echipe.');
+      }
+      final financeSnap = await tx.get(FirebaseFirestore.instance.collection('finance').doc(teamId));
+      if (!isAdmin && financeSnap.data()?['managerId'] != currentUserId) {
+        throw StateError('Doar gestionarul poate respinge documente.');
+      }
+      if (previous['confirmed'] != false || previous['reviewStatus'] == 'rejected') {
+        throw StateError('Documentul nu mai este in asteptare.');
+      }
+      tx.update(ref, {
+        'reviewStatus': 'rejected',
+        'rejectionReason': trimmed,
+        'reviewedBy': currentUserId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _expenseCache.remove(expenseId);
   }
 
   Future<void> _savePerDiemDirect(PerDiemEntry entry) async {
