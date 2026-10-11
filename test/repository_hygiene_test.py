@@ -63,6 +63,19 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertEqual(main.count("class " + widget + " "), 0)
             self.assertEqual(component.count("class " + widget + " "), 1)
 
+    def test_quick_accounts_auth_module_extracted_once(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/auth/quick_accounts.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'auth/quick_accounts.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class _QuickAccount ", "Future<List<_QuickAccount>> _loadQuickAccounts()",
+                       "Future<void> _saveQuickAccounts(", "const FlutterSecureStorage _quickAccountStorage"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("_quickAccountStorage.read(", module)
+        self.assertIn("_quickAccountStorage.write(", module)
+        self.assertIn("_quickAccountStorage.delete(", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
