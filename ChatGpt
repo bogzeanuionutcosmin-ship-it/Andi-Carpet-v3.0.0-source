@@ -249,3 +249,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extragere UI suplimentară: `lib/ui/branding_theme_helpers.dart` (`part of '../main.dart';`) cu normalizarea fonturilor, familiile de font, asseturile și etichetele fundalurilor/logourilor, `_activeLogoAsset`, `appBrandLogo`. Eliminat blocul original de 2.363 caractere din `main.dart`; directivă `part` adăugată. Comportamentul rămâne intenționat identic.
 - Commituri: `049c2082` (modul), `574c51b4` (conectare), `d7ba6bba` (test sursă). **9 module extrase**.
 - Atenție: noul CI pentru `d7ba6bba` poate fi anulat de actualizarea acestei note. Verifică ultima rulare după acest commit și repară eventuale teste care încă se așteaptă la definițiile din `main.dart`. Nu s-a făcut deploy, APK, migrare sau modificare Firestore.
+
+## 17. Actualizare 12.10.2026 — separare interfață instalare Android/Apple
+- Creat `lib/ui/install_app_buttons.dart` (`part of '../main.dart';`), mutând fără modificări intenționate `_showAndroidInstallFlow`, `_showAppleInstallFlow`, `_InstallAppButtons`. Sunt păstrate dialogul Samsung Auto Blocker, verificarea linkului APK și instrucțiunile Safari pentru iPhone.
+- Eliminat bloc de **2.842 caractere** din `lib/main.dart` și conectat `part 'ui/install_app_buttons.dart';`. Commituri: `3b031caa` (fișier), `bfe207d0` (link), `427fc2aa` (test contract în `test/repository_hygiene_test.py`). **10 module extrase** în total.
+- Ultima verificare înaintea acestui lot: CI `38176253429` pe `2d598318` era încă **in_progress**; commiturile ulterioare pot anula rularea. Obligatoriu: verifică ultima rulare CI după prezenta notiță, inclusiv Flutter web și emulatorul Firestore; repară orice eșec înainte de alte schimbări. Nu declara CI verde fără rezultat complet.
+- Fără publicare Firebase, fără APK nou, fără schimbări în reguli sau date. Nu modifica logicile de diurnă în avans. Continuați extragerile incrementale și actualizați mereu ChatGpt după fiecare lot.
