@@ -1,3 +1,4 @@
+import 'invoice_fields_learning.dart';
 import 'fuel_receipt_learning.dart';
 
 class FiscalOcrData {
@@ -85,6 +86,7 @@ FiscalOcrData parseFiscalOcr(String text) {
     supplier = lines.firstWhere((x) => RegExp(r'[A-Za-zĂÂÎȘȚăâîșț]{3}').hasMatch(x), orElse: () => lines.first);
   }
 
+  final invoice = RegExp(r'\\b(?:FACTUR[ĂA]|INVOICE)\\b', caseSensitive: false).hasMatch(raw) ? parseInvoiceFields(raw) : null;
   // BF este extras numai din etichete explicite, nu dintr-un "NR" generic.
   // Evitam sa confundam numarul bonului cu POS, casa, tranzactia sau CUI.
   String docNo = '';
@@ -115,6 +117,11 @@ FiscalOcrData parseFiscalOcr(String text) {
     if (date != null) break;
   }
 
+  if (invoice != null) {
+    docNo = invoice.invoiceNumber;
+    date = invoice.invoiceDate;
+  }
+
   double? amount;
   final totalPatterns = <RegExp>[
     RegExp(r'(?:TOTAL\s+(?:DE\s+PLAT[ĂA]|PLAT[ĂA])?|TOTAL|SUMA\s+DE\s+PLAT[ĂA]|DE\s+PLAT[ĂA])[^0-9]{0,20}([0-9]{1,7}(?:[.,][0-9]{2})?)', caseSensitive: false),
@@ -137,11 +144,13 @@ FiscalOcrData parseFiscalOcr(String text) {
     if (candidates.isNotEmpty) amount = candidates.reduce((a, b) => a > b ? a : b);
   }
 
+  if (invoice != null) amount = invoice.totalBani == null ? null : invoice.totalBani! / 100.0;
+
   final fuel = RegExp(r'\b(MOTORIN[ĂA]|DIESEL|BENZIN[ĂA]|GPL|CARBURANT)\b', caseSensitive: false).hasMatch(upper);
   // Pentru bonurile de carburant, TOTAL poate include produse non-carburant.
   // Nu precompletam suma din TOTAL daca nu avem o valoare de carburant sigura.
   final fuelExtraction = classifyFuelReceipt(raw);
-  if (fuel) {
+  if (fuel && invoice == null) {
     amount = fuelExtraction.fuelAmountBani == null || fuelExtraction.needsReview
         ? null
         : fuelExtraction.fuelAmountBani! / 100.0;
