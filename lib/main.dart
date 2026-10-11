@@ -35,6 +35,7 @@ part 'auth/quick_accounts.dart';
 part 'ui/branding_theme_helpers.dart';
 part 'ui/install_app_buttons.dart';
 part 'bootstrap/firebase_initialization.dart';
+part 'bootstrap/firebase_bootstrap_error_app.dart';
 part 'utils/operational_dates.dart';
 part 'map/verified_location_fix.dart';
 part 'map/graph_route_calculations.dart';
