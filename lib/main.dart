@@ -9195,7 +9195,7 @@ class _ExpensePageState extends State<ExpensePage> {
   Widget _settlementSelector() {
     final items = <DropdownMenuItem<String>>[];
     for (final s in teamSettlements) {
-      items.add(DropdownMenuItem(value: s.id, child: Text('${s.name} · ${_shortDate(s.startDate)}${s.closed ? ' · închisă' : ''}')));
+      items.add(DropdownMenuItem(value: s.id, child: Text('${s.name} · ${_shortDate(s.startDate)}${s.closed ? ' · închisă' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis)));
     }
     if (hasLegacyData) items.add(const DropdownMenuItem(value: _legacySettlementKey, child: Text('Istoric anterior · date fără deplasare')));
     final value = _resolvedSettlementId();
@@ -9209,6 +9209,7 @@ class _ExpensePageState extends State<ExpensePage> {
       if (items.isNotEmpty)
         DropdownButtonFormField<String>(
           value: value,
+          isExpanded: true,
           decoration: const InputDecoration(labelText: 'Selectează deplasarea'),
           items: items,
           onChanged: (v) => setState(() => selectedSettlementId = v),
