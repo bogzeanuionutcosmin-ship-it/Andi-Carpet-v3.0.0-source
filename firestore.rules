@@ -195,7 +195,18 @@ service cloud.firestore {
           && (request.resource.data.confirmed == false
             || (exists(/databases/$(database)/documents/finance/$(request.resource.data.teamId))
               && get(/databases/$(database)/documents/finance/$(request.resource.data.teamId)).data.managerId == request.auth.uid)));
-      allow update: if isAdmin()
+      allow update: if (isActive()
+          && resource.data.createdBy == request.auth.uid
+          && isTeamMember(resource.data.teamId)
+          && resource.data.confirmed == false
+          && resource.data.reviewStatus == 'rejected'
+          && request.resource.data.confirmed == false
+          && request.resource.data.reviewStatus == 'pending'
+          && request.resource.data.get('rejectionReason', null) == null
+          && request.resource.data.get('reviewedBy', null) == null
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['reviewStatus', 'rejectionReason', 'reviewedBy', 'updatedAt']))
+        || isAdmin()
         || (isActive()
           && resource.data.teamId == request.resource.data.teamId
           && exists(/databases/$(database)/documents/finance/$(resource.data.teamId))
