@@ -292,3 +292,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - `ChatGpt` rămâne jurnalul de predare între conversații. Pentru fiecare funcție: scop, actori, condiții de acces, date citite/scrise, reguli/validări, cazuri-limită, erori, dependențe, teste, comportament acceptat.
 - Regulă permanentă propusă: fiecare schimbare funcțională actualizează documentația relevantă și testele în același lot. Păstrăm deosebirea între comportament verificat și cerințe încă neimplementate.
 - Exemplu critic: diurnele pot fi acordate în avans inclusiv peste acumulat; documentați separat fluxurile active și experimentale, fără a introduce plafon accidental.
+
+## 25. Curățare UI — fundalul aplicației (16 module)
+- CI `38177638822` pe `980e9000`: **success**, confirmă extragerea #15; rularea pe `53ea6ae7` era încă în progres la verificare (doar notița schimbată).
+- Extras widgetul `_AppBackdrop` în `lib/ui/app_backdrop.dart`, cu `part of '../main.dart';`, fără schimbări de comportament: fundaluri bundled/custom, transparență maximă 0,70, contrast și conținut suprapus.
+- Eliminat bloc de **1.727 caractere** din `lib/main.dart`. Commituri `d0b14ec3` (modul), `6bea7257` (legare), `a65dfcba` (test contract). Total **16 module**.
+- Verifică noul CI înainte de a declara verde. Următorul lot: iconuri, badge assets și funcții UI în blocuri mici. După curățarea completă: `docs/ARHITECTURA.md`, `docs/REGULI_FUNCTIONALE.md`, `docs/PERMISIUNI.md`, `docs/FLUXURI.md`, `docs/TESTARE.md`, cu teste aferente; cerință permanentă a utilizatorului.
