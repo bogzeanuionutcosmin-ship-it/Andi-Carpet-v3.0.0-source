@@ -50,6 +50,7 @@ part 'ui/interactive_member_badges.dart';
 part 'models/location_category_helpers.dart';
 part 'models/default_categories_functions.dart';
 part 'models/location_status_and_functions.dart';
+part 'reports/pdf_format_helpers.dart';
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';
@@ -113,21 +114,6 @@ String graphDefaultName(DateTime d) => 'Grafic ${d.month.toString().padLeft(2, '
 String idNow() => DateTime.now().microsecondsSinceEpoch.toString();
 
 AppSettings? _activeAppSettingsForBranding;
-
-
-Future<pw.ThemeData> _buildPdfTheme() async {
-  final regular = await PdfGoogleFonts.openSansRegular();
-  final bold = await PdfGoogleFonts.openSansBold();
-  final italic = await PdfGoogleFonts.openSansItalic();
-  return pw.ThemeData.withFont(base: regular, bold: bold, italic: italic);
-}
-
-String _safeFilePart(String text) => text
-    .toLowerCase()
-    .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-    .replaceAll(RegExp(r'^_+|_+$'), '');
-
-String _pdfDate(DateTime d) => '${two(d.day)}.${two(d.month)}.${d.year}';
 
 
 /// Punctele reale ale deplasării; capetele nu sunt intervenții de lucru.
