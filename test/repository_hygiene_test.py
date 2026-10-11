@@ -133,6 +133,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("Firebase nu este configurat pentru această platformă", module)
         self.assertIn("SelectableText(message", module)
 
+    def test_location_adjust_screen_is_extracted_without_behavior_change(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/map/location_adjust_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'map/location_adjust_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class LocationAdjustPage extends StatefulWidget",
+                       "class _LocationAdjustPageState extends State<LocationAdjustPage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("onPositionChanged: (position, _)", module)
+        self.assertIn("Navigator.pop(context, _center)", module)
+        self.assertIn("initialZoom: 17", module)
+        self.assertIn("TileLayer(", module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
