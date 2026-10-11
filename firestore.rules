@@ -193,8 +193,7 @@ service cloud.firestore {
           && request.resource.data.confirmed == false
           && request.resource.data.get('reviewStatus', 'pending') == 'pending'
           && request.resource.data.amount is number
-          && request.resource.data.amount >= 0
-;
+          && request.resource.data.amount >= 0);
       allow update: if (isActive()
           && resource.data.createdBy == request.auth.uid
           && isTeamMember(resource.data.teamId)
