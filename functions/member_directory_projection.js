@@ -6,13 +6,13 @@ const FIELDS = Object.freeze([
   'active', 'role', 'photoBase64', 'phone', 'city', 'county', 'contractFunction'
 ]);
 function projectMember(data) {
-  if (!data || data.hiddenFromMembers === true || data.role === 'admin') return null;
+  if (!data || data.hiddenFromMembers === true) return null;
   const result = {};
   for (const field of FIELDS) {
     if (Object.prototype.hasOwnProperty.call(data, field)) result[field] = data[field];
   }
   result.active = data.active === true;
-  result.role = 'member';
+  result.role = data.role === 'admin' ? 'admin' : 'member';
   return result;
 }
 module.exports = { FIELDS, projectMember };
