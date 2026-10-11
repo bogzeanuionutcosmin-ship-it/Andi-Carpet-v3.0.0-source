@@ -27,6 +27,15 @@ void main() {
     expect(source, contains("phone.isEmpty?'Contact indisponibil':phone"));
   });
 
+  test('Live chat background is shared and settings remain admin-only', () {
+    expect(source, contains("tooltip:'Setări Chat live'"));
+    expect(source, contains('widget.currentUser.role==UserRole.director'));
+    expect(source, contains("'chatBackgroundBase64'"));
+    expect(source, contains("'chatBackgroundOpacity'"));
+    expect(source, contains('FilePicker.platform.pickFiles(type:FileType.image'));
+    expect(source, contains('Opacity(opacity:opacity'));
+  });
+
   test('Dashboard reveal keeps reduced-motion accessibility', () {
     expect(source, contains('MediaQuery.disableAnimationsOf(context)'));
     expect(source, contains('AnimatedOpacity('));
