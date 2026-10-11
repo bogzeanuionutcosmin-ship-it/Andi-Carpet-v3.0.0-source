@@ -52,3 +52,11 @@
 - Întârzierea se aplică o singură dată per lansare a aplicației, nu la navigare sau revenire dintr-un panou; timerul se anulează corect la dispose.
 - Respectă preferința de reducere a animațiilor; evită întârzieri suplimentare pentru interacțiuni, mesaje urgente sau stări critice.
 - Teste: controalele sunt accesibile imediat; Dashboard ascuns înainte de 3 secunde, vizibil după fade; navigarea nu repornește întârzierea; fără setState după dispose.
+
+## Agendă — înlocuiește tabul Mesaje (cerință aprobată)
+- Redenumește tabul existent **Mesaje** în **Agendă**; mesageria rămâne numai în panoul lateral **Chat**, fără funcție duplicată în Agendă.
+- Buton dedicat **Agendă**; la deschidere afișează lista locațiilor și, sub fiecare, contactele disponibile: manager (nume/rol și număr), casierie și orice alte numere configurate.
+- Fiecare număr are propriul buton de apelare, cu schemă `tel:` și validare/normalizare conservatoare a numerelor; nu iniția apeluri automat.
+- Agenda este **read-only** pentru toți utilizatorii: fără editare, adăugare sau ștergere.
+- Editarea numerelor/contactelor se face exclusiv în **Hartă → Locații → Detalii locație**, în aceeași interfață în care se editează celelalte detalii, doar de către administrator; utilizatorii neautorizați pot sugera corecții, dacă există fluxul de aprobare.
+- Nu afișa rânduri fictive pentru numere lipsă; teste pentru contactele multiple, lipsa numerelor, permisiuni și deschiderea dialerului.
