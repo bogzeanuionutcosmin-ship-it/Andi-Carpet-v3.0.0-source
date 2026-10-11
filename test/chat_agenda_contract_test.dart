@@ -35,6 +35,14 @@ void main() {
     expect(source, contains("phone.isEmpty?'Contact indisponibil':phone"));
   });
 
+  test('Portrait stickers register 24 keys and preserve existing sticker packs', () {
+    final section = source.substring(source.indexOf('const Map<String,String> _andiPortraitStickerAssets'), source.indexOf('const Map<String,String> _andiPortraitStickerLabels'));
+    expect(RegExp("'andi_[0-9]{2}':").allMatches(section).length, 24);
+    expect(source, contains('..._andiPortraitStickerAssets.keys'));
+    expect(source, contains('..._andiStickerAssets.keys'));
+    expect(source, contains('errorBuilder:'));
+  });
+
   test('Live chat background is shared and settings remain admin-only', () {
     expect(source, contains("tooltip:'Setări Chat live'"));
     expect(source, contains('widget.currentUser.role==UserRole.director'));
