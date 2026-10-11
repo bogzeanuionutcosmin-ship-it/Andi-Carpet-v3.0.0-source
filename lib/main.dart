@@ -4981,8 +4981,7 @@ class _HomePageState extends State<HomePage> {
           throw StateError('Diurna a fost deja confirmată sau modificată. Reîncarcă datele.');
         }
         if (previous['distributedBy'] is! String ||
-            (previous['distributedBy'] as String).isEmpty ||
-            previous['distributedBy'] == currentUserId) {
+            (previous['distributedBy'] as String).isEmpty) {
           throw StateError('Distribuitorul acestei diurne este invalid.');
         }
         final declared = previous['amount'];
