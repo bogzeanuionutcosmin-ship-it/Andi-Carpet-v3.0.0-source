@@ -61,10 +61,12 @@ jobs:
           cache: true
 
       - name: Build Flutter web
-        if: inputs.target == 'hosting'
+        if: inputs.target == 'hosting' || inputs.target == 'build-web'
+        env:
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
         run: |
           flutter pub get
-          flutter build web --release
+          flutter build web --release --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN"
 
       - name: Set up Node.js
         if: inputs.target == 'hosting' || inputs.target == 'functions' || inputs.target == 'check-functions'
