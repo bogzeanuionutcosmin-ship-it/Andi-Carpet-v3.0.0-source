@@ -48,7 +48,9 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("'customEmoji'", source)
 
     def test_web_right_side_category_drawer_is_wired(self):
-        source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'home/home_page.dart';", main)
+        source = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
         self.assertIn("endDrawer: kIsWeb ? Drawer(", source)
         self.assertIn("Scaffold.of(menuContext).openEndDrawer()", source)
         self.assertIn("endDrawerEnableOpenDragGesture: true", source)
