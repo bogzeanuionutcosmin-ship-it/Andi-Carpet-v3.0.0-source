@@ -220,6 +220,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("badge == 'badge_machine' ? 'badge_worker' : badge", module)
         self.assertIn("if (_entry == null)", module)
 
+    def test_location_category_helpers_are_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/models/location_category_helpers.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'models/location_category_helpers.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("String defaultCategoryIdForType(",
+                       "LocationType legacyTypeForCategory(",
+                       "Color categoryColor(", "String categoryName("):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("if (categoryId == 'million') return Colors.red;", module)
+        self.assertIn("if (categoryId == 'magic') return Colors.black87;", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
