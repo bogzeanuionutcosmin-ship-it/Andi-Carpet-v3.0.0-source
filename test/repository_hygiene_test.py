@@ -29,14 +29,14 @@ class RepositoryHygieneTests(unittest.TestCase):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         pubspec = (ROOT / "pubspec.yaml").read_text(encoding="utf-8")
         self.assertIn("- assets/stickers/", pubspec)
-        paths = re.findall(r"'brc_\\d+':'(assets/stickers/sticker_\\d+\\.png)'", source)
+        paths = re.findall(r"'brc_\d+':'(assets/stickers/sticker_\d+\.png)'", source)
         self.assertEqual(len(paths), 32)
         self.assertEqual(len(set(paths)), 32)
         for relative in paths:
             with self.subTest(asset=relative):
                 asset = ROOT / relative
                 self.assertTrue(asset.is_file())
-                self.assertEqual(asset.read_bytes()[:8], b"\\x89PNG\\r\\n\\x1a\\n")
+                self.assertEqual(asset.read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
 
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
