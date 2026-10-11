@@ -25,6 +25,7 @@ jobs:
   firebase:
     runs-on: ubuntu-latest
     environment: firebase-production
+    if: inputs.target == 'auth-only' || github.ref == 'refs/heads/main'
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -39,7 +40,7 @@ jobs:
       - name: Verify authentication
         run: |
           echo "OIDC credentials issued successfully."
-          test -n "${{ steps.auth.outputs.auth_token_path }}"
+          test -f "${{ steps.auth.outputs.credentials_file_path }}"
 
       - name: Set up Flutter
         if: inputs.target == 'hosting'
