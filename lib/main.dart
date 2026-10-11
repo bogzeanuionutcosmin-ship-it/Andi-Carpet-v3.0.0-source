@@ -4944,7 +4944,7 @@ class _HomePageState extends State<HomePage> {
         if (!canApprove) {
           throw StateError('Doar gestionarul poate modifica sau aproba documentul.');
         }
-        // Nu suprascriem alte câmpuri dintr-o propunere când o aprobăm.
+        // La aprobare nu suprascriem fotografia, suma sau emitentul.
         if (existing.data()?['confirmed'] == false && expense.confirmed) {
           tx.update(ref, {'confirmed': true, 'updatedAt': FieldValue.serverTimestamp()});
         } else {
@@ -9948,9 +9948,19 @@ class _ExpensePageState extends State<ExpensePage> {
   }
 
   Future<void> _confirmExpense(Expense e) async {
+    if (!isManager) {
+      if (mounted) showErrorMessage(context, 'Doar gestionarul poate confirma acest document.');
+      return;
+    }
     e.confirmed = true;
-    try { await widget.saveExpense(e); widget.log('Cheltuială confirmată', e.documentNumber); }
-    catch (err) { e.confirmed = false; if (mounted) showErrorMessage(context, 'Confirmarea a eșuat: $err'); }
+    try {
+      await widget.saveExpense(e);
+      widget.log('Cheltuială confirmată', e.documentNumber);
+      if (mounted) showSuccessMessage(context, 'Documentul a fost confirmat.');
+    } catch (err) {
+      e.confirmed = false;
+      if (mounted) showErrorMessage(context, 'Confirmarea a eșuat: $err');
+    }
   }
 
   Future<void> _pdf() async {
