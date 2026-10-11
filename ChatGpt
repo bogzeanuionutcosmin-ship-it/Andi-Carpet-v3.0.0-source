@@ -222,3 +222,13 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Atenție pentru viitoarele extrageri: testele de contract sursă au multe verificări textuale pe `main.dart`. Când muți implementarea, **actualizează toate testele dependente să citească modulul real**. Un test de tip `assertIn(..., main.dart)` poate eșua după o mutare corectă fără să existe bug funcțional.
 - La această etapă există **6 module extrase**: două `ui`, două `map`, unul `reports`, unul `models`. Nu s-a făcut deploy, nu s-au șters asseturi. Cerința de avans diurnă permis rămâne obligatorie.
 - Următorul lucru: confirmă CI pe `2d99c19`; apoi inventariază contractele statice care presupun tot codul în `main.dart`, înainte de următoarea separare. Continuă cu module mici, documentează commiturile aici.
+
+## 14. Actualizare 12.10.2026 — extragere enumerări și permisiuni
+
+- În urma corecției `2d99c19`, jobul Python al run-ului `38175802321` a trecut. Flutter și Firestore erau încă în desfășurare când au început commiturile următoare, deci run-ul a fost **anulat automat** de push-uri noi; nu este dovadă de eroare Flutter.
+- **`d994a359`**: creat `lib/models/app_enums_permissions.dart`, `part of '../main.dart';`, extras bloc de **5.408 caractere** din `main.dart`. Include 11 enumerări: `LocationType`, `LocationStatus`, `UserRole`, `UserFunction`, `FunctionPermission`, `PerDiemStatus`, `PerDiemPaymentMethod`, `ExpenseDocumentType`, `WorkAttemptStatus`, `LearningMode`, `AppThemeChoice`; și 4 extensii de etichete/icoane: `LocationTypeX`, `UserRoleX`, `UserFunctionX`, `FunctionPermissionX`.
+- **`6a124cf0`**: eliminat blocul original și conectat `part 'models/app_enums_permissions.dart';`.
+- **`555d004d`**: adăugat test de integritate pentru toate cele 15 declarații în `test/repository_hygiene_test.py`.
+- **`main.dart` = 749.385 bytes** după extracție. Acum există **7 module noi**: `ui/dashboard_map_components.dart`, `ui/auth_status_components.dart`, `map/verified_location_fix.dart`, `map/graph_route_calculations.dart`, `reports/pdf_reports.dart`, `models/app_data_models.dart`, `models/app_enums_permissions.dart`.
+- **Run CI `38175918835` pentru `555d004d` era queued** la verificare. Înainte de alte extrageri verifică acest run și corectează orice test care presupune greșit că enumerările încă sunt în `main.dart`.
+- Nu s-au eliminat funcționalități, nu s-au șters asseturi, nu s-a făcut deploy. În continuare trebuie audit de cod mort prin referințe la nivel de repository, nu pe baza numărului de apariții în `main.dart`.
