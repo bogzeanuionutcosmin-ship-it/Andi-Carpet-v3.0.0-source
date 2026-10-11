@@ -12,6 +12,11 @@ on:
           - auth-only
           - hosting
           - functions
+      confirm_production:
+        description: 'For hosting/functions deployments, type DEPLOY'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -25,7 +30,7 @@ jobs:
   firebase:
     runs-on: ubuntu-latest
     environment: firebase-production
-    if: inputs.target == 'auth-only' || github.ref == 'refs/heads/main'
+    if: inputs.target == 'auth-only' || (github.ref == 'refs/heads/main' && inputs.confirm_production == 'DEPLOY')
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -38,9 +43,12 @@ jobs:
           service_account: andicarpet-github-deploy@andicarpet-e777e.iam.gserviceaccount.com
 
       - name: Verify authentication
+        env:
+          CREDENTIALS_FILE: ${{ steps.auth.outputs.credentials_file_path }}
         run: |
+          test -n "$CREDENTIALS_FILE"
+          test -f "$CREDENTIALS_FILE"
           echo "OIDC credentials issued successfully."
-          test -f "${{ steps.auth.outputs.credentials_file_path }}"
 
       - name: Set up Flutter
         if: inputs.target == 'hosting'
