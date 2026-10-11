@@ -1,5 +1,11 @@
 name: Android v3.0.3 test build
 on:
+  push:
+    branches: [update-v3.0.1-import-testare]
+    paths:
+      - '.github/workflows/android-v301-test-build.yml'
+      - 'tools/apply_v302_fixes.py'
+      - 'tools/apply_v303_fixes.py'
   workflow_dispatch:
 
 jobs:
