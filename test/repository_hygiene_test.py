@@ -76,6 +76,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("_quickAccountStorage.write(", module)
         self.assertIn("_quickAccountStorage.delete(", module)
 
+    def test_branding_and_font_helpers_are_extracted_once(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/branding_theme_helpers.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'ui/branding_theme_helpers.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("String _normalizeFontChoice(", "String? _resolvedFontFamily(",
+                       "_bundledBackgroundAssets", "_bundledBackgroundLabels",
+                       "_bundledLogoAssets", "_bundledLogoLabels",
+                       "String _activeLogoAsset(", "Widget appBrandLogo("):
+            self.assertNotIn(symbol, main)
+            self.assertIn(symbol, module)
+        self.assertIn("Image.asset(_activeLogoAsset(settings)", module)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
