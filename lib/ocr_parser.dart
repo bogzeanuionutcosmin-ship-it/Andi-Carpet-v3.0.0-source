@@ -1,3 +1,6 @@
+import 'invoice_fields_learning.dart';
+import 'fuel_receipt_learning.dart';
+
 class FiscalOcrData {
   final String rawText;
   final String documentNumber;
@@ -83,14 +86,28 @@ FiscalOcrData parseFiscalOcr(String text) {
     supplier = lines.firstWhere((x) => RegExp(r'[A-Za-zĂÂÎȘȚăâîșț]{3}').hasMatch(x), orElse: () => lines.first);
   }
 
+  final invoice = RegExp(r'\b(?:FACTUR[ĂA]|INVOICE)\b', caseSensitive: false).hasMatch(raw) ? parseInvoiceFields(raw) : null;
+  // BF este extras numai din etichete explicite, nu dintr-un "NR" generic.
+  // Evitam sa confundam numarul bonului cu POS, casa, tranzactia sau CUI.
   String docNo = '';
   final numberPatterns = <RegExp>[
-    RegExp(r'(?:BON(?:\s+FISCAL)?|FACTUR[ĂA]?|FACT\.?|DOCUMENT|NR\.?)\s*(?:NR\.?)?\s*[:#\-]?\s*([A-Z0-9\-/]{2,})', caseSensitive: false),
-    RegExp(r'NR\.?\s*[:#\-]?\s*([A-Z0-9\-/]{3,})', caseSensitive: false),
+    RegExp(r'\bBF\s*(?:NR\.?\s*)?[:#-]?\s*([A-Z0-9/-]{2,})\b', caseSensitive: false),
+    RegExp(r'\bBON\s+FISCAL\s*(?:NR\.?|NUMAR|NUMĂR)?\s*[:#-]?\s*([A-Z0-9/-]{2,})\b', caseSensitive: false),
+    RegExp(r'\bNR\.?\s+BON(?:\s+FISCAL)?\s*[:#-]?\s*([A-Z0-9/-]{2,})\b', caseSensitive: false),
   ];
-  for (final re in numberPatterns) {
-    final m = re.firstMatch(raw);
-    if (m != null) { docNo = (m.group(1) ?? '').trim(); if (docNo.isNotEmpty) break; }
+  for (final line in lines) {
+    if (RegExp(r'\b(?:POS|TERMINAL|TRANZACTIE|TRANZACȚIE|CASA|CUI|CIF)\b', caseSensitive: false).hasMatch(line)) continue;
+    for (final re in numberPatterns) {
+      final match = re.firstMatch(line);
+      if (match != null) {
+        final candidate = (match.group(1) ?? '').trim();
+        if (candidate.isNotEmpty && !RegExp(r'^(?:NR|NUMAR|NUMĂR|FISCAL)$', caseSensitive: false).hasMatch(candidate)) {
+          docNo = candidate;
+          break;
+        }
+      }
+    }
+    if (docNo.isNotEmpty) break;
   }
 
   DateTime? date;
@@ -98,6 +115,11 @@ FiscalOcrData parseFiscalOcr(String text) {
   for (final m in dateMatches) {
     date = _parseDate(m.group(1) ?? '');
     if (date != null) break;
+  }
+
+  if (invoice != null) {
+    docNo = invoice.invoiceNumber;
+    date = invoice.invoiceDate;
   }
 
   double? amount;
@@ -122,7 +144,18 @@ FiscalOcrData parseFiscalOcr(String text) {
     if (candidates.isNotEmpty) amount = candidates.reduce((a, b) => a > b ? a : b);
   }
 
+  if (invoice != null) amount = invoice.totalBani == null ? null : invoice.totalBani! / 100.0;
+
   final fuel = RegExp(r'\b(MOTORIN[ĂA]|DIESEL|BENZIN[ĂA]|GPL|CARBURANT)\b', caseSensitive: false).hasMatch(upper);
+  // Pentru bonurile de carburant, TOTAL poate include produse non-carburant.
+  // Nu precompletam suma din TOTAL daca nu avem o valoare de carburant sigura.
+  final fuelExtraction = classifyFuelReceipt(raw);
+  if (fuel && invoice == null) {
+    amount = fuelExtraction.fuelAmountBani == null || fuelExtraction.needsReview
+        ? null
+        : fuelExtraction.fuelAmountBani! / 100.0;
+    if (amount == 0) amount = null;
+  }
   double? liters;
   double? price;
   final lm = RegExp(r'([0-9]{1,4}(?:[.,][0-9]{1,3})?)\s*(?:L|LITRI)\b', caseSensitive: false).firstMatch(raw);

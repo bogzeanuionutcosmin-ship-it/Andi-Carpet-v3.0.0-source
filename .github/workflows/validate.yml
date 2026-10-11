@@ -28,6 +28,10 @@ jobs:
           cache: true
       - name: Install dependencies
         run: flutter pub get
+      - name: Dart static analysis (fatal errors only)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Run Flutter unit tests
+        run: flutter test
       - name: Build web
         run: flutter build web --release
       - name: Upload web build
@@ -55,3 +59,47 @@ jobs:
         run: npm ci
       - name: Validate JavaScript syntax
         run: node --check index.js
+
+  firestore-rules:
+    name: Firestore rules emulator compilation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Firestore test dependencies
+        run: npm install --no-save --package-lock=false @firebase/rules-unit-testing@4 firebase@11
+      - name: Test rules with local Firestore emulator
+        run: npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-andi-carpet-rules 'node --test --test-concurrency=1 tests/*.test.cjs'
+
+  android-test-apk:
+    name: Android test APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build Android test APK
+        run: flutter build apk --debug
+      - name: Upload Android test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: andicarpet-android-test-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7

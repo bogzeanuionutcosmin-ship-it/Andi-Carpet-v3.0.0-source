@@ -33,7 +33,7 @@ const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';
 const String _disableSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/disableSmsGateway';
 const String _geocodeRomaniaPlaceUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/geocodeRomaniaPlace';
-const String _appVersionLabel = '3.0.0+32';
+const String _appVersionLabel = '3.0.3+34';
 
 const FlutterSecureStorage _quickAccountStorage = FlutterSecureStorage();
 const String _quickAccountsStorageKey = 'andi_carpeta_quick_accounts_v1';
@@ -1237,6 +1237,9 @@ class Expense {
   String ocrRawText;
   double ocrConfidence;
   bool confirmed;
+  String reviewStatus;
+  String rejectionReason;
+  String? createdBy;
   Expense({
     required this.id,
     required this.teamId,
@@ -1255,6 +1258,9 @@ class Expense {
     this.ocrRawText = '',
     this.ocrConfidence = 0,
     this.confirmed = true,
+    this.reviewStatus = 'pending',
+    this.rejectionReason = '',
+    this.createdBy,
   });
   bool get hasImage => documentImageBase64.isNotEmpty;
 }
@@ -2692,6 +2698,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int tab = 0;
+  Timer? _dashboardRevealTimer;
+  bool _dashboardRevealed = false;
   late final String currentUserId;
   AppSettings get settings => widget.settings;
   late final List<AppUser> users;
@@ -2749,6 +2757,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _dashboardRevealTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _dashboardRevealed = true);
+    });
     currentUserId = widget.profile.uid;
     final current = AppUser(
       id: widget.profile.uid,
@@ -3913,6 +3924,9 @@ class _HomePageState extends State<HomePage> {
       ocrRawText: (d['ocrRawText'] ?? '').toString(),
       ocrConfidence: _doubleFrom(d['ocrConfidence']),
       confirmed: d['confirmed'] != false,
+      reviewStatus: (d['reviewStatus'] ?? 'pending').toString(),
+      rejectionReason: (d['rejectionReason'] ?? '').toString(),
+      createdBy: d['createdBy']?.toString(),
     );
   }
 
@@ -4090,7 +4104,10 @@ class _HomePageState extends State<HomePage> {
     final db=FirebaseFirestore.instance;
     final Query<Map<String,dynamic>> expensesQuery = canViewAll ? db.collection('expenses') : db.collection('expenses').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> perDiemQuery = canViewAll ? db.collection('perDiems') : db.collection('perDiems').where('teamId',isEqualTo:scope);
-    final Query<Map<String,dynamic>> financeQuery = canViewAll ? db.collection('finance') : db.collection('finance').where('teamId',isEqualTo:scope);
+    // finance/{teamId} foloseste chiar ID-ul echipei ca ID de document.
+    // Documentele istorice pot sa nu contina campul teamId, iar filtrarea
+    // dupa acest camp le ascundea dupa migrare.
+    final Query<Map<String,dynamic>> financeQuery = canViewAll ? db.collection('finance') : db.collection('finance').where(FieldPath.documentId,isEqualTo:scope);
     final Query<Map<String,dynamic>> settlementQuery = canViewAll ? db.collection('settlements') : db.collection('settlements').where('teamId',isEqualTo:scope);
     _financialSubscriptions.add(expensesQuery.snapshots().listen((snap){
       final list=snap.docs.map(_expenseFromDoc).toList()..sort((a,b)=>a.date.compareTo(b.date));
@@ -4930,19 +4947,155 @@ class _HomePageState extends State<HomePage> {
     if (!canEditTeam(expense.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici Decontul acestei echipe.');
     }
+    final db = FirebaseFirestore.instance;
+    // Gestorul poate fi desemnat pe deplasarea curentă sau pe echipă.
+    // Permisiunile Firestore trebuie să confirme același manager.
+    final financeDoc = await db.collection('finance').doc(expense.teamId).get();
+    final isFinanceManager = financeDoc.data()?['managerId'] == currentUserId;
+    final canApprove = isAdmin || isFinanceManager;
     final data = _expenseMap(expense);
-    await FirebaseFirestore.instance.collection('expenses').doc(expense.id).set(data, SetOptions(merge: true));
+    final ref = db.collection('expenses').doc(expense.id);
+    await db.runTransaction((tx) async {
+      final existing = await tx.get(ref);
+      if (existing.exists) {
+        if (!canApprove) {
+          throw StateError('Doar gestionarul poate modifica sau aproba documentul.');
+        }
+        // La aprobare nu suprascriem fotografia, suma sau emitentul.
+        if (existing.data()?['confirmed'] == false && expense.confirmed) {
+          tx.update(ref, {
+            'confirmed': true,
+            'reviewStatus': 'approved',
+            'rejectionReason': null,
+            'reviewedBy': currentUserId,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } else {
+          tx.update(ref, data);
+        }
+      } else {
+        data['confirmed'] = canApprove && expense.confirmed;
+        data['createdBy'] = currentUserId;
+        data['reviewStatus'] = data['confirmed'] == true ? 'approved' : 'pending';
+        tx.set(ref, data);
+      }
+    });
     unawaited(_writeLearningEvent(category: expense.ocrRawText.trim().isNotEmpty ? 'ocr' : 'finance', event: 'expense_saved', teamId: expense.teamId, data: {
       'category': expense.category, 'amount': expense.amount, 'documentType': expense.documentType.name,
       'ocrConfidence': expense.ocrConfidence, 'confirmed': expense.confirmed, 'hasImage': expense.hasImage,
     }));
-    _expenseCache[expense.id] = _encoded(data);
+    // Nu facem un GET separat dupa tranzactie: un esec de citire
+    // nu trebuie sa transforme o salvare reusita intr-o eroare falsa.
+    // Cache-ul va fi sincronizat de listenerul Firestore.
+    _expenseCache.remove(expense.id);
+  }
+
+  Future<void> _correctExpenseDirect(Expense corrected) async {
+    final ref = FirebaseFirestore.instance.collection('expenses').doc(corrected.id);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) throw StateError('Documentul nu mai exista.');
+      final previous = snap.data()!;
+      if (previous['createdBy'] != currentUserId ||
+          previous['teamId'] != corrected.teamId ||
+          previous['settlementId'] != corrected.settlementId ||
+          previous['confirmed'] != false ||
+          previous['reviewStatus'] != 'rejected' ||
+          !canEditTeam(corrected.teamId)) {
+        throw StateError('Doar autorul poate corecta un document respins.');
+      }
+      if (!corrected.amount.isFinite || corrected.amount <= 0) {
+        throw StateError('Suma corectata nu este valida.');
+      }
+      tx.update(ref, {
+        'category': corrected.category,
+        'description': corrected.description,
+        'amount': corrected.amount,
+        'date': Timestamp.fromDate(corrected.date),
+        'documentType': corrected.documentType.name,
+        'documentNumber': corrected.documentNumber,
+        'supplier': corrected.supplier,
+        'liters': corrected.liters,
+        'pricePerLiter': corrected.pricePerLiter,
+        'reviewStatus': 'pending',
+        'rejectionReason': null,
+        'reviewedBy': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _expenseCache.remove(corrected.id);
+  }
+
+  Future<void> _resubmitExpenseDirect(String expenseId) async {
+    final ref = FirebaseFirestore.instance.collection('expenses').doc(expenseId);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) throw StateError('Documentul nu mai exista.');
+      final d = snap.data()!;
+      if (d['createdBy'] != currentUserId || d['confirmed'] != false ||
+          d['reviewStatus'] != 'rejected' || !canEditTeam((d['teamId'] ?? '').toString())) {
+        throw StateError('Doar autorul poate retrimite un document respins.');
+      }
+      tx.update(ref, {
+        'reviewStatus': 'pending',
+        'rejectionReason': null,
+        'reviewedBy': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _expenseCache.remove(expenseId);
+  }
+
+  Future<void> _rejectExpenseDirect(String expenseId, String reason) async {
+    final trimmed = reason.trim();
+    if (trimmed.length < 5) throw StateError('Motivul respingerii trebuie sa aiba minimum 5 caractere.');
+    final ref = FirebaseFirestore.instance.collection('expenses').doc(expenseId);
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) throw StateError('Documentul nu mai exista.');
+      final previous = snap.data()!;
+      final teamId = (previous['teamId'] ?? '').toString();
+      if (!canEditTeam(teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
+        throw StateError('Nu ai acces la decontul acestei echipe.');
+      }
+      final financeSnap = await tx.get(FirebaseFirestore.instance.collection('finance').doc(teamId));
+      if (!isAdmin && financeSnap.data()?['managerId'] != currentUserId) {
+        throw StateError('Doar gestionarul poate respinge documente.');
+      }
+      if (previous['confirmed'] != false || previous['reviewStatus'] == 'rejected') {
+        throw StateError('Documentul nu mai este in asteptare.');
+      }
+      tx.update(ref, {
+        'reviewStatus': 'rejected',
+        'rejectionReason': trimmed,
+        'reviewedBy': currentUserId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _expenseCache.remove(expenseId);
   }
 
   Future<void> _savePerDiemDirect(PerDiemEntry entry) async {
-    final canWrite = isAdmin || entry.memberId == currentUserId ||
-        (canEditTeam(entry.teamId) && hasPermission(FunctionPermission.viewOwnDecont));
+    // Confirmările sunt autorizate separat, exclusiv pentru beneficiar.
+    // Pentru distribuirile noi, gestionarului financiar desemnat în
+    // finance/{teamId} i se permite distribuirea către membrii echipei.
+    final isReceiptAttempt = entry.status == PerDiemStatus.confirmed ||
+        (entry.status == PerDiemStatus.awaitingConfirmation && entry.received == false);
+    var isAssignedFinanceManager = false;
+    if (!isReceiptAttempt && entry.distributedBy == currentUserId) {
+      final managerSnap = await FirebaseFirestore.instance
+          .collection('finance').doc(entry.teamId).get();
+      isAssignedFinanceManager = managerSnap.data()?['managerId'] == currentUserId;
+    }
+    final canWrite = isAdmin ||
+        (isReceiptAttempt && entry.memberId == currentUserId) ||
+        (!isReceiptAttempt && entry.distributedBy == currentUserId &&
+          (isAssignedFinanceManager ||
+           (canEditTeam(entry.teamId) && hasPermission(FunctionPermission.viewOwnDecont))));
     if (!canWrite) throw StateError('Nu ai dreptul să modifici această diurnă.');
+    if (!isReceiptAttempt && entry.distributedBy != currentUserId && !isAdmin) {
+      throw StateError('Distribuitorul nu corespunde contului autentificat.');
+    }
     final data = _perDiemMap(entry);
     // Confirmarea sau refuzul se salvează atomic. Verificarea exclusiv în UI
     // nu poate preveni două confirmări simultane de pe dispozitive diferite.
@@ -4982,7 +5135,7 @@ class _HomePageState extends State<HomePage> {
         }
         if (previous['distributedBy'] is! String ||
             (previous['distributedBy'] as String).isEmpty) {
-          throw StateError('Distribuitorul acestei diurne este invalid.');
+          throw StateError('Diurnă istorică: identificatorul distribuitorului lipsește sau nu este valid. Este necesară reconcilierea de către administrator înainte de confirmare; suma și documentul original rămân neschimbate.');
         }
         final declared = previous['amount'];
         if (declared is! num || !declared.toDouble().isFinite ||
@@ -5029,11 +5182,53 @@ class _HomePageState extends State<HomePage> {
     _perDiemCache[entry.id] = _encoded(data);
   }
 
+  Future<void> _assignFinanceManagerDirect(String teamId, String managerUid, String? settlementId) async {
+    if (!isAdmin || !canEditTeam(teamId)) {
+      throw StateError('Doar administratorul poate desemna gestionarul.');
+    }
+    if (managerUid.isEmpty || !users.any((u) => u.id == managerUid && u.active) ||
+        !teams.any((t) => t.id == teamId && t.members.contains(managerUid))) {
+      throw StateError('Gestionarul selectat nu este un membru activ al echipei.');
+    }
+    final db = FirebaseFirestore.instance;
+    final financeRef = db.collection('finance').doc(teamId);
+    final settlementRef = settlementId == null ? null : db.collection('settlements').doc(settlementId);
+    await db.runTransaction((tx) async {
+      final financeSnap = await tx.get(financeRef);
+      final settlementSnap = settlementRef == null ? null : await tx.get(settlementRef);
+      if (settlementRef != null &&
+          (!settlementSnap!.exists || settlementSnap.data()?['teamId'] != teamId)) {
+        throw StateError('Deplasarea nu apartine echipei selectate.');
+      }
+      if (financeSnap.exists) {
+        tx.update(financeRef, {'managerId': managerUid, 'updatedAt': FieldValue.serverTimestamp()});
+      } else {
+        tx.set(financeRef, {'teamId': teamId, 'managerId': managerUid,
+          'updatedAt': FieldValue.serverTimestamp()});
+      }
+      if (settlementRef != null) {
+        tx.update(settlementRef, {'managerId': managerUid, 'updatedAt': FieldValue.serverTimestamp()});
+      }
+    });
+    _financeCache.remove(teamId);
+  }
+
   Future<void> _saveSettlementDirect(TravelSettlement settlement) async {
     if (!canEditTeam(settlement.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici această deplasare.');
     }
-    await FirebaseFirestore.instance.collection('settlements').doc(settlement.id).set(_settlementMap(settlement), SetOptions(merge: true));
+    final settlementRef = FirebaseFirestore.instance.collection('settlements').doc(settlement.id);
+    final data = _settlementMap(settlement);
+    if (!isAdmin) {
+      final existing = await settlementRef.get();
+      if (existing.exists) {
+        data.remove('managerId');
+        data.remove('teamId');
+      } else if (settlement.managerId != null) {
+        throw StateError('Gestionarul deplasarii trebuie desemnat de administrator.');
+      }
+    }
+    await settlementRef.set(data, SetOptions(merge: true));
     unawaited(_writeLearningEvent(category: 'finance', event: 'settlement_saved', teamId: settlement.teamId, data: {
       'name': settlement.name, 'closed': settlement.closed, 'received': settlement.totalReceived,
     }));
@@ -5044,7 +5239,25 @@ class _HomePageState extends State<HomePage> {
       throw StateError('Nu ai dreptul să modifici datele financiare ale acestei echipe.');
     }
     final data = _financeMap(finance);
-    await FirebaseFirestore.instance.collection('finance').doc(finance.teamId).set(data, SetOptions(merge: true));
+    if (!isAdmin) {
+      final managerSnapshot = await FirebaseFirestore.instance.collection('finance').doc(finance.teamId).get();
+      if (managerSnapshot.data()?['managerId'] != currentUserId) {
+        throw StateError('Doar gestionarul financiar poate modifica sumele echipei.');
+      }
+    }
+    // Pentru membrii obisnuiti managerId este imuabil in reguli.
+    // Nu il retrimitem la fiecare modificare a sumelor.
+    final financeRef = FirebaseFirestore.instance.collection('finance').doc(finance.teamId);
+    if (!isAdmin) {
+      final existing = await financeRef.get();
+      if (existing.exists) {
+        data.remove('managerId');
+        data.remove('teamId');
+      } else if (finance.managerId != null) {
+        throw StateError('Gestionarul trebuie desemnat de administrator inainte de initializarea decontului.');
+      }
+    }
+    await financeRef.set(data, SetOptions(merge: true));
     unawaited(_writeLearningEvent(category: 'finance', event: 'team_finance_saved', teamId: finance.teamId, data: {
       'receivedDeparture': finance.receivedDeparture, 'receivedDuring': finance.receivedDuring, 'perDiemRate': finance.perDiemRate,
     }));
@@ -5128,6 +5341,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _dashboardRevealTimer?.cancel();
     for (final sub in _coreSubscriptions) { sub.cancel(); }
     for (final sub in _financialSubscriptions) { sub.cancel(); }
     _liveLocationTimer?.cancel();
@@ -5233,7 +5447,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openGroupChat() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => GroupChatPage(currentUser: me, users: users, functionDefinitions: functionDefinitions))).then((_) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => GroupChatPage(currentUser: me, users: users, functionDefinitions: functionDefinitions, agenda: MessagesContactsPage(locations:locations,categories:categories,currentUser:me,settings:settings,canEditContacts:false,canManageTemplates:false,onChanged:refresh,log:log)))).then((_) {
       _unreadGroupMessageCount = 0;
       _refreshUnreadMessageCount();
     });
@@ -5348,11 +5562,11 @@ class _HomePageState extends State<HomePage> {
       CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_centralizator.png', size: 24, accent: centralizerColor), selectedIcon: appAssetIcon('assets/ui/tab_centralizator.png', size: 27, accent: centralizerColor, selected: true), label: compactNav ? 'Central.' : 'Centralizator'), centralizerColor);
     addPage(hasPermission(FunctionPermission.viewOwnDecont) || hasPermission(FunctionPermission.viewOtherDecont),
-      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
+      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, assignFinanceManager: _assignFinanceManagerDirect, saveExpense: _saveExpenseDirect, correctExpense: _correctExpenseDirect, rejectExpense: _rejectExpenseDirect, resubmitExpense: _resubmitExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_decont.png', size: 24, accent: decontColor), selectedIcon: appAssetIcon('assets/ui/tab_decont.png', size: 27, accent: decontColor, selected: true), label: 'Decont'), decontColor);
     addPage(hasPermission(FunctionPermission.viewContacts),
-      MessagesContactsPage(locations:locations,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
-      NavigationDestination(icon: appAssetIcon('assets/ui/chat_live.png', size: 24, accent: messagesColor), selectedIcon: appAssetIcon('assets/ui/chat_live.png', size: 27, accent: messagesColor, selected: true), label: compactNav ? 'Contacte' : 'Mesaje'), messagesColor);
+      MessagesContactsPage(locations:locations,categories:categories,currentUser:me,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
+      NavigationDestination(icon: appAssetIcon('assets/ui/chat_live.png', size: 24, accent: messagesColor), selectedIcon: appAssetIcon('assets/ui/chat_live.png', size: 27, accent: messagesColor, selected: true), label: 'Agendă'), messagesColor);
     addPage(true, DocumentsPage(isAdmin: isAdmin),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_documente.png', size: 24, accent: docsColor), selectedIcon: appAssetIcon('assets/ui/tab_documente.png', size: 27, accent: docsColor, selected: true), label: compactNav ? 'Doc.' : 'Documente'), docsColor);
     addPage(true,
@@ -5417,7 +5631,18 @@ class _HomePageState extends State<HomePage> {
               ],
             ]),
           ),
-          Expanded(child: pages[tab]),
+          Expanded(child: tab == 0 && hasPermission(FunctionPermission.viewDashboard)
+              ? AnimatedOpacity(
+                  opacity: _dashboardRevealed ? 1 : 0,
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero : const Duration(milliseconds: 700),
+                  curve: Curves.easeInOut,
+                  child: IgnorePointer(
+                    ignoring: !_dashboardRevealed,
+                    child: pages[tab],
+                  ),
+                )
+              : pages[tab]),
         ])),
       ),
       bottomNavigationBar: NavigationBar(
@@ -8696,11 +8921,15 @@ class ExpensePage extends StatefulWidget {
   final VoidCallback onChanged;
   final void Function(String,String,String) notifyUser;
   final void Function(String,String) log;
+  final Future<void> Function(String, String, String?) assignFinanceManager;
   final Future<void> Function(Expense) saveExpense;
+  final Future<void> Function(Expense) correctExpense;
+  final Future<void> Function(String, String) rejectExpense;
+  final Future<void> Function(String) resubmitExpense;
   final Future<void> Function(PerDiemEntry) savePerDiem;
   final Future<void> Function(TeamFinance) saveFinance;
   final Future<void> Function(TravelSettlement) saveSettlement;
-  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
+  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.assignFinanceManager,required this.saveExpense,required this.correctExpense,required this.rejectExpense,required this.resubmitExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 
@@ -9015,7 +9244,7 @@ class _ExpensePageState extends State<ExpensePage> {
   Widget _settlementSelector() {
     final items = <DropdownMenuItem<String>>[];
     for (final s in teamSettlements) {
-      items.add(DropdownMenuItem(value: s.id, child: Text('${s.name} · ${_shortDate(s.startDate)}${s.closed ? ' · închisă' : ''}')));
+      items.add(DropdownMenuItem(value: s.id, child: Text('${s.name} · ${_shortDate(s.startDate)}${s.closed ? ' · închisă' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis)));
     }
     if (hasLegacyData) items.add(const DropdownMenuItem(value: _legacySettlementKey, child: Text('Istoric anterior · date fără deplasare')));
     final value = _resolvedSettlementId();
@@ -9029,6 +9258,7 @@ class _ExpensePageState extends State<ExpensePage> {
       if (items.isNotEmpty)
         DropdownButtonFormField<String>(
           value: value,
+          isExpanded: true,
           decoration: const InputDecoration(labelText: 'Selectează deplasarea'),
           items: items,
           onChanged: (v) => setState(() => selectedSettlementId = v),
@@ -9064,7 +9294,7 @@ class _ExpensePageState extends State<ExpensePage> {
         ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event), title: const Text('Data început'), subtitle: Text(_shortDate(start)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: start); if (x != null) setD(() { start = x; if (end != null && end!.isBefore(start)) end = start; }); }, child: const Text('Alege'))),
         ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event_available), title: const Text('Data final (opțional)'), subtitle: Text(end == null ? 'Nesetată' : _shortDate(end!)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: start, lastDate: DateTime(2100), initialDate: end ?? start); if (x != null) setD(() => end = x); }, child: const Text('Alege'))),
       ])),
-      actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')), FilledButton(onPressed: () { final n = nameC.text.trim(); if (n.isEmpty) return; Navigator.pop(d, TravelSettlement(id: idNow(), teamId: team.id, name: n, startDate: start, endDate: end, managerId: finance.managerId ?? team.financialManagerId ?? (team.members.contains(widget.currentUser.id) ? widget.currentUser.id : null), perDiemRate: finance.perDiemRate)); }, child: const Text('Creează'))],
+      actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')), FilledButton(onPressed: () { final n = nameC.text.trim(); if (n.isEmpty) return; Navigator.pop(d, TravelSettlement(id: idNow(), teamId: team.id, name: n, startDate: start, endDate: end, managerId: widget.isAdmin ? (finance.managerId ?? team.financialManagerId) : null, perDiemRate: finance.perDiemRate)); }, child: const Text('Creează'))],
     )));
     nameC.dispose();
     if (result == null) return;
@@ -9443,14 +9673,22 @@ class _ExpensePageState extends State<ExpensePage> {
   }
 
   Future<void> _manager() async {
+    if (!widget.isAdmin) {
+      if (mounted) showErrorMessage(context, 'Doar administratorul poate desemna gestionarul financiar.');
+      return;
+    }
     String? selected = managerId;
     final r = await showDialog<String>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) => AlertDialog(title: const Text('Gestionar financiar'), content: Column(mainAxisSize: MainAxisSize.min, children: visibleTeamMemberIds.map((id) => RadioListTile<String>(value: id, groupValue: selected, title: Text(name(id)), onChanged: (v) => setD(() => selected = v))).toList()), actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')), FilledButton(onPressed: selected == null ? null : () => Navigator.pop(d, selected), child: const Text('Salvează'))])));
     if (r == null) return;
-    if (settlement != null) {
-      settlement!.managerId = r;
-      try { await widget.saveSettlement(settlement!); widget.log('Gestionar financiar schimbat', '${settlement!.name} · ${name(r)}'); } catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva: $e'); }
-    } else {
-      finance.managerId = r; team.financialManagerId = r; await _saveFinance(finance, 'Gestionar financiar schimbat'); widget.onChanged();
+    try {
+      await widget.assignFinanceManager(team.id, r, settlement?.id);
+      finance.managerId = r;
+      if (settlement != null) settlement!.managerId = r;
+      widget.log('Gestionar financiar schimbat', name(r));
+      widget.onChanged();
+      if (mounted) showSuccessMessage(context, 'Gestionarul a fost actualizat.');
+    } catch (e) {
+      if (mounted) showErrorMessage(context, 'Nu s-a putut salva gestionarul: $e');
     }
   }
 
@@ -9793,17 +10031,17 @@ class _ExpensePageState extends State<ExpensePage> {
     return total > 0 ? total : null;
   }
 
-  Future<Expense?> _expenseDialog({FiscalOcrData? ocr, Uint8List? imageBytes}) async {
+  Future<Expense?> _expenseDialog({FiscalOcrData? ocr, Uint8List? imageBytes, Expense? existing}) async {
     final formKey = GlobalKey<FormState>();
-    final number = TextEditingController(text: ocr?.documentNumber ?? '');
-    final amount = TextEditingController(text: ocr?.amount == null ? '' : ocr!.amount!.toStringAsFixed(2));
-    final supplier = TextEditingController(text: ocr?.supplier ?? '');
-    final desc = TextEditingController();
-    final litersC = TextEditingController(text: ocr?.liters == null ? '' : ocr!.liters!.toStringAsFixed(2));
-    final priceC = TextEditingController(text: ocr?.pricePerLiter == null ? '' : ocr!.pricePerLiter!.toStringAsFixed(2));
-    String cat = ocr?.looksLikeFuel == true ? 'Combustibil' : 'Alte cheltuieli';
-    ExpenseDocumentType docType = (ocr?.rawText.toUpperCase().contains('FACTUR') ?? false) ? ExpenseDocumentType.invoice : ExpenseDocumentType.fiscalReceipt;
-    DateTime docDate = ocr?.date ?? DateTime.now();
+    final number = TextEditingController(text: existing?.documentNumber ?? ocr?.documentNumber ?? '');
+    final amount = TextEditingController(text: existing != null ? existing.amount.toStringAsFixed(2) : (ocr?.amount == null ? '' : ocr!.amount!.toStringAsFixed(2)));
+    final supplier = TextEditingController(text: existing?.supplier ?? ocr?.supplier ?? '');
+    final desc = TextEditingController(text: existing?.description ?? '');
+    final litersC = TextEditingController(text: existing?.liters != null ? existing!.liters!.toStringAsFixed(2) : (ocr?.liters == null ? '' : ocr!.liters!.toStringAsFixed(2)));
+    final priceC = TextEditingController(text: existing?.pricePerLiter != null ? existing!.pricePerLiter!.toStringAsFixed(2) : (ocr?.pricePerLiter == null ? '' : ocr!.pricePerLiter!.toStringAsFixed(2)));
+    String cat = existing?.category ?? (ocr?.looksLikeFuel == true ? 'Combustibil' : 'Alte cheltuieli');
+    ExpenseDocumentType docType = existing?.documentType ?? ((ocr?.rawText.toUpperCase().contains('FACTUR') ?? false) ? ExpenseDocumentType.invoice : ExpenseDocumentType.fiscalReceipt);
+    DateTime docDate = existing?.date ?? ocr?.date ?? DateTime.now();
     Uint8List? compressed;
     if(imageBytes!=null){
       try{compressed=_compressDocumentImage(imageBytes);}catch(e){if(mounted)showErrorMessage(context,'Fotografia nu a putut fi comprimată și nu va fi atașată: $e');}
@@ -9854,14 +10092,14 @@ class _ExpensePageState extends State<ExpensePage> {
           if (bani == null) return;
           final value = bani / 100.0;
           Navigator.pop(d, Expense(
-            id: idNow(), teamId: team.id, settlementId: settlement?.id, category: cat,
+            id: existing?.id ?? idNow(), teamId: team.id, settlementId: existing?.settlementId ?? settlement?.id, category: cat,
             description: desc.text.trim().isEmpty ? cat : desc.text.trim(), amount: value, date: docDate,
             documentType: docType, documentNumber: number.text.trim(), supplier: supplier.text.trim(),
             liters: double.tryParse(litersC.text.replaceAll(',', '.')), pricePerLiter: double.tryParse(priceC.text.replaceAll(',', '.')),
             documentImageBase64: photoBase64, imageFingerprint: fingerprint, ocrRawText: '', ocrConfidence: ocr?.confidence ?? 0,
-            confirmed: isManager,
+            confirmed: existing == null && isManager,
           ));
-        }, child: Text(isManager ? 'Confirmă' : 'Trimite spre confirmare')),
+        }, child: Text(existing != null ? 'Salvează corecția' : (isManager ? 'Confirmă' : 'Trimite spre confirmare'))),
       ],
     )));
     for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }
@@ -9873,7 +10111,7 @@ class _ExpensePageState extends State<ExpensePage> {
     try {
       await widget.saveExpense(e);
       widget.log('${e.documentType == ExpenseDocumentType.fiscalReceipt ? 'Bon Fiscal' : 'Factură'} introdus', '${e.category} · ${settlement?.name ?? 'istoric anterior'}');
-      if (mounted) showSuccessMessage(context, e.confirmed ? 'Documentul a fost salvat.' : 'Documentul a fost trimis gestionarului pentru confirmare.');
+      if (mounted) showSuccessMessage(context, isManager ? 'Documentul a fost salvat.' : 'Documentul a fost trimis gestionarului pentru confirmare.');
     } catch (err) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva documentul: $err'); }
   }
 
@@ -9887,9 +10125,20 @@ class _ExpensePageState extends State<ExpensePage> {
       out.addAll(items.map((e) => Card(child: ListTile(
         leading: e.hasImage ? InkWell(onTap: () => _showExpenseImage(e), child: ClipRRect(borderRadius: BorderRadius.circular(7), child: Image.memory(base64Decode(e.documentImageBase64), width: 48, height: 48, fit: BoxFit.cover))) : const CircleAvatar(child: Icon(Icons.receipt_long)),
         title: Text('${e.documentType == ExpenseDocumentType.fiscalReceipt ? 'Bon Fiscal' : 'Factură'} nr ${e.documentNumber.isEmpty ? '—' : e.documentNumber}'),
-        subtitle: Text('${formatDate(e.date)} · ${e.amount.toStringAsFixed(2)} lei${e.supplier.isEmpty ? '' : ' · ${e.supplier}'}${e.description == g ? '' : '\n${e.description}'}${e.ocrRawText.isEmpty ? '' : ' · OCR ${(e.ocrConfidence * 100).round()}%'}'),
-        isThreeLine: e.description != g,
-        trailing: e.confirmed ? const Chip(label: Text('Confirmat')) : isManager ? FilledButton(onPressed: () => _confirmExpense(e), child: const Text('Confirmă')) : const Chip(label: Text('În așteptare')),
+        subtitle: Text('${formatDate(e.date)} · ${e.amount.toStringAsFixed(2)} lei${e.supplier.isEmpty ? '' : ' · ${e.supplier}'}${e.description == g ? '' : '\n${e.description}'}${e.ocrRawText.isEmpty ? '' : ' · OCR ${(e.ocrConfidence * 100).round()}%'}${e.reviewStatus == 'rejected' ? '\nMotiv respingere: ${e.rejectionReason}' : ''}'),
+        isThreeLine: e.description != g || e.reviewStatus == 'rejected',
+        trailing: e.confirmed
+          ? const Chip(label: Text('Confirmat'))
+          : e.reviewStatus == 'rejected'
+            ? (e.createdBy == widget.currentUser.id
+                ? TextButton(onPressed: () => _correctAndResubmitExpense(e), child: const Text('Corectează'))
+                : const Chip(label: Text('Respins')))
+            : isManager
+              ? Wrap(spacing: 4, children: [
+                  TextButton(onPressed: () => _rejectExpense(e), child: const Text('Respinge')),
+                  FilledButton(onPressed: () => _confirmExpense(e), child: const Text('Confirmă')),
+                ])
+              : const Chip(label: Text('În așteptare')),
       ))));
     }
     return out;
@@ -9903,10 +10152,61 @@ class _ExpensePageState extends State<ExpensePage> {
     await showDialog<void>(context: context, builder: (d) => Dialog(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 900, maxHeight: 800), child: Column(mainAxisSize: MainAxisSize.min, children: [AppBar(title: Text(e.documentNumber.isEmpty ? 'Document' : e.documentNumber), automaticallyImplyLeading: false, actions: [IconButton(onPressed: () => Navigator.pop(d), icon: const Icon(Icons.close))]), Flexible(child: InteractiveViewer(minScale: .5, maxScale: 5, child: Image.memory(bytes!, fit: BoxFit.contain)))]))));
   }
 
+  Future<void> _rejectExpense(Expense e) async {
+    if (!isManager) return;
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(context: context, builder: (d) => AlertDialog(
+      title: const Text('Respinge documentul'),
+      content: TextField(controller: controller, maxLines: 3, decoration: const InputDecoration(labelText: 'Motivul respingerii')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')),
+        FilledButton(onPressed: () => Navigator.pop(d, controller.text.trim()), child: const Text('Respinge')),
+      ],
+    ));
+    controller.dispose();
+    if (reason == null) return;
+    try {
+      await widget.rejectExpense(e.id, reason);
+      if (mounted) showSuccessMessage(context, 'Document respins. Motivul a fost salvat.');
+    } catch (err) {
+      if (mounted) showErrorMessage(context, 'Respingerea a eșuat: $err');
+    }
+  }
+
+  Future<void> _correctAndResubmitExpense(Expense e) async {
+    final corrected = await _expenseDialog(existing: e);
+    if (corrected == null) return;
+    try {
+      await widget.correctExpense(corrected);
+      if (mounted) showSuccessMessage(context, 'Corecția a fost trimisă gestionarului.');
+    } catch (err) {
+      if (mounted) showErrorMessage(context, 'Corecția a eșuat: $err');
+    }
+  }
+
+  Future<void> _resubmitExpense(Expense e) async {
+    try {
+      await widget.resubmitExpense(e.id);
+      if (mounted) showSuccessMessage(context, 'Document retrimis spre aprobare.');
+    } catch (err) {
+      if (mounted) showErrorMessage(context, 'Retrimiterea a eșuat: $err');
+    }
+  }
+
   Future<void> _confirmExpense(Expense e) async {
+    if (!isManager) {
+      if (mounted) showErrorMessage(context, 'Doar gestionarul poate confirma acest document.');
+      return;
+    }
     e.confirmed = true;
-    try { await widget.saveExpense(e); widget.log('Cheltuială confirmată', e.documentNumber); }
-    catch (err) { e.confirmed = false; if (mounted) showErrorMessage(context, 'Confirmarea a eșuat: $err'); }
+    try {
+      await widget.saveExpense(e);
+      widget.log('Cheltuială confirmată', e.documentNumber);
+      if (mounted) showSuccessMessage(context, 'Documentul a fost confirmat.');
+    } catch (err) {
+      e.confirmed = false;
+      if (mounted) showErrorMessage(context, 'Confirmarea a eșuat: $err');
+    }
   }
 
   Future<void> _pdf() async {
@@ -9924,18 +10224,22 @@ class _ExpensePageState extends State<ExpensePage> {
 
 class MessagesContactsPage extends StatefulWidget {
   final List<Location> locations;
+  final List<LocationCategory> categories;
+  final AppUser? currentUser;
   final AppSettings settings;
   final bool canEditContacts;
   final bool canManageTemplates;
   final VoidCallback onChanged;
   final void Function(String,String) log;
-  const MessagesContactsPage({super.key,required this.locations,required this.settings,required this.canEditContacts,required this.canManageTemplates,required this.onChanged,required this.log});
+  const MessagesContactsPage({super.key,required this.locations,required this.categories,this.currentUser,required this.settings,required this.canEditContacts,required this.canManageTemplates,required this.onChanged,required this.log});
   @override State<MessagesContactsPage> createState()=>_MessagesContactsPageState();
 }
 
 class _MessagesContactsPageState extends State<MessagesContactsPage>{
+  static String _lastSelectedCategory = '';
   final search=TextEditingController();
   String query='';
+  String selectedCategory = _lastSelectedCategory;
   @override void dispose(){search.dispose();super.dispose();}
 
   Future<void> _call(String phone) async {
@@ -9945,116 +10249,54 @@ class _MessagesContactsPageState extends State<MessagesContactsPage>{
     if(!await launchUrl(uri,mode:LaunchMode.externalApplication)&&mounted)showErrorMessage(context,'Telefonul nu poate deschide apelul pentru $clean.');
   }
 
-  Future<LocationContact?> _contactDialog([LocationContact? existing]) async {
-    final name=TextEditingController(text:existing?.name??'');
-    final phone=TextEditingController(text:existing?.phone??'');
-    var role=(existing?.role.trim().isNotEmpty??false)?existing!.role:'Manager';
-    if(!const ['Manager','Casierie','Alt contact'].contains(role))role='Alt contact';
-    var smsEnabled=existing?.smsEnabled??true;
-    final result=await showDialog<LocationContact>(context:context,builder:(c)=>StatefulBuilder(builder:(c,setD)=>AlertDialog(
-      title:Text(existing==null?'Adaugă număr locație':'Editează contact'),
-      content:SizedBox(width:480,child:Column(mainAxisSize:MainAxisSize.min,children:[
-        DropdownButtonFormField<String>(value:role,decoration:const InputDecoration(labelText:'Tip contact'),items:const[
-          DropdownMenuItem(value:'Manager',child:Text('Manager')),
-          DropdownMenuItem(value:'Casierie',child:Text('Casierie')),
-          DropdownMenuItem(value:'Alt contact',child:Text('Alt contact')),
-        ],onChanged:(v){if(v!=null)setD(()=>role=v);}),
-        const SizedBox(height:8),
-        TextField(controller:name,decoration:InputDecoration(labelText:role=='Casierie'?'Nume / denumire (opțional)':'Nume contact')),
-        const SizedBox(height:8),
-        TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'Telefon *')),
-        const SizedBox(height:4),
-        SwitchListTile(contentPadding:EdgeInsets.zero,value:smsEnabled,onChanged:(v)=>setD(()=>smsEnabled=v),title:const Text('Primește SMS automat'),subtitle:const Text('Dacă este oprit, numărul rămâne disponibil pentru apel, dar nu primește mesajele automate ale graficului.')),
-      ])),
-      actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),FilledButton(onPressed:(){
-        if(phone.text.trim().isEmpty){ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('Completează numărul de telefon.')));return;}
-        final displayName=name.text.trim().isEmpty?role:name.text.trim();
-        Navigator.pop(c,LocationContact(name:displayName,phone:phone.text.trim(),role:role,smsEnabled:smsEnabled));
-      },child:const Text('Salvează'))],
-    )));
-    name.dispose();phone.dispose();return result;
-  }
-
-  Future<void> _saveContacts(Location location,List<LocationContact> contacts) async {
-    try{
-      await FirebaseFirestore.instance.collection('locations').doc(location.id).set({
-        'contacts':contacts.map((c)=>{'name':c.name,'phone':c.phone,'role':c.role,'smsEnabled':c.smsEnabled}).toList(),
-        'phone':contacts.isEmpty?null:contacts.first.phone,
-        'updatedAt':FieldValue.serverTimestamp(),
-      },SetOptions(merge:true));
-      location.contacts=contacts;
-      location.phone=contacts.isEmpty?null:contacts.first.phone;
-      widget.onChanged();
-      widget.log('Contacte locație modificate',location.name);
-      if(mounted)showSuccessMessage(context,'Contactele pentru ${location.name} au fost salvate.');
-    }catch(e){if(mounted)showErrorMessage(context,'Contactele nu au putut fi salvate: $e');}
-  }
-
-  Future<void> _editLocationContacts(Location location) async {
-    if(!widget.canEditContacts)return;
-    final work=location.contacts.map((c)=>LocationContact(name:c.name,phone:c.phone,role:c.role,smsEnabled:c.smsEnabled)).toList();
-    final save=await showDialog<bool>(context:context,builder:(c)=>StatefulBuilder(builder:(c,setD)=>AlertDialog(
-      title:Text(location.name),
-      content:SizedBox(width:620,child:SingleChildScrollView(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        Text(location.address,style:Theme.of(c).textTheme.bodySmall),
-        const SizedBox(height:12),
-        Row(children:[const Expanded(child:Text('Telefoane locație',style:TextStyle(fontWeight:FontWeight.w800))),FilledButton.tonalIcon(onPressed:()async{final x=await _contactDialog();if(x!=null)setD(()=>work.add(x));},icon:const Icon(Icons.add_call),label:const Text('Adaugă'))]),
-        if(work.isEmpty)const Padding(padding:EdgeInsets.symmetric(vertical:16),child:Text('Nu există telefoane salvate.')),
-        ...List.generate(work.length,(i){final x=work[i];return ListTile(contentPadding:EdgeInsets.zero,leading:CircleAvatar(backgroundColor:Colors.green.withValues(alpha:.16),child:const Icon(Icons.phone,color:Colors.green)),title:Text('${x.role} · ${x.name}'),subtitle:Text('${x.phone}${x.smsEnabled?' · SMS automat':' · doar apel'}'),trailing:Wrap(spacing:2,children:[IconButton(tooltip:'Sună',onPressed:()=>_call(x.phone),icon:const Icon(Icons.call,color:Colors.green)),IconButton(tooltip:'Editează',onPressed:()async{final next=await _contactDialog(x);if(next!=null)setD(()=>work[i]=next);},icon:const Icon(Icons.edit_outlined)),IconButton(tooltip:'Șterge',onPressed:()=>setD(()=>work.removeAt(i)),icon:const Icon(Icons.delete_outline))]));}),
-      ]))),
-      actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Salvează'))],
-    )))??false;
-    if(save)await _saveContacts(location,work);
-  }
-
-  Future<void> _editTemplates() async {
-    if(!widget.canManageTemplates)return;
-    final initial=TextEditingController(text:widget.settings.smsTemplates['initial']??'');
-    final rescheduled=TextEditingController(text:widget.settings.smsTemplates['rescheduled']??'');
-    final postponed=TextEditingController(text:widget.settings.smsTemplates['postponed']??'');
-    final save=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
-      title:const Text('Șabloane SMS automate'),
-      content:SizedBox(width:760,child:SingleChildScrollView(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        _InfoCard(icon:Icons.data_object,title:'Variabile disponibile',text:'Folosește [data exactă] pentru data programată și [locație] dacă vrei să incluzi numele sălii. Mesajul inițial se trimite în ziua calendaristică anterioară intervenției, la ora ${widget.settings.smsPreviousDayTime} setată de Admin.'),
-        const SizedBox(height:10),
-        TextField(controller:initial,minLines:3,maxLines:6,decoration:InputDecoration(labelText:'Mesaj inițial · ziua precedentă la ${widget.settings.smsPreviousDayTime}')),
-        const SizedBox(height:10),
-        TextField(controller:rescheduled,minLines:3,maxLines:6,decoration:const InputDecoration(labelText:'Mesaj reprogramare pe altă dată')),
-        const SizedBox(height:10),
-        TextField(controller:postponed,minLines:3,maxLines:6,decoration:const InputDecoration(labelText:'Mesaj amânare')),
-      ]))),
-      actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Salvează'))],
-    ))??false;
-    if(save){
-      widget.settings.smsTemplates['initial']=initial.text.trim();
-      widget.settings.smsTemplates['rescheduled']=rescheduled.text.trim();
-      widget.settings.smsTemplates['postponed']=postponed.text.trim();
-      try{
-        await FirebaseFirestore.instance.collection('meta').doc('uiSettings').set({'smsTemplates':widget.settings.smsTemplates,'updatedAt':FieldValue.serverTimestamp()},SetOptions(merge:true));
-        widget.log('Șabloane SMS modificate','Mesaje automate locații');
-        widget.onChanged();
-        if(mounted)showSuccessMessage(context,'Șabloanele SMS au fost salvate.');
-      }catch(e){if(mounted)showErrorMessage(context,'Șabloanele nu au putut fi salvate: $e');}
-    }
-    initial.dispose();rescheduled.dispose();postponed.dispose();
-  }
-
   @override Widget build(BuildContext context){
-    final needle=query.trim().toLowerCase();
-    final list=widget.locations.where((l){if(!l.active)return false;if(needle.isEmpty)return true;return '${l.name} ${l.address} ${l.contacts.map((e)=>'${e.name} ${e.phone} ${e.role}').join(' ')}'.toLowerCase().contains(needle);}).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    return _Page(title:'Mesaje & Contacte',subtitle:'Telefoane locații și mesaje automate Andi Carpet',child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      Row(children:[Expanded(child:TextField(controller:search,onChanged:(v)=>setState(()=>query=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),labelText:'Caută locație, contact sau număr'))),if(widget.canManageTemplates)...[const SizedBox(width:8),FilledButton.tonalIcon(onPressed:_editTemplates,icon:const Icon(Icons.sms_outlined),label:const Text('Șabloane mesaje'))]]),
+    String normalize(String text)=>text.toLowerCase().replaceAll(RegExp('[ăâ]'),'a').replaceAll('î','i').replaceAll(RegExp('[șş]'),'s').replaceAll(RegExp('[țţ]'),'t');
+    final needle=normalize(query.trim());
+    final list=widget.locations.where((l){
+      // Agenda lists every configured location, including temporarily inactive ones.
+      if(selectedCategory.isNotEmpty && l.categoryId != selectedCategory)return false;
+      if(needle.isEmpty)return true;
+      return normalize('${l.name} ${l.address} ${l.contacts.map((e)=>'${e.name} ${e.phone} ${e.role}').join(' ')}').contains(needle);
+    }).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return _Page(title:'Agendă',subtitle:'Contacte telefonice pe locații',child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      TextField(controller:search,onChanged:(v)=>setState(()=>query=v),decoration:InputDecoration(prefixIcon:const Icon(Icons.search),labelText:'Caută locație, manager sau număr',suffixIcon:query.isEmpty?null:IconButton(tooltip:'Șterge căutarea',onPressed:(){search.clear();setState(()=>query='');},icon:const Icon(Icons.close)))),
       const SizedBox(height:10),
-      const _InfoCard(icon:Icons.info_outline,title:'Acces rapid',text:'Butonul verde apelează direct numărul. Contactele marcate „SMS automat” sunt cele folosite de gateway-ul Android când un grafic intră în condițiile de notificare. Editarea este controlată prin drepturile funcției.'),
+      SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[
+        Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Toate'),selected:selectedCategory.isEmpty,onSelected:(_)=>setState((){selectedCategory='';_lastSelectedCategory='';}))),
+        Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:const Text('Membri'),selected:selectedCategory=='__members',onSelected:(_)=>setState((){selectedCategory='__members';_lastSelectedCategory='__members';}))),
+        ...widget.categories.where((c)=>c.active).map((c)=>Padding(padding:const EdgeInsets.only(right:6),child:ChoiceChip(label:Text(c.name),selected:selectedCategory==c.id,onSelected:(_)=>setState((){selectedCategory=c.id;_lastSelectedCategory=c.id;})))),
+      ])),
       const SizedBox(height:10),
-      if(list.isEmpty)const _Empty(icon:Icons.contact_phone_outlined,text:'Nu există locații pentru căutarea curentă.'),
-      ...list.map((l)=>Card(child:ExpansionTile(
+      const _InfoCard(icon:Icons.info_outline,title:'Acces rapid',text:'Apasă butonul verde pentru a deschide apelarea. Agenda este doar pentru consultare; contactele se modifică din detaliile locației.'),
+      const SizedBox(height:10),
+      if(selectedCategory=='__members' && widget.currentUser!=null)
+        StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
+          stream:FirebaseFirestore.instance.collection(widget.currentUser!.role==UserRole.director?'users':'memberDirectory').where('active',isEqualTo:true).snapshots(),
+          builder:(context,snapshot){
+            if(snapshot.hasError)return const Text('Membrii nu sunt disponibili momentan.');
+            if(!snapshot.hasData)return const Center(child:CircularProgressIndicator());
+            final members=snapshot.data!.docs.where((doc){
+              final d=doc.data();
+              if(widget.currentUser!.role!=UserRole.director && doc.id!=widget.currentUser!.id && d['hiddenFromMembers']==true)return false;
+              final name=(d['name']??d['email']??'').toString();
+              final phone=(d['phone']??'').toString();
+              return needle.isEmpty || normalize('$name $phone').contains(needle);
+            }).toList()..sort((a,b)=>(a.data()['name']??'').toString().compareTo((b.data()['name']??'').toString()));
+            if(members.isEmpty)return const _Empty(icon:Icons.people_outline,text:'Nu există membri pentru căutarea curentă.');
+            return Column(children:members.map((doc){
+              final d=doc.data();final phone=(d['phone']??'').toString().trim();
+              return Card(child:ListTile(leading:const Icon(Icons.person_outline),title:Text((d['name']??d['email']??'Membru').toString()),subtitle:Text(phone.isEmpty?'Contact indisponibil':phone),trailing:phone.isEmpty?null:IconButton(tooltip:'Sună $phone',onPressed:()=>_call(phone),icon:const Icon(Icons.call,color:Colors.green))));
+            }).toList());
+          },
+        ),
+      if(selectedCategory!='__members' && list.isEmpty)const _Empty(icon:Icons.contact_phone_outlined,text:'Nu există locații pentru căutarea curentă.'),
+      ...((selectedCategory=='__members')?<Location>[]:list).map((l)=>Card(child:ExpansionTile(
         leading:const CircleAvatar(backgroundColor:Color(0x1A00A86B),child:Icon(Icons.store_mall_directory_outlined,color:Colors.green)),
         title:Text(l.name,maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text(l.address,maxLines:2,overflow:TextOverflow.ellipsis),
-        trailing:widget.canEditContacts?IconButton(tooltip:'Editează telefoanele',onPressed:()=>_editLocationContacts(l),icon:const Icon(Icons.edit_outlined)):null,
+        
         children:[
-          if(l.contacts.isEmpty)const ListTile(title:Text('Niciun telefon salvat.')),
-          ...l.contacts.map((c)=>ListTile(leading:const CircleAvatar(backgroundColor:Color(0x1A00A86B),child:Icon(Icons.phone,color:Colors.green)),title:Text('${c.role} · ${c.name}'),subtitle:Text('${c.phone}${c.smsEnabled?' · SMS automat':' · doar apel'}'),trailing:IconButton(style:IconButton.styleFrom(backgroundColor:Colors.green,foregroundColor:Colors.white),tooltip:'Sună ${c.phone}',onPressed:()=>_call(c.phone),icon:const Icon(Icons.call)))),
+          if(l.contacts.isEmpty)const ListTile(title:Text('Contact indisponibil')),
+          ...l.contacts.map((c)=>ListTile(leading:const CircleAvatar(backgroundColor:Color(0x1A00A86B),child:Icon(Icons.phone,color:Colors.green)),title:Text('${c.role} · ${c.name}'),subtitle:Text(c.phone),trailing:IconButton(style:IconButton.styleFrom(backgroundColor:Colors.green,foregroundColor:Colors.white),tooltip:'Sună ${c.phone}',onPressed:()=>_call(c.phone),icon:const Icon(Icons.call)))),
         ],
       ))),
     ]));
@@ -10812,6 +11054,59 @@ const Map<String,String> _andiStickerAssets=<String,String>{
   'brc_32':'assets/stickers/sticker_32.png',
 };
 
+const Map<String,String> _andiPortraitStickerAssets=<String,String>{
+  'andi_01':'assets/stickers/andi_01.webp',
+  'andi_02':'assets/stickers/andi_02.webp',
+  'andi_03':'assets/stickers/andi_03.webp',
+  'andi_04':'assets/stickers/andi_04.webp',
+  'andi_05':'assets/stickers/andi_05.webp',
+  'andi_06':'assets/stickers/andi_06.webp',
+  'andi_07':'assets/stickers/andi_07.webp',
+  'andi_08':'assets/stickers/andi_08.webp',
+  'andi_09':'assets/stickers/andi_09.webp',
+  'andi_10':'assets/stickers/andi_10.webp',
+  'andi_11':'assets/stickers/andi_11.webp',
+  'andi_12':'assets/stickers/andi_12.webp',
+  'andi_13':'assets/stickers/andi_13.webp',
+  'andi_14':'assets/stickers/andi_14.webp',
+  'andi_15':'assets/stickers/andi_15.webp',
+  'andi_16':'assets/stickers/andi_16.webp',
+  'andi_17':'assets/stickers/andi_17.webp',
+  'andi_18':'assets/stickers/andi_18.webp',
+  'andi_19':'assets/stickers/andi_19.webp',
+  'andi_20':'assets/stickers/andi_20.webp',
+  'andi_21':'assets/stickers/andi_21.webp',
+  'andi_22':'assets/stickers/andi_22.webp',
+  'andi_23':'assets/stickers/andi_23.webp',
+  'andi_24':'assets/stickers/andi_24.webp',
+};
+const Map<String,String> _andiPortraitStickerLabels=<String,String>{
+  'andi_01':'HAI CU TREABĂ!',
+  'andi_02':'BINE BĂ!',
+  'andi_03':'CAFEA ÎNTÂI',
+  'andi_04':'SOMN PUȚIN...',
+  'andi_05':'NU AZI',
+  'andi_06':'TE PUP',
+  'andi_07':'MMM... INTERESANT',
+  'andi_08':'AI IDEI',
+  'andi_09':'RESPECT',
+  'andi_10':'PROST!',
+  'andi_11':'NU ȘTIU FRATE...',
+  'andi_12':'CLASIC...',
+  'andi_13':'LA TREABĂ',
+  'andi_14':'PISI',
+  'andi_15':'BOSS',
+  'andi_16':'SE POATE',
+  'andi_17':'PAUZĂ MERITATĂ',
+  'andi_18':'O REZOLVĂM',
+  'andi_19':'SERIOS ACUM?',
+  'andi_20':'PE DRUM',
+  'andi_21':'SE REZOLVĂ',
+  'andi_22':'TE PUP',
+  'andi_23':'GATA PE AZI',
+  'andi_24':'TOTUL OK!',
+};
+
 const Map<String,String> _andiStickerFallback=<String,String>{
   'brc_01':'MU!E!',
   'brc_02':'MARȘ!',
@@ -10847,19 +11142,19 @@ const Map<String,String> _andiStickerFallback=<String,String>{
   'brc_32':'AȘA DA!',
 };
 
-String? _andiReactionFallback(String key) => _andiStickerFallback[key] ?? _andiCustomEmojis[key];
+String? _andiReactionFallback(String key) => _andiPortraitStickerLabels[key] ?? _andiStickerFallback[key] ?? _andiCustomEmojis[key];
 
-bool _andiHasReaction(String key) => _andiStickerAssets.containsKey(key) || _andiCustomEmojis.containsKey(key);
+bool _andiHasReaction(String key) => _andiPortraitStickerAssets.containsKey(key) || _andiStickerAssets.containsKey(key) || _andiCustomEmojis.containsKey(key);
 
 Widget _andiReactionWidget(String key, {double size = 104}) {
-  final asset = _andiStickerAssets[key];
-  if (asset != null) return Image.asset(asset, width: size, height: size, fit: BoxFit.contain);
+  final asset = _andiPortraitStickerAssets[key] ?? _andiStickerAssets[key];
+  if (asset != null) return Image.asset(asset, width: size, height: size, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Text(_andiReactionFallback(key) ?? 'Sticker', textAlign: TextAlign.center, style: TextStyle(fontSize:size*.12,fontWeight:FontWeight.bold)));
   final emoji = _andiCustomEmojis[key] ?? '';
   return Text(emoji, style: TextStyle(fontSize: size * .38));
 }
 
 Future<String?> _showAndiReactionPicker(BuildContext context, {String? subtitle}) {
-  final keys = <String>[..._andiStickerAssets.keys, ..._andiCustomEmojis.keys];
+  final keys = <String>[..._andiPortraitStickerAssets.keys, ..._andiStickerAssets.keys, ..._andiCustomEmojis.keys];
   return showModalBottomSheet<String>(
     context: context,
     showDragHandle: true,
@@ -11161,20 +11456,74 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
 
 class GroupChatPage extends StatefulWidget {
   final AppUser currentUser;
+  final Widget? agenda;
   final List<AppUser> users;
   final List<FunctionDefinition> functionDefinitions;
-  const GroupChatPage({super.key, required this.currentUser, this.users = const <AppUser>[], this.functionDefinitions = const <FunctionDefinition>[]});
+  const GroupChatPage({super.key, required this.currentUser, this.users = const <AppUser>[], this.functionDefinitions = const <FunctionDefinition>[], this.agenda});
 
   @override
   State<GroupChatPage> createState() => _GroupChatPageState();
 }
 
 class _GroupChatPageState extends State<GroupChatPage> {
+  static int _lastChatTab = 0;
   static const int _historyLimit = 50;
   static const int _retentionDays = 7;
   final TextEditingController _text = TextEditingController();
   final ScrollController _scroll = ScrollController();
   bool _sending = false;
+  int _selectedChatTab = _lastChatTab;
+  Future<void> _editChatAppearance() async {
+    if(widget.currentUser.role!=UserRole.director)return;
+    final doc=FirebaseFirestore.instance.collection('meta').doc('uiSettings');
+    DocumentSnapshot<Map<String,dynamic>> current;
+    try{current=await doc.get();}catch(e){if(mounted)showErrorMessage(context,'Nu pot încărca setările Chat live: $e');return;}
+    if(!mounted)return;
+    final existing=current.data()??<String,dynamic>{};
+    var opacity=((existing['chatBackgroundOpacity'] as num?)?.toDouble()??0.28).clamp(0.0,0.85).toDouble();
+    String? imageData=existing['chatBackgroundBase64']?.toString();
+    var remove=false;
+    await showDialog<void>(context:context,builder:(dialogContext)=>StatefulBuilder(builder:(dialogContext,setDialog)=>AlertDialog(
+      title:const Text('Setări Chat live'),
+      content:SizedBox(width:math.min(440.0,MediaQuery.sizeOf(dialogContext).width*.78),child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        const Text('Fundalul este comun pentru toți membrii, inclusiv în browser.'),
+        const SizedBox(height:12),
+        FilledButton.tonalIcon(onPressed:()async{
+          try{
+            final picked=await ImagePicker().pickImage(source:ImageSource.gallery);
+            if(picked==null)return;
+            final bytes=await picked.readAsBytes();
+            if(bytes.isEmpty)throw const FormatException('Nu s-a putut citi imaginea.');
+            final decoded=img.decodeImage(bytes);
+            if(decoded==null)throw const FormatException('Format imagine nesuportat.');
+            final longest=math.max(decoded.width,decoded.height);
+            final resized=longest>1200?img.copyResize(decoded,width:(decoded.width*1200/longest).round(),height:(decoded.height*1200/longest).round()):decoded;
+            final encoded=img.encodeJpg(resized,quality:65);
+            if(encoded.length>450000)throw const FormatException('Imaginea este prea mare; încearcă una mai mică.');
+            setDialog((){imageData=base64Encode(encoded);remove=false;});
+          }catch(e){if(dialogContext.mounted)showErrorMessage(dialogContext,'Fundalul nu a putut fi încărcat: $e');}
+        },icon:const Icon(Icons.image_outlined),label:const Text('Încarcă imagine')),
+        TextButton.icon(onPressed:()=>setDialog((){imageData=null;remove=true;}),icon:const Icon(Icons.delete_outline),label:const Text('Elimină fundalul')),
+        const SizedBox(height:12),
+        if(imageData!=null && imageData!.isNotEmpty)
+          SizedBox(height:160,width:double.infinity,child:ClipRRect(borderRadius:BorderRadius.circular(14),child:Stack(fit:StackFit.expand,children:[
+            ColoredBox(color:Theme.of(dialogContext).colorScheme.surfaceContainerHighest),
+            Opacity(opacity:opacity,child:Image.memory(base64Decode(imageData!),fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Center(child:Text('Previzualizare indisponibilă')))),
+            const Align(alignment:Alignment.bottomCenter,child:Padding(padding:EdgeInsets.all(8),child:Text('Previzualizare fundal',style:TextStyle(fontWeight:FontWeight.bold)))),
+          ]))),
+        const SizedBox(height:12),Text('Opacitate: ${(opacity*100).round()}%'),
+        Slider(value:opacity,min:0,max:0.85,divisions:17,label:'${(opacity*100).round()}%',onChanged:(v)=>setDialog(()=>opacity=v)),
+        const Text('0% = fundal ascuns · 85% = fundal vizibil intens'),
+      ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext),child:const Text('Anulează')),FilledButton(onPressed:()async{
+        try{
+          await doc.set({'chatBackgroundBase64':remove?'':(imageData??''),'chatBackgroundOpacity':opacity,'updatedAt':FieldValue.serverTimestamp()},SetOptions(merge:true));
+          if(dialogContext.mounted)Navigator.pop(dialogContext);
+        }catch(e){if(dialogContext.mounted)showErrorMessage(dialogContext,'Setările Chat live nu au putut fi salvate: $e');}
+      },child:const Text('Salvează'))],
+    )));
+  }
+
 
   CollectionReference<Map<String,dynamic>> get _messages => FirebaseFirestore.instance.collection('groupChatMessages');
   Stream<QuerySnapshot<Map<String, dynamic>>> get _stream => _messages
@@ -11262,15 +11611,29 @@ class _GroupChatPageState extends State<GroupChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat live · Toți membrii'),
+        title: const Text('Chat'),
+        bottom:widget.agenda==null?null:PreferredSize(preferredSize:const Size.fromHeight(48),child:Row(children:[
+          Expanded(child:TextButton(onPressed:()=>setState((){_selectedChatTab=0;_lastChatTab=0;}),child:Text('Mesagerie',style:TextStyle(fontWeight:_selectedChatTab==0?FontWeight.bold:FontWeight.normal)))),
+          Expanded(child:TextButton(onPressed:()=>setState((){_selectedChatTab=1;_lastChatTab=1;}),child:Text('Agendă',style:TextStyle(fontWeight:_selectedChatTab==1?FontWeight.bold:FontWeight.normal)))),
+        ])),
         actions: [
+          if(widget.currentUser.role==UserRole.director)IconButton(tooltip:'Setări Chat live',onPressed:_editChatAppearance,icon:const Icon(Icons.settings_outlined)),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Center(child: Text('50 mesaje · 7 zile', style: Theme.of(context).textTheme.labelSmall)),
           ),
         ],
       ),
-      body: Column(
+      body: StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(
+        stream:FirebaseFirestore.instance.collection('meta').doc('uiSettings').snapshots(),
+        builder:(context,appearance){
+          final data=appearance.data?.data()??<String,dynamic>{};
+          Uint8List? bg;
+          try{final raw=(data['chatBackgroundBase64']??'').toString();if(raw.isNotEmpty)bg=base64Decode(raw);}catch(_){}
+          final opacity=((data['chatBackgroundOpacity'] as num?)?.toDouble()??0.28).clamp(0.0,0.85).toDouble();
+          return IndexedStack(index:_selectedChatTab,children:[Stack(children:[
+            if(bg!=null)Positioned.fill(child:Opacity(opacity:opacity,child:Image.memory(bg,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink()))),
+            Column(
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -11390,7 +11753,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
           ),
         ],
-      ),
+      ),]), if(widget.agenda!=null)widget.agenda!]);
+        }),
     );
   }
 }

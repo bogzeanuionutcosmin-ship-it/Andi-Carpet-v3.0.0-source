@@ -177,25 +177,78 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Doar administratorul si gestionarul financiar desemnat pot modifica
+    // registrul financiar definitiv. Propunerile lucratorilor vor fi
+    // stocate separat si aprobate explicit, nu direct in expenses.
     match /expenses/{expenseId} {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
-      allow create: if (isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId)
-          && request.resource.data.distributedBy == request.auth.uid))
-        && (!('supplementaryFor' in request.resource.data)
-          || request.resource.data.supplementaryFor == null
-          || (request.resource.data.supplementaryFor is string
-            && exists(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor))
-            && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.memberId == request.resource.data.memberId
-            && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.distributedBy == request.resource.data.distributedBy
-            && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.status == 'confirmed'));
-      allow update: if isAdmin()
-        || (hasPermission('viewOwnDecont')
+      allow create: if isAdmin()
+        || (isActive()
+          && hasPermission('viewOwnDecont')
+          && request.resource.data.teamId is string
+          && isTeamMember(request.resource.data.teamId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.confirmed == false
+          && request.resource.data.get('reviewStatus', 'pending') == 'pending'
+          && request.resource.data.amount is number
+          && request.resource.data.amount >= 0);
+      allow update: if (isActive()
+          && resource.data.createdBy == request.auth.uid
           && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
-      allow delete: if isAdmin();
+          && resource.data.confirmed == false
+          && resource.data.reviewStatus == 'rejected'
+          && request.resource.data.teamId == resource.data.teamId
+          && request.resource.data.settlementId == resource.data.settlementId
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.confirmed == false
+          && request.resource.data.reviewStatus == 'pending'
+          && request.resource.data.get('rejectionReason', null) == null
+          && request.resource.data.get('reviewedBy', null) == null
+          && request.resource.data.amount is number
+          && request.resource.data.amount > 0
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['category', 'description', 'amount', 'date',
+              'documentType', 'documentNumber', 'supplier', 'liters',
+              'pricePerLiter', 'reviewStatus', 'rejectionReason',
+              'reviewedBy', 'updatedAt']))
+        || (isActive()
+          && resource.data.createdBy == request.auth.uid
+          && isTeamMember(resource.data.teamId)
+          && resource.data.confirmed == false
+          && resource.data.reviewStatus == 'rejected'
+          && request.resource.data.confirmed == false
+          && request.resource.data.reviewStatus == 'pending'
+          && request.resource.data.get('rejectionReason', null) == null
+          && request.resource.data.get('reviewedBy', null) == null
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['reviewStatus', 'rejectionReason', 'reviewedBy', 'updatedAt']))
+        || isAdmin()
+        || (isActive()
+          && resource.data.teamId == request.resource.data.teamId
+          && exists(/databases/$(database)/documents/finance/$(resource.data.teamId))
+          && get(/databases/$(database)/documents/finance/$(resource.data.teamId)).data.managerId == request.auth.uid
+          && (
+            // Un document deja aprobat nu poate fi readus in asteptare.
+            resource.data.confirmed != true
+            || request.resource.data.confirmed == true
+          )
+          && (
+            !('reviewStatus' in request.resource.data)
+            || request.resource.data.reviewStatus in ['approved', 'rejected', 'pending']
+          )
+          && (
+            request.resource.data.get('reviewStatus', '') != 'rejected'
+            || (request.resource.data.confirmed == false
+              && request.resource.data.rejectionReason is string
+              && request.resource.data.rejectionReason.size() >= 5
+              && request.resource.data.reviewedBy == request.auth.uid)
+          ));
+      allow delete: if isAdmin()
+        || (isActive()
+          && exists(/databases/$(database)/documents/finance/$(resource.data.teamId))
+          && get(/databases/$(database)/documents/finance/$(resource.data.teamId)).data.managerId == request.auth.uid);
     }
 
     // Registrul financiar v2: acces numai participanților; fără ștergere.
@@ -401,16 +454,17 @@ service cloud.firestore {
           || resource.data.distributedBy == request.auth.uid));
       allow create: if isAdmin()
         || (isActive()
-          && isTeamMember(request.resource.data.teamId)
+          && (isTeamMember(request.resource.data.teamId)
+            || (exists(/databases/$(database)/documents/finance/$(request.resource.data.teamId))
+              && get(/databases/$(database)/documents/finance/$(request.resource.data.teamId)).data.managerId == request.auth.uid))
           && request.resource.data.distributedBy == request.auth.uid
           && request.resource.data.memberId is string
           && request.resource.data.amount is number
           && request.resource.data.amount > 0
           && request.resource.data.status == 'awaitingConfirmation'
           && request.resource.data.get('actualReceivedAmount', null) == null
-          && (hasPermission('viewOwnDecont')
-            || (exists(/databases/$(database)/documents/finance/$(request.resource.data.teamId))
-              && get(/databases/$(database)/documents/finance/$(request.resource.data.teamId)).data.managerId == request.auth.uid)));
+          && exists(/databases/$(database)/documents/finance/$(request.resource.data.teamId))
+          && get(/databases/$(database)/documents/finance/$(request.resource.data.teamId)).data.managerId == request.auth.uid);
       allow update: if isAdmin()
         || (isActive() && resource.data.memberId == request.auth.uid
           && resource.data.distributedBy is string
@@ -435,9 +489,28 @@ service cloud.firestore {
     match /finance/{teamId} {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
-        || isTeamMember(teamId);
-      allow create, update: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(teamId));
+        || isTeamMember(teamId)
+        || (isActive() && resource.data.managerId == request.auth.uid);
+      // Doar administratorul initializeaza finantele si desemneaza
+      // gestionarul. Ulterior doar gestionarul poate modifica sumele.
+      allow create: if isAdmin()
+        && request.resource.data.teamId == teamId
+        && (request.resource.data.get('managerId', null) == null
+          || (request.resource.data.managerId is string
+            && exists(teamPath(teamId))
+              && request.resource.data.managerId in get(teamPath(teamId)).data.members));
+      allow update: if (isAdmin()
+          && request.resource.data.teamId == resource.data.teamId
+          && (request.resource.data.managerId == resource.data.managerId
+            || (request.resource.data.managerId is string
+              && exists(teamPath(teamId))
+              && request.resource.data.managerId in get(teamPath(teamId)).data.members)))
+        || (isActive()
+          && hasPermission('viewOwnDecont')
+          && isTeamMember(teamId)
+          && resource.data.managerId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['receivedDeparture', 'receivedDuring', 'receivedEntries', 'perDiemRate', 'updatedAt']));
       allow delete: if isAdmin();
     }
 
@@ -446,11 +519,18 @@ service cloud.firestore {
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
       allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
+        || (hasPermission('viewOwnDecont')
+          && isTeamMember(request.resource.data.teamId)
+          && (!('managerId' in request.resource.data)
+            || request.resource.data.managerId == null));
       allow update: if isAdmin()
         || (hasPermission('viewOwnDecont')
           && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+          && isTeamMember(request.resource.data.teamId)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['managerId', 'teamId'])
+          && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'startDate', 'endDate', 'updatedAt'])
+            || (exists(/databases/$(database)/documents/finance/$(resource.data.teamId))
+              && get(/databases/$(database)/documents/finance/$(resource.data.teamId)).data.managerId == request.auth.uid)));
       allow delete: if isAdmin();
     }
 
@@ -624,7 +704,7 @@ service cloud.firestore {
     }
 
     match /{document=**} {
-      allow read, write: if isAdmin();
+      allow read, write: if false;
     }
   }
 }
