@@ -497,12 +497,14 @@ service cloud.firestore {
         && request.resource.data.teamId == teamId
         && (request.resource.data.get('managerId', null) == null
           || (request.resource.data.managerId is string
-            && isTeamMember(request.resource.data.managerId)));
+            && exists(teamPath(teamId))
+              && request.resource.data.managerId in get(teamPath(teamId)).data.members));
       allow update: if (isAdmin()
           && request.resource.data.teamId == resource.data.teamId
           && (request.resource.data.managerId == resource.data.managerId
             || (request.resource.data.managerId is string
-              && isTeamMember(request.resource.data.managerId))))
+              && exists(teamPath(teamId))
+              && request.resource.data.managerId in get(teamPath(teamId)).data.members)))
         || (isActive()
           && hasPermission('viewOwnDecont')
           && isTeamMember(teamId)
