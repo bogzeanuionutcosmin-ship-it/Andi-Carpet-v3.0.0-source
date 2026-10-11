@@ -13,6 +13,7 @@ void main() {
     final defs = defaultFunctionDefinitions();
     expect(defs, isNotEmpty);
     expect(defs.map((e) => e.id).toSet().length, defs.length);
-    expect(defs.firstWhere((e) => e.id == 'worker').permissions, isNotEmpty);
+    expect(defs.firstWhere((e) => e.id == 'admin').permissions, isNotEmpty);
+    expect(defs.any((e) => e.id == 'worker'), isFalse);
   });
 }
