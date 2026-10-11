@@ -45,7 +45,7 @@ InvoiceFields parseInvoiceFields(String raw) {
   }
   int? total;
   final totalLabel = RegExp(
-    r'\b(?:TOTAL\s+(?:DE\s+)?PLAT[ĂA]|TOTAL\s+FACTUR[ĂA]|TOTAL\s+GENERAL|GRAND\s+TOTAL|TOTAL\s+CU\s+TVA)\b',
+    r'\b(?:TOTAL\s+(?:DE\s+)?PLAT[ĂA]|TOTAL\s+FACTUR[ĂA]|TOTAL\s+GENERAL|GRAND\s+TOTAL|TOTAL\s+CU\s+TVA)(?=\s|$)',
     caseSensitive: false,
   );
   final moneyAtEnd = RegExp(r'([0-9]{1,7}[.,][0-9]{2})\s*(?:RON|LEI)?\s*$', caseSensitive: false);
