@@ -52,6 +52,14 @@ void main() {
     expect(source, contains('Opacity(opacity:opacity'));
   });
 
+  test('Chat background upload is responsive and keeps image proportions', () {
+    expect(source, contains('MediaQuery.sizeOf(dialogContext).width*.78'));
+    expect(source, contains('math.max(decoded.width,decoded.height)'));
+    expect(source, contains('img.copyResize(decoded,width:'));
+    expect(source, contains('errorBuilder:(_,__,___)=>const SizedBox.shrink()'));
+    expect(source, contains('Nu pot încărca setările Chat live'));
+  });
+
   test('Dashboard reveal keeps reduced-motion accessibility', () {
     expect(source, contains('MediaQuery.disableAnimationsOf(context)'));
     expect(source, contains('AnimatedOpacity('));
