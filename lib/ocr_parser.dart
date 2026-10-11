@@ -86,17 +86,17 @@ FiscalOcrData parseFiscalOcr(String text) {
     supplier = lines.firstWhere((x) => RegExp(r'[A-Za-zĂÂÎȘȚăâîșț]{3}').hasMatch(x), orElse: () => lines.first);
   }
 
-  final invoice = RegExp(r'\\b(?:FACTUR[ĂA]|INVOICE)\\b', caseSensitive: false).hasMatch(raw) ? parseInvoiceFields(raw) : null;
+  final invoice = RegExp(r'\b(?:FACTUR[ĂA]|INVOICE)\b', caseSensitive: false).hasMatch(raw) ? parseInvoiceFields(raw) : null;
   // BF este extras numai din etichete explicite, nu dintr-un "NR" generic.
   // Evitam sa confundam numarul bonului cu POS, casa, tranzactia sau CUI.
   String docNo = '';
   final numberPatterns = <RegExp>[
-    RegExp(r'\\bBF\\s*(?:NR\\.?\\s*)?[:#-]?\\s*([A-Z0-9\\-/]{2,})\\b', caseSensitive: false),
-    RegExp(r'\\bBON\\s+FISCAL\\s*(?:NR\\.?|NUMAR|NUMĂR)?\\s*[:#-]?\\s*([A-Z0-9\\-/]{2,})\\b', caseSensitive: false),
-    RegExp(r'\\bNR\\.?\\s+BON(?:\\s+FISCAL)?\\s*[:#-]?\\s*([A-Z0-9\\-/]{2,})\\b', caseSensitive: false),
+    RegExp(r'\bBF\s*(?:NR\.?\s*)?[:#-]?\s*([A-Z0-9/-]{2,})\b', caseSensitive: false),
+    RegExp(r'\bBON\s+FISCAL\s*(?:NR\.?|NUMAR|NUMĂR)?\s*[:#-]?\s*([A-Z0-9/-]{2,})\b', caseSensitive: false),
+    RegExp(r'\bNR\.?\s+BON(?:\s+FISCAL)?\s*[:#-]?\s*([A-Z0-9/-]{2,})\b', caseSensitive: false),
   ];
   for (final line in lines) {
-    if (RegExp(r'\\b(?:POS|TERMINAL|TRANZACTIE|TRANZACȚIE|CASA|CUI|CIF)\\b', caseSensitive: false).hasMatch(line)) continue;
+    if (RegExp(r'\b(?:POS|TERMINAL|TRANZACTIE|TRANZACȚIE|CASA|CUI|CIF)\b', caseSensitive: false).hasMatch(line)) continue;
     for (final re in numberPatterns) {
       final match = re.firstMatch(line);
       if (match != null) {
