@@ -60,3 +60,12 @@
 - Agenda este **read-only** pentru toți utilizatorii: fără editare, adăugare sau ștergere.
 - Editarea numerelor/contactelor se face exclusiv în **Hartă → Locații → Detalii locație**, în aceeași interfață în care se editează celelalte detalii, doar de către administrator; utilizatorii neautorizați pot sugera corecții, dacă există fluxul de aprobare.
 - Nu afișa rânduri fictive pentru numere lipsă; teste pentru contactele multiple, lipsa numerelor, permisiuni și deschiderea dialerului.
+
+## Actualizare aprobată: Agendă în grupul Chat
+- Panoul lateral **Chat** are două subtaburi distincte: **Mesagerie** (funcția existentă) și **Agendă** (doar citire); Agendă NU este un buton lateral independent.
+- Agendă include filtre selectabile după categoriile existente în aplicație: **Toate, Magic, Million, HoReCa, Sediu, Membri** (sincronizate cu nomenclatorul real al categoriilor).
+- Afișează toate locațiile din categoriile selectate, chiar dacă nu au numere; pentru **Membri**, afișează membrii echipei și contactele telefonice disponibile, în limitele permisiunilor de vizibilitate existente.
+- Sub fiecare locație: manager, casierie și alte contacte disponibile, fiecare cu număr și acțiune de apelare; lipsa contactelor se afișează discret.
+- Fără editare în Agendă; modificarea contactelor locațiilor se face numai în editorul detaliilor locației, cu autorizare de administrator.
+- Panoul reține subtabul și filtrul selectat la revenire. Teste pentru filtre, membri, contacte lipsă și autorizare.
+- Această secțiune înlocuiește propunerea anterioară de buton Agendă separat.
