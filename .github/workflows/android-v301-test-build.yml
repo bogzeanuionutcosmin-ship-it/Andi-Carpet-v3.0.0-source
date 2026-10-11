@@ -1,13 +1,6 @@
 name: Android v3.0.2 test build
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - update-v3.0.1-import-testare
-    paths:
-      - 'AndiCarpet-v3.0.1-IMPORT-TESTARE.zip'
-      - '.github/workflows/android-v301-test-build.yml'
-      - 'tools/apply_v302_fixes.py'
 
 jobs:
   build:
