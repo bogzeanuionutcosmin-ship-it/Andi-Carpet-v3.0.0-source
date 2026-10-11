@@ -82,11 +82,13 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("part 'ui/branding_theme_helpers.dart';", main)
         self.assertIn("part of '../main.dart';", module)
         for symbol in ("String _normalizeFontChoice(", "String? _resolvedFontFamily(",
-                       "_bundledBackgroundAssets", "_bundledBackgroundLabels",
-                       "_bundledLogoAssets", "_bundledLogoLabels",
                        "String _activeLogoAsset(", "Widget appBrandLogo("):
             self.assertNotIn(symbol, main)
             self.assertIn(symbol, module)
+        for symbol in ("_bundledBackgroundAssets", "_bundledBackgroundLabels",
+                       "_bundledLogoAssets", "_bundledLogoLabels"):
+            self.assertIn("const Map<String, String> " + symbol + " =", module)
+            self.assertNotIn("const Map<String, String> " + symbol + " =", main)
         self.assertIn("Image.asset(_activeLogoAsset(settings)", module)
 
     def test_install_buttons_are_extracted_without_behavior_loss(self):
