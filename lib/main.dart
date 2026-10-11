@@ -5077,7 +5077,18 @@ class _HomePageState extends State<HomePage> {
     if (!canEditTeam(settlement.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici această deplasare.');
     }
-    await FirebaseFirestore.instance.collection('settlements').doc(settlement.id).set(_settlementMap(settlement), SetOptions(merge: true));
+    final settlementRef = FirebaseFirestore.instance.collection('settlements').doc(settlement.id);
+    final data = _settlementMap(settlement);
+    if (!isAdmin) {
+      final existing = await settlementRef.get();
+      if (existing.exists) {
+        data.remove('managerId');
+        data.remove('teamId');
+      } else if (settlement.managerId != null) {
+        throw StateError('Gestionarul deplasarii trebuie desemnat de administrator.');
+      }
+    }
+    await settlementRef.set(data, SetOptions(merge: true));
     unawaited(_writeLearningEvent(category: 'finance', event: 'settlement_saved', teamId: settlement.teamId, data: {
       'name': settlement.name, 'closed': settlement.closed, 'received': settlement.totalReceived,
     }));
@@ -5088,7 +5099,19 @@ class _HomePageState extends State<HomePage> {
       throw StateError('Nu ai dreptul să modifici datele financiare ale acestei echipe.');
     }
     final data = _financeMap(finance);
-    await FirebaseFirestore.instance.collection('finance').doc(finance.teamId).set(data, SetOptions(merge: true));
+    // Pentru membrii obisnuiti managerId este imuabil in reguli.
+    // Nu il retrimitem la fiecare modificare a sumelor.
+    final financeRef = FirebaseFirestore.instance.collection('finance').doc(finance.teamId);
+    if (!isAdmin) {
+      final existing = await financeRef.get();
+      if (existing.exists) {
+        data.remove('managerId');
+        data.remove('teamId');
+      } else if (finance.managerId != null) {
+        throw StateError('Gestionarul trebuie desemnat de administrator inainte de initializarea decontului.');
+      }
+    }
+    await financeRef.set(data, SetOptions(merge: true));
     unawaited(_writeLearningEvent(category: 'finance', event: 'team_finance_saved', teamId: finance.teamId, data: {
       'receivedDeparture': finance.receivedDeparture, 'receivedDuring': finance.receivedDuring, 'perDiemRate': finance.perDiemRate,
     }));
