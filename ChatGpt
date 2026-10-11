@@ -298,3 +298,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras widgetul `_AppBackdrop` în `lib/ui/app_backdrop.dart`, cu `part of '../main.dart';`, fără schimbări de comportament: fundaluri bundled/custom, transparență maximă 0,70, contrast și conținut suprapus.
 - Eliminat bloc de **1.727 caractere** din `lib/main.dart`. Commituri `d0b14ec3` (modul), `6bea7257` (legare), `a65dfcba` (test contract). Total **16 module**.
 - Verifică noul CI înainte de a declara verde. Următorul lot: iconuri, badge assets și funcții UI în blocuri mici. După curățarea completă: `docs/ARHITECTURA.md`, `docs/REGULI_FUNCTIONALE.md`, `docs/PERMISIUNI.md`, `docs/FLUXURI.md`, `docs/TESTARE.md`, cu teste aferente; cerință permanentă a utilizatorului.
+
+## 26. Curățare catalog iconuri și ecusoane (17 module)
+- Bază verde confirmată: CI `38177890100` pe `543472a9`, **5/5 success**.
+- Extras în `lib/ui/icon_badge_catalog.dart` catalogul `appIconChoices`, `iconForKey`, `iconLabel`, `badgeAssetChoices`, `badgeLabel`, `availableBadgeKeys`, `categoryBrandAssets`, `sectionAssetForLabel`, `appAssetIcon`, `sectionAssetWidget`, `categoryBrandWidget`, `_badgeGraphic`. Păstrat aliasul `badge_machine` → `badge_worker.png` și toate referințele la assets.
+- **5.744 caractere** eliminate din `lib/main.dart`. Commituri `106a0ba8` (modul), `e263eba0` (legare), `38e0a349` (test). **17 module extrase**.
+- Testul `test_icon_badge_catalog_is_extracted` verifică part, absența definițiilor duplicate și aliasul de compatibilitate. CI după acest lot încă de verificat; nu declara verde prematur.
+- Următor: extragere `_InteractiveBadgeIcon` și componente vizuale vecine după inspecția limitelor; apoi documentație funcțională completă, cu reguli/teste pentru fiecare funcție, conform cerinței utilizatorului.
