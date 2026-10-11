@@ -11473,9 +11473,10 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
 
 class GroupChatPage extends StatefulWidget {
   final AppUser currentUser;
+  final Widget? agenda;
   final List<AppUser> users;
   final List<FunctionDefinition> functionDefinitions;
-  const GroupChatPage({super.key, required this.currentUser, this.users = const <AppUser>[], this.functionDefinitions = const <FunctionDefinition>[]});
+  const GroupChatPage({super.key, required this.currentUser, this.users = const <AppUser>[], this.functionDefinitions = const <FunctionDefinition>[], this.agenda});
 
   @override
   State<GroupChatPage> createState() => _GroupChatPageState();
@@ -11487,6 +11488,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   final TextEditingController _text = TextEditingController();
   final ScrollController _scroll = ScrollController();
   bool _sending = false;
+  int _selectedChatTab = 0;
 
   CollectionReference<Map<String,dynamic>> get _messages => FirebaseFirestore.instance.collection('groupChatMessages');
   Stream<QuerySnapshot<Map<String, dynamic>>> get _stream => _messages
@@ -11574,7 +11576,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat live · Toți membrii'),
+        title: const Text('Chat'),
+        bottom:widget.agenda==null?null:PreferredSize(preferredSize:const Size.fromHeight(48),child:Row(children:[
+          Expanded(child:TextButton(onPressed:()=>setState(()=>_selectedChatTab=0),child:Text('Mesagerie',style:TextStyle(fontWeight:_selectedChatTab==0?FontWeight.bold:FontWeight.normal)))),
+          Expanded(child:TextButton(onPressed:()=>setState(()=>_selectedChatTab=1),child:Text('Agendă',style:TextStyle(fontWeight:_selectedChatTab==1?FontWeight.bold:FontWeight.normal)))),
+        ])),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -11582,7 +11588,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           ),
         ],
       ),
-      body: Column(
+      body: IndexedStack(index:_selectedChatTab,children:[Column(
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -11702,7 +11708,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
           ),
         ],
-      ),
+      ), if(widget.agenda!=null)widget.agenda!]),
     );
   }
 }
