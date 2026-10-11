@@ -274,6 +274,21 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("PdfGoogleFonts.openSansBold()", module)
         self.assertIn("PdfGoogleFonts.openSansItalic()", module)
 
+    def test_app_root_theme_is_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/app_root_theme.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'ui/app_root_theme.dart';", main)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class AndiCarpetaApp extends StatefulWidget",
+                       "class _AndiCarpetaAppState extends State<AndiCarpetaApp>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for feature in ("ThemeMode.light", "ThemeMode.dark", "ThemeMode.system",
+                        "home: AuthGate(settings: settings", "NavigationBarThemeData(",
+                        "SnackBarThemeData(", "InputDecorationTheme("):
+            self.assertIn(feature, module)
+        self.assertIn("runApp(const AndiCarpetaApp());", main)
+
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         parts = {
