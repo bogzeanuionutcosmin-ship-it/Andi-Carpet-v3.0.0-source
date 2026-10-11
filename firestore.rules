@@ -495,8 +495,15 @@ service cloud.firestore {
         || (isActive() && resource.data.managerId == request.auth.uid);
       // Doar administratorul initializeaza finantele si desemneaza
       // gestionarul. Ulterior doar gestionarul poate modifica sumele.
-      allow create: if isAdmin();
-      allow update: if isAdmin()
+      allow create: if isAdmin()
+        && request.resource.data.get('managerId', null) is string
+        && isTeamMember(request.resource.data.managerId)
+        && request.resource.data.teamId == teamId;
+      allow update: if (isAdmin()
+          && request.resource.data.teamId == resource.data.teamId
+          && (request.resource.data.managerId == resource.data.managerId
+            || (request.resource.data.managerId is string
+              && isTeamMember(request.resource.data.managerId))))
         || (isActive()
           && hasPermission('viewOwnDecont')
           && isTeamMember(teamId)
