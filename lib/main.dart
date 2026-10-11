@@ -9491,8 +9491,21 @@ class _ExpensePageState extends State<ExpensePage> {
     final r = await showDialog<String>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) => AlertDialog(title: const Text('Gestionar financiar'), content: Column(mainAxisSize: MainAxisSize.min, children: visibleTeamMemberIds.map((id) => RadioListTile<String>(value: id, groupValue: selected, title: Text(name(id)), onChanged: (v) => setD(() => selected = v))).toList()), actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')), FilledButton(onPressed: selected == null ? null : () => Navigator.pop(d, selected), child: const Text('Salvează'))])));
     if (r == null) return;
     if (settlement != null) {
+      final previousManager = settlement!.managerId;
+      final previousFinanceManager = finance.managerId;
       settlement!.managerId = r;
-      try { await widget.saveSettlement(settlement!); widget.log('Gestionar financiar schimbat', '${settlement!.name} · ${name(r)}'); } catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva: $e'); }
+      finance.managerId = r;
+      try {
+        // Aceeasi identitate este folosita de interfata si de regulile
+        // Firestore pentru aprobarea bonurilor si distribuirea diurnei.
+        await widget.saveFinance(finance);
+        await widget.saveSettlement(settlement!);
+        widget.log('Gestionar financiar schimbat', '${settlement!.name} · ${name(r)}');
+      } catch (e) {
+        settlement!.managerId = previousManager;
+        finance.managerId = previousFinanceManager;
+        if (mounted) showErrorMessage(context, 'Nu s-a putut salva: $e');
+      }
     } else {
       finance.managerId = r; team.financialManagerId = r; await _saveFinance(finance, 'Gestionar financiar schimbat'); widget.onChanged();
     }
