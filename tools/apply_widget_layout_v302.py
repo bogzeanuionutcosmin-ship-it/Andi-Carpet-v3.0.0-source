@@ -6,6 +6,12 @@ import xml.etree.ElementTree as ET
 path = Path("android/app/src/main/res/layout/route_widget.xml")
 if not path.exists():
     raise SystemExit("Widget layout missing from candidate archive")
+# The imported candidate may contain a duplicate android:textSize on the title.
+# Remove the exact duplicate before XML parsing, otherwise ElementTree aborts.
+raw = path.read_text(encoding="utf-8")
+raw = raw.replace('android:textSize="17sp" android:textStyle="bold" android:textSize="16sp"',
+                  'android:textSize="17sp" android:textStyle="bold"')
+path.write_text(raw, encoding="utf-8")
 ns = "{http://schemas.android.com/apk/res/android}"
 tree = ET.parse(path)
 root = tree.getroot()
