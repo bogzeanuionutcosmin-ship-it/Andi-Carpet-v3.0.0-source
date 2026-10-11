@@ -121,6 +121,18 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("Future<void> main() async", main)
         self.assertNotIn("Future<void> main() async", module)
 
+
+    def test_firebase_bootstrap_error_screen_extracted_once(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/bootstrap/firebase_bootstrap_error_app.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'bootstrap/firebase_bootstrap_error_app.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("class _FirebaseBootstrapErrorApp extends StatelessWidget", main)
+        self.assertEqual(module.count("class _FirebaseBootstrapErrorApp extends StatelessWidget"), 1)
+        self.assertIn("runApp(_FirebaseBootstrapErrorApp(message: e.toString()));", main)
+        self.assertIn("Firebase nu este configurat pentru această platformă", module)
+        self.assertIn("SelectableText(message", module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
