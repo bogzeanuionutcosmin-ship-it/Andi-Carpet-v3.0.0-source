@@ -85,14 +85,27 @@ FiscalOcrData parseFiscalOcr(String text) {
     supplier = lines.firstWhere((x) => RegExp(r'[A-Za-zĂÂÎȘȚăâîșț]{3}').hasMatch(x), orElse: () => lines.first);
   }
 
+  // BF este extras numai din etichete explicite, nu dintr-un "NR" generic.
+  // Evitam sa confundam numarul bonului cu POS, casa, tranzactia sau CUI.
   String docNo = '';
   final numberPatterns = <RegExp>[
-    RegExp(r'(?:BON(?:\s+FISCAL)?|FACTUR[ĂA]?|FACT\.?|DOCUMENT|NR\.?)\s*(?:NR\.?)?\s*[:#\-]?\s*([A-Z0-9\-/]{2,})', caseSensitive: false),
-    RegExp(r'NR\.?\s*[:#\-]?\s*([A-Z0-9\-/]{3,})', caseSensitive: false),
+    RegExp(r'\\bBF\\s*(?:NR\\.?\\s*)?[:#-]?\\s*([A-Z0-9\\-/]{2,})\\b', caseSensitive: false),
+    RegExp(r'\\bBON\\s+FISCAL\\s*(?:NR\\.?|NUMAR|NUMĂR)?\\s*[:#-]?\\s*([A-Z0-9\\-/]{2,})\\b', caseSensitive: false),
+    RegExp(r'\\bNR\\.?\\s+BON(?:\\s+FISCAL)?\\s*[:#-]?\\s*([A-Z0-9\\-/]{2,})\\b', caseSensitive: false),
   ];
-  for (final re in numberPatterns) {
-    final m = re.firstMatch(raw);
-    if (m != null) { docNo = (m.group(1) ?? '').trim(); if (docNo.isNotEmpty) break; }
+  for (final line in lines) {
+    if (RegExp(r'\\b(?:POS|TERMINAL|TRANZACTIE|TRANZACȚIE|CASA|CUI|CIF)\\b', caseSensitive: false).hasMatch(line)) continue;
+    for (final re in numberPatterns) {
+      final match = re.firstMatch(line);
+      if (match != null) {
+        final candidate = (match.group(1) ?? '').trim();
+        if (candidate.isNotEmpty && !RegExp(r'^(?:NR|NUMAR|NUMĂR|FISCAL)$', caseSensitive: false).hasMatch(candidate)) {
+          docNo = candidate;
+          break;
+        }
+      }
+    }
+    if (docNo.isNotEmpty) break;
   }
 
   DateTime? date;
