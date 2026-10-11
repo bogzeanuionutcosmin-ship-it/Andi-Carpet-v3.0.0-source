@@ -89,6 +89,17 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertNotIn("\\n" + name + "(", main)
             self.assertIn(name, module)
 
+    def test_pdf_report_generators_are_extracted_without_duplication(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        reports = (ROOT / "lib/reports/pdf_reports.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'reports/pdf_reports.dart';", main)
+        self.assertIn("part of '../main.dart';", reports)
+        for name in ("downloadWorkGraphPdf", "downloadCentralizerPdf",
+                     "downloadDecontPdf", "downloadAuditPdf",
+                     "downloadFinancialSummaryPdf"):
+            self.assertNotIn("Future<void> " + name + "(", main)
+            self.assertEqual(reports.count("Future<void> " + name + "("), 1)
+
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertIn("RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)", source)
