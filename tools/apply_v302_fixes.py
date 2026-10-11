@@ -16,6 +16,12 @@ changes = [
      ""),
     ("_StatMini(label:'Km GPS (linie dreaptă)',value:", "_StatMini(label:'Km GPS estimativi (linie dreaptă)',value:"),
     ("_InfoCard(icon:Icons.info_outline,title:'Estimare traseu complet',text:", "_InfoCard(icon:Icons.info_outline,title:'Estimare geometrică (nu rutieră)',text:"),
+    ("Card(child:Padding(padding:const EdgeInsets.all(16),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[",
+     "Card(child:Padding(padding:const EdgeInsets.all(16),child:Wrap(spacing:14,runSpacing:12,crossAxisAlignment:WrapCrossAlignment.start,children:["),
+    ("Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(display,style:const TextStyle(fontSize:22,fontWeight:FontWeight.w900))",
+     "SizedBox(width:math.min(MediaQuery.sizeOf(context).width-80,340),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(display,softWrap:true,style:const TextStyle(fontSize:22,fontWeight:FontWeight.w900))"),
+    ("isThreeLine: true,\n                            onTap: n.read ? null : () async {",
+     "isThreeLine: true,\n                            trailing: n.read ? const Icon(Icons.check_circle_outline) : const Tooltip(message:'Marchează ca citit',child:Icon(Icons.mark_email_read_outlined)),\n                            onTap: n.read ? null : () async {"),
 ]
 for before, after in changes:
     count = data.count(before)
