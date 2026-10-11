@@ -311,3 +311,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `lib/ui/interactive_member_badges.dart` cu widgeturile `_InteractiveBadgeIcon`, `_InteractiveBadgeIconState`, `functionKeyWidget`, `effectiveBadgeKeysForFunctionIds`, `badgeStripWidget`, `memberBadgeStripWidget`. Păstrate overlay/hover/tap, maxim 3 ecusoane, alias `badge_machine` → `badge_worker`, filtrarea `badge_coordinator` și deduplicarea.
 - Eliminat bloc de **5.057 caractere** din `lib/main.dart`; commituri `d0688f2e` (modul), `6b5cf83b` (legare), `95034987` (test de regresie). **18 module extrase**.
 - Verifică CI nou înainte de a declara verde. Fără deploy/APK/modificări date. Următoarele loturi: categorii locații, funcții permisiuni, componente UI rămase, apoi documentarea completă a regulilor în `docs/`.
+
+## 28. Curățare categorii locații (19 module)
+- Bază verde: CI `38180011953` pe `074913fd`, **success 5/5**, modul #18 confirmat.
+- Extras `lib/models/location_category_helpers.dart` cu `defaultCategoryIdForType`, `legacyTypeForCategory`, `categoryColor`, `categoryName`; **1.104 caractere** eliminate din `lib/main.dart`.
+- Păstrate exact fallback-urile legacy și culorile fixe `million` roșu, `magic` negru. Commituri `0ded3281` (modul), `d4de9147` (legare), `0824b414` (test contract). **19 module separate**.
+- CI pe noul lot încă de verificat; fără deploy/APK/migrare. Continuă extragerea logicii de permisiuni și a componentelor independente în loturi testate. După curățare, documentația completă a regulilor funcționale și testelor în `docs/` rămâne obligatorie.
