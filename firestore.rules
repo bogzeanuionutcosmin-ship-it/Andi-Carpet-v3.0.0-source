@@ -102,7 +102,7 @@ service cloud.firestore {
         && request.auth.uid == userId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'nickname', 'useNickname', 'username', 'usernameNormalized', 'phone', 'phoneNormalized', 'city', 'county', 'address', 'photoBase64', 'profileFields',
-          'hireDate', 'contractFunction', 'theme', 'backgroundId', 'fontFamily', 'locationMode', 'locationIntervalMinutes', 'notificationPreferences', 'lastGroupChatSeenAt', 'updatedAt'
+          'hireDate', 'contractFunction', 'theme', 'backgroundId', 'fontFamily', 'locationMode', 'locationIntervalMinutes', 'notificationPreferences', 'lastGroupChatSeenAt', 'hiddenFromMembers', 'updatedAt'
         ]));
       allow delete: if isAdmin();
     }
