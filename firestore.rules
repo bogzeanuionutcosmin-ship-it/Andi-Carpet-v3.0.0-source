@@ -437,7 +437,8 @@ service cloud.firestore {
     match /finance/{teamId} {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
-        || isTeamMember(teamId);
+        || isTeamMember(teamId)
+        || (isActive() && resource.data.managerId == request.auth.uid);
       allow create, update: if isAdmin()
         || (hasPermission('viewOwnDecont') && isTeamMember(teamId));
       allow delete: if isAdmin();
