@@ -5368,6 +5368,21 @@ class _HomePageState extends State<HomePage> {
     final selectedColor = tabColors[tab];
 
     return Scaffold(
+      endDrawerEnableOpenDragGesture: true,
+      endDrawer: kIsWeb ? Drawer(
+        width: math.min(MediaQuery.sizeOf(context).width * .88, 330.0),
+        child: SafeArea(child: Column(children: [
+          ListTile(title: const Text('Categorii', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)), trailing: Builder(builder: (drawerContext) => IconButton(icon: const Icon(Icons.close), tooltip: 'Închide meniul', onPressed: () => Navigator.of(drawerContext).pop()))),
+          const Divider(height: 1),
+          Expanded(child: ListView.builder(itemCount: destinations.length, itemBuilder: (drawerContext, i) => ListTile(
+            leading: destinations[i].icon,
+            title: Text(destinations[i].label),
+            selected: tab == i,
+            selectedTileColor: tabColors[i].withValues(alpha: .15),
+            onTap: () { setState(() => tab = i); Navigator.of(drawerContext).pop(); },
+          ))),
+        ])),
+      ) : null,
       body: _AppBackdrop(
         settings: settings,
         child: SafeArea(child: Column(children: [
@@ -5407,6 +5422,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(width:6),
+              if (kIsWeb) Builder(builder: (menuContext) => IconButton(
+                tooltip: 'Deschide categoriile',
+                icon: const Icon(Icons.menu_open_rounded, size: 29),
+                onPressed: () => Scaffold.of(menuContext).openEndDrawer(),
+              )),
               if(compactNav)...[
                 IconButton(tooltip:'Membrii',onPressed:()=>_openMembersDirectory(),icon:sectionAssetWidget('Membri', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.people_outline)),
                 Badge(isLabelVisible:_unreadMessageCount>0,label:Text(_unreadMessageCount>99?'99+':'$_unreadMessageCount'),child:IconButton(tooltip:'Chat live',onPressed:_openGroupChat,icon:sectionAssetWidget('Chat live', size: 19, accent: Theme.of(context).colorScheme.primary, fallbackIcon: Icons.forum_outlined))),
@@ -5420,7 +5440,7 @@ class _HomePageState extends State<HomePage> {
           Expanded(child: pages[tab]),
         ])),
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: kIsWeb ? null : NavigationBar(
         height: compactNav ? 66 : 72,
         backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: .97),
         indicatorColor: selectedColor.withValues(alpha: .18),
