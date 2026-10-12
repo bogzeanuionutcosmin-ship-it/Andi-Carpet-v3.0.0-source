@@ -423,3 +423,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `SmsManagerGatewayCard` și `_SmsManagerGatewayCardState` din `lib/main.dart` în `lib/notifications/sms_gateway_card.dart`, păstrând `part of '../main.dart';` și toate apelurile originale de Android MethodChannel, verificările de platformă și tokenul Firebase Auth. Commituri `3512e6c5`, `84fc55d1`.
 - Test de regresie pentru legare, unicitatea claselor și contractele gateway/auth în `test/repository_hygiene_test.py`, commit `31a7266c`.
 - Ultimul commit necesită verificare CI; fără deploy și fără modificări în Firebase Rules, SMS backend sau date.
+
+
+## 45. Modul #35: diagnostic notificări push
+- CI checkpoint `49ed99dd` SUCCESS, run `38187257527`.
+- Extras `PushDiagnosticsPage` și `_PushDiagnosticsPageState` din `lib/main.dart` în `lib/notifications/push_diagnostics_page.dart`, conectat cu Dart `part`, păstrând verificările FCM permissions, token, VAPID, Firestore și acțiunile existente. Commituri `83a882e3`, `246e6b3e`.
+- Test contract în `test/repository_hygiene_test.py` pentru unicitatea modulului și cârligele FCM, commit `40452772`.
+- Ultimul commit încă trebuie verificat în CI. Nu s-au schimbat backend-ul, Firebase Rules, datele sau deploy-ul.
