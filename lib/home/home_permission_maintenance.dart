@@ -10,6 +10,9 @@ mixin _HomePermissionMaintenance on State<HomePage> {
   set coreSyncError(String? value);
   Set<String> _effectivePermissionsForIds(List<String> ids);
   List<Location> _seedLocations();
+  Map<String, dynamic> _locationMap(Location value);
+  Map<String, dynamic> _categoryMap(LocationCategory value);
+  Map<String, dynamic> _functionMap(FunctionDefinition value);
 
   Future<void> _syncUserPermissionSnapshots() async {
     if (!isAdmin || _permissionSyncInFlight || functionDefinitions.isEmpty) return;
