@@ -467,3 +467,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Contracte păstrate: `StreamBuilder` pentru date Firestore, afișarea profilului și rolurilor/funcțiilor, acțiuni de contact și link extern `launchUrl`, parametrii `currentUser`, `memberId`, `functionDefinitions`.
 - Adăugat test de regresie în `test/repository_hygiene_test.py`, commit `f3704666`.
 - CI pentru noul HEAD încă trebuie verificat înainte de extragerea următoare. Nu au fost schimbate date, reguli Firestore, backend, UI, deploy.
+
+
+## 51. Modul #39: director membri
+- La început CI checkpoint #38 `c8c282c3` era pending, run `38191205218`; nu afirma verde fără confirmare.
+- Extras textual `MembersDirectoryPage` + `_MembersDirectoryPageState` (~8.7k caractere) în `lib/members/members_directory_page.dart` cu `part of '../main.dart';`; eliminat blocul original din `lib/main.dart`, înregistrat `part`. Commituri `21722177`, `77e53993`.
+- Contracte păstrate: `chatMode`, selecția membrilor, navigare `PrivateChatPage`, `GroupChatPage`, `MemberProfilePage`, stream `users` și indicatorul de mesaje necitite `mark_chat_unread`.
+- Test de regresie adăugat în `test/repository_hygiene_test.py`, commit `2ed263f2`.
+- CI pentru HEAD după această notă trebuie verificat; la eșec repară înainte de următorul modul. Fără modificări backend, Firestore rules, date, APK sau deploy.
