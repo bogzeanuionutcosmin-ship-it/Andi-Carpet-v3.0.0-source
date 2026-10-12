@@ -800,6 +800,8 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertNotIn("Future<void> _migrateFunctionBadgeSystemIfNeeded()", home)
         self.assertIn("'effectivePermissions'", permissions)
         self.assertIn("'functionSystemVersion'", permissions)
+        self.assertIn("Set<String> _effectivePermissionsForIds(Iterable<String> ids)", permissions)
+        self.assertNotIn("Set<String> _effectivePermissionsForIds(", home)
 
     def test_home_automatic_backup_maintenance_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
