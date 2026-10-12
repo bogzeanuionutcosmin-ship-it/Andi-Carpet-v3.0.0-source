@@ -561,3 +561,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Nu s-au modificat calculele, înregistrările, drepturile de editare, exportul PDF sau Firestore.
 - Adăugat test de regresie pentru part, declarații unice și contractele de date/editare/export, commit `84a80fd6`.
 - CI #48 încă neconfirmat; verifică rezultatul înainte de a declara verde. Continuă modularizarea atentă a claselor mari.
+
+
+## 63. Modul #49 DashboardPage
+- Confirmat CI SUCCESS pentru #48, commit `0a859afe`, run `38195484114`.
+- Extras verbatim `DashboardPage` și `_DashboardPageState` (~39,8k caractere) în `lib/dashboard/dashboard_page.dart`, cu part în main. Commituri `02703129`, `30ff839a`.
+- Păstrate afișarea echipelor, înregistrările, programările, schimbările de status și mesajele de succes/eroare fără modificări funcționale.
+- Test nou pentru directivă, unicitatea claselor și contracte operaționale în `test/repository_hygiene_test.py`, commit `2ab22ec1`.
+- CI #49 încă neconfirmat. Urmează analiza celorlalte clase mari și testele de integrare.
