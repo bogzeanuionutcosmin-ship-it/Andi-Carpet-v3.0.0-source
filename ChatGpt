@@ -482,3 +482,12 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Modul #40: extras textual `FeedbackPage` și `_FeedbackPageState` (~10.1k caractere) în `lib/feedback/feedback_page.dart`, cu `part of '../main.dart';`. Commituri `cfe6bc23`, `4f6e253a`.
 - Contracte păstrate: `TabController`, `initialTab`, controlere formular și dispose, operații Firebase existente. Test nou `test_feedback_page_extracted_preserving_form_contract`, commit `7af50e69`.
 - CI pentru HEAD după această notă trebuie verificat înainte de alte extrageri. Nu s-au schimbat Firestore rules, datele, APK sau deploy.
+
+
+## 53. Modul #41: card complet grafic de lucru
+- CI checkpoint `04af68c8` SUCCESS, run `38191738937`: inclusiv Python contracts, Flutter web, Firestore emulator, Firebase Functions, Node.
+- Panoul AdminPanelPage este mare și interdependent; am ales extracție granulară în locul mutării integrale.
+- Extras textual `_ScheduleCardFull` (~2.4k caractere) în `lib/schedule/schedule_card_full.dart` (`part of '../main.dart';`), commituri `7558f53b`, `ac9787b6`.
+- Păstrate controale adăugare, eliminare și reordonare locații, verificarea `schedule.closed`, auto-propunerea ordinii, scorul `learningConfidence`, brandurile categoriilor.
+- Test structural/regresie nou în `test/repository_hygiene_test.py`, commit `2a1ed3ef`.
+- CI pentru HEAD de verificat; fără modificări ale datelor, regulilor Firestore, backendului, APK sau deploy-ului.
