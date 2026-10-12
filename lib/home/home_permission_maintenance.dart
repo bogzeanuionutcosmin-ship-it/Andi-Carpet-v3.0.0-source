@@ -8,11 +8,19 @@ mixin _HomePermissionMaintenance on State<HomePage> {
   set _permissionSyncInFlight(bool value);
   String? get coreSyncError;
   set coreSyncError(String? value);
-  Set<String> _effectivePermissionsForIds(List<String> ids);
   List<Location> _seedLocations();
   Map<String, dynamic> _locationMap(Location value);
   Map<String, dynamic> _categoryMap(LocationCategory value);
   Map<String, dynamic> _functionMap(FunctionDefinition value);
+
+  Set<String> _effectivePermissionsForIds(Iterable<String> ids) {
+    final out = <String>{};
+    for (final id in ids) {
+      final def = functionById(functionDefinitions, id);
+      if (def != null && def.active) out.addAll(def.permissions);
+    }
+    return out;
+  }
 
   Future<void> _syncUserPermissionSnapshots() async {
     if (!isAdmin || _permissionSyncInFlight || functionDefinitions.isEmpty) return;
