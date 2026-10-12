@@ -399,6 +399,20 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "showSuccessMessage", "showErrorMessage"):
             self.assertIn(contract, module)
 
+    def test_program_page_extracted_preserving_schedule_and_map_data(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/schedule/program_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'schedule/program_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for name in ("ProgramPage", "_ProgramPageState"):
+            self.assertNotIn("class " + name + " extends ", main)
+            self.assertEqual(module.count("class " + name + " extends "), 1)
+        for contract in ("widget.schedules", "widget.locations", "widget.saveSchedule",
+                         "widget.canEditTeam", "_roadRouteFuture"):
+            self.assertIn(contract, module)
+        self.assertIn("const List<_VerifiedLocationFix> _verifiedLocationFixes", main)
+        self.assertNotIn("const List<_VerifiedLocationFix> _verifiedLocationFixes", module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
