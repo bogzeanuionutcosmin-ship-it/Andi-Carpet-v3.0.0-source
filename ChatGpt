@@ -437,3 +437,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Analiză inițială: `PrivateChatPage` ~11.5k caractere, include două abonamente Firestore pentru mesaje trimise/primite și controlere; `GroupChatPage` ~11.1k caractere, citește `groupChatMessages`, limită istoric 50 și retenție declarată 7 zile. Nu confunda cele două fluxuri.
 - Înainte de extragere: CI verde pentru `7c58d979`; verifică contractele de acces Firestore, ordonare/limită, trimitere, abonamente/dispose, notificări și reacții; apoi mutare textuală izolată și test de regresie pentru fiecare flux. Nu modifica semantica retenției sau datele.
 - La momentul notei CI `7c58d979` încă pending run `38187518739`. Nicio extracție de chat încă.
+
+
+## 47. Reparare teste de igienă înainte de mesagerie (#36)
+- CI run `38187704566` la commit `8b68aad9` FAILED în joburile Flutter web și Python contracts: trei teste vechi căutau `_andiStickerAssets`, manifestul 32 stickere și picker-ul exclusiv în `lib/main.dart`, deși codul fusese deja separat în module. Nu a fost identificată o eroare Flutter în acest run; buildul nu a ajuns să fie executat după testele Python.
+- Actualizat `test/repository_hygiene_test.py` astfel încât verificările de unicitate/stickere/picker să inspecteze toate fișierele Dart din `lib`, nu doar `main.dart`. Commituri `83e51079`, `d93ea8b4`.
+- CI pentru noul HEAD este de verificat; dacă încă eșuează, inspectează logul și repară înainte de extragerea chatului.
+- Analiza chatului privat: două stream-uri `chatMessages` (senderId/recipientId), controlere și subscripții, mesaje cu `customEmoji`, trimiteri, ștergere locală. Grupul folosește separat `groupChatMessages`, istoric 50, retenție declarată 7 zile. Nu au fost modificate componentele de chat în acest lot.
