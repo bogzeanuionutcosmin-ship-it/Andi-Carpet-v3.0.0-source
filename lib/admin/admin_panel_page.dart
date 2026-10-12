@@ -5,7 +5,7 @@ class AdminPanelPage extends StatefulWidget {
   const AdminPanelPage({super.key,required this.users,required this.teams,required this.cars,required this.locations,required this.categories,required this.functionDefinitions,required this.schedules,required this.records,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.notifications,required this.audit,required this.settings,required this.userName,required this.onChanged,required this.log,required this.saveLocation,required this.deleteLocation});
   @override State<AdminPanelPage> createState()=>_AdminPanelPageState();
 }
-class _AdminPanelPageState extends State<AdminPanelPage> with _AdminBackupActions, _AdminTeamActions, _AdminMemberActions, _AdminCarActions, _AdminLocationActions, _AdminOperationsActions, _AdminLearningActions, _AdminCommunicationsActions, _AdminDashboardActions, _AdminFunctionRightsActions, _AdminSettingsActions {
+class _AdminPanelPageState extends State<AdminPanelPage> with _AdminBackupActions, _AdminTeamActions, _AdminMemberActions, _AdminCarActions, _AdminLocationActions, _AdminOperationsActions, _AdminLearningActions, _AdminCommunicationsActions, _AdminDashboardActions, _AdminFunctionRightsActions, _AdminSettingsActions, _AdminBackupPanelActions {
   List<AppUser> get users => widget.users; List<Team> get teams => widget.teams; List<Car> get cars => widget.cars; List<Location> get locations => widget.locations; List<LocationCategory> get categories => widget.categories; List<FunctionDefinition> get functionDefinitions => widget.functionDefinitions; List<WorkSchedule> get schedules => widget.schedules; List<CentralizerRecord> get records => widget.records; List<Expense> get expenses => widget.expenses; List<PerDiemEntry> get perDiems => widget.perDiems; List<TeamFinance> get finances => widget.finances; List<TravelSettlement> get settlements => widget.settlements; List<AppNotification> get notifications => widget.notifications; List<AuditEntry> get audit => widget.audit; AppSettings get settings => widget.settings;
   int section = 0;
   final names = const [
@@ -163,36 +163,5 @@ class _AdminPanelPageState extends State<AdminPanelPage> with _AdminBackupAction
     return result;
   }
 
- Widget _backup()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-    const Text('Backup & Recuperare',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold)),
-    const SizedBox(height:8),
-    Text('Backup manual: fișier JSON descărcat local. Backup intern automat: ${settings.automaticBackup?'ACTIV':'OPRIT'} · retenție ${settings.backupRetentionDays} zile. Conturile Firebase Authentication nu sunt incluse.'),
-    const SizedBox(height:12),
-    StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(
-      stream:FirebaseFirestore.instance.collection('meta').doc('backup').snapshots(),
-      builder:(context,snap){
-        final d=snap.data?.data();
-        final last=d!=null && d['lastExportAt'] is Timestamp ? (d['lastExportAt'] as Timestamp).toDate() : null;
-        final restored=d!=null && d['lastRestoreAt'] is Timestamp ? (d['lastRestoreAt'] as Timestamp).toDate() : null;
-        return _InfoCard(icon:Icons.backup,title:'Stare backup',text:'Ultimul export: ${last==null?'niciunul':'${formatDate(last)} ${timeText(last)}'}\nUltima restaurare: ${restored==null?'niciuna':'${formatDate(restored)} ${timeText(restored)}'}');
-      },
-    ),
-    const SizedBox(height:10),
-    StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
-      stream:FirebaseFirestore.instance.collection('backups').orderBy('createdAt',descending:true).limit(1).snapshots(),
-      builder:(context,snap){
-        if(!snap.hasData||snap.data!.docs.isEmpty)return _InfoCard(icon:Icons.cloud_outlined,title:'Backup intern automat',text:settings.automaticBackup?'Activ · încă nu există niciun snapshot complet.':'Oprit din Setări sistem.');
-        final doc=snap.data!.docs.first;final d=doc.data();final at=d['createdAt'] is Timestamp?(d['createdAt'] as Timestamp).toDate():null;final status=(d['status']??'').toString();final count=d['documentCount'] is num?(d['documentCount'] as num).toInt():0;
-        return Card(child:ListTile(leading:const Icon(Icons.cloud_done_outlined),title:const Text('Backup intern automat',style:TextStyle(fontWeight:FontWeight.bold)),subtitle:Text('${status=='complete'?'Complet':status} · ${at==null?'dată în curs':'${formatDate(at)} ${timeText(at)}'} · $count documente · retenție ${settings.backupRetentionDays} zile'),trailing:status=='complete'?OutlinedButton.icon(onPressed:()=>_restoreAutomaticBackup(doc.id),icon:const Icon(Icons.restore),label:const Text('Restaurează')):null));
-      },
-    ),
-    const SizedBox(height:12),
-    Wrap(spacing:10,runSpacing:10,children:[
-      FilledButton.icon(onPressed:_exportBackup,icon:const Icon(Icons.download),label:const Text('Exportă backup')),
-      OutlinedButton.icon(onPressed:_restoreBackup,icon:const Icon(Icons.restore),label:const Text('Restaurează backup')),
-    ]),
-    const SizedBox(height:12),
-    const _InfoCard(icon:Icons.security,title:'Siguranță',text:'Restaurarea cere confirmare și înlocuiește datele operaționale și Auditul: echipe, mașini, locații, grafice, execuții, deplasări/deconturi, diurne, financiar, documente, notificări și audit. Conturile de autentificare rămân intacte.'),
-  ]);
-
+ 
 }
