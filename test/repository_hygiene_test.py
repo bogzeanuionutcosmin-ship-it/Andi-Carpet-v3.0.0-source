@@ -205,6 +205,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("getIdToken(true)", module)
         self.assertIn("TargetPlatform.android", module)
 
+    def test_push_diagnostics_page_extracted_with_fcm_checks(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/notifications/push_diagnostics_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'notifications/push_diagnostics_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class PushDiagnosticsPage extends StatefulWidget",
+                       "class _PushDiagnosticsPageState extends State<PushDiagnosticsPage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for contract in ("FirebaseMessaging.instance.getNotificationSettings()",
+                         "_webPushVapidKey", "AuthorizationStatus.denied",
+                         "getToken(", "_tokenDocId("):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
