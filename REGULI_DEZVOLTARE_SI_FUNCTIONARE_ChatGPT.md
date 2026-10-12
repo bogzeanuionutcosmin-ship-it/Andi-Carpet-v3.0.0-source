@@ -409,6 +409,9 @@ Categorii inițiale de inventariat după curățare: autentificare/roluri, membr
 
 ## 24. Categoria 3 și 5 — Echipe de maximum doi membri; efect asupra randamentului (regulă explicită 2026-10-12)
 
+> **Clarificare operațională ulterioară, secțiunea 37 (2026-10-13):** proprietarul a precizat că, atunci când se face și fațada, cei doi membri **își împart atribuțiile, lucrând de obicei simultan la mochetă și fațadă**. Expresiile din această secțiune care presupun că ambii curăță **neapărat mocheta** în fiecare moment nu se aplică vizitelor mixte. Ambii participă la intervenția echipei; nu se presupune că fațada reprezintă timp suplimentar după mochetă.
+
+
 **Decizie explicită a proprietarului:** „Echipa are mereu maxim 2 membrii.” **AndiCarpet permite cel mult DOI membri pentru fiecare echipă operațională.** Se aplică indiferent de tipul sau funcțiile profesionale ale membrilor (de exemplu, gestionar/șofer/developer sunt funcții, nu locuri suplimentare în echipă). Nu se proiectează echipe operaționale de trei sau patru membri. Regula completează secțiunea 11, fără a revoca faptul că un membru aparține unei singure echipe la un moment dat și că transferurile obișnuite respectă graficele neînchise, cu excepția administrativă deja aprobată.
 
 1. **Componența:** crearea, editarea, adăugarea sau transferul/înlocuirea membrilor trebuie să respecte **`team.members.length <= 2`**, fără ID-uri duplicate ori membri atribuiți simultan la două echipe. Validarea trebuie să existe **și pe server/la operațiile autorizate**, nu doar prin dezactivarea unui checkbox în interfața administratorului. Dacă un membru intră într-o echipă cu doi membri, este nevoie de o înlocuire explicită, conform secțiunii 11; nu se elimină implicit unul dintre cei existenți.
@@ -423,6 +426,9 @@ Categorii inițiale de inventariat după curățare: autentificare/roluri, membr
 **Limita acestei etape:** doar documentație, fără modificări de cod, date Firebase, reguli Firestore, APK, build sau deploy.
 
 ## 25. Categoria 3 și 5 — Ambii membri participă obligatoriu la curățarea fiecărei locații (aprobat explicit 2026-10-13)
+
+> **Clarificare ulterioară, secțiunea 37 (2026-10-13):** această regulă istorică se citește pentru intervențiile de **mochetă fără fațadă simultană**. În intervențiile mixte, utilizatorul a descris **muncă paralelă și împărțirea sarcinilor**: un membru poate curăța fațada în timp ce celălalt curăță mocheta. **Nu se interzice această împărțire reală a sarcinilor**, nu se pretinde că ambii curăță exclusiv mocheta simultan și nu se dublează cronometrul. Condițiile pentru o singură persoană disponibilă într-o echipă întreagă rămân separate.
+
 
 **Decizia expresă a proprietarului:** la întrebarea «O locație poate fi curățată de un singur membru al echipei ... ori trebuie să participe obligatoriu amândoi?», proprietarul a răspuns **«Amn2» = «Amândoi»**. **Pentru o lucrare normală de curățare a mochetei, participă efectiv AMBII membri ai echipei**, iar o echipă nu poate avea peste doi membri (secțiunea 24). Aceasta înlocuiește întrebarea deschisă despre un singur executant; nu se introduc echipe de trei sau patru membri și nici un mod standard de curățare cu unul singur.
 
@@ -632,6 +638,9 @@ Specificația tehnică a acestei decizii este în [`docs/PROIECTARE_RANDAMENT_AD
 
 ## 36. Categoria 5 — Fațadă în același START–STOP cu mocheta: analiză și propunere (2026-10-13)
 
+> **RĂSPUNS primit la întrebarea operațională, secțiunea 37:** fațadele sunt de obicei făcute **în paralel** cu mocheta, iar membrii **își împart atribuțiile**. Prin urmare, ipotezele din analiza inițială despre operații exclusiv succesive și excluderea automată a tuturor lucrărilor mixte trebuie **reevaluate**. Nici `facadeDone=true`, nici `facadePlanned=true` nu demonstrează totuși singure concomitența unei înregistrări istorice.
+
+
 **STATUT: CONSTATARE TEHNICĂ + PROPUNERE, NU regulă funcțională nouă aprobată.** La «Continuăm», după deciziile despre Theil–Sen și afișarea în profiluri, a fost analizat comportamentul execuțiilor în care se poate face fațada adițională în același interval cu mocheta. **Nu interpreta continuarea ca aprobarea unei noi întrebări în UI sau a unei noi scheme.**
 
 **Confirmat read-only în cod:**
@@ -655,3 +664,25 @@ Specificația tehnică a acestei decizii este în [`docs/PROIECTARE_RANDAMENT_AD
 **Întrebarea deschisă proprietarului:** «Când faceți fațada în aceeași vizită, se face de regulă înainte de STOP-ul mochetei sau după STOP?» Răspunsul dictează proiectarea minimă și evită o întrebare inutilă în flux.
 
 **Referință:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 15, commit `1f8c9f0cc37623617aaf3f45e0ec376bed82f5d6`. **Doar documentație; fără Dart/Firebase/reguli de securitate/date de producție/deploy, fără teste Flutter.**
+
+## 37. Categoria 5 — Participare în paralel la mochetă și fațadă (clarificare aprobată 2026-10-13; calculul mixt rămâne propunere)
+
+**FAPT OPERAȚIONAL CONFIRMAT de proprietar:** «De obicei fațadele sunt făcute în același timp cu mocheta, cei 2 membrii își împart atribuțiile». **Interpretare obligatorie:** într-o vizită cu mochetă și fațadă, două persoane pot efectua **în paralel activități diferite**. Nu mai interpretăm vechea regulă «ambii participă la curățare» ca «ambii trebuie să curețe exclusiv mocheta simultan» într-o vizită mixtă. Vezi actualizările explicite din secțiunile 24 și 25. Echipa are maximum doi membri; ambii contribuie la vizita mixtă, fără a pretinde al treilea lucrător sau a presupune automat cine a făcut fiecare sarcină în trecut.
+
+**Timp și evidență:**
+- Un START–STOP înregistrat este **durata calendaristică a intervenției comune**. Nu presupunem că durata = timp mochetă + timp fațadă și nu aplicăm multiplicări sau împărțiri fictive cu doi. Pentru muncă perfect paralelă, intervalul tinde să fie apropiat de durata activității mai lungi, dar aceasta **nu** este o formulă exactă de folosit fără observații.
+- Fațada rămâne **adițională**: planificată/neplanificată distinct, confirmare DA/NU numai pentru fațadele planificate, fără execuții parțiale, suprafață totală de referință distinctă, vizibilitate/printare în Centralizator pentru facturare, reveniri ulterioare fără rescrierea mochetei.
+- `CentralizerRecord` nu are astăzi separare temporală, atributul «simultan», dovada participanților sau dată distinctă a fațadei. `facadeDone=true` este insuficient pentru a ști dacă fațada a fost realizată **în timpul** START–STOP sau ulterior. Nu inventăm această informație în legacy.
+
+**Recomandare tehnică, NU APROBATĂ încă drept schimbare de sens a procentului:** folosirea a **două cohorte interne de referință**, cu un singur calcul global al echipei pentru fiecare din ferestrele «Luna în curs» și «General»:
+1. **Doar mochetă:** model robust `a_carpet+b_carpet×m²_mochetă`, învățat din lucrări pure comparabile, cu fallback Learning aprobat.
+2. **Mochetă + fațadă simultan:** un **model separat al duratei totale a vizitelor mixte**, învățat din alte vizite mixte comparabile, eventual Theil–Sen distinct `a_mixed+b_mixed×m²_mochetă`, condiționat de relevanța/suprafața distinctă a fațadei dacă este măsurată. **Nu se adună m² fațadă la m² mochetă, nu se scade un timp de fațadă inventat**, iar intervalul mixt nu se compară automat cu un etalon de mochetă pură. În lipsă de istoric mixt credibil, nu fabricăm un etalon.
+3. Dacă proprietarul **aprobă explicit includerea mixtelor**, perechile timp-de-referință/timp-real comparabile din ambele cohorte pot intra în **aceleași două procente globale** plafonate 100%, fără un procent nou de fațadă sau scor individual. Atunci eticheta/explicația indicatorului trebuie să precizeze sincer că măsoară eficiența **lucrărilor de curățare ale echipei**, inclusiv vizite cu fațadă simultană, nu durata izolată a mochetei.
+4. **Alternativa fără această aprobare:** randamentul rămâne strict exclusiv al mochetei; execuțiile mixte fără timp de mochetă separabil nu intră în procent, deși rămân în Centralizator/istoric și pot ajuta un model mixt distinct. Este însă o pierdere de acoperire când vizitele simultane sunt frecvente.
+5. Captarea viitoare a tipului de execuție («numai mochetă / mixt simultan / fațadă ulterior») se proiectează cu **cost UI minim** și statut verificabil; nu introducem implicit cronometre, confirmări suplimentare, câmpuri de progres m² sau date noi Firebase fără aprobare. O stare istorică incertă nu este transformată automat în «mixt sigur».
+
+**Simulare orientativă, exclusiv fictivă:** două lucrări, una de mochetă cu referință 80min și timp 90min, una mixtă cu referință **din cohorta mixtă** 110min și timp 100min: agregarea celor două ar da 100% după plafon; clasificarea greșită a lucrării mixte după un reper de mochetă de 80min ar da **84,21%**; dacă rămânem exclusiv la mocheta pură, procentul este **88,89%** pe lucrarea eligibilă. **4/4 verificări aritmetice JavaScript au trecut**, nu teste Flutter ori date reale.
+
+**Întrebare de produs încă deschisă:** «Dorim ca și intervențiile mixte, evaluate **numai față de alte intervenții mixte comparabile**, să intre în cele două randamente ale echipei, sau păstrăm procentele strict pentru mocheta pură?» Această alegere nu a fost făcută prin simpla precizare că munca este simultană. **Nu implementăm** extinderea fără confirmare.
+
+Specificația comparativă: [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 16, commit `ea674604930cb4e77bd98757b48b4be9dc2dbb6c`. **Numai documentație; fără modificare Flutter, Firestore, reguli de securitate, date reale, APK sau deploy.**
