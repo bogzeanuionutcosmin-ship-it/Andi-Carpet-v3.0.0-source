@@ -813,3 +813,18 @@ Specificația comparativă: [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIEC
 **Document tehnic:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 21, commit `0a890d7adeaf69f1ae52ce2a807f497366748554`.
 
 **Numai documentație.** Fără modificări Dart/Flutter, Firebase, Cloud Functions, reguli de securitate, date de producție, APK ori deploy. Urmează stabilirea valorilor implicite de vizibilitate pentru câmpurile NEfinanciare și planificarea testelor de acces.
+
+## 44. Categoria Profiluri/Membri — Telefon și email vizibile implicit, ascundere individuală (aprobat 2026-10-13)
+
+**DECIZIE EXPLICITĂ A PROPRIETARULUI:** la întrebarea dacă **telefonul și emailul** sunt inițial vizibile colegilor sau inițial private, a răspuns **«Inițial vizibile»**. Prin urmare, pentru profilele obișnuite de membri **vizibile intern**, ambele câmpuri se afișează implicit colegilor autentificați **până când titularul le ascunde individual**. Aceasta se aplică membrilor existenți și celor noi, dacă profilul este eligibil să fie afișat.
+
+1. **Două alegeri INDEPENDENTE:** `Telefon — vizibil colegilor` și `E-mail — vizibil colegilor`, inițial DA. Membrul poate opta doar telefonul NU, doar emailul NU, ambele NU sau ambele DA. Absența setării vechi pentru fiecare câmp înseamnă inițial DA; o valoare explicită NU/false trebuie respectată, fără a fi resetată pe fiecare sincronizare. Nu arătăm date inexistente ca și cum ar exista.
+2. **Titular și admin:** titularul își poate citi datele proprii chiar dacă le-a ascuns altora; **administratorul autorizat** le poate vedea în limita rolului, fără a le face vizibile automat colegilor. Colegii văd numai câmpurile proiectate ca vizibile.
+3. **Protecție reală din sursa de date:** `functions/member_directory_projection.js` conține azi `phone` dar **nu** `email` în allowlist. Cerința pentru email implică proiectarea unei **adrese de contact** publicabile potrivit regulii, fără a expune secrete de autentificare ori credențiale. Pe ascunderea unui câmp, proiecția `memberDirectory` trebuie să OMITĂ valoarea; nu este suficient ca Flutter să ascundă eticheta. `users/{uid}` rămâne privat, citit doar de titular/admin, conform `firestore.rules`. Se vor testa revocarea, triggerurile cu evenimente în altă ordine, citirea directă din director și cache-ul offline.
+4. **Nu se ocolește profilul global ascuns:** `hiddenFromMembers`, statutul inactiv, conturile administrative ascunse și alte interdicții de acces au prioritate. Vizibilitatea implicită a telefonului și e-mailului nu reactivează un profil ascuns. Un comutator de contact nu conferă drept de a edita statistici, diurne sau profilul altcuiva.
+5. **Diurnele sunt excepție categorică** și rămân numai titular/admin conform secțiunii 43. Valorile inițiale de vizibilitate pentru linkurile sociale, câmpuri personalizate și statisticile m²/randamente **nu au fost determinate de acest răspuns**.
+6. **Telefon folosit operațional:** a nu confunda ascunderea socială a telefonului în profilul de coleg cu necesitățile de contact operațional, SMS sau accesul admin; se auditează distinct fluxurile aferente înainte de schimbările de permisiuni.
+
+**Specificație:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 22, commit `6c7ea6a957219de027b508bfcca84148e0936c78`.
+
+**Doar documentație**: nu s-au modificat codul Flutter, Firestore, Cloud Functions, datele, permisiunile efective, configurația de producție, APK ori deploy. Implementarea va necesita proiectarea și testarea celor 4 combinații de setări, a accesului owner/admin/coleg, a proiecției `memberDirectory` și a datelor istorice.
