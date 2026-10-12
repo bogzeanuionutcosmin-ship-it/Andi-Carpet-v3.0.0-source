@@ -644,3 +644,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - După commit `afc6bbec`, verificarea conținutului real din GitHub a arătat că expresia regex din `test/repository_hygiene_test.py` fusese din nou trunchiată la salvare și urmată de linii duplicate. Aceasta produce SyntaxError; nu este o problemă demonstrată a codului Flutter.
 - Am înlocuit integral ultima funcție de test și finalul fișierului cu verificări sigure pentru `hasMatch(normalized)` și normalizarea inputului, plus contractul Mapbox; commit `5a36739f`.
 - Am recitit fișierul direct din GitHub după scriere: finalul este acum complet și fără duplicări. Testele și CI încă nu sunt confirmate ca executate cu succes. Verifică joburile pe HEAD înainte de a continua.
+
+
+## 74. Audit după confirmarea accesului la jurnalele GitHub Actions
+- Confirmat că `fetch_workflow_run_jobs` și `fetch_workflow_job_logs` funcționează când există run ID: pentru run istoric `38198048454`, joburile Node, Firebase Functions, Firestore emulator au trecut; Python și Flutter au eșuat la `SyntaxError: unterminated string literal` în `test/repository_hygiene_test.py` linia 751.
+- Acest run este ANTERIOR corecției `5a36739f`; nu reprezintă starea CI curentă. Interogarea după commit este limitată la run-uri PR, nu găsește automat execuțiile push.
+- Recitit la HEAD fișierul `test/repository_hygiene_test.py`: final complet, fără cod duplicat, contractele Admin referă modulul extras. CI la HEAD rămâne de confirmat prin run ID nou.
