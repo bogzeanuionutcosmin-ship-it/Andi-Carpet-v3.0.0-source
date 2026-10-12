@@ -313,6 +313,19 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "required this.selected", "onChanged(v)"):
             self.assertIn(contract, module)
 
+    def test_responsive_page_shell_extracted_preserving_branding(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/page_shell.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'ui/page_shell.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("class _Page extends StatelessWidget", main)
+        self.assertEqual(module.count("class _Page extends StatelessWidget"), 1)
+        for contract in ("LayoutBuilder", "box.maxWidth < 600",
+                         "sectionAccent(title)", "appBrandLogo(",
+                         "assets/logos/standard.jpg", "SingleChildScrollView",
+                         "this.actions = const []"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
