@@ -787,6 +787,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         for field in ("backupRetentionDays", "notificationHistoryDays", "androidDownloadUrl", "smsPreviousDayTime", "brandingBackgroundId", "defaultPerDiem"):
             self.assertIn(field, settings)
 
+    def test_admin_backup_panel_extracted_with_restore_warning(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        panel = (ROOT / "lib/admin/admin_backup_panel_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_backup_panel_actions.dart';", main)
+        self.assertIn("_AdminBackupPanelActions", admin)
+        self.assertIn("Widget _backup()", panel)
+        self.assertNotIn("Widget _backup()", admin)
+        self.assertIn("_restoreAutomaticBackup(", panel)
+        self.assertIn("_exportBackup", panel)
+        self.assertIn("_restoreBackup", panel)
+        self.assertIn("Conturile de autentificare rămân intacte", panel)
+
     def test_admin_function_rights_extracted_and_admin_protected(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
