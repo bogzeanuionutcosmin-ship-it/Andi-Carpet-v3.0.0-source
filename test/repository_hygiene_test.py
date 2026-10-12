@@ -290,6 +290,18 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "expected.dispose()", "FirebaseFirestore.instance"):
             self.assertIn(contract, module)
 
+    def test_full_schedule_card_extracted_preserving_reorder_controls(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/schedule/schedule_card_full.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'schedule/schedule_card_full.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("class _ScheduleCardFull extends StatelessWidget", main)
+        self.assertEqual(module.count("class _ScheduleCardFull extends StatelessWidget"), 1)
+        for contract in ("ReorderableListView.builder", "onReorder", "onRemove",
+                         "onAdd", "autoProposed", "learningConfidence",
+                         "categoryBrandWidget", "schedule.closed"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
