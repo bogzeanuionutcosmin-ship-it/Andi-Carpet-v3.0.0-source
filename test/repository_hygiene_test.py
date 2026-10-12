@@ -179,6 +179,18 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("canManageTemplates", module)
         self.assertIn("smsEnabled", module)
 
+    def test_about_app_page_extracted_once_with_history(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/app_information_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'ui/app_information_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("class AppInformationPage extends StatelessWidget", main)
+        self.assertEqual(module.count("class AppInformationPage extends StatelessWidget"), 1)
+        self.assertIn("_builtInHistory", module)
+        self.assertIn("Capacități", module)
+        self.assertIn("Istoric update", module)
+        self.assertIn("_appVersionLabel", module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
