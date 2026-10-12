@@ -769,6 +769,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         for contract in ("_exportBackup", "_restoreBackup", "saveLocation", "deleteLocation"):
             self.assertIn(contract, admin)
 
+    def test_backup_codec_is_extracted_without_duplicate_implementations(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        codec = (ROOT / "lib/admin/backup_codec.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/backup_codec.dart';", main)
+        self.assertEqual(codec.count("dynamic _backupEncode(dynamic value)"), 1)
+        self.assertEqual(codec.count("dynamic _backupDecode(dynamic value)"), 1)
+        self.assertNotIn("dynamic _backupEncode(dynamic value)", admin)
+        self.assertNotIn("dynamic _backupDecode(dynamic value)", admin)
+        self.assertIn("_backupEncode(", admin)
+        self.assertIn("_backupDecode(", admin)
+        self.assertIn("Timestamp.fromDate", codec)
+        self.assertIn("GeoPoint(", codec)
+
     def test_automatic_backup_preflight_prevents_missing_collection_deletion(self):
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
         restore = admin.split("Future<void> _restoreAutomaticBackup(String backupId) async {", 1)[1].split("Future<void> _restoreBackup() async {", 1)[0]
