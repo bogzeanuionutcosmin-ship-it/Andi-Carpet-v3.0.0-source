@@ -601,3 +601,38 @@ După recomandarea de a include curățările de mochetă și fațadă făcute *
 **Decizii funcționale existente rămân aprobate** (indicatori per parteneriat, m² curățați, lucrări mixte comparate cu mixte, transparență, posibilitatea de ascundere selectivă și acces admin). **Soluția de stocare temporală propusă în această secțiune nu a fost implementată și nu este schemă Firebase final aprobată.**
 
 Următoarea problemă majoră de proiectare la categoria Profiluri/Membri este **cum arătăm aceleași date comune în profilurile ambilor parteneri atunci când unul alege să le ascundă** și **ce elemente au implicit caracter public intern versus privat**, cu control efectiv în backend, nu doar în UI. Fără modificări Dart, Firebase, security rules, date de producție ori deploy.
+
+## 19. Corecție explicită: suprafața integrală revine ambilor membri și continuitatea parteneriatelor (2026-10-13)
+
+> **DECIZIE EXPRESĂ, PRIORITARĂ FAȚĂ DE ORICE ANALIZĂ PRECEDENTĂ DESPRE SARCINI INDIVIDUALE:** proprietarul a întrerupt analiza și a precizat: **«nu vreau să diferențiem cine face ce. De asta suntem echipă. Dacă am lucrat împreună indiferent ce am făcut avem aceeași suprafață la sala lucrată.»** Nu mai cerem cine s-a ocupat de fațadă versus mochetă pentru a atribui suprafața de mochetă. Separarea sarcinilor efective **nu** afectează creditarea volumului comun.
+
+### 19.1 Creditarea integrală și simetrică a volumului de mochetă — APROBATĂ
+
+1. O execuție unică de mochetă, efectiv **Finalizată**, cu suprafață a mochetei **S m²** verificată la data fizică a lucrării și cu **doi membri participanți** verificați, contribuie **S m² în totalul parteneriatului**, **S m² în totalul personal al primului membru** și **S m² în totalul personal al celui de-al doilea membru**. Împărțirea atribuțiilor este irelevantă: cel care a făcut fațada concomitent primește aceeași suprafață de mochetă a lucrării comune ca partenerul său.
+2. **NU împărțim suprafața la doi, NU aplicăm cote sau ponderi individuale, NU cerem un cronometru ori suprafața făcută de fiecare și NU adăugăm o întrebare «cine a făcut ce?»**. Totalul personal reflectă **suprafața lucrărilor la care persoana a participat în echipă**, nu o pretinsă măsurătoare a m² executați exclusiv de aceasta. Denumirea în UI trebuie să evite interpretarea unui aport individual fizic măsurat separat.
+3. Pentru **Centralizator, cantitățile de lucru ale firmei, facturarea mochetei și orice agregare pe execuții**, se numără **o singură dată S m²** pentru acea execuție. Nu însumăm totalurile personale pentru a obține cifra firmei: în echipe de doi suma acestora ar dubla volumul. `facadeM2` rămâne distinct de `surfaceM2`, **nu** se adaugă m² de fațadă în totalul mochetei.
+4. **Totalul personal al unui membru** = suma m² de mochetă cunoscuți ai **tuturor execuțiilor distincte Finalizate cu participarea sa verificată**, indiferent de partener, echipă sau cine a curățat în concret fațada/mocheta în vizita mixtă. Nu se adaugă refuzuri, nerealizări sau retry al aceluiași ID. Pentru aceeași sală curățată real în vizite diferite se adună m² pentru fiecare execuție autentică.
+5. m² istoric neidentificabil = **necunoscut**, nu zero fizic și nu `Location.surfaceM2` actual atribuit trecutului. Afișăm subtotalul verificabil și avertizarea «total incomplet», precum și numărul lucrărilor cărora le lipsesc m². Nu presupunem că participanții actuali au făcut lucrările legacy fără dovezi.
+6. Distincția **între modurile de intervenție** (numai mochetă versus mochetă + fațadă simultană) rămâne importantă **numai pentru învățarea timpului de referință al echipei**, nu pentru repartizarea m² între membri. Intervenția mixtă este comparată cu alte intervenții mixte dacă există date credibile, conform aprobării anterioare; timpii nu se împart pe persoane.
+
+### 19.2 Parteneriate repetate — continuitate explicit APROBATĂ
+
+În același context, proprietarul a cerut: «când revin în echipa cu Daniel dacă am fost cu altcineva calculele se vor continua de unde au rămas inclusiv suprafața lucrată în acea echipă». Pentru componențele cu aceiași **doi membri efectivi** identificați prin ID-uri stabile, independente de ordinea numelor, `teamId` sau intervalul de separare:
+
+- **Același parteneriat continuă istoricul General** (randament calculat pe toate execuțiile sale eligibile) și **același total cumulativ de m²** pentru fiecare lucrare Finalizată verificată din oricare episod; nu resetăm la reîntâlnire.
+- **Luna în curs** se calculează doar pentru lucrările acelei perechi din luna operațională curentă; dacă nu există lucrări, nu fabricăm un procent. În profil păstrăm episoadele temporale inspectabile dacă UI le include, fără fragmentarea totalului General al perechii.
+- În paralel, **totalul personal de m²** continuă independent de parteneriate: activitatea cu Daniel și cu Andrei contribuie ambele la unicul total personal al membrului. Același record este creditat o singură dată fiecărui participant.
+
+### 19.3 Confidențialitatea profilului — răspuns explicit «Fiecare controlează exclusiv»
+
+**DECIZIE APROBATĂ:** fiecare membru controlează vizibilitatea **doar în propriul profil**. Dacă A ascunde din profilul său rezultatul comun A+B, dar B alege să îl afișeze în profilul lui B, colegii autentificați îl pot vedea acolo. Adminul autorizat poate vedea informațiile ascunse colegilor, conform drepturilor. Ascunderea lui A nu autorizează însă divulgarea din profilul lui B a **câmpurilor personale unice ale lui A** (telefon, linkuri private, informații financiare). Ascunderea trebuie aplicată în sursele de date accesibile privitorului, inclusiv proiecții/permisiuni; nu doar în widgeturi. Nu se consideră că alegerea lui A garantează confidențialitatea globală a unui agregat comun făcut vizibil de B. Valorile implicite de vizibilitate se stabilesc ulterior în categoria Profiluri/Membri.
+
+### 19.4 Simulări de logică fără date reale
+
+**11/11 verificări aritmetice JS au trecut** pe execuții fictive. Ion și Daniel finalizează 200 m² împreună, Ion și Andrei 100 m², apoi Ion și Daniel încă 150 m²: **Ion = 450 m²**, **Daniel = 350 m²**, **Andrei = 100 m²**, **Ion–Daniel = 350 m²**, **Ion–Andrei = 100 m²**, dar totalul **firmei = 450 m²**, nu suma totalurilor personale de 900 m². Au fost verificate reuniunea perechii, vizitele mixte fără împărțirea m², record duplicat, lucrare nefinalizată, suprafață necunoscută și autonomia setărilor vizuale ale partenerilor. **Nu sunt teste Flutter, Firestore, CI, securitate ori date reale.**
+
+### 19.5 Implicație pentru proiectare
+
+Contractul minimal de istoric din secțiunea 18 rămâne necesar: **suprafață reală a mochetei la intervenție, identificator unic și cei doi participanți real verificați**. **Nu se vor introduce câmpuri suplimentare care să împartă m² între persoane**, nefiind cerute. Calculăm din intervenții unice, nu stocăm incremental doi contori personali neauditați. În profil afișăm defalcarea pe parteneriate cu «Luna în curs» și «General» și m² de mochetă comuni, plus **un total personal de m² pe toate echipele**. Nu adăugăm procent de performanță individuală, salarizare ori sancțiuni.
+
+**Numai documentare.** Nicio modificare de cod Dart/Flutter, Firebase, securitate, producție, APK ori deploy prin această clarificare.
