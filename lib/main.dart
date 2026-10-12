@@ -69,6 +69,7 @@ part 'teams/team_selector.dart';
 part 'ui/page_shell.dart';
 part 'ui/summary_cards.dart';
 part 'ui/empty_state.dart';
+part 'settings/settings_page.dart';
 part 'auth/firebase_user_profile.dart';
 part 'auth/auth_gate.dart';
 part 'auth/login_registration_page.dart';
