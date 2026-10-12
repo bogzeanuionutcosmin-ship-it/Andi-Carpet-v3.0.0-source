@@ -172,3 +172,95 @@ Trebuie distinse:
 7. Înlocuire membri, offline, două dispozitive, schimbări de configurație concurente și recalculare fără scrieri Firestore la fiecare refresh.
 
 **Aprobat explicit acum:** faptul că sălile își pot schimba **real** formatul și că această schimbare nu este automat o eroare de măsurare. **Propus, dar încă de proiectat:** câmpurile exacte, UI-ul, snapshoturile, reviziile, data implicită de efect și algoritmul statistic de adaptare. Nu există modificări ale codului sau ale datelor de producție în această etapă.
+
+## 11. Prototip matematic robust pentru etalonul adaptiv (analiză și simulare, 2026-10-13)
+
+> **PROPUNERE MATEMATICĂ, NU FORMULĂ APROBATĂ DE PROPRIETAR.** Metoda mixtă C și istoricul configurațiilor sunt aprobate ca direcție; această secțiune detaliază o posibilă realizare și scenariile simulate, fără modificări Flutter/Firebase. Coeficienții din exemplu sunt exclusiv fictivi.
+
+### 11.1 De ce numai m²/oră poate fi înșelător
+
+O intervenție presupune adesea un timp de pregătire/configurare a echipamentului indiferent de m²; raportul simplu `durata / m²` poate penaliza nejustificat sălile mici. Propunem ca, **atunci când există date suficiente și comparabile**, durata de referință să fie modelată ca:
+
+```text
+T_ref(m², cohortă, versiune_model) = a_cohortă + b_cohortă × m²
+```
+
+- `a` = timp tipic de pregătire/durată de bază (minute), învățat din istoric; nu îl presupunem universal.
+- `b` = minute suplimentare estimate per m²; învățat din același istoric.
+- Impunem `a >= 0`, `b > 0`, `T_ref > 0`, cu verificări pentru extrapolări excesive și calitatea modelului. Dacă datele nu susțin această relație, **nu pretindem că regresia este adevărată**.
+- O «cohortă» este un grup de lucrări comparabile stabilit numai pe baza caracteristicilor **efectiv înregistrate** (tip/categorie, interval de suprafață, configurații relevante unde există), fără inventarea unui nivel de murdărie sau a unei dificultăți neînregistrate. Segmentarea excesivă poate lăsa grupurile fără date; alegerea grupurilor/pragurilor este încă de calibrat.
+- Pentru date atipice se studiază estimatori robuști (de exemplu mediane de pante și intercepte, regresie robustă ori medii trunchiate, după volum). Nu fixăm metoda finală înainte de probe de stabilitate și teste de performanță.
+
+**Atenție la comparație circulară:** execuția evaluată **nu intră** în setul cu care își produce propria referință. Preferăm un reper din intervenții comparabile independente de echipa evaluată, dacă există suficiente. Când nu există, se poate lua istoric **anterior** al aceleiași echipe sau configurații, marcat explicit «raportat la istoricul propriu / încredere redusă»; nu se consideră automat randament 100% doar fiindcă media curentă se auto-compară. Schimbările ulterioare ale modelului pot recalcula scorul informativ, păstrând referințe verificabile/excluderea țintei. Scopul este evoluția orientativă, nu un clasament.
+
+### 11.2 Algoritm de selectare a referinței, propunere fără ponderi inventate
+
+Pentru fiecare execuție eligibilă a unei echipe într-o perioadă:
+
+1. Verificăm identificatorul unic, echipa reală, `Finalizată`, START–STOP valid, data operațională, interval fizic, `locationId` și **configurația valabilă efectiv la data lucrării**. Nu introducem așteptarea pre-START, refuzuri ori fațade ca mochetă finalizată.
+2. Dacă există suprafață validă la execuție și un model comparabil verificabil, calculăm `T_ref` din modelul m² + bază. Dacă există istoricul Learning al **aceleiași versiuni de configurație**, acesta poate ajuta prin calibrare, alegerea unei alternative sau un nivel de încredere; nu îl adunăm arbitrar cu modelul m² și nu îl dublăm. Detaliile statistice se decid ulterior.
+3. Dacă m² lipsește, dar Learning pe configurație are dovezi suficiente, putem folosi **exclusiv referința temporală Learning** pentru această lucrare. Absența suprafeței nu implică `0 m²`.
+4. Dacă nu există Learning local, dar sunt lucrări comparabile și m² valid, **nu excludem** lucrarea doar pentru că n-a avut trei vizite la aceeași sală; modelul comparabil poate furniza referința, cu etichetă de calitate.
+5. Dacă lipsesc ambele tipuri de referință credibilă, lucrarea rămâne în Centralizator și în contorul de execuții, dar **nu intră nici în numărător, nici în numitor** pentru randament; se afișează «Date insuficiente» dacă perioada nu conține lucrări evaluabile. Nici 0%, nici 100% fictiv.
+6. Când se confirmă o **schimbare fizică** a formatului, Learning pentru noua configurație pornește cu încredere potențial redusă, folosind cât se poate din reperele comparabile. Istoricul vechi al aceleiași locații rămâne păstrat, dar nu este introdus direct ca durată-etalon a noului format. Nu există obligativitatea unei pauze de lucru.
+7. Agregăm **numai după selecția perechilor valide** pentru echipă și perioadă, fără percent per sală:
+
+```text
+E(P) = SUMA T_ref ale execuțiilor comparabile din P
+R(P) = SUMA T_real ale ACELORAȘI execuții din P
+RANDAMENT(P) = dacă E>0 și R>0: MIN(100%, 100×E/R); altfel Date insuficiente
+```
+
+Această formă numerică agregată, propusă pentru metoda C, ar putea fi calibrată în continuare. Procentul **nu** se calculează din media simplă a procentelor pe săli și nu se înmulțește cu numărul membrilor.
+
+### 11.3 Simulare cu regresie robustă pe date 100% fictive
+
+**Date de antrenare independente de echipa evaluată:** (100 m², 70 min), (150 m², 90 min), (200 m², 110 min), (300 m², 150 min) și o observație atipică (400 m², 600 min).
+
+Folosind **mediana pantelor dintre perechi de observații** și **mediana interceptelor** (numai ca demonstrație a robusteții la un caz atipic), rezultă:
+
+```text
+a = 30 minute
+b = 0,4 minute/m²
+T_ref = 30 + 0,4 × m²
+```
+
+Acești **30 min și 0,4 min/m² nu sunt norme ale firmei**. Faptul că modelul exemplului rămâne stabil față de un singur caz atipic **nu garantează** același lucru pentru date reale; regresia trebuie verificată pentru raportul între mărimi, metode și configurații.
+
+**Echipă evaluată:** septembrie — sala A avea 150 m², executată în 100 min, iar sala B 200 m² în 120 min. Sala A este **reamenajată fizic** cu efect de la 1 octombrie și are apoi 100 m², curățată în 60 min. În octombrie, echipa mai finalizează sala C de 150 m² în 105 min.
+
+| Lucrare echipă | Lună | m² corespunzători configurației | START–STOP real | Referință fictivă |
+|---|---|---:|---:|---:|
+| A, înainte de reamenajare | Septembrie | 150 | 100 min | 90 min |
+| B | Septembrie | 200 | 120 min | 110 min |
+| A, după reamenajare | Octombrie | 100 | 60 min | 70 min |
+| C | Octombrie | 150 | 105 min | 90 min |
+
+Rezultate verificate aritmetic cu un script separat, fără acces la datele reale:
+
+- **Luna în curs (octombrie):** (70 + 90) / (60 + 105) × 100 = **96,97%**.
+- **General (septembrie + octombrie):** (90 + 110 + 70 + 90) / (100 + 120 + 60 + 105) × 100 = **93,51%**.
+- **Greșeala de evitat:** dacă atribuim retroactiv noii suprafețe de 100 m² și intervenției vechi A, referința totală scade fictiv de la 360 la 340 min, iar scorul general devine **88,31%**, deși munca istorică a rămas aceeași.
+- **Lucrare nouă în octombrie:** încă 100 m² în 90 min, cu reper 70 min → **Luna în curs = 90,20%**, **General = 90,53%**. Asta demonstrează actualizarea progresivă în ambele ferestre, fără procent pe sală.
+- **Plafon:** o curățare fictivă de 150 m² în numai 20 min, cu referință 90 min, se afișează **100%**, nu 450%.
+
+### 11.4 Ce nu poate spune modelul, chiar dacă produce un procent
+
+- Fără un istoric de suprafețe versiunate, datele legacy nu garantează ce m² existau la fiecare START. Nu folosim o completare retrospectivă mascată.
+- O sală reamenajată poate fi mult mai complicată sau mai simplă **fără schimbarea m²**. Când acest lucru este cunoscut, marcăm noua configurație, scădem încrederea în reperul transferat și învățăm din curățări noi. Nu pretindem că formula liniară a surprins toate cauzele.
+- Dacă fațada a fost făcută în același interval cu mocheta, durata reală a mochetei nu este separată demonstrabil din timestampurile actuale. Acele înregistrări nu sunt antrenare curată a modelului de mochetă; tratamentul eligibilității și al prezentării lor trebuie aprobat separat, fără minute inventate.
+- Un model din istoricul aceleiași echipe poate fi util pentru tendință, **dar nu pentru a compara absolut echipele** fără o referință comună. Raportul și sursa reperului trebuie explicate în Info.
+- Estimatorul din codul actual `learnedDurationEstimate` nu diferențiază configurațiile și necesită modificare sau un strat nou înainte de utilizarea directă în formula C. Nu reinterpretăm automat estimările vechi ca asociate unei versiuni valide de suprafață.
+
+### 11.5 Propunere de contract pentru noua configurație, minimizând Firestore
+
+- În documentul locației rămâne suprafața curentă; o revizie mică și versionată indică `validFrom`, m², versiune configurație și eventual o notă, doar **la schimbare reală**. Alegerea între revizii în același document și subcolecție/dosar separat depinde de volum, regulile Firestore și compatibilitate.
+- O intervenție nouă poate referi versiunea configurației și, dacă este justificat, include un snapshot **minimal** de m², nu întreaga locație. Se verifică înainte costurile, limitele de dimensiune/document, schimbarea între START și STOP, accesul server-side și offline/retry.
+- **La calcul:** rezolvăm `surfaceM2AsOf(executionEventTime)` pe versiunea fizică valabilă; `operationalWorkDate` decide **luna**, nu configurația fizică. Dacă versiunea este incertă, nu prezentăm suprafața ca fapt istoric precis.
+- Scorurile se calculează read-only în memorie/memoizate din streamurile existente `locations` și `records`; nu adăugăm scrieri de procent la fiecare refresh, fără măsurarea volumului de date. Corecții aprobate și schimbări fizice valide declanșează recalcularea necesară, cu trasabilitate.
+
+### 11.6 Verificări făcute acum și teste care rămân
+
+**Executate doar pe simulare:** ajustarea robustă pe cinci observații (inclusiv una atipică), randamentul lunar 96,97%, general 93,51%, greșeala retroactivă 88,31%, recalcularea după intervenție (90,20% / 90,53%) și plafonul 100% — **7 aserțiuni aritmetice au trecut**. Acestea sunt verificări ale raționamentului matematic în JavaScript, **nu** teste Flutter/Firestore ori CI și nu folosesc date reale.
+
+**Încă de testat ulterior:** estimator robust pe observații dispersate, lipsă referință/zonă validă, numeroase outliere, comparabilitate pe categorii și dimensiuni, config nouă cu m² identici, alegerea reperului fără scurgere din execuția evaluată, tranziții temporale, ora României/DST, cazuri mixte fațadă/mochetă, erori de rețea, concurență, compatibilitate cu datele legacy și consum Firestore. Calibrarea modelului, pragurile, politica de fallback și schema Firestore rămân de aprobat. **Nu se modifică aplicația** pe baza prototipului.
