@@ -20,8 +20,8 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_main_has_no_accidentally_appended_duplicate(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        self.assertEqual(source.count("class _Empty extends StatelessWidget"), 1)
         modules = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "lib").rglob("*.dart"))
+        self.assertEqual(modules.count("class _Empty extends StatelessWidget"), 1)
         self.assertEqual(modules.count("const Map<String,String> _andiStickerAssets"), 1)
         self.assertEqual(modules.count("class PrivateChatPage extends StatefulWidget"), 1)
         self.assertNotIn("\n).hasMatch(normalized)) return null;", source)
@@ -339,6 +339,17 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "appAssetIcon(", "sectionAccent(title)",
                          "onTap:onTap", "value.toStringAsFixed(2)",
                          "ListTile("):
+            self.assertIn(contract, module)
+
+    def test_empty_state_extracted_preserving_content(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/empty_state.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'ui/empty_state.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("class _Empty extends StatelessWidget", main)
+        self.assertEqual(module.count("class _Empty extends StatelessWidget"), 1)
+        for contract in ("required this.icon", "required this.text",
+                         "Icon(icon,size:30)", "Text(text)", "EdgeInsets.all(28)"):
             self.assertIn(contract, module)
 
     def test_operational_date_helpers_extracted_without_duplicates(self):
