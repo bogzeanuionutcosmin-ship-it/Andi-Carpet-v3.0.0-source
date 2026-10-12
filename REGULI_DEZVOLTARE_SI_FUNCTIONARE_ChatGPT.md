@@ -532,3 +532,15 @@ Randament(P) = MIN(100%, 100 × T_estimat(P) / T_real(P))
 - Afișarea recalculată se poate realiza pe streamuri existente, cu logică pură/memoizată și **fără scrieri repetate Firestore** la fiecare refresh. Istoricul operațional rămâne intact. Indicatorul este doar informativ, nu se folosește în decizii de personal.
 - Analiza completă, variantele respinse/propunerea, simulările verificabile, riscurile și testele viitoare sunt în **[`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md)**, adăugat prin commit `782b3cff8b068eeef3653621ed6e6d9830709bb3`.
 - **Stadiu:** propunere documentată, fără modificări ale Flutter, Firebase, regulilor de securitate, date reale, APK/deploy. Nu au fost rulate teste de aplicație; exemplele aritmetice au fost evaluate separat. **Urmează alegerea metodei, confirmarea opțiunilor deschise și proiectarea formulei numerice înainte de implementare.**
+
+## 30. Categoria 5 — Confirmare expresă a metodei C (2026-10-13)
+
+**Decizie nouă, explicit aprobată:** utilizatorul a răspuns «Da confirm» la întrebarea despre varianta C (referință adaptivă bazată pe suprafețe, istoric comparabil și Learning), în locul unui etalon fix m²/oră. **Metoda C este aprobată pentru continuarea proiectării** și nu mai trebuie reconfirmată. Această decizie ridică statutul «varianta C propusă» din secțiunea 29 la **abordare aleasă**, fără a aproba arbitrar o formulă numerică finală.
+
+- **Obligatoriu:** randamentul pe **echipă**, cu exact două procente, «Luna în curs» și «General», fiecare plafonat la 100%, calculat adaptiv din m² de mochetă, ore reale START–STOP, istoric comparabil și Learning disponibil, fără scor pe fiecare sală.
+- **Strict informativ:** nu se folosește pentru salarii, prime, bonusuri, sancțiuni sau atribuirea retroactivă a performanței către membrii noi.
+- **Dinamic și transparent:** reacție la intervenții noi și corecții legitime, fără duplicări și fără scrieri Firestore la fiecare refresh; m² lipsă nu sunt inventați, iar Learning poate ajuta când este disponibil.
+- **Încă în analiză:** ponderile între date și Learning, referința statistică robustă, regula comparabilității, pragurile de calitate, schimbarea istorică a suprafețelor, intervențiile ce includ fațade, tratamentul efectiv al datelor insuficiente, calibrarea și testele. **Exemplul numeric de 120 m²/h din simulări nu este o normă aprobată.**
+- **Ordinea neschimbată:** definim și testăm formula numerică înainte de implementare; modificările funcționale viitoare prin ramură/PR/CI și aprobare, fără Firebase ori deploy arbitrar.
+
+Specificația de proiectare și statutul metodei sunt în [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 9, introdusă la commitul `866e2c03e8254f7da40a64087e0133e02af068ac`. **În această etapă au fost modificate numai documente.**
