@@ -1444,25 +1444,47 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
     if(!meta.exists||meta.data()?['status']!='complete'){if(mounted)showErrorMessage(context,'Backup-ul selectat nu este complet.');return;}
     final items=await ref.collection('items').get();
     const allowed=<String>{'teams','cars','locations','locationCategories','functions','schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit'};
-    final grouped=<String,List<QueryDocumentSnapshot<Map<String,dynamic>>>>{};
-    for(final item in items.docs){final collection=(item.data()['collection']??'').toString();if(allowed.contains(collection))grouped.putIfAbsent(collection,()=>[]).add(item);}
+    // Preflight snapshot data before deleting anything. Missing collections are
+    // not evidence that the snapshot intended to empty those live collections.
+    final grouped=<String,Map<String,Map<String,dynamic>>>{};
+    Map<String,dynamic>? validatedSettings;
     try{
-      for(final collection in allowed){
+      if(items.docs.isEmpty)throw const FormatException('Snapshot-ul nu conține documente.');
+      for(final item in items.docs){
+        final d=item.data();
+        final collection=(d['collection']??'').toString();
+        if(!allowed.contains(collection))continue;
+        final documentId=(d['documentId']??'').toString();
+        if(documentId.isEmpty||documentId.contains('/'))throw FormatException('ID invalid în $collection.');
+        if(d['data'] is! Map)throw FormatException('Document invalid în $collection.');
+        final documents=grouped.putIfAbsent(collection,()=> <String,Map<String,dynamic>>{});
+        if(documents.containsKey(documentId))throw FormatException('Document duplicat în $collection.');
+        documents[documentId]=Map<String,dynamic>.from(d['data'] as Map);
+      }
+      if(grouped.isEmpty)throw const FormatException('Snapshot-ul nu conține colecții operaționale valide.');
+      final settings=meta.data()?['uiSettings'];
+      if(settings!=null){
+        if(settings is! Map)throw const FormatException('Setările UI sunt invalide.');
+        validatedSettings=Map<String,dynamic>.from(settings);
+      }
+    }catch(e){
+      if(mounted)showErrorMessage(context,'Backup automat invalid. Nu s-au modificat date: $e');
+      return;
+    }
+    try{
+      for(final collection in grouped.keys){
         final current=await db.collection(collection).get();
         WriteBatch batch=db.batch();var count=0;
         for(final doc in current.docs){batch.delete(doc.reference);count++;if(count>=300){await batch.commit();batch=db.batch();count=0;}}
         if(count>0)await batch.commit();
         batch=db.batch();count=0;
-        for(final item in grouped[collection]??const <QueryDocumentSnapshot<Map<String,dynamic>>>[]){
-          final d=item.data();final documentId=(d['documentId']??'').toString();final data=d['data'];
-          if(documentId.isEmpty||data is! Map)continue;
-          batch.set(db.collection(collection).doc(documentId),Map<String,dynamic>.from(data));count++;
+        for(final document in grouped[collection]!.entries){
+          batch.set(db.collection(collection).doc(document.key),document.value);count++;
           if(count>=8){await batch.commit();batch=db.batch();count=0;}
         }
         if(count>0)await batch.commit();
       }
-      final savedSettings=meta.data()?['uiSettings'];
-      if(savedSettings is Map)await db.collection('meta').doc('uiSettings').set(Map<String,dynamic>.from(savedSettings),SetOptions(merge:false));
+      if(validatedSettings!=null)await db.collection('meta').doc('uiSettings').set(validatedSettings,SetOptions(merge:false));
       await db.collection('meta').doc('backup').set({'lastRestoreAt':FieldValue.serverTimestamp(),'restoredAutomaticBackup':backupId},SetOptions(merge:true));
       widget.log('Backup automat restaurat',backupId);
       if(mounted)showSuccessMessage(context,'Backup-ul automat a fost restaurat. Datele se resincronizează.');
