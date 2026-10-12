@@ -85,4 +85,19 @@ mixin _HomeBackupMaintenance on State<HomePage> {
     }
   }
 
+  Future<void> _pruneOldNotifications() async {
+    final db = FirebaseFirestore.instance;
+    final cutoff = DateTime.now().subtract(Duration(days: settings.notificationHistoryDays.clamp(1, 365)));
+    final old = await db.collection('notifications').where('createdAt', isLessThan: Timestamp.fromDate(cutoff)).get();
+    WriteBatch batch = db.batch();
+    var count = 0;
+    for (final doc in old.docs) {
+      batch.delete(doc.reference);
+      count++;
+      if (count >= 300) { await batch.commit(); batch = db.batch(); count = 0; }
+    }
+    if (count > 0) await batch.commit();
+  }
+
+
 }
