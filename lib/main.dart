@@ -96,6 +96,7 @@ part 'auth/auth_gate.dart';
 part 'auth/login_registration_page.dart';
 part 'auth/account_access_pages.dart';
 part 'home/home_backup_maintenance.dart';
+part 'home/home_permission_maintenance.dart';
 part 'home/home_page.dart';
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
