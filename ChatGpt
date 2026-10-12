@@ -452,3 +452,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Contracte păstrate: stream-urile Firestore separate pentru sender/recipient în `chatMessages`, anularea abonamentelor, compunerea mesajelor, `_visibleDocs`, `_clearChatForMe`, selector stickere/emoticoane, `customEmoji`.
 - Test structural/regresie nou în `test/repository_hygiene_test.py`, commit `8fa4ee8c`. Ultimul CI încă necesită confirmare. Nu s-au modificat regulile Firestore, backendul, datele sau deploy-ul.
 - Următorul pas numai după CI verde: `GroupChatPage` în modul separat, cu verificări de retenție și istoric.
+
+
+## 49. Module #36/#37: reparație CI și separare chat grup
+- CI `6b46d9cb` FAILED run `38189750683` doar la testele Python/hygiene; `test_main_has_no_accidentally_appended_duplicate` încă aștepta `PrivateChatPage` în `main.dart`. Reparat să verifice toate modulele în commit `84466fa8`.
+- Modul #37: extras textual `GroupChatPage` și `_GroupChatPageState` (~11.1k caractere) în `lib/chat/group_chat_page.dart`, cu `part of '../main.dart';`. Commituri `0ad961b4`, `555ee781`.
+- Păstrate `groupChatMessages`, `_historyLimit=50`, `_retentionDays=7`, ordonarea `createdAt` descrescător, trimitere mesaje, reacții și `dispose`. Test de regresie `test_group_chat_extracted_preserving_history_and_retention` commit `087d72e1`.
+- Ultimul HEAD CI încă de verificat; dacă eșuează, citește logurile și repară înainte de următoarea extragere. Fără schimbări Firestore rules, backend, date, deploy.
