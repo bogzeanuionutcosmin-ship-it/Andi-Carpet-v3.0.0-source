@@ -65,6 +65,7 @@ part 'members/member_profile_page.dart';
 part 'members/members_directory_page.dart';
 part 'feedback/feedback_page.dart';
 part 'schedule/schedule_card_full.dart';
+part 'teams/team_selector.dart';
 part 'auth/firebase_user_profile.dart';
 part 'auth/auth_gate.dart';
 part 'auth/login_registration_page.dart';
@@ -6425,22 +6426,6 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
 
 }
 
-class _TeamSelector extends StatelessWidget {
-  final List<Team> teams; final int selected; final ValueChanged<int> onChanged;
-  const _TeamSelector({required this.teams,required this.selected,required this.onChanged});
-  @override Widget build(BuildContext context){
-    final accent=sectionAccent('Echipe');
-    return ConstrainedBox(
-      constraints:const BoxConstraints(maxWidth:360),
-      child:DropdownButtonFormField<int>(
-        value:selected.clamp(0,teams.length-1),
-        decoration:InputDecoration(labelText:'Echipă',prefixIcon:Icon(Icons.groups,color:accent)),
-        items:[for(int i=0;i<teams.length;i++)DropdownMenuItem(value:i,child:Text(teams[i].name,style:const TextStyle(fontWeight:FontWeight.w700)))],
-        onChanged:(v){if(v!=null)onChanged(v);},
-      ),
-    );
-  }
-}
 class _Page extends StatelessWidget {
   final String title;
   final String subtitle;
