@@ -812,3 +812,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - CI etapa 98: SUCCESS, run 38217783985.
 - Extras blocul de abonare la `users` / `memberDirectory` în `_startDirectorySync(FirebaseFirestore db)` din `_startCoreSync`, păstrând actualizarea echipelor și sincronizarea financiară. Commit `84d2c4b`; test structural `test_home_directory_sync_isolated`, commit `53f2f16`.
 - Urmează verificare CI. Nu s-a făcut deploy. După modularizare trecem la stabilirea detaliată a regulilor fiecărei funcții.
+
+## 100. Continuitate: regulă fațadă după finalizarea mochetei (2026-10-12)
+- Proprietarul a decis explicit: **locația este Finalizată când mocheta este complet curățată, chiar dacă fațada planificată are răspuns NU**; fațada are **status distinct, editabil ulterior** pentru revenire și trebuie afișată **și în graficul tipărit**, nu doar în Centralizator.
+- Regula este documentată detaliat în **`REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` secțiunile 18–19** (actualizarea documentației, commit `8ea727810006a80414e756fde20b55034ae0f023`). Este compatibilă cu «FĂRĂ PAUZĂ» și cu STOP Refuzată pentru întreruperea lucrului înainte de finalizarea mochetei: acea situație rămâne restantă, însă o fațadă neexecutată după terminarea mochetei **nu transformă curățarea în refuz**.
+- Probleme confirmate prin citirea surselor: `DashboardPage._finishLocation` întreabă necondiționat de fațadă; `downloadWorkGraphPdf` listează doar locații fără statusul lucrării/fațadei; PDF-ul Centralizatorului are deja simbolurile `X/P` pentru fațadă, însă nu există momentan fluxul auditat de editare ulterioară a fațadei separat de orele mochetei.
+- **Deschis:** dacă o fațadă planificată dar nerealizată împiedică închiderea oficială a întregului grafic; utilizatorul nu a decis încă. Nu presupune un răspuns. Nu au fost modificate codul, Firestore ori deploy-ul; doar documentația.
