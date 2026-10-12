@@ -661,3 +661,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Identificat risc real în `lib/admin/admin_panel_page.dart`: în `_restoreBackup`, documentele existente din colecție erau șterse înainte de a verifica dacă payload-ul acelei colecții este `Map`; un backup invalid putea goli o colecție. Corectat cu validare și oprire înainte de ștergere, commit `0484677c`.
 - Adăugat test de regresie care verifică ordinea validare -> ștergere, commit `fa0af65b`. Atenție: aceasta protejează colecția invalidă, NU oferă atomicitate între mai multe colecții. O restaurare întreruptă după colecții deja procesate poate rămâne parțială; trebuie proiectată separat restaurarea tranzacțională/staged.
 - CI pentru HEAD nu este încă confirmat. Fără deploy.
+
+
+## 77. Preflight integral pentru restaurarea manuală
+- În `lib/admin/admin_panel_page.dart`, `_restoreBackup` validează ACUM toate colecțiile permise, toate ID-urile de documente și toate payload-urile decodificate înainte de dialogul de confirmare și înainte de prima ștergere Firestore; commit `3e3d03f`.
+- Se respinge backupul invalid fără modificări în baza de date, în loc de restaurare parțială din cauza unui document corupt întâlnit târziu. Testul de regresie a fost actualizat să impună ordinea preflight -> confirmare -> ștergere; commit `5eaf951`.
+- Rămâne limitarea de atomicitate la erori de rețea/permisiuni în timpul restaurării și riscul unor fișiere foarte mari. CI nu este încă confirmat. Nu s-a făcut deploy.
