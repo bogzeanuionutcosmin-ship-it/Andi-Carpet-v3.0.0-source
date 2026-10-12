@@ -252,6 +252,17 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "dispose()"):
             self.assertIn(contract, module)
 
+    def test_member_profile_extracted_preserving_contact_actions(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/members/member_profile_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'members/member_profile_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("class MemberProfilePage extends StatelessWidget", main)
+        self.assertEqual(module.count("class MemberProfilePage extends StatelessWidget"), 1)
+        for contract in ("StreamBuilder", "FirebaseFirestore.instance",
+                         "launchUrl(", "_call(", "memberId", "functionDefinitions"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
