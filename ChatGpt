@@ -475,3 +475,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Contracte păstrate: `chatMode`, selecția membrilor, navigare `PrivateChatPage`, `GroupChatPage`, `MemberProfilePage`, stream `users` și indicatorul de mesaje necitite `mark_chat_unread`.
 - Test de regresie adăugat în `test/repository_hygiene_test.py`, commit `2ed263f2`.
 - CI pentru HEAD după această notă trebuie verificat; la eșec repară înainte de următorul modul. Fără modificări backend, Firestore rules, date, APK sau deploy.
+
+
+## 52. CI #39 și modul #40 Feedback
+- CI `e3ee334a` FAILED run `38191515053`: Flutter web, Firestore emulator, Firebase Functions și Node au trecut; două teste Python de securitate căutau codul directorului/profilului exclusiv în `main.dart`. Reparat `test/admin_privacy_contract_test.py` să inspecteze toate modulele Dart și `test/admin_security_integration_contract_test.py` să citească profilul extras. Commituri `5ba7ba70`, `8f5a6f80`. Semantica permisiunilor NU a fost schimbată.
+- Modul #40: extras textual `FeedbackPage` și `_FeedbackPageState` (~10.1k caractere) în `lib/feedback/feedback_page.dart`, cu `part of '../main.dart';`. Commituri `cfe6bc23`, `4f6e253a`.
+- Contracte păstrate: `TabController`, `initialTab`, controlere formular și dispose, operații Firebase existente. Test nou `test_feedback_page_extracted_preserving_form_contract`, commit `7af50e69`.
+- CI pentru HEAD după această notă trebuie verificat înainte de alte extrageri. Nu s-au schimbat Firestore rules, datele, APK sau deploy.
