@@ -584,3 +584,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Cauza: patru aserțiuni din `test/grafic_learning_notifications_contract_test.py` căutau încă în `lib/main.dart` logica deja extrasă în `lib/schedule/program_page.dart`.
 - Confirmat că toate patru expresiile de contract există neschimbate în modulul nou. Schimbat sursa testelor din `MAIN` în `PROGRAM`, fără schimbare a algoritmilor de recalculare, cooldown, audit sau SMS; commit `6cc86a66`.
 - Verifică CI pe ultimul commit înainte de a declara reparația validată.
+
+
+## 66. Modul #51 MapPage
+- CI SUCCESS pentru corecția Program (#50), commit `d1790b76`, run `38196567674`.
+- Extras verbatim `MapPage` și `_MapPageState` (~55,3k caractere) în `lib/map/map_page.dart`, cu part în main; commituri `0ed2d134`, `e2fc3694`.
+- Păstrate datele locațiilor, salvarea locațiilor, ascunderea utilizatorilor, programările, `FlutterMap`, marker-ele și traseele `PolylineLayer` fără schimbări funcționale.
+- Test de regresie pentru part, unicitatea claselor și contractele hărții, commit `b6b9522d`.
+- CI #51 încă neconfirmat. Nu modifica datele sau configurațiile locațiilor; continuă după CI cu Decont și Administrare.
