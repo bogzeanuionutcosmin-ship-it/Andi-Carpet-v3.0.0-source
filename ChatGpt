@@ -798,3 +798,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Din `_startCoreSync()` extras blocul de abonare la colecția `audit` într-o metodă locală `_startAuditSync(FirebaseFirestore db)`; accesul rămâne exclusiv admin, limită 500 intrări, aceeași tratare a erorilor și aceeași abonare urmărită pentru `dispose`. Commit `fa28aff`.
 - Test structural nou `test_home_audit_sync_isolated_from_core_sync` pentru restricția admin, colecție, limită și error handling, commit `8628c92`.
 - Urmează verificare CI pentru această etapă; apoi separarea atentă a celorlalte fluxuri de sincronizare. Migrarea destructivă `badge_v2` rămâne în lista de audit, fără modificare de comportament și fără deploy.
+
+
+## 98. Separare abonări categorii, fundaluri și funcții
+- CI etapa 97: SUCCESS, run 38217205503.
+- Extras din `_startCoreSync()` trei abonări Firestore (`locationCategories`, `backgrounds`, `functions`) în `_startDefinitionsSync(FirebaseFirestore db)` în HomePage, păstrând ordinea inițială, refresh-ul financiar și sincronizarea permisiunilor. Commit `a7faf3a`.
+- Adăugat test structural de regresie pentru cele trei colecții și apelurile secundare, commit `1af305e`.
+- Urmează validarea CI, apoi separarea celorlalte abonări din HomePage. Fără deploy.
