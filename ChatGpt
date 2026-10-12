@@ -459,3 +459,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Modul #37: extras textual `GroupChatPage` și `_GroupChatPageState` (~11.1k caractere) în `lib/chat/group_chat_page.dart`, cu `part of '../main.dart';`. Commituri `0ad961b4`, `555ee781`.
 - Păstrate `groupChatMessages`, `_historyLimit=50`, `_retentionDays=7`, ordonarea `createdAt` descrescător, trimitere mesaje, reacții și `dispose`. Test de regresie `test_group_chat_extracted_preserving_history_and_retention` commit `087d72e1`.
 - Ultimul HEAD CI încă de verificat; dacă eșuează, citește logurile și repară înainte de următoarea extragere. Fără schimbări Firestore rules, backend, date, deploy.
+
+
+## 50. Modul #38: profil membru
+- CI checkpoint `b362be40` SUCCESS run `38190923415` (modul #37 chat grup validat).
+- Extras textual `MemberProfilePage` (~4.7k caractere) din `lib/main.dart` în `lib/members/member_profile_page.dart`, `part of '../main.dart';`, fără modificări de comportament. Commituri `6ea7ba92`, `567280e8`.
+- Contracte păstrate: `StreamBuilder` pentru date Firestore, afișarea profilului și rolurilor/funcțiilor, acțiuni de contact și link extern `launchUrl`, parametrii `currentUser`, `memberId`, `functionDefinitions`.
+- Adăugat test de regresie în `test/repository_hygiene_test.py`, commit `f3704666`.
+- CI pentru noul HEAD încă trebuie verificat înainte de extragerea următoare. Nu au fost schimbate date, reguli Firestore, backend, UI, deploy.
