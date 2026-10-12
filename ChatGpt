@@ -687,3 +687,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Nicio schimbare intenționată a formatului JSON: conversiile Timestamp, GeoPoint, Map și List au fost păstrate. Administrarea folosește funcțiile top-level private prin biblioteca Dart comună.
 - Adăugat test structural și de compatibilitate pentru a preveni duplicarea funcțiilor și pierderea tipurilor codificate; commit `2cf06fa`.
 - Total 54 declarații Dart `part` în `main.dart` după extracție. De verificat CI pentru compilare și teste. Fără deploy.
+
+
+## 81. Catalog de navigare Administrare separat
+- Extras metadata pură de navigare (iconițe, grupuri de secțiuni, assets) în `lib/admin/admin_navigation_catalog.dart`, declarat `part` în `lib/main.dart` și utilizat de panoul Admin. Funcțiile redenumite clar `_adminSectionIcon`, `_adminSectionGroup`, `_adminSectionAsset`, pentru a evita coliziuni cu alte module; commituri `4216070`, `e1cfe35`, `e988dff`.
+- Adăugat test structural pentru catalog și resurse UI, commit `0660da6`. Total 55 module Dart `part` declarate. Este o extracție de organizare, fără schimbare intenționată de UI sau permisiuni.
+- CI pentru HEAD rămâne de verificat, fără deploy.
