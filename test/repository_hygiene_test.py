@@ -326,6 +326,21 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "this.actions = const []"):
             self.assertIn(contract, module)
 
+    def test_summary_cards_extracted_preserving_values_and_actions(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/summary_cards.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'ui/summary_cards.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for name in ("_StatCard", "_MoneyCard", "_InfoCard"):
+            declaration = "class " + name + " extends StatelessWidget"
+            self.assertNotIn(declaration, main)
+            self.assertEqual(module.count(declaration), 1)
+        for contract in ("assert(icon != null || asset != null)",
+                         "appAssetIcon(", "sectionAccent(title)",
+                         "onTap:onTap", "value.toStringAsFixed(2)",
+                         "ListTile("):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
