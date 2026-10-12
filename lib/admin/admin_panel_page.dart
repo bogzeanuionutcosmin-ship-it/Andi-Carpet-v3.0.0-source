@@ -1502,6 +1502,17 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
       if(mounted)showErrorMessage(context,'Backup invalid. Nu s-au modificat date: $e');
       return;
     }
+    Map<String,dynamic>? validatedSettings;
+    try{
+      if(parsed['uiSettings']!=null){
+        final decodedSettings=_backupDecode(parsed['uiSettings']);
+        if(decodedSettings is! Map)throw const FormatException('Setările UI nu sunt un obiect.');
+        validatedSettings=Map<String,dynamic>.from(decodedSettings);
+      }
+    }catch(e){
+      if(mounted)showErrorMessage(context,'Backup invalid. Nu s-au modificat date: $e');
+      return;
+    }
     final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Restaurare backup'),content:const Text('Datele operaționale și Auditul din backup vor înlocui colecțiile existente. Conturile Firebase Authentication nu sunt modificate. Continui?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Restaurează'))]))??false;
     if(!ok)return;
     final db=FirebaseFirestore.instance;
@@ -1522,8 +1533,7 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
       }
       if(count>0)await batch.commit();
     }
-    final savedSettings=_backupDecode(parsed['uiSettings']);
-    if(savedSettings is Map)await db.collection('meta').doc('uiSettings').set(Map<String,dynamic>.from(savedSettings),SetOptions(merge:false));
+    if(validatedSettings!=null)await db.collection('meta').doc('uiSettings').set(validatedSettings,SetOptions(merge:false));
     await db.collection('meta').doc('backup').set({'lastRestoreAt':FieldValue.serverTimestamp(),'restoredFile':file.name},SetOptions(merge:true));
     widget.log('Backup restaurat',file.name);
     if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Restaurarea s-a terminat. Datele se resincronizează.')));
