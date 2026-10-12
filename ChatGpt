@@ -743,3 +743,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `_dashboard` și `_mapboxUsagePanel` în `lib/admin/admin_dashboard_actions.dart`, mixin `_AdminDashboardActions`, conectat în `AdminPanelPage` și înregistrat în `main.dart`. Commituri `d9f6086`, `76c895b`, `e2ed39d`.
 - Păstrate statisticile pentru membri, echipe, locații, grafice, execuții și audit, navigarea rapidă și avertismentul că monitorul Mapbox este doar local pe dispozitiv/sesiune, nu facturare reală.
 - Test structural `test_admin_dashboard_extracted_with_local_usage_warning` în `test/repository_hygiene_test.py`, commit `cfe12f6`. Total 64 Dart parts. CI actual neconfirmat; fără deploy.
+
+
+## 90. Curățare Administrare: Drepturile funcțiilor
+- Extras `_deleteFunction` și `_functionRights` în `lib/admin/admin_function_rights_actions.dart`, mixin `_AdminFunctionRightsActions`, conectat în `AdminPanelPage` și declarat în `main.dart`. Commituri `a34a70f`, `f9f6dbc`, `43615bf`.
+- Păstrată protecția funcției `admin` împotriva ștergerii, sincronizarea `functionIds` pentru membrii afectați și actualizarea permisiunilor în Firestore.
+- Test structural `test_admin_function_rights_extracted_and_admin_protected`, commit `5dca393`. Total 65 Dart parts. CI actual neconfirmat; fără deploy. Urmează setările și backup-ul.
