@@ -616,3 +616,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Am actualizat `test/decont_05_08_source_contract_test.py` să includă `lib/expenses/expense_page.dart` în sursa verificată, commit `41e66946`.
 - Am actualizat `test/repository_hygiene_test.py` să verifice validarea sumelor în `lib/expenses/expense_page.dart`, păstrând contractul hărții separat, commit `3ee2e48c`.
 - Nicio schimbare a logicii diurnelor, avansurilor sau datelor reale. CI după corecții neconfirmat; așteaptă rezultatul.
+
+
+## 70. Corecție sintaxă test Decont #52
+- Run `38198048454` la `11726c1f` a eșuat deoarece `test/repository_hygiene_test.py`, linia 751, conținea un `self.assertIn` trunchiat (SyntaxError: unterminated string literal), introdus în corecția anterioară. Nu era eroare Flutter/Firebase; celelalte trei joburi Firebase Functions, Firestore emulator și Node SUCCESS.
+- Reparată expresia integrală `RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)` și păstrată verificarea în `expense_source`, commit `5e5e7f22`.
+- Verifică CI pe ultimul commit înainte de a continua extragerea Administrării. Nicio schimbare a codului aplicației.
