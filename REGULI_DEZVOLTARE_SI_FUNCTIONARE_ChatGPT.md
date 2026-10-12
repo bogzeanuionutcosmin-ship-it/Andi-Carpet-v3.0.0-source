@@ -629,3 +629,29 @@ Specificația tehnică a acestei decizii este în [`docs/PROIECTARE_RANDAMENT_AD
 **Constatare din cod read-only:** `lib/profile/profile_page.dart` are statisticile profilului propriu și primește `teams`/`records`, dar orele/zilele actuale provin din înregistrările echipei curente. `lib/members/member_profile_page.dart` este o pagină distinctă, citind `users` ori `memberDirectory` și **nu** primește azi `teams`/`records`. Integrarea viitoare trebuie să respecte accesul/permisiunile și să evite citirea liberă a tuturor execuțiilor sau duplicarea listenerilor; discutăm în categoria Profiluri.
 
 **Referință tehnică:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md) secțiunea 14 (commit `075e0ce851f0b7ac3883ed3dad3ea5f0f3c790f1`). **Metodă aleasă și documentată, neimplementată; fără cod, date Firebase, reguli de securitate, APK sau deploy.** Testele CI/Dart, securitatea profilurilor și calibrarea pragurilor rămân condiții obligatorii înainte de implementarea autorizată.
+
+## 36. Categoria 5 — Fațadă în același START–STOP cu mocheta: analiză și propunere (2026-10-13)
+
+**STATUT: CONSTATARE TEHNICĂ + PROPUNERE, NU regulă funcțională nouă aprobată.** La «Continuăm», după deciziile despre Theil–Sen și afișarea în profiluri, a fost analizat comportamentul execuțiilor în care se poate face fațada adițională în același interval cu mocheta. **Nu interpreta continuarea ca aprobarea unei noi întrebări în UI sau a unei noi scheme.**
+
+**Confirmat read-only în cod:**
+- `DashboardPage._finishLocation` salvează **un singur START–STOP** și `facadeDone=true/false`; durata fațadei nu este delimitată. Dialogul actual despre fațadă este necondiționat (defect deja documentat), deși regula aprobată cere DA/NU **doar pentru fațada planificată**.
+- `CentralizerRecord` și `_recordMap` nu păstrează durata fațadei, momentul lucrării ori dovada includerii acesteia în intervalul de mochetă. Din `facadeDone=true` **nu rezultă** că fațada a consumat timp înainte de STOP: poate fi confirmată ulterior sau făcută la altă vizită.
+- Centralizatorul permite timpi introduși/corectați, dar nu poate reconstitui separat minutele suplimentare. Fațadele au doar status integral DA/NU și o suprafață totală de referință, dacă este cunoscută, **fără** execuții parțiale.
+
+**Regulă propusă de calcul, în așteptarea răspunsului utilizatorului:**
+1. Execuție exclusiv de mochetă, Finalizată, cu timp valid și etalon justificabil: eligibilă la randament; pentru antrenarea Theil–Sen doar dacă sunt m² și configurație verificate.
+2. Fațadă planificată, dar NU efectuată în același interval: nu contaminează timpul mochetei; lipsa executării nu penalizează și nu anulează finalizarea mochetei.
+3. Fațadă realizată separat, după STOP/altă vizită cu interval distinct verificabil: doar evidența fațadei se schimbă, fără afectarea duratei ori procentului mochetei.
+4. Fațadă efectuată **în interiorul** START–STOP de mochetă, fără timp propriu demonstrabil: **exclude perechea** `T_ref/T_real` a acelei execuții din randamentul mochetei **și** exclude execuția din antrenarea modelului pur de mochetă. Nu inventa scăderea unor minute de fațadă și nu da 0%.
+5. Legacy cu `facadeDone=true` și **moment necunoscut**: nu interpreta booleanul nici ca mixt cert, nici ca durată curată certă. Propunere conservatoare: marchează «timp mixt/neclar» și exclude din antrenare și scor cât timp nu există separare temporală verificabilă. Contor de intervenții și istoricul rămân intacte.
+6. Fațadă-only executată ulterior: status distinct pentru facturare, fără a crea altă curățare de mochetă și fără a rescrie START/STOP ori ziua operațională.
+7. Rezultatul indicatorului este numai informativ și global pe echipă, cu două procente lună/general max 100%, iar pentru fiecare se poate afișa motivul neeligibilității și gradul de acoperire.
+
+**Simulare fictivă cu 5 verificări JS trecute (nu Flutter/CI):** referință mochetă 60min, mochetă real 50min, fațadă suplimentară în același START–STOP 30min. Tratarea greșită a tuturor celor 80min ca mochetă ar produce fals **75%**, iar mocheta luată separat ar fi **100% după plafon**; codul existent însă nu cunoaște minutele de fațadă, deci nu le scade. Excluderea ambelor durate din agregarea scorului conservă corectitudinea. Fațada executată la revenire nu schimbă scorul inițial.
+
+**UI încă de decis:** cea mai simplă variantă este excluderea conservatoare a duratelor incerte; alternativ, numai când `facadePlanned=true` și utilizatorul răspunde DA, o întrebare contextuală minimală poate separa lucrul din interiorul intervalului de cel de după STOP, fără a adăuga pauză, cronometru de fațadă sau progres în m². **Nicio întrebare suplimentară nu este aprobată acum.** Mai întâi cerem clarificarea operațională.
+
+**Întrebarea deschisă proprietarului:** «Când faceți fațada în aceeași vizită, se face de regulă înainte de STOP-ul mochetei sau după STOP?» Răspunsul dictează proiectarea minimă și evită o întrebare inutilă în flux.
+
+**Referință:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 15, commit `1f8c9f0cc37623617aaf3f45e0ec376bed82f5d6`. **Doar documentație; fără Dart/Firebase/reguli de securitate/date de producție/deploy, fără teste Flutter.**
