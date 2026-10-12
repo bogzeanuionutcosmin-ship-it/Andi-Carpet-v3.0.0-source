@@ -775,6 +775,20 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
+    def test_admin_function_rights_extracted_and_admin_protected(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        rights = (ROOT / "lib/admin/admin_function_rights_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_function_rights_actions.dart';", main)
+        self.assertIn("_AdminFunctionRightsActions", admin)
+        self.assertIn("_deleteFunction(FunctionDefinition f)", rights)
+        self.assertIn("Widget _functionRights()", rights)
+        self.assertNotIn("Future<void> _deleteFunction(", admin)
+        self.assertIn("f.id == 'admin'", rights)
+        self.assertIn("functionIds", rights)
+        self.assertIn("permissions", rights)
+        self.assertIn("collection('functions')", rights)
+
     def test_admin_dashboard_extracted_with_local_usage_warning(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
