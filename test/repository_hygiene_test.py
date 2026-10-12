@@ -789,6 +789,16 @@ class RepositoryHygieneTests(unittest.TestCase):
         for field in ("backupRetentionDays", "notificationHistoryDays", "androidDownloadUrl", "smsPreviousDayTime", "brandingBackgroundId", "defaultPerDiem"):
             self.assertIn(field, settings)
 
+    def test_home_directory_sync_isolated(self):
+        home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        self.assertIn("void _startDirectorySync(FirebaseFirestore db)", home)
+        self.assertIn("_startDirectorySync(db);", home)
+        directory = home.split("void _startDirectorySync(FirebaseFirestore db)", 1)[1].split("void _startCoreSync()", 1)[0]
+        self.assertIn("db.collection('users') : db.collection('memberDirectory')", directory)
+        self.assertIn("_applyTeamMembership()", directory)
+        self.assertIn("_startFinancialSync()", directory)
+        self.assertIn("coreSyncError = 'Conturi: $e'", directory)
+
     def test_home_definitions_sync_isolated(self):
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
         self.assertIn("void _startDefinitionsSync(FirebaseFirestore db)", home)
