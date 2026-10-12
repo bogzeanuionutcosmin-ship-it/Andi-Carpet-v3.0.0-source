@@ -1485,6 +1485,12 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
     for(final entry in collections.entries){
       final name=entry.key;
       if(!['teams','cars','locations','locationCategories','functions','schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit'].contains(name))continue;
+      // Validate the collection payload before deleting any existing records.
+      // A malformed backup must never turn a populated collection into an empty one.
+      if(entry.value is! Map){
+        if(mounted)showErrorMessage(context,'Backup invalid: colecția $name nu conține documente valide. Restaurarea a fost oprită.');
+        return;
+      }
       final current=await db.collection(name).get();
       var batch=db.batch();
       var count=0;
