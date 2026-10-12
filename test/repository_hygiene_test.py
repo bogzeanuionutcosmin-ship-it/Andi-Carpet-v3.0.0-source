@@ -745,6 +745,17 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertEqual(main.count("extension " + name + " "), 0)
             self.assertEqual(enums.count("extension " + name + " "), 1)
 
+    def test_admin_panel_extracted_with_backup_contracts(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_panel_page.dart';", main)
+        self.assertIn("part of '../main.dart';", admin)
+        for declaration in ("class AdminPanelPage extends StatefulWidget", "class _AdminPanelPageState extends State<AdminPanelPage>"):
+            self.assertNotIn(declaration, main)
+            self.assertEqual(admin.count(declaration), 1)
+        for contract in ("_exportBackup", "_restoreBackup", "saveLocation", "deleteLocation"):
+            self.assertIn(contract, admin)
+
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         expense_source = (ROOT / "lib/expenses/expense_page.dart").read_text(encoding="utf-8")
