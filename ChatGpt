@@ -505,3 +505,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Ordine obligatorie stabilită cu proprietarul: (1) finalizare curățare/modularizare cu teste; (2) stabilirea și aprobarea tuturor regulilor/condițiilor pe fiecare categorie; (3) PRIMA implementare nouă: colectare multiplatformă a erorilor, cache local sigur/offline, Developer Console privată și integrare AI controlată; (4) apoi celelalte funcții.
 - Direcția include diagnostic în timp aproape real, analiză AI, sugestii și PR-uri testate, mediu staging, recuperare locală sigură, fără acces AI nelimitat în producție. Nu se trimit parole/tokenuri/conversații private în loguri. Datele și deploy-ul necesită aprobare.
 - NU începe implementarea sistemului nou înainte de curățare și definirea regulilor. Actualizează permanent AMBELE note; documentul separat este sursa de referință pentru decizii și reguli.
+
+
+## 56. Modul #43: shell UI responsiv și audit incremental
+- Ultimul CI confirmat verde: `dfefd584` run `38192253974` (modul #42). La începutul sesiunii, CI pentru documentație `0bdb0b81` era în desfășurare.
+- Inventar `lib/main.dart` înainte de modul #43: ~431315 caractere, 42 directive `part`; clase mari rămase, necesită audit pe domenii și teste.
+- Extras textual `_Page` (~4478 caractere) în `lib/ui/page_shell.dart` cu `part of '../main.dart';`, commituri `7e178690`, `1de96bc6`.
+- Păstrate: `LayoutBuilder`, prag responsiv de 600px, branding din setările active sau logo standard, scroll, titlu/subtitlu și acțiuni. Test regresie nou `test_responsive_page_shell_extracted_preserving_branding`, commit `5d321933`.
+- Următorul pas: verifică CI HEAD, repară eventualele teste vechi dependente de main.dart, continuă auditul de corectitudine și extragerile sigure. Nu schimba comportamentul sau ordinea etapelor stabilită în `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md`.
