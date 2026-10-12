@@ -220,6 +220,23 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "getToken(", "_tokenDocId("):
             self.assertIn(contract, module)
 
+    def test_private_chat_extracted_preserving_message_contracts(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/chat/private_chat_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'chat/private_chat_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class PrivateChatPage extends StatefulWidget",
+                       "class _PrivateChatPageState extends State<PrivateChatPage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for contract in ("collection('chatMessages')",
+                         "where('senderId', isEqualTo: widget.currentUser.id)",
+                         "where('recipientId', isEqualTo: widget.currentUser.id)",
+                         "_sentSubscription", "_receivedSubscription",
+                         "cancel()", "_visibleDocs", "_clearChatForMe",
+                         "_openEmojiPicker", "'customEmoji'"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
