@@ -491,3 +491,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Păstrate controale adăugare, eliminare și reordonare locații, verificarea `schedule.closed`, auto-propunerea ordinii, scorul `learningConfidence`, brandurile categoriilor.
 - Test structural/regresie nou în `test/repository_hygiene_test.py`, commit `2a1ed3ef`.
 - CI pentru HEAD de verificat; fără modificări ale datelor, regulilor Firestore, backendului, APK sau deploy-ului.
+
+
+## 54. Modul #42: selector echipă
+- CI checkpoint #41 `6c1b5955` SUCCESS, run `38191919585`.
+- Extras textual `_TeamSelector` (~801 caractere) în `lib/teams/team_selector.dart`, `part of '../main.dart';`; `main.dart` include noua directivă `part`. Commituri `c1d8f441`, `6e466db2`.
+- Păstrate lista `Team`, echipa selectată și callback-ul `ValueChanged<int> onChanged` la schimbare. Test structural/regresie `test_team_selector_extracted_preserving_selection_callback`, commit `f3028157`.
+- CI pentru HEAD după notă de verificat. Fără schimbări ale regulilor, datelor, backendului sau deploy-ului.
