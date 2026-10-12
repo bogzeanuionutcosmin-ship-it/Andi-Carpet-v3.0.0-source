@@ -689,3 +689,31 @@ Această secțiune investighează **implementarea de profiluri deja existentă**
 Nu se implementează niciuna fără o alegere clară. Celelalte reguli aprobate (creditul integral al m² pentru ambii, parteneriatul istoric fără reset, libertatea fiecărui profil, iconuri sociale) sunt **fixate**.
 
 **Status:** documentație și analiză de cod read-only; fără modificări Flutter, Firebase, Cloud Functions, reguli de securitate, configurație de producție, APK ori deploy.
+
+## 21. CONFIRMARE: diurnele sunt exclusiv pentru titular și admin (2026-10-13)
+
+### 21.1 Regula funcțională APROBATĂ explicit
+
+În răspuns la întrebarea dintre «diurnele vizibile colegilor opțional» și «diurnele vizibile numai titularului și administratorului», proprietarul a spus **«Da acestea rămân vizibile de membrul respectiv și admin»**. Aceasta confirmă **a doua variantă**.
+
+**Regulă finală:**
+1. Secțiunea din profil **«Diurne încasate»** — inclusiv suma **lunii curente**, **anului curent** și **totalul general** și orice detaliu individual de diurnă prezentat ulterior în profil — este vizibilă **numai membrului beneficiar (titularul profilului)** și **administratorului cu autorizare validă**.
+2. **Alți membri autentificați nu pot vedea diurnele altui membru**, nici valoarea, nici agregatul, nici elemente de detaliu financiare care ar dezvălui suma. **Nu există comutator prin care titularul să transforme diurnele în informații publicabile colegilor**. Sunt o excepție obligatorie de confidențialitate față de opțiunile individuale de vizibilitate ale câmpurilor obișnuite.
+3. Această restricție operează **independent** de opțiunea `hiddenFromMembers` ori de preferințele de vizibilitate ale telefonului, socialului, indicatorilor m²/randament sau ale parteneriatelor. Administratorul autorizat vede datele în limitele rolului chiar dacă restul profilului este ascuns colegilor.
+4. Cerința de profil nu schimbă fluxurile operaționale aprobate separat privind acordarea/distribuirea/confirmarea diurnei și **nu pretinde că persoanele cu responsabilități financiare pierd automat drepturile necesare în fluxul lor de lucru**. Accesul în modulele financiare este o chestiune distinctă, condiționată de permisiunile autorizate și de minimul necesar; ceea ce este interzis aici este expunerea diurnelor ca date ale **profilului social vizitat de colegi**.
+5. Nu se deduce din aprobarea aceasta un drept al altor utilizatori de a edita diurne ori statistici personale. Administratorul are doar drepturile autentificate pe care le conferă sistemul.
+
+### 21.2 Implicații tehnice și riscuri
+
+- `lib/profile/profile_page.dart` afișează deja `«Diurne încasate»` în profilul personal, cu sume pe lună/an/total. `lib/members/member_profile_page.dart` (vizitator obișnuit) nu are în prezent această secțiune. **Nu publicați nici aceste sume și nici înregistrările de diurnă în `memberDirectory`.**
+- `functions/member_directory_projection.js::projectMember` **nu include** în allowlist câmpuri de diurne. La introducerea `profileVisibility` și a statisticilor de parteneriat, filtrarea proiecției trebuie să păstreze această interdicție permanentă, inclusiv pentru `perDiemTotal`, agregate derivate ori câmpuri custom redenumite care ar putea expune aceleași sume. Nu înseamnă că valorile se șterg din sursa lor privată.
+- Profilul vizitat de **adminul autorizat** trebuie să poată prezenta corect diurnele, prin citire **autorizată** din sursa financiară adecvată, cu auditul accesului dacă este necesar. Acest lucru **nu este deja implementat doar pentru că adminul poate citi `users`**; agregarea de diurne poate necesita acces la altă colecție. Verificați regulile și autorizarea în mod explicit înainte de implementare.
+- Confidențialitatea trebuie verificată nu doar prin UI, ci și prin **Firestore Security Rules**, funcții/backend, proiecții, exporturi, API, căutare, notificări și comportamentul de cache/offline, împotriva accesului neautorizat. Orice test trebuie să verifice că un coleg care inspectează `memberDirectory` sau API-ul nu poate obține suma.
+- În lista de opțiuni de ascundere per câmp, secțiunea de diurne este marcată **«Privat — numai tu și administratorul»** sau nu oferă control de publicare. Nu se prezintă un comutator fictiv care ar sugera că se poate deveni public.
+- Pentru orice profil care are diurne lipsă, se păstrează diferența dintre «nu există date» și «nu ai permisiunea să le vezi». Vizitatorul obișnuit **nu** primește sumar numeric ori indicator că un alt membru are o anumită valoare financiară.
+
+### 21.3 Stare și continuitate
+
+Această decizie **închide definitiv întrebarea din secțiunea 20.6**, unde varianta «numai titularul și administratorul» figura anterior drept *recomandare neaprobată*. **Secțiunea 21 prevalează** pentru această alegere. Restul deciziilor rămân valabile: ambele persoane din echipă primesc m² integrați integral, parteneriatele reiau istoricul la reunire, indicatorii procentuali rămân pe componență, autonomia ascunderii din propriul profil este păstrată, iar linkurile sociale primesc iconurile corespunzătoare.
+
+**Nu este implementare**: nicio modificare Flutter, Firebase, `firestore.rules`, Cloud Functions, date reale, APK sau deploy. Urmează stabilirea valorilor implicite de vizibilitate pentru celelalte câmpuri și proiectarea de securitate, înainte de implementare și teste.
