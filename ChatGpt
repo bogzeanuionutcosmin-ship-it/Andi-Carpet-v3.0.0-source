@@ -650,3 +650,8 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Confirmat că `fetch_workflow_run_jobs` și `fetch_workflow_job_logs` funcționează când există run ID: pentru run istoric `38198048454`, joburile Node, Firebase Functions, Firestore emulator au trecut; Python și Flutter au eșuat la `SyntaxError: unterminated string literal` în `test/repository_hygiene_test.py` linia 751.
 - Acest run este ANTERIOR corecției `5a36739f`; nu reprezintă starea CI curentă. Interogarea după commit este limitată la run-uri PR, nu găsește automat execuțiile push.
 - Recitit la HEAD fișierul `test/repository_hygiene_test.py`: final complet, fără cod duplicat, contractele Admin referă modulul extras. CI la HEAD rămâne de confirmat prin run ID nou.
+
+
+## 75. Contract general pentru modulele Dart extrase
+- Adăugat `test_all_declared_dart_parts_exist_and_belong_to_main` în `test/repository_hygiene_test.py`, commit `de7e8996`: parcurge toate cele 53 declarații `part` din `lib/main.dart`, verifică unicitatea, existența fișierului și directiva `part of '../main.dart';`.
+- Este un test structural preventiv; NU schimbă logica aplicației. Rezultatul execuției CI după commit încă nu este confirmat. Încercarea de a interoga toate modulele în același apel a atins limita de apeluri a conectorului; nu declara auditul integral trecut până la executarea testului.
