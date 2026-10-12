@@ -766,8 +766,10 @@ class RepositoryHygieneTests(unittest.TestCase):
         for declaration in ("class AdminPanelPage extends StatefulWidget", "class _AdminPanelPageState extends State<AdminPanelPage>"):
             self.assertNotIn(declaration, main)
             self.assertEqual(admin.count(declaration), 1)
-        for contract in ("_exportBackup", "_restoreBackup", "saveLocation", "deleteLocation"):
-            self.assertIn(contract, admin)
+        for contract in ("_exportBackup", "_restoreBackup"):
+            self.assertIn(contract, (ROOT / "lib/admin/admin_backup_panel_actions.dart").read_text(encoding="utf-8"))
+        for contract in ("saveLocation", "deleteLocation"):
+            self.assertIn(contract, (ROOT / "lib/admin/admin_location_actions.dart").read_text(encoding="utf-8"))
         backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
         self.assertIn("part 'admin/admin_backup_actions.dart';", main)
         self.assertIn("with _AdminBackupActions", admin)
