@@ -5,11 +5,12 @@ import unittest
 LIB = pathlib.Path(__file__).resolve().parents[1] / 'lib'
 SRC = LIB / 'main.dart'
 REPORTS = LIB / 'reports' / 'pdf_reports.dart'
+EXPENSES = LIB / 'expenses' / 'expense_page.dart'
 
 class DecontSourceContract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.source = SRC.read_text(encoding='utf-8') + '\n' + REPORTS.read_text(encoding='utf-8')
+        cls.source = SRC.read_text(encoding='utf-8') + '\n' + REPORTS.read_text(encoding='utf-8') + '\n' + EXPENSES.read_text(encoding='utf-8')
 
     def test_pdf_deduplicates_expenses_and_payments(self):
         self.assertIn('expenseIds.add(e.id)', self.source)
