@@ -336,3 +336,68 @@ Pentru fiecare lucrare efectiv Finalizată cu timp START–STOP pozitiv valid, i
 **Consecințe pentru proiect:** recalculare informativă la date noi/correcții și sincronizare, fără scrieri Firebase la simpla afișare a Dashboard-ului; istoricul operațional/financiar rămâne intact și scorul nu influențează salarii/bonusuri/sancțiuni. Nicio modificare de cod, Firebase, configurație de producție, APK sau deploy în etapa curentă. **Nu au fost rulate teste de implementare.**
 
 **Următorul pas:** proiectarea metodologiei robuste a coeficienților `a,b` și a unui indicator de acoperire/încredere, inclusiv cazuri de loturi mici, reamenajări și timp comun mochetă/fațadă, înainte de autorizarea implementării.
+
+## 14. Metoda statistică aleasă prin delegare și afișare în profilurile membrilor (2026-10-13)
+
+### 14.1 Autoritatea și domeniul deciziei
+
+Proprietarul a cerut explicit: **«Stabilește tu metoda logică și corectă»**, după aprobarea metodei C, a formulei structurale `T_ref = a + b × m²`, a fallback-ului și a istoricului configurațiilor fizice. Prin această solicitare **delegă alegerea statistică detaliată**. Soluția de mai jos este **DECIZIE TEHNICĂ DE PROIECTARE ALESĂ PRIN DELEGARE**, nu cod executat sau un rezultat validat pe istoricul real. Valorile minime pentru calibrare sunt **parametri tehnici de siguranță**, nu „norme de productivitate” ori ponderi salariale; pot fi revizuite dacă datele reale demonstrează că sunt nepotrivite, cu documentare și teste.
+
+Proprietarul a solicitat separat: **«Vreau să fie afișat și în profilul membrilor și când ajungem la acea categorie cu deciziile clarificăm mai multe».** Cerința **afișării** este aprobată; **comportamentul detaliat și permisiunile profilurilor sunt rezervate pentru categoria Profiluri/Membri**, nu stabilite acum de algoritmul statistic.
+
+### 14.2 Metoda aleasă: Theil–Sen robust, cu control pe locație și verificare externă
+
+**Alegere:** estimarea robustă de tip **Theil–Sen (mediana pantelor)** pentru relația `durata = a + b × m²`. Am preferat-o unei medii simple/regresii obișnuite deoarece o execuție excepțională nu ar trebui să domine randamentul orientativ. Funcționează bine cu seturi relativ mici, cu doar doi coeficienți, dar nu este magică: o populație majoritar atipică sau fără variație de m² nu produce un etalon credibil.
+
+**Flux tehnic propus pentru implementare:**
+
+1. **Eligibilitate pentru antrenare:** execuție unică, efectiv Finalizată, durată START–STOP strict pozitivă și plauzibilă (pentru început filtrul de 24 ore maxim deja folosit de Learning, de revizuit dacă datele reale cer), `keptForLearning` valid, m² de mochetă **verificabili la data fizică a curățării**, echipă/locație identificate. Excludem din **antrenarea curată a modelului de mochetă** intervențiile cu durată de fațadă nedistinctă; nu atribuim fațadei minute inventate. Refuzuri, așteptare pre-START, nerealizări și duplicări de retry nu sunt observații de antrenare.
+2. **Configurații fizice:** data operațională definește luna, dar configurația și m² provin din versiunea fizică valabilă la momentul real al lucrării, păstrată minimal și versionată (schema concretă rămâne de proiectat). O reamenajare nu rescrie m² vechi. Dacă datele istorice nu permit asocierea certă a versiunii, acestea pot alimenta istoricul temporal, însă **nu** antrenează cu m² presupus.
+3. **Nu lăsăm o sală frecvent curățată să domine:** agregăm la nivel de **locație × versiune de configurație**, cu **mediana** duratelor valide pentru acea configurație. În modelul comun, greutatea totală a unei locații fizice se limitează la o singură contribuție echivalentă; configurațiile vechi pot ajuta analiza istorică, dar nu primesc greutate suplimentară doar pentru că aceeași locație a fost reamenajată repetat. O variantă simplă implementabilă este o observație reprezentativă a configurației recente comparabile per locație; selecția exactă se testează și se documentează.
+4. **Cohortă comparabilă:** pornim de la lucrări de **curățare mochetă** cu suprafețe/durate reale valabile și tip/categorie disponibilă. Dacă o categorie are suficiente locații independente și precizia o susține, folosim modelul ei; **nu comasăm automat categorii incompatibile** doar pentru a obține un procent. Un model mai larg este permis numai după testarea erorii sale pe lucrări din categoria țintă.
+5. **Pragul tehnic conservator ales pentru a încerca estimarea completă a lui a și b:** cel puțin **6 locații fizice distincte**, **3 suprafețe distincte** și o variație între minimul și maximul suprafețelor de minimum **25% din mediana m²**. Acestea sunt bariere împotriva calculării unei pante arbitrare dintr-un set prea îngust; nu reprezintă promisiunea că 6 observații garantează precizie. Dacă pragurile nu trec, se folosește fallback-ul aprobat. Numărul de execuții repetate la o singură locație nu poate înlocui cele 6 locații independente.
+6. **Calcul robust:** pe punctele independente rămase calculăm toate pantele `(t_j-t_i)/(m²_j-m²_i)` pentru suprafețe diferite, apoi `b=mediană(pante)`; `a=mediană(t_i-b*m²_i)`. Acceptăm modelul numai dacă `a >= 0`, `b > 0`, timpii rezultați sunt pozitivi în domeniul observat și verificările de calitate trec; **nu forțăm artificial** coeficienții negativi la valori pozitive care ar produce o normă fictivă.
+7. **Validare pe date neutilizate la potrivire:** verificare de tip *leave-one-location-out* (excludem din potrivire întreaga locație evaluată, inclusiv toate versiunile ei), cu eroare relativă absolută **mediană cel mult 30%** în setul de verificare, plus revizuirea erorilor extreme și a diferențelor dintre categorii. 30% este un **prag de proiectare provizoriu**, nu un obiectiv sau o garanție; dacă puținele observații fac testul instabil, afișăm „date insuficiente / încredere redusă” și nu fabricăm un etalon.
+8. **Fără auto-referință:** pentru estimarea unei echipe preferăm un set de comparație de la **alte echipe**, fără lucrarea, locația evaluată sau informații nepermise temporal. Dacă nu există suficiente locații independente în alte echipe, utilizăm doar **istoricul verificabil anterior** al propriei echipe ca reper orientativ *față de istoricul propriu*, excluzând execuția țintă și fără să permită mediei lunii curente să se auto-normalizeze automat la 100%. Dacă nici această referință nu este credibilă, se aplică fallback-ul Learning sau „Date insuficiente”. Modelul recalculat nu își antrenează referința cu propriul rezultat.
+9. **Learning fără numărare dublă:** `learnedDurationEstimate` existent este contextual/local și necesită versiunea corectă de configurație. Dacă modelul comun verificabil există, acesta este **referința principală**; Learning local poate explica încrederea și semnala abaterea unei locații, dar **nu adunăm sau mediem arbitrar** două estimări provenite parțial din aceleași execuții. Când modelul comun lipsește, se aplică fallback-ul Learning aprobat, doar dacă acesta e verificabil. O ajustare combinată viitoare cere demonstrată o îmbunătățire independentă de precizie; nu este necesară pentru prima versiune.
+10. **Robustețe și cost:** sortare și preagregare deterministe; calcul fără noi scrieri Firestore, cu cache/memoizare pe versiunea datelor. Estimatorul perechilor este O(k²), deci la istoric mare se folosesc **grupuri reprezentative determinate reproductibil** pe intervale de suprafață și perioade, ori o variantă optimizată echivalentă, fără eșantionare aleatoare la fiecare afișare; maximul și politica exactă de eşantionare se calibrează la implementare. Nu refacem complet toate cohortele la fiecare secundă de cronometru sau pe fiecare reconstruire de widget.
+11. **Referință temporală:** evităm referințele din viitor pentru a pretinde că o estimare exista la START. Pentru scorul actual informativ se pot folosi **modele independente actualizate** la recalculare, explicând versiunea lor, dar nu inventăm m² istorici sau eligibilități noi doar din retrospectiva Learning; distincția dintre recalcularea unui reper valid și crearea retroactivă a unuia inexistent trebuie testată. Timestampurile și identitatea echipei nu sunt rescrise.
+
+**Agregarea rămâne globală per echipă:**
+
+```text
+Randament(P) = dacă există perechi valide:
+    min(100%, 100 × ΣT_ref(e) / ΣT_real(e)), numai pentru aceleași e în perioada P
+altfel: „Date insuficiente”
+P ∈ {luna operațională curentă, întregul istoric eligibil al echipei}
+```
+
+**Nici un randament procentual pe sală, nici minute-om ×2, nici indicator care decide venituri, prime sau sancțiuni.** Pentru fiecare procent se explică sursa etalonului (comun / istoricul propriu / fallback Learning), acoperirea și motivul excluderilor, fără false precizii statistice.
+
+### 14.3 Rezultatele verificărilor numerice independente din această sesiune
+
+Au fost rulate **8 verificări JavaScript, toate trecute (8/8)** pe seturi strict fictive, fără date reale:
+- Regresie pe 6 locații independente cu durate `30+0,4×m²` a recuperat `a=30`, `b=0,4`.
+- Un outlier sever (400 m²/600 min) adăugat la lot **nu** a modificat coeficienții în acest exemplu.
+- Repetarea de **45 ori** a unei singure locații nu a dominat modelul, fiind agregată per configurație.
+- Modelul a respins lipsa numărului minim de locații.
+- A respins loturile unde toate suprafețele erau identice.
+- A respins distribuția cu variație insuficientă a suprafețelor.
+- A ignorat timpul negativ din antrenare.
+- A tratat versiunea fizică nouă a unei locații ca observație distinctă înainte de limitarea pe locație în modelul comun.
+
+**Nu înseamnă validarea calității pe date reale**, nu reprezintă teste Flutter/Firestore/CI și nu trebuie prezentate astfel. În special trebuie testate ulterior validarea leave-one-location-out, schimbările de echipă, outlier-e multiple și efectele în istoricul mare.
+
+### 14.4 Cerință nouă pentru categoria Profiluri/Membri — AFIȘARE APROBATĂ, detalii AMÂNATE
+
+- **Cerință explicită:** randamentele «Luna în curs» și «General» vor apărea **și în profilurile membrilor**, nu numai în Dashboard. Se reutilizează aceeași logică și aceeași versiune a valorilor, fără a implementa un calculator separat pe profil și fără scrieri duplicate.
+- **Sensul valorilor:** indicatorul aprobat rămâne **al echipei**, nu performanța personală a membrului. Pe profil se va eticheta clar «Randamentul echipei». Un membru nou care vede randamentul general al **echipei sale actuale** nu trebuie să fie prezentat ca autor al tuturor intervențiilor istorice; un membru nu primește retroactiv un scor personal din lucrări vechi.
+- **Cod read-only verificat:** `lib/profile/profile_page.dart` (profil propriu) primește deja `teams`, `records` și `widget.user.teamId`, și are secțiunea «Statistici angajat», ale cărei ore/zile sunt deja calculate din intervențiile echipei curente. `lib/members/member_profile_page.dart` (profilurile altor membri) folosește un stream separat din `users` sau `memberDirectory` și nu primește azi `teams`/`records`. Va necesita proiectată furnizarea **controlată** a acelorași două valori, cu permisiuni, date vizibile pentru vizitator, membru mutat/nehotărât, fără acces neautorizat la colecția `records` și fără listeneri costisitori per profil.
+- **De stabilit ulterior în categoria Profiluri/Membri:** poziția și designul cardurilor, vizibilitatea pentru roluri și membri ascunși, prezentarea în profilul propriu vs al altuia, echipa curentă vs perioade de apartenență istorică, membrul fără echipă, explicațiile de încredere și versiunea mobil/web. **Nu se aprobă azi calcul statistic individual și nu modificăm acum ecranele**.
+- **Atenție la eticheta existentă:** «Statistici angajat» prezintă acum ore și zile ale echipei curente; la faza de profiluri trebuie clarificată această semantică, fără să presupunem participare personală la fiecare intervenție istorică.
+
+### 14.5 Statut și pași următori
+
+- **Ales acum prin delegare:** familia estimatorului robust Theil–Sen, verificările minimale pentru suficiența datelor, referința comună când există și fallback fără auto-referință, integrarea Learning ca sursă de rezervă, plus cerința explicită de afișare în profilurile membrilor.
+- **De validat tehnic înainte de implementare:** verificarea reală a pragurilor de 6 locații / 3 suprafețe / 25% interval / eroare mediană de 30%, alegerea cohortelor, precizia pe date reale, timpii mixt-fațadă, versiunile fizice, snapshotul de la START, securitatea/permisiunile profilurilor, volumul Firestore și testarea pe un mediu de test/staging. Dacă pragurile se dovedesc prea restrictive, le ajustăm **documentat**, nu inventăm rezultate.
+- **Doar documentație în acest pas.** Niciun cod Flutter, Firebase, date reale, reguli de securitate, producție, APK ori deploy modificate. Cele 8 verificări sunt aritmetice pe seturi fictive; nu au fost rulate teste Flutter ori CI.
