@@ -68,6 +68,7 @@ part 'schedule/schedule_card_full.dart';
 part 'teams/team_selector.dart';
 part 'ui/page_shell.dart';
 part 'ui/summary_cards.dart';
+part 'ui/empty_state.dart';
 part 'auth/firebase_user_profile.dart';
 part 'auth/auth_gate.dart';
 part 'auth/login_registration_page.dart';
@@ -6427,5 +6428,3 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
   ]);
 
 }
-
-class _Empty extends StatelessWidget { final IconData icon; final String text; const _Empty({required this.icon,required this.text}); @override Widget build(BuildContext context)=>Card(child:Padding(padding:const EdgeInsets.all(28),child:Row(children:[Icon(icon,size:30),const SizedBox(width:14),Expanded(child:Text(text))]))); }
