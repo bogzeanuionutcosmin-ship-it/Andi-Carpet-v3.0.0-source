@@ -536,3 +536,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Investigație cod: `ExpensePage.visibleTeamMemberIds` intersectează `team.members` cu `widget.users`; formularul `Trimite către` folosește exact această listă. Rolul Developer și funcția șofer nu sunt excluse.
 - Utilizatorul a identificat cauza probabilă: la crearea unei echipe de test, a fost scos din echipa lui Daniel, care a rămas singur. În editorul echipelor, salvarea elimină membrii noii echipe din celelalte echipe, conform apartenenței exclusive.
 - Utilizatorul consideră că a corectat apartenența; încă NU avem confirmarea printr-o nouă distribuire reală. Cere verificarea listei destinatarilor și a salvării/confirmării diurnei, fără modificarea regulilor sau permisiunilor înainte de rezultat.
+
+
+## 60. Confirmare echipă și modul #46 Settings
+- Utilizatorul s-a adăugat înapoi în echipa lui Daniel. A decis explicit să amâne testul real de distribuire a diurnei până după curățare; nu declara distribuirea verificată și nu modifica logica diurnelor fără dovezi.
+- CI verde pentru #45, commit `536d740d`; ulterior documentarea a pornit alte workflow-uri.
+- Extras verbatim `SettingsPage` și `_SettingsPageState` (~12,7k caractere) din `lib/main.dart` în `lib/settings/settings_page.dart`, păstrând acțiunile de setări și deconectare. Commituri `25dd865e`, `ea000f46`, `2ffea341` (directiva `part`).
+- Adăugat test de regresie pentru part, clase unice și deconectare, commit `8b43ba79`.
+- CI pentru #46 încă trebuie verificat; continuați cu analiza și separarea sigură. Nu implementați încă integrarea AI/telemetrie/cache înainte de stabilirea regulilor.
