@@ -775,6 +775,20 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
+    def test_admin_operations_extracted_with_history_contracts(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        operations = (ROOT / "lib/admin/admin_operations_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_operations_actions.dart';", main)
+        self.assertIn("_AdminOperationsActions", admin)
+        for method in ("_setScheduleClosed(", "_deleteSchedulePermanently(", "_deleteRecord(", "_deleteExpense(", "_programs()", "_records()", "_finance()"):
+            self.assertIn(method, operations)
+        self.assertNotIn("Future<void> _deleteSchedulePermanently(", admin)
+        self.assertIn("Istoricul execuțiilor din Centralizator rămâne păstrat", operations)
+        self.assertIn("collection('schedules')", operations)
+        self.assertIn("collection('records')", operations)
+        self.assertIn("collection('expenses')", operations)
+
     def test_admin_cars_and_locations_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
