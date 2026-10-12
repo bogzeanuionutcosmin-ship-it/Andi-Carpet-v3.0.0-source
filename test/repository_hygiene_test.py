@@ -23,7 +23,7 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertEqual(source.count("class _Empty extends StatelessWidget"), 1)
         modules = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "lib").rglob("*.dart"))
         self.assertEqual(modules.count("const Map<String,String> _andiStickerAssets"), 1)
-        self.assertEqual(source.count("class PrivateChatPage extends StatefulWidget"), 1)
+        self.assertEqual(modules.count("class PrivateChatPage extends StatefulWidget"), 1)
         self.assertNotIn("\n).hasMatch(normalized)) return null;", source)
 
     def test_sticker_asset_manifest_is_complete(self):
