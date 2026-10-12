@@ -528,3 +528,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `_Empty` din finalul `lib/main.dart` în `lib/ui/empty_state.dart` fără schimbare de comportament, commituri `1901362a` și `d46b1af1`.
 - Audit: testul `test_main_has_no_accidentally_appended_duplicate` presupunea incorect că `_Empty` rămâne în main. Modificat să numere definiția în toate fișierele Dart din `lib`, păstrând detectarea duplicatelor. Adăugat test pentru part directive, widget unic și contracte vizuale, commit `cad015bc`.
 - Verifică CI HEAD și continuă analiza claselor mari și a testelor cu ipoteze depășite. Ordinea proiectului și documentul separat de reguli rămân obligatorii.
+
+
+## 59. Observație test real: destinatar diurnă și apartenența exclusivă la echipă
+- Utilizatorul a confirmat că Daniel poate confirma diurnele vechi; această funcție este validată practic.
+- Daniel nu vedea utilizatorul (rol Developer, funcție șofer) la `Decont > Distribuire diurnă`.
+- Investigație cod: `ExpensePage.visibleTeamMemberIds` intersectează `team.members` cu `widget.users`; formularul `Trimite către` folosește exact această listă. Rolul Developer și funcția șofer nu sunt excluse.
+- Utilizatorul a identificat cauza probabilă: la crearea unei echipe de test, a fost scos din echipa lui Daniel, care a rămas singur. În editorul echipelor, salvarea elimină membrii noii echipe din celelalte echipe, conform apartenenței exclusive.
+- Utilizatorul consideră că a corectat apartenența; încă NU avem confirmarea printr-o nouă distribuire reală. Cere verificarea listei destinatarilor și a salvării/confirmării diurnei, fără modificarea regulilor sau permisiunilor înainte de rezultat.
