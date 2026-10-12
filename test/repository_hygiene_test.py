@@ -769,6 +769,16 @@ class RepositoryHygieneTests(unittest.TestCase):
         for contract in ("_exportBackup", "_restoreBackup", "saveLocation", "deleteLocation"):
             self.assertIn(contract, admin)
 
+    def test_automatic_backup_preflight_prevents_missing_collection_deletion(self):
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        restore = admin.split("Future<void> _restoreAutomaticBackup(String backupId) async {", 1)[1].split("Future<void> _restoreBackup() async {", 1)[0]
+        self.assertLess(restore.index("for(final item in items.docs)"), restore.index("batch.delete(doc.reference)"))
+        self.assertLess(restore.index("if(grouped.isEmpty)"), restore.index("batch.delete(doc.reference)"))
+        self.assertIn("for(final collection in grouped.keys)", restore)
+        self.assertNotIn("for(final collection in allowed){", restore)
+        self.assertIn("if(documents.containsKey(documentId))", restore)
+        self.assertIn("if(validatedSettings!=null)", restore)
+
     def test_backup_restore_preflights_all_documents_before_deletion(self):
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
         restore = admin.split("Future<void> _restoreBackup() async {", 1)[1].split("Widget _reports()", 1)[0]
