@@ -693,3 +693,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras metadata pură de navigare (iconițe, grupuri de secțiuni, assets) în `lib/admin/admin_navigation_catalog.dart`, declarat `part` în `lib/main.dart` și utilizat de panoul Admin. Funcțiile redenumite clar `_adminSectionIcon`, `_adminSectionGroup`, `_adminSectionAsset`, pentru a evita coliziuni cu alte module; commituri `4216070`, `e1cfe35`, `e988dff`.
 - Adăugat test structural pentru catalog și resurse UI, commit `0660da6`. Total 55 module Dart `part` declarate. Este o extracție de organizare, fără schimbare intenționată de UI sau permisiuni.
 - CI pentru HEAD rămâne de verificat, fără deploy.
+
+
+## 82. Extracție completă a acțiunilor de backup din Admin
+- `lib/admin/admin_backup_actions.dart` conține mixin `_AdminBackupActions on State<AdminPanelPage>` cu `_exportBackup`, `_restoreAutomaticBackup`, `_restoreBackup`; `lib/admin/admin_panel_page.dart` folosește `with _AdminBackupActions`. `lib/main.dart` înregistrează noul part. Commituri `5335415`, `90c63ef`, `b8c096d`.
+- Modulul UI Admin a scăzut cu circa 9.4 KB; separarea nu modifică intenționat fluxurile backup sau permisiunile. Funcțiile de codec rămân în `admin/backup_codec.dart`.
+- Testele de regresie pentru backup și contractele de extragere au fost adaptate la noul fișier, commit `ca9e1c0`. Total 56 Dart parts în main. Urmează CI (neconfirmat) și separarea altor funcții Admin. Fără deploy.
