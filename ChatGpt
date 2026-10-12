@@ -544,3 +544,12 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras verbatim `SettingsPage` și `_SettingsPageState` (~12,7k caractere) din `lib/main.dart` în `lib/settings/settings_page.dart`, păstrând acțiunile de setări și deconectare. Commituri `25dd865e`, `ea000f46`, `2ffea341` (directiva `part`).
 - Adăugat test de regresie pentru part, clase unice și deconectare, commit `8b43ba79`.
 - CI pentru #46 încă trebuie verificat; continuați cu analiza și separarea sigură. Nu implementați încă integrarea AI/telemetrie/cache înainte de stabilirea regulilor.
+
+
+## 61. Modul #47 ProfilePage
+- Confirmat CI SUCCESS pentru #46, `a1c8018e`, run `38194817183`.
+- Extras verbatim `ProfilePage` și `_ProfilePageState` (~15,2k caractere) în `lib/profile/profile_page.dart`, cu directiva `part 'profile/profile_page.dart';` în main. Commituri `1647e8f8`, `362a5501`.
+- Păstrate calculele profilului, intervențiile, diurnele, funcțiile și datele contului fără schimbări de logică.
+- Test de regresie nou în `test/repository_hygiene_test.py` pentru declarațiile unice și contractele `widget.user`, `widget.records`, `widget.perDiems`, `widget.functionDefinitions`, commit `fc33931f`.
+- CI #47 încă neconfirmat; verifică rezultatul înainte de a declara verde.
+- Testul real Daniel -> utilizator pentru diurnă rămâne AMÂNAT explicit până după curățare; utilizatorul și-a refăcut apartenența la echipa lui Daniel.
