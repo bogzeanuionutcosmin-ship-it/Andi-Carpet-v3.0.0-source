@@ -789,6 +789,18 @@ class RepositoryHygieneTests(unittest.TestCase):
         for field in ("backupRetentionDays", "notificationHistoryDays", "androidDownloadUrl", "smsPreviousDayTime", "brandingBackgroundId", "defaultPerDiem"):
             self.assertIn(field, settings)
 
+    def test_home_permission_maintenance_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        permissions = (ROOT / "lib/home/home_permission_maintenance.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'home/home_permission_maintenance.dart';", main)
+        self.assertIn("_HomePermissionMaintenance", home)
+        for method in ("_syncUserPermissionSnapshots()", "_seedLocationsIfNeeded()", "_seedDefinitionsIfNeeded()", "_migrateFunctionBadgeSystemIfNeeded()"):
+            self.assertIn(method, permissions)
+        self.assertNotIn("Future<void> _migrateFunctionBadgeSystemIfNeeded()", home)
+        self.assertIn("'effectivePermissions'", permissions)
+        self.assertIn("'functionSystemVersion'", permissions)
+
     def test_home_automatic_backup_maintenance_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
