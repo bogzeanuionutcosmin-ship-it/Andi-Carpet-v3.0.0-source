@@ -302,6 +302,17 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "categoryBrandWidget", "schedule.closed"):
             self.assertIn(contract, module)
 
+    def test_team_selector_extracted_preserving_selection_callback(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/teams/team_selector.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'teams/team_selector.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("class _TeamSelector extends StatelessWidget", main)
+        self.assertEqual(module.count("class _TeamSelector extends StatelessWidget"), 1)
+        for contract in ("List<Team> teams", "ValueChanged<int> onChanged",
+                         "required this.selected", "onChanged(v)"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
