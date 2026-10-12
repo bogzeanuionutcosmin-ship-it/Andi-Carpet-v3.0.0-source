@@ -444,3 +444,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Actualizat `test/repository_hygiene_test.py` astfel încât verificările de unicitate/stickere/picker să inspecteze toate fișierele Dart din `lib`, nu doar `main.dart`. Commituri `83e51079`, `d93ea8b4`.
 - CI pentru noul HEAD este de verificat; dacă încă eșuează, inspectează logul și repară înainte de extragerea chatului.
 - Analiza chatului privat: două stream-uri `chatMessages` (senderId/recipientId), controlere și subscripții, mesaje cu `customEmoji`, trimiteri, ștergere locală. Grupul folosește separat `groupChatMessages`, istoric 50, retenție declarată 7 zile. Nu au fost modificate componentele de chat în acest lot.
+
+
+## 48. Modul #36: conversații private
+- CI pentru checkpoint `1a927408` SUCCESS, run `38188910042`: testele de igienă refăcute sunt validate.
+- Extras textual `PrivateChatPage` și `_PrivateChatPageState` (~11.5k caractere) din `lib/main.dart` în `lib/chat/private_chat_page.dart`, prin `part of '../main.dart';`, fără modificări de semantică. Commituri `5fd74e1c`, `fb7f70db`.
+- Contracte păstrate: stream-urile Firestore separate pentru sender/recipient în `chatMessages`, anularea abonamentelor, compunerea mesajelor, `_visibleDocs`, `_clearChatForMe`, selector stickere/emoticoane, `customEmoji`.
+- Test structural/regresie nou în `test/repository_hygiene_test.py`, commit `8fa4ee8c`. Ultimul CI încă necesită confirmare. Nu s-au modificat regulile Firestore, backendul, datele sau deploy-ul.
+- Următorul pas numai după CI verde: `GroupChatPage` în modul separat, cu verificări de retenție și istoric.
