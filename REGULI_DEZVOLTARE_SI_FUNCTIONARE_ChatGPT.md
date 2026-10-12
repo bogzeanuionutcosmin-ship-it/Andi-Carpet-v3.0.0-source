@@ -108,3 +108,24 @@ Categorii inițiale de inventariat după curățare: autentificare/roluri, membr
 **Riscuri de verificat la implementare:** controlul accesului în regulile Firestore și Cloud Functions pentru conturile inactive; revocarea drepturilor fără întârziere periculoasă; migrarea badge_v2 care poate goli functionIds; ștergerea Authentication și Firestore nu este atomică. Nu sunt declarate rezolvate.
 
 **Urmează:** definirea regulilor pentru funcții și permisiuni. Nu se modifică încă aplicația.
+
+## 10. Categoria 2 — Funcții și permisiuni (aprobată 2026-10-12)
+
+**Stadiu:** decizii funcționale aprobate, FĂRĂ implementare. Toate cele 10 puncte au fost confirmate; pentru punctul 10 s-a ales expres **A — audit minimal**.
+
+1. **Mai multe funcții profesionale per membru, fără limită arbitrară a numărului de funcții.** Limita interfeței existente de 1–3 ecusoane pentru o definiție de funcție nu limitează numărul de funcții atribuite unui membru.
+2. **Drepturi cumulative:** permisiunile acordate de funcțiile active atribuite aceluiași membru formează o reuniune; o permisiune nu depășește limitele de context, proprietate a datelor și securitate.
+3. **Rolul de administrator este distinct** de funcțiile profesionale și de ecusoane. Nu există escaladare la administrator prin simpla atribuire a unei funcții sau a etichetei „Admin”. Modelul actual role/admin versus definiția de funcție admin necesită aliniere cu o singură sursă de autoritate, protejată pe server.
+4. **Permisiuni granulare:** vizualizare, creare, editare, ștergere, aprobare, export etc. sunt separate acolo unde operațiunile o cer; editarea nu acordă automat ștergerea.
+5. **Permisiuni limitate de context:** date proprii, de echipă, desemnate sau globale conform regulilor fiecărei categorii. Simplul drept de a vizualiza/gestiona o categorie nu oferă acces automat la datele tuturor membrilor/echipelor.
+6. **Actualizare promptă și validare pe server:** schimbările apar în timp real unde conexiunea permite, dar operațiunile protejate verifică accesul server-side; cache-ul sau interfața veche nu prelungesc autorizația.
+7. **Funcție inactivă = drepturi retrase**, fără ștergerea automată a atribuirii istorice; la reactivare se recalculează drepturile conform configurației curente.
+8. **Ștergerea unei funcții analizează dependențele**, arată utilizatorii afectați, actualizează atribuirile și recalculează sigur drepturile; rolul administrativ indispensabil este protejat.
+9. **Fără resetări automate ale atribuirilor:** migrarea codului sau a schemei păstrează funcțiile valide și nu golește în masă functionIds. Migrarea existentă badge_v2 este un risc documentat pentru etapa de remediere.
+10. **Audit minimal ales explicit:** înregistrăm numai schimbările importante de securitate și acces — creare/modificare/ștergere de funcție, atribuire/retragere de funcție sau drept, schimbări administrative. Identificăm autorul, momentul, ținta și modificarea relevantă; evităm jurnalizarea fiecărui click, duplicatele, informațiile sensibile, creșterea inutilă a Firestore; stabilim o retenție rezonabilă înainte de implementare.
+
+**Clarificări de logică:** drepturile sunt reunite între funcții active, dar sunt filtrate și după domeniul de acces; autoritatea admin trebuie verificată separat de funcțiile profesionale; niciun drept efectiv nu poate fi stabilit doar din interfață. Nu există contradicții nerezolvate între cele 10 principii, dar matricea exactă de permisiuni/aria fiecărei acțiuni va fi aprobată la definirea modulelor respective.
+
+**De verificat înainte de implementare:** sursa canonică a rolului admin; consistența functionIds/effectivePermissions; operațiile administrative care modifică permisiuni; limitele/retenția auditului; migrarea badge_v2, inclusiv protecția împotriva pierderii de atribuiri. Fără modificări de cod, date sau producție din această aprobare.
+
+**Categoria următoare:** Membri și echipe.
