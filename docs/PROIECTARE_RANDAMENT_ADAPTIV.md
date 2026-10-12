@@ -551,3 +551,53 @@ După recomandarea de a include curățările de mochetă și fațadă făcute *
 **Confirmate acum:** includerea condiționată a intervențiilor mixte simultane în cele două procente, afișare în profil pe fiecare componență efectivă cu suprafață cumulată de mochetă curățată, câmpuri vizibile colegilor cu ascundere selectivă aleasă de titular (dar vizibile adminului autorizat), iconuri de platforme recunoscute și fallback neutru pentru linkuri necunoscute. Nu se pierde istoricul la schimbarea partenerului.
 
 **De clarificat când ajungem la categoria Profiluri/Membri:** câmpurile obligatoriu operaționale vs opționale de ascuns, politica de confidențialitate implicită pentru informații sensibile, cum prezentăm intervalele cu aceeași pereche reunită, ce facem cu membri fără partener sau vizibilitatea profilurilor ascunse, sursele/auditul pentru istoricul vechi, etichetele exacte și designul. Schema/permisunile, migrarea și testarea se proiectează înainte de implementare. **Numai documentație, fără modificări Flutter, Firebase, reguli sau deploy.**
+
+## 18. Proiectarea evidenței temporale pentru parteneriate și m² curățați (analiză tehnică 2026-10-13, fără implementare)
+
+### 18.1 Scop și statut
+
+**Cererea «Bun, mergem mai departe» autorizează continuarea analizei și a documentării, nu o migrare Firebase sau un nou format de profil impus.** În baza cerințelor funcționale aprobate în secțiunea 17 (profil separat pe fiecare componență reală de membri, total m² mochetă, randament luna curentă/general), alegem o **reprezentare istorică minimă și verificabilă** drept **propunere tehnică**, de validat la implementare. Nu schimbăm cele două procente și nu introducem performanță salarială ori un procent personal.
+
+### 18.2 Auditul sursei actuale (citire doar, fără date Firestore reale)
+
+- `lib/models/app_data_models.dart::Team.members` și `AppUser.teamId` descriu componența/apartenența **curentă**. `CentralizerRecord` păstrează `teamId`, `locationId`, `startedAt/finishedAt`, `facadePlanned/facadeDone`, dar **nu** cei doi participanți istorici, configurația fizică, suprafața mochetei la START sau modalitatea efectivă (numai mochetă versus mochetă+fațadă concomitent).
+- `lib/admin/admin_team_actions.dart::_editTeam` salvează lista curentă `members` și poate elimina un utilizator din alte echipe, **fără revizii temporale de componență**. Aceasta este o deficiență deja documentată față de regulile de transfer. Nu presupunem că evenimentele de audit existente sunt suficiente să reconstruiască fiecare perioadă istorică.
+- `lib/admin/admin_location_actions.dart::_editLocationAdmin` editează `surfaceM2` și `facadeM2` curente, fără revizii istorice. `lib/home/home_page.dart::_recordMap` nu scrie snapshoturi m² sau participanți, iar `_teamMap` persistă doar componența curentă.
+- `lib/profile/profile_page.dart` numără acum lucrările echipei **curente** din `teamId`, nu intervențiile unui parteneriat istoric. `lib/members/member_profile_page.dart` nu primește în prezent istoricul de intervenții.
+- `lib/utils/operational_dates.dart::operationalWorkDate` trece ziua **următoare** pentru START la/după 23:30, iar ziua operațională este sursa ferestrei lunare; un START la 23:40 pe 30 septembrie poate aparține **lunii octombrie**. Nu folosim pur și simplu luna civilă a lui `startedAt` în noile statistici.
+
+### 18.3 Propunere de contract de date minimal, fără scrieri repetitive
+
+**A. Istoricul componenței, schimbări doar la evenimente reale autorizate:** când un administrator creează/modifică/transferă/înlocuiește membri, salvăm un eveniment/revizie mică cu echipa, lista de ID-uri, `validFrom` efectiv, actorul, motivul dacă e necesar și ID-ul reviziei. Intervalul anterior se încheie logic, fără rescrierea intervențiilor și fără duplicarea documentelor de identitate. Mutările trebuie să respecte blocarea pe grafice deschise și excepțiile admin deja aprobate, cu tranzacție/serializare pentru două dispozitive.
+
+**B. La START real al curățării:** intervenția capătă o **identitate stabilă** și un set minimal de fapte istorice, păstrate la orice STOP/retry:
+- `teamId` (deja există) și `compositionRevisionId` / as-of al componenței;
+- **ID-uri de membri din componența la START** (roster) și separat **ID-uri de participanți efectiv verificați** ori un marcaj `participantsEvidence`. **Lista echipei nu este dovadă automată că amândoi au lucrat**. În mod normal sunt maxim 2; împărțirea mochetă/fațadă simultană este validă.
+- `carpetSurfaceM2AtStart` dacă este verificabilă, cu identificatorul versiunii fizice `locationConfigurationRevisionId` sau sursă echivalentă; starea «necunoscută» este distinctă de o suprafață fizică de 0 m²;
+- `workMode`/clasificare credibilă a intervenției: doar mochetă, mochetă+fațadă concomitent, fațadă ulterior, respectiv «neconfirmat», păstrând separat rezultatul binar al fațadei; **nu** deducem simultaneitatea numai din `facadeDone=true`;
+- momentul fizic de referință și proveniența/gradul de verificare, fără stocarea inutilă a întregii locații, profilurilor ori minutelor pe membru.
+
+**C. La STOP:** se completează rezultatul real și intervalul final. **Nu recitim automat membrii actuali sau suprafața actuală pentru a suprascrie faptele de la START.** Dacă la START datele proveneau din cache vechi/offline și între timp a apărut un transfer ori o reamenajare cu dată efectivă anterioară, păstrăm sursele și marcăm **«necesită reconciliere verificabilă»**; corecția administrativă trebuie auditata, nu făcută tacit. Dacă înlocuirea a intervenit în timpul execuției, nu atribui intervenția unui partener doar pe baza apartenenței la STOP: participarea reală necesită clarificare. Nu cerem doi timpi START/STOP și nu schimbăm regula fără pauză.
+
+**D. Legacy:** refacem componența/suprafața numai când un audit istoric verificabil, datat și univoc susține atribuirea. Lipsa acestei dovezi => intervenția rămâne în Centralizator și statistica generală de echipă, dar poate fi **neatribuibilă unui parteneriat concret** ori cu volum m² **incomplet**. Nu construim istoria perechilor cu `Team.members` de astăzi și nu aplicăm retroactiv m² actuali.
+
+**E. Cost și securitate:** preferăm câteva valori scalare mici în documentele de intervenție viitoare și **revizii numai când componența/configurația se schimbă**, nu document separat pentru fiecare procent/refresh. Agregări în citire/cache; pentru accesul la istoricul altui membru folosim un rezultat autorizat și filtrat, nu deschidem colecția completă `records` pentru toți și nu expunem câmpurile ascunse din profil în `memberDirectory`. Alegerea exactă între câmpuri pe record și subcolecții se verifică la implementare cu limitele documentelor și compatibilitatea.
+
+### 18.4 Cheile statistice și actualizarea lunară
+
+- **Componență:** identificator logic al perechii = ID-urile **verificate** ale membrilor, ordonate canonic; schimbarea numelui, a numărului echipei sau a rolului nu alterează perechea. În prezentare, reunirea aceleiași perechi după un interval este **opțiune tehnică propusă**, cu episoadele distincte păstrate pentru detalii. Proprietarul poate alege ulterior afișări separate pentru episoade la categoria Profiluri/Membri.
+- **Volumul de mochetă:** suma `carpetSurfaceM2AtStart` pentru fiecare **execuție unică Finalizată** atribuită acestei perechi, inclusiv cele mixte cu mochetă terminată, **indiferent dacă există etalon pentru procent**. O aceeași sală curățată la două date în două intervenții reale se numără de două ori în m² executați; `facadeM2` **nu** se adună. Afișăm câte execuții au m² necunoscuți și eticheta «suprafață documentată; total incomplet» când e cazul.
+- **Randamentul profilului per parteneriat:** pentru aceeași pereche, «Luna în curs» selectează după **data operațională a lucrării** în România și «General» după toate perechile timp referință/timp real eligibile atribuite sigur acestei componențe. Rămâne `MIN(100%,100×ΣT_ref/ΣT_real)` pe aceleași intervenții, nu o medie de procente de sală ori de echipă; date insuficiente => «Date insuficiente». Randamentul `teamId` din Dashboard rămâne separat și nu se redistribuie retrospectiv către parteneri.
+- **Partajarea informației:** datele aceleiași intervenții pot apărea în profilele **ambilor participanți** fără să devină două lucrări distincte în statisticile globale. Dacă unul își ascunde cardul față de colegi, nu presupunem că acesta poate controla automat ce este vizibil în profilul altui participant; **conflictul de vizibilitate a datelor comune se decide la categoria Profiluri**. Administratorul autorizat are acces conform drepturilor lui.
+
+### 18.5 Teste de logică executate separat, pe date fictive
+
+**11/11 aserțiuni JavaScript trecute** pentru un set de intervenții simulate: perechea «Ion + Daniel» acumulează 260 m² cunoscuți (100 + 100 + 60), deși schimbă `teamId` și sala de 100 m² devine ulterior 60 m², iar 160 m² dintre acestea aparțin lunii octombrie, deoarece lucrarea din 30 septembrie la **23:40** are dată operațională **1 octombrie**. Perechea «Ion + Andrei» are separat 170 m² de mochetă, incluzând o vizită mixtă cu fațadă de 220 m² ce **NU** intră în volum. S-a verificat și: suprafață necunoscută marcată, refuz necontabilizat, veche componență neidentificabilă rămasă neatribuită, retry offline cu același `recordId` nedublat, reîntâlnirea aceleiași perechi în alt `teamId`, plus tranziția 23:20 / 23:30 la limita lunii.
+
+**Acestea sunt teste de logică într-o simulare, nu teste de cod Flutter, Firestore, regulile de securitate, CI sau date reale.** Nu este garantat că toate cazurile vor trece în aplicație înainte de implementare; vor fi obligatorii și teste de transfer concurent, offline, duble apăsări, snapshot întârziat, editări retroactive, forme mixte, excepții, profilurile ambilor membri și confidențialitate.
+
+### 18.6 Etapa următoare
+
+**Decizii funcționale existente rămân aprobate** (indicatori per parteneriat, m² curățați, lucrări mixte comparate cu mixte, transparență, posibilitatea de ascundere selectivă și acces admin). **Soluția de stocare temporală propusă în această secțiune nu a fost implementată și nu este schemă Firebase final aprobată.**
+
+Următoarea problemă majoră de proiectare la categoria Profiluri/Membri este **cum arătăm aceleași date comune în profilurile ambilor parteneri atunci când unul alege să le ascundă** și **ce elemente au implicit caracter public intern versus privat**, cu control efectiv în backend, nu doar în UI. Fără modificări Dart, Firebase, security rules, date de producție ori deploy.
