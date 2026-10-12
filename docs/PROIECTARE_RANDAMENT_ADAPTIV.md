@@ -264,3 +264,54 @@ Rezultate verificate aritmetic cu un script separat, fără acces la datele real
 **Executate doar pe simulare:** ajustarea robustă pe cinci observații (inclusiv una atipică), randamentul lunar 96,97%, general 93,51%, greșeala retroactivă 88,31%, recalcularea după intervenție (90,20% / 90,53%) și plafonul 100% — **7 aserțiuni aritmetice au trecut**. Acestea sunt verificări ale raționamentului matematic în JavaScript, **nu** teste Flutter/Firestore ori CI și nu folosesc date reale.
 
 **Încă de testat ulterior:** estimator robust pe observații dispersate, lipsă referință/zonă validă, numeroase outliere, comparabilitate pe categorii și dimensiuni, config nouă cu m² identici, alegerea reperului fără scurgere din execuția evaluată, tranziții temporale, ora României/DST, cazuri mixte fațadă/mochetă, erori de rețea, concurență, compatibilitate cu datele legacy și consum Firestore. Calibrarea modelului, pragurile, politica de fallback și schema Firestore rămân de aprobat. **Nu se modifică aplicația** pe baza prototipului.
+
+## 12. Aprobarea structurii a + b × m² și reguli de fallback propuse (2026-10-13)
+
+### 12.1 Confirmare explicită a proprietarului — structură APROBATĂ
+
+După prezentarea prototipului matematic din secțiunea 11, proprietarul a răspuns **«Confirm»** la întrebarea: «Confirmi această structură de calcul, cu coeficienți învățați automat, fără norme fixe introduse manual?». Se aprobă **structura** de calcul:
+
+```text
+T_referință = a + b × suprafața_m²
+```
+
+- `a` reprezintă componenta tipică de bază a duratei de curățare a unei săli, iar `b` componenta per m²; ambele se estimează automat **din istoric real, suficient și comparabil**, nu din norme manuale de firmă.
+- Aceasta reprezintă **o estimare a duratei totale START–STOP**, nu inventarea/adăugarea unor minute suplimentare după înregistrarea lucrării.
+- În randamentul final al echipei se folosesc două totaluri separate ca ferestre («Luna în curs», «General»), fără procent pe fiecare sală și cu plafon de 100%. Indicatorii sunt exclusiv informativi și nu influențează remunerația ori sancțiunile.
+- Modelul trebuie să se adapteze la reamenajările reale, la suprafețele istorice corecte și la Learning, fără a șterge lucrări vechi ori a supraînvăța din aceeași execuție evaluată.
+- **Nu au fost aprobate numeric** valorile lui `a` și `b`, estimatorul statistic concret (inclusiv alegerea medianelor din secțiunea 11, care rămâne o demonstrație), comparabilitatea exactă a cohortelor, pragurile de calitate, ponderile Learning, politica de eligibilitate pentru fațade și formatul noilor câmpuri Firestore. Nu se substituie exemplul fictiv `30 + 0,4 × m²` drept normă.
+
+### 12.2 Politică de fallback — PROPUNERE pentru decizia următoare
+
+Pentru fiecare lucrare efectiv Finalizată cu timp START–STOP pozitiv valid, identificator unic și echipă istorică:
+
+| Date disponibile pentru referință | Comportament propus |
+|---|---|
+| m² verificabili la momentul lucrării + model comparabil robust | Referință `a+b×m²`, ajustabilă contextual cu Learning verificabil pentru **aceeași configurație**; fără adunarea arbitrară a două estimări |
+| m² lipsă, dar Learning cu suficiente execuții valide **din aceeași configurație** | Referință temporală Learning ca rezervă; lucrarea poate contribui în procent, marcată «fără m²» / încredere conform sursei |
+| m² există, dar istoricul Learning local este insuficient | Modelul din alte săli comparabile poate oferi referință fără obligativitatea celor trei lucrări locale |
+| Nu există nici m² verificabili + model, nici Learning credibil | Lucrarea rămâne în Centralizator și numărul total de execuții; **exclusă din ambii termeni** ai randamentului, fără a fabrica 0% ori 100% |
+| Întreaga perioadă nu are perechi de date comparabile | Dashboard arată «Date insuficiente» pentru perioada respectivă, independent de celălalt procent |
+
+**Propus pentru transparență:** la Info pentru fiecare perioadă arătăm numărul total/inclus/exclus al intervențiilor, suprafețe și ore cunoscute, sursa aproximării și motivul lipsei reperului. Se poate afișa o etichetă neutră «Estimare orientativă — date limitate»; pragurile exacte nu se inventează. `keptForLearning` și posibilitatea estimării pentru randament au scopuri diferite și trebuie auditate explicit: excluderea unei execuții din antrenarea Learning nu poate fi ignorată în mod arbitrar pentru construirea etalonului.
+
+### 12.3 După o reamenajare fizică — comportament propus
+
+1. **Reamenajarea creează o nouă perioadă/configurație fizică**, inclusiv când suprafața numerică rămâne neschimbată, dacă formatul relevant curățării s-a schimbat. Se păstrează data efectivă, care poate fi diferită de data editării în aplicație.
+2. Intervențiile vechi rămân legate de configurația veche și de timpii reali; nu li se atribuie m² noi. Datele legacy fără dovadă temporală nu primesc snapshot imaginar.
+3. La prima curățare în noua configurație, în lipsa istoricului local nou, folosim modelul **comparabil între locații** dacă există m² verificabili și date statistice credibile. Nu impunem trei execuții noi ale sălii înainte de orice indicator orientativ.
+4. După alte intervenții în noua configurație, Learning se poate adapta progresiv. Istoricul vechi este păstrat pentru analiză, dar estimarea directă a duratei vechii configurații nu se transferă automat ca referință nouă, mai ales când suprafața ori compartimentarea s-au schimbat.
+5. Dacă modelul comun nu este încă justificat și nu există Learning relevant noii configurații, contribuția numerică a acelei execuții poate lipsi temporar din scor; nu se deduce că echipa a avut randament zero.
+6. Scorurile lunare și generale se actualizează după confirmarea și sincronizarea evenimentelor noi/revizuirilor, fără scrieri repetate în Firestore la fiecare afișare sau la fiecare secundă. Pentru o curățare în curs nu se inventează finalizarea.
+7. Separat de revizia fizică, o **greșeală de introducere** corectată ulterior poate impune ajustarea unor referințe istorice verificabile, cu audit; nu folosim automat același comportament ca la reamenajare.
+
+### 12.4 Riscuri/întrebări tehnice încă deschise
+
+- Alegerea și validarea metodei robuste de ajustare a lui `a,b`, pozitivitatea, loturi mici, estimări în afara intervalului de m² din eșantion, gruparea fără separare excesivă după categorie și evitarea auto-comparației circulare.
+- Combinarea cu Learning fără «dublarea» aceluiași istoric, fără scurgere de informație din lucrarea evaluată și cu recalcularea explicabilă a istoricului general.
+- Politica pentru START–STOP ce cuprinde și fațadă, fără a inventa timp de fațadă sau a denatura antrenarea modelului de mochetă.
+- Cum se marchează eficient schimbarea fizică: revizie temporală mică, snapshot de m²/configurație la intervenții noi, tratarea editării întârziate și a conflictelor offline; fără migrare retrospectivă fictivă.
+- Stabilirea datei lunii după ziua operațională românească și alegerea versiunii fizice după momentul real al curățării (nu după ziua operațională).
+- Teste Flutter/unitare/Firestore ce trebuie scrise **după** finalizarea politicii și autorizarea implementării; simulările anterioare nu sunt dovadă de funcționare a aplicației.
+
+**Statut final al secțiunii:** numai structura `a+b×m²` cu coeficienți învățați, împreună cu metoda mixtă C și cele două randamente informative, este **aprobată**. Fallback-ul și comportamentul detaliat după reamenajare de mai sus sunt **propuneri de confirmat**, nu decizii deja aprobate, deși respectă principiile istorice confirmate. **Fără modificări de cod, Firebase, reguli Firestore, date reale ori deploy.**
