@@ -622,3 +622,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Run `38198048454` la `11726c1f` a eșuat deoarece `test/repository_hygiene_test.py`, linia 751, conținea un `self.assertIn` trunchiat (SyntaxError: unterminated string literal), introdus în corecția anterioară. Nu era eroare Flutter/Firebase; celelalte trei joburi Firebase Functions, Firestore emulator și Node SUCCESS.
 - Reparată expresia integrală `RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)` și păstrată verificarea în `expense_source`, commit `5e5e7f22`.
 - Verifică CI pe ultimul commit înainte de a continua extragerea Administrării. Nicio schimbare a codului aplicației.
+
+
+## 71. Corecție test Decont și modul #53 Administrare
+- Reparat `test/repository_hygiene_test.py`: eliminată porțiunea trunchiată și duplicată de la final, păstrate verificările pentru Decont și hartă; commit `f7c87a8e`.
+- Extras textual întregul `AdminPanelPage` și `_AdminPanelPageState` din finalul `lib/main.dart` în `lib/admin/admin_panel_page.dart` (~126,3k caractere), cu `part of '../main.dart';`; commit `cf7b0c4d`.
+- În `lib/main.dart` introdus `part 'admin/admin_panel_page.dart';` și eliminat blocul extras, reducând fișierul la ~13,1k caractere; commit `c83ec787`.
+- Urgent: adaugă test de regresie pentru existența part-ului, unicitatea claselor și contractele de Administrare. Verifică testele Python care presupun că implementarea Administrării este în main.dart și adaptează numai sursele testelor. Verifică toate cele 5 joburi CI; niciun rezultat verde nu este confirmat pentru #53.
+- Nu s-au modificat intenționat permisiunile, logica de backup/restore, datele Firebase sau regulile diurnelor. Testul real Daniel -> utilizator rămâne amânat până după curățare. Nu face deploy web/APK fără cerere explicită.
