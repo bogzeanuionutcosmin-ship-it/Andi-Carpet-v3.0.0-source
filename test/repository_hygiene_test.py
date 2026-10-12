@@ -27,7 +27,7 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertNotIn("\n).hasMatch(normalized)) return null;", source)
 
     def test_sticker_asset_manifest_is_complete(self):
-        source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "lib").rglob("*.dart"))
         pubspec = (ROOT / "pubspec.yaml").read_text(encoding="utf-8")
         self.assertIn("- assets/stickers/", pubspec)
         paths = re.findall(r"'brc_\d+':'(assets/stickers/sticker_\d+\.png)'", source)
