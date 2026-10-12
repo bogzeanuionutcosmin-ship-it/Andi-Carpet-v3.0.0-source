@@ -775,6 +775,19 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
+    def test_admin_communications_extracted_with_report_contracts(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        communications = (ROOT / "lib/admin/admin_communications_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_communications_actions.dart';", main)
+        self.assertIn("_AdminCommunicationsActions", admin)
+        for method in ("_sendSystemNotification(", "_notifications()", "_reports()", "_audit()"):
+            self.assertIn(method, communications)
+        self.assertNotIn("Future<void> _sendSystemNotification(", admin)
+        for export in ("downloadCentralizerPdf(", "downloadFinancialSummaryPdf(", "downloadAuditPdf("):
+            self.assertIn(export, communications)
+        self.assertIn("collection('notifications')", communications)
+
     def test_admin_learning_diagnostics_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
