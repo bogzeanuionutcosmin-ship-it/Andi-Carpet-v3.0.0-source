@@ -544,3 +544,20 @@ Randament(P) = MIN(100%, 100 × T_estimat(P) / T_real(P))
 - **Ordinea neschimbată:** definim și testăm formula numerică înainte de implementare; modificările funcționale viitoare prin ramură/PR/CI și aprobare, fără Firebase ori deploy arbitrar.
 
 Specificația de proiectare și statutul metodei sunt în [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 9, introdusă la commitul `866e2c03e8254f7da40a64087e0133e02af068ac`. **În această etapă au fost modificate numai documente.**
+
+## 31. Categoria 5 — Schimbarea fizică a formatului sălii (clarificare explicită 2026-10-13)
+
+**Răspuns direct al proprietarului:** «Sala chiar își schimbă fizic formatul». Se stabilește că modificarea valorii `Location.surfaceM2` poate reprezenta **schimbarea reală a configurației/dimensiunii fizice**, nu o simplă rectificare a unei greșeli de măsurare. Această clarificare trebuie integrată în proiectarea randamentului adaptiv C, deja aprobat ca metodă.
+
+1. **Istoric temporal păstrat:** suprafața și configurația unei săli trebuie să fie asociate perioadei în care erau valabile fizic. O curățare veche își păstrează durata, data, echipa și referința reală din vremea sa; editarea ulterioară a locației nu rescrie retrospectiv intervențiile anterioare.
+2. **Execuții după schimbare:** lucrările următoare utilizează configurația nouă. O schimbare a mobilierului/compartimentării poate influența Learning chiar când m² rămân identici. Learning poate utiliza istoricul vechi ca reper contextual, dar **nu presupune că durata absolută din vechiul format este direct comparabilă cu cea nouă**.
+3. **Data schimbării:** momentul relevant este **data efectivă a schimbării fizice**, care poate diferi de data introducerii editării în aplicație; proiectarea UI/schemei trebuie să permită reconcilierea fără atribuirea automată a noii suprafețe tuturor vizitelor anterioare.
+4. **Date legacy incomplete:** `CentralizerRecord` nu stochează astăzi snapshot m² sau versiunea configurației. Nu se inventează retrospectiv m² vechi; se pot utiliza surse istorice numai dacă sunt verificabile, cu indicarea incertitudinii pentru rest.
+5. **Separare între schimbare fizică și corecție de tastare:** cazul obișnuit descris de proprietar este schimbarea reală; corecția unei valori greșite, dacă apare, este o operație distinctă și nu echivalează cu reamenajarea sălii.
+6. **Randament:** rămân exact două procente la nivel de echipă, lunar/general, adaptative, exclusiv informative, plafonate la 100%, fără scor procentual pe sală și fără efect salarial. Recalculările informative pot reflecta date noi, dar nu rescriu intervalele START–STOP, istoricul responsabilităților sau datele financiare.
+
+**Soluția tehnică rămâne propusă, nu încă aprobată numeric sau ca schemă:** istoric minimalist de configurații cu perioade de valabilitate și/sau snapshot minimal al suprafeței/configurației la o execuție nouă, după audit de costuri, compatibilitate cu clienții vechi și teste. O schimbare fizică în timpul intervenției necesită tratare explicită, fără date inventate. Nu se adaugă automat formulare/confirmări complexe pentru un indicator informativ.
+
+**Exemplu pentru teste:** septembrie 200 m²; de la 1 octombrie, după reamenajare 150 m²; editarea poate fi introdusă la 4 octombrie. Intervențiile de până la 1 octombrie nu devin retroactiv de 150 m², iar cele ulterioare sunt evaluate cu noua configurație când informația este certă.
+
+Specificația tehnică a acestei decizii este în [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 10, commit `6e4bc9873913537218a33f7adffd3d643428352a`. **Doar documentație; nicio implementare, migrare, modificare Firebase, configurare de producție sau deploy.**
