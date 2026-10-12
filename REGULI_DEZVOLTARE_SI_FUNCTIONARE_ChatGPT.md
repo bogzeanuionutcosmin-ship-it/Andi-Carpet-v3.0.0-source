@@ -591,3 +591,19 @@ Specificația tehnică a acestei decizii este în [`docs/PROIECTARE_RANDAMENT_AD
 - **Reguli operaționale neschimbate:** așteptarea accesului înainte de START exclusă; fără pauză de intervenție; refuzurile și nerealizările nu devin curățări; m² fațadă nu se adaugă automat la mochetă; maxim doi membri cu ambii participanți, fără minute-om ×2, iar schimbările de echipă nu transferă istoria.
 
 **Documentație tehnică actualizată:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 12 (commit `4b23dba431bb530ae2d416f97287457fc6f59a65`). Urmează confirmarea fallback-ului și a cazurilor cu reamenajări înainte de alegerea statistică finală și de teste/implementare. **Numai documentație modificată; fără cod, date Firestore, reguli, APK sau deploy.**
+
+## 34. Categoria 5 — Fallback pentru date insuficiente, aprobat explicit (2026-10-13)
+
+**Decizie explicită a proprietarului:** a răspuns «Confirm» la întrebarea de aprobare a regulii pentru datele insuficiente. **Politica descrisă ca propunere în secțiunea 33 și în documentul de proiectare secțiunea 12.2 devine APROBATĂ**, completând metoda C și structura de durată `T_ref=a+b×m²` deja aprobate. Istoricul de propuneri rămâne citibil; **secțiunea 34 prevalează** asupra marcajelor istorice «încă de aprobat» legate de fallback.
+
+1. **m² verificabili la momentul curățării și model comparabil valid:** utilizăm etalonul `a+b×m²`, cu coeficienți estimați automat din istoric, eventual ajutat de Learning credibil pentru aceeași configurație, fără dublarea aceleiași informații.
+2. **m² indisponibili, Learning credibil pentru aceeași configurație:** utilizăm estimarea de durată din Learning ca referință alternativă; nu inventăm m² istorici.
+3. **m² verificați, Learning local insuficient:** modelul comun din lucrări comparabile poate furniza referința; sala nouă ori reamenajată nu trebuie să aștepte trei curățări proprii dacă există alt etalon suficient de credibil.
+4. **Niciun etalon verificabil:** lucrarea rămâne în Centralizator și poate ajuta Learning viitor, dar NU intră în **niciunul** dintre cele două totaluri folosite pentru procent (`ΣT_ref` și `ΣT_real`) până există surse valide; nu se pretind 0%/100% sau timp de referință inventat.
+5. **Perioadă fără lucrări eligibile:** afișăm **«Date insuficiente»** pentru procentul perioadei, separat pentru «Luna în curs» și «General». Cele două procente rămân ale echipei, plafonate la 100%, progresive și **exclusiv informative**, fără consecințe salariale/bonusuri/sancțiuni.
+
+**Confirmare contextuală pentru reamenajare fizică:** modelul comun poate furniza reper imediat în noul format, dacă datele sunt comparabile; pe măsură ce apar execuții în **noua configurație**, Learning se recalibrează. Vizitele vechi păstrează formatul și m² din perioada lor, fără transferarea automată a duratei vechi drept normă a formatului nou, iar istoricul vechi rămâne păstrat. Detaliile schemei pentru revizii/snapshoturi și datarea efectivă sunt încă de proiectat.
+
+**Ce rămâne deschis (nu este aprobat prin acest «Confirm»):** estimatorul statistic exact pentru `a,b`, pragurile de calitate și eșantion minim, cohortele comparabile, ponderile de integrare Learning, date legacy fără snapshot, execuțiile cu timp comun pentru fațadă/mochetă și schimbările de schemă/permisiuni. Exemplul `30 min + 0,4 min/m²` rămâne strict ilustrativ. Testele Flutter/Firestore și implementarea vin numai după proiectare și aprobare.
+
+**Referință:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 13 (commit `cedb16967e502bd534ffc1f7c07e71b645b99492`). **Doar documentația s-a schimbat; fără modificări de cod, date Firebase, reguli, APK sau deploy.**
