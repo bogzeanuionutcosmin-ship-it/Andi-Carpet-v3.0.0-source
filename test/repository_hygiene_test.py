@@ -775,6 +775,24 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
+    def test_admin_cars_and_locations_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        cars = (ROOT / "lib/admin/admin_car_actions.dart").read_text(encoding="utf-8")
+        locations = (ROOT / "lib/admin/admin_location_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_car_actions.dart';", main)
+        self.assertIn("part 'admin/admin_location_actions.dart';", main)
+        self.assertIn("_AdminCarActions, _AdminLocationActions", admin)
+        for method in ("_editCar(", "_removeCar(", "_cars()"):
+            self.assertIn(method, cars)
+        for method in ("_contactDialog(", "_editLocationAdmin(", "_deleteLocationPermanent(", "_changeLocationStatus(", "_locations()", "_editCategory(", "_deleteCategory(", "_categories()"):
+            self.assertIn(method, locations)
+        self.assertNotIn("Future<void> _editCar(", admin)
+        self.assertNotIn("Future<void> _editLocationAdmin(", admin)
+        self.assertIn("widget.saveLocation(", locations)
+        self.assertIn("widget.deleteLocation(", locations)
+        self.assertIn("collection('cars')", cars)
+
     def test_admin_member_actions_extracted_with_permission_contracts(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
