@@ -237,6 +237,21 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "_openEmojiPicker", "'customEmoji'"):
             self.assertIn(contract, module)
 
+    def test_group_chat_extracted_preserving_history_and_retention(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/chat/group_chat_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'chat/group_chat_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class GroupChatPage extends StatefulWidget",
+                       "class _GroupChatPageState extends State<GroupChatPage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for contract in ("_historyLimit = 50", "_retentionDays = 7",
+                         "collection('groupChatMessages')", "orderBy('createdAt', descending: true)",
+                         ".limit(_historyLimit)", "_send(", "_andiReactionWidget",
+                         "dispose()"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
