@@ -655,3 +655,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 ## 75. Contract general pentru modulele Dart extrase
 - Adăugat `test_all_declared_dart_parts_exist_and_belong_to_main` în `test/repository_hygiene_test.py`, commit `de7e8996`: parcurge toate cele 53 declarații `part` din `lib/main.dart`, verifică unicitatea, existența fișierului și directiva `part of '../main.dart';`.
 - Este un test structural preventiv; NU schimbă logica aplicației. Rezultatul execuției CI după commit încă nu este confirmat. Încercarea de a interoga toate modulele în același apel a atins limita de apeluri a conectorului; nu declara auditul integral trecut până la executarea testului.
+
+
+## 76. Siguranța restaurării backup-ului manual
+- Identificat risc real în `lib/admin/admin_panel_page.dart`: în `_restoreBackup`, documentele existente din colecție erau șterse înainte de a verifica dacă payload-ul acelei colecții este `Map`; un backup invalid putea goli o colecție. Corectat cu validare și oprire înainte de ștergere, commit `0484677c`.
+- Adăugat test de regresie care verifică ordinea validare -> ștergere, commit `fa0af65b`. Atenție: aceasta protejează colecția invalidă, NU oferă atomicitate între mai multe colecții. O restaurare întreruptă după colecții deja procesate poate rămâne parțială; trebuie proiectată separat restaurarea tranzacțională/staged.
+- CI pentru HEAD nu este încă confirmat. Fără deploy.
