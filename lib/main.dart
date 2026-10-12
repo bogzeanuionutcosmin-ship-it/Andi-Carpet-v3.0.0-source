@@ -75,6 +75,7 @@ part 'centralizer/centralizer_page.dart';
 part 'dashboard/dashboard_page.dart';
 part 'map/map_page.dart';
 part 'expenses/expense_page.dart';
+part 'admin/admin_navigation_catalog.dart';
 part 'admin/backup_codec.dart';
 part 'admin/admin_panel_page.dart';
 part 'schedule/program_page.dart';
