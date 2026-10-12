@@ -129,3 +129,28 @@ Categorii inițiale de inventariat după curățare: autentificare/roluri, membr
 **De verificat înainte de implementare:** sursa canonică a rolului admin; consistența functionIds/effectivePermissions; operațiile administrative care modifică permisiuni; limitele/retenția auditului; migrarea badge_v2, inclusiv protecția împotriva pierderii de atribuiri. Fără modificări de cod, date sau producție din această aprobare.
 
 **Categoria următoare:** Membri și echipe.
+
+## 11. Categoria 3 — Membri și echipe: apartenență și blocare pe grafic (aprobată ca principiu 2026-10-12)
+
+**Decizie finală pentru apartenență, care înlocuiește propunerea intermediară cu mai multe echipe simultane:** fiecare membru poate aparține unei singure echipe operaționale active la un moment dat. Nu există apartenență simultană la două echipe și nu se creează două deconturi active pentru aceeași persoană prin simpla apartenență.
+
+**Blocarea transferului:** cât timp echipa curentă are cel puțin un grafic de lucru neînchis integral, membrul rămâne în acea echipă. „Grafic închis integral” înseamnă că **toate zilele/înregistrările ce alcătuiesc acel grafic sunt închise oficial**; data calendaristică trecută, amânarea, pauza, lipsa activității ori închiderea unei singure zile nu sunt suficiente. Dacă echipa are mai multe grafice încă deschise, blocarea persistă până la închiderea tuturor. Nu se inițiază transferuri automate la expirarea unei date.
+
+**Transfer obișnuit:** când nu mai există grafice deschise în echipa sursă, administratorul poate atribui membrul altei echipe. Aplicația verifică din nou apartenența și starea graficelor pe server chiar înainte de salvare, afișează efectul și cere confirmare. O simplă bifare în interfața altei echipe nu îl scoate automat pe membru din echipa existentă.
+
+**Excepție aprobată:** administratorul poate înlocui anticipat un membru în timpul unui grafic deschis, alegând în mod explicit membrul ieșit și înlocuitorul. Trebuie verificate accesul, apartenența și eventualele grafice deschise ale înlocuitorului, fără mutări implicite sau ocolirea regulii de echipă unică. Înlocuirea se aplică pentru operațiunile viitoare și nu rescrie execuțiile, diurnele, deconturile sau responsabilitățile deja înregistrate.
+
+**Situații-limită stabilite:**
+- O echipă fără grafice deschise permite transferul; un membru aprobat poate rămâne temporar fără echipă.
+- Inactivarea ori încercarea de ștergere a unei echipe nu trebuie să ocolească blocarea membrilor cu grafice neînchise; se verifică dependențele și se cere soluționare administrativă.
+- Redeschiderea unui grafic vechi după transfer **nu mută retroactiv** membrul înapoi și nu îi schimbă istoricul. Se păstrează asocierea istorică a participanților.
+- Transferurile și înlocuirile trebuie să fie consistente și autorizate pe server; tranzacții ori mecanisme echivalente împiedică transferul concurent sau pierderea legăturii dintre echipă și utilizator.
+- Gestionarul financiar este desemnat explicit, cu cel mult unul principal per echipă; la înlocuirea lui se face predare/clarificare a operațiunilor financiare restante înainte de activarea noului gestionar.
+- Mașina aparține temporar echipei, nu membrului; membrii pot avea profesii diferite, iar modificările aprobate trebuie reflectate prompt.
+- Echipele de test nu trebuie să perturbe echipele reale și nu pot fi folosite pentru a eluda blocarea transferurilor.
+
+**Constatare tehnică:** implementarea actuală stochează un singur teamId per utilizator (compatibil cu regula), dar editorul echipei elimină automat membri din alte echipe când sunt bifați, fără verificarea blocării graficelor. De asemenea, modelul WorkSchedule păstrează closed la nivel de zi și graphId pentru gruparea zilelor. Acestea necesită schimbări ulterioare și teste de regresie; prezentul document NU modifică aplicația sau datele.
+
+**Detalii tehnice încă de proiectat înainte de implementare:** reprezentarea minimă a componenței istorice în momentul înlocuirii, definirea operațiunii de predare financiară, tranzacționalitatea transferului și comportamentul în situația unei solicitări de ștergere a unui grafic deschis. Nu se aprobă încă o soluție de stocare suplimentară fără analizarea costurilor.
+
+**Stadiu:** decizie de comportament aprobată și documentată; fără implementare, fără modificări Firestore/reguli și fără deploy. Continuăm restul specificației pe categorii separat.
