@@ -744,3 +744,31 @@ Această decizie **închide definitiv întrebarea din secțiunea 20.6**, unde va
 **Confidențialitatea implicită pentru telefon/e-mail este DECISĂ**, nu se mai cere confirmare. **Nu sunt decise implicit** valorile inițiale pentru rețelele sociale, câmpurile personalizate, m² și randamentele de parteneriat — acestea se discută separat. Excepția de diurne private rămâne validă.
 
 **Doar documentație în această etapă; nicio modificare a codului, a proiecției backend, datelor Firebase, regulilor Firestore, versiunilor, APK ori deploy.**
+
+## 23. Confirmare: rețelele sociale sunt inițial vizibile colegilor, cu ascundere pe fiecare link (2026-10-13)
+
+### 23.1 Decizie explicită APROBATĂ
+
+După confirmarea că telefonul și emailul sunt inițial vizibile colegilor, proprietarul a fost întrebat: «linkurile Facebook, Instagram, TikTok și celelalte rețele sociale să fie și ele inițial vizibile colegilor, cu posibilitatea ca fiecare membru să le ascundă separat?». Răspunsul a fost **«Da»**.
+
+**Regulă funcțională aprobată:**
+1. Pentru fiecare membru al cărui profil este vizibil altor membri autentificați, **linkurile de rețele sociale sunt vizibile implicit** colegilor, la utilizatori noi și existenți, cât timp proprietarul profilului nu le-a ascuns explicit.
+2. **Fiecare link se poate ascunde separat**, independent de celelalte linkuri și independent de vizibilitatea telefonului, emailului, m² și randamentului. Exemplu: Facebook ascuns, Instagram vizibil, TikTok ascuns. Schimbarea stării nu elimină valoarea originală din profilul privat.
+3. Proprietarul propriului profil și **administratorul autorizat** văd linkurile ascunse colegilor. Colegii nu le pot obține din pagina altui membru ori citind `memberDirectory` direct atunci când sunt ascunse în profilul acelui titular. Alegerea unui titular nu afectează setările partenerului de echipă.
+4. **Aspect aprobat anterior:** în loc de URL lung ori icon generic, fiecare platformă recunoscută (Facebook, Instagram, TikTok, YouTube, LinkedIn, WhatsApp, Telegram, X/Twitter, GitHub etc.) are iconul/logo-ul potrivit. Pentru un link/platformă necunoscută afișăm un **glob sau icon de link extern neutru**, nu logo-ul Google sau marca presupusă a unui site necunoscut. Linkul accesibil va putea fi deschis prin click/tap, după validarea URL-ului HTTP(S).
+5. **Nu recunoaștem platforma numai din textul «facebook» dintr-o adresă**. Verificăm domeniul gazdă întreg și subdomeniile legitime; `facebook.com.example.invalid` nu este Facebook. Nu cerem informații personale către servicii externe pentru a determina pictograma.
+
+### 23.2 Reguli recomandate pentru implementare și migrări
+
+- **Identificator stabil pentru fiecare link**, nu indexul într-o listă și nu ordinea sa pe ecran. Preferința `socialLinkVisibleById[stableFieldId]` sau echivalent (**numele schemei este încă propunere**) are implicit `true` când lipsește, dar păstrează `false` explicit după reordonare, editare, redenumire și reîncărcare.
+- Linkurile noi create de membru sunt vizibile colegilor **implicit**; înaintea publicării, membrul primește control simplu de ascundere pe acel link. Un `profileFields` istoric de tip `link` care este identificat ca platformă socială intră în această regulă; **alte câmpuri personalizate nesociale nu primesc automat un nou default doar din acest răspuns**. Linkurile nerecunoscute pot folosi icon neutru potrivit cerinței anterioare, iar politica exactă de default a linkurilor nesociale generale rămâne de clarificat împreună cu alte câmpuri personalizate.
+- `functions/member_directory_projection.js::projectMember` publică azi doar câmpuri allowlist și **NU include `profileFields`**, deci regula va necesita proiectarea unui **subansamblu filtrat server-side de linkuri vizibile**, nu publicarea întregului `profileFields` privat. Dacă un link se ascunde, triggerul/proiecția trebuie să **elimine efectiv câmpul** din datele citibile colegilor; adminul/titularul îl citesc din documentul privat autorizat.
+- **Profil complet ascuns / membru inactiv / rol administrativ exclus din director**: un default vizibil pentru linkuri nu anulează aceste restricții. Datele financiare ale diurnelor rămân **strict private**, indiferent de publicarea rețelelor sociale.
+- Pentru linkuri inexistente/invalid introduse nu afișăm automat nici icon activ și nici un URL către o destinație neverificată. Regula pentru logo-uri nu obligă descărcarea de la platforme sau stocarea de imagini ale utilizatorului.
+- În viitoarele teste se verifică toate combinațiile de vizibilitate, schimbarea ordinii linkurilor, ștergere/creare, evenimente de sincronizare în afara ordinii, revocarea vizibilității în `memberDirectory` și în cache offline, diferențierea dintre profilul propriu / admin / coleg și apăsările pe domenii false.
+
+### 23.3 Probe de logică și statut
+
+**7/7 verificări JavaScript fictive au trecut**: două linkuri fără preferințe istorice sunt vizibile; ascunderea doar a Facebook nu ascunde Instagram; ascunderea ambelor le elimină din proiecția colegului; administratorul și proprietarul le văd; alegerile independente rămân independente; ascunderea din profilul A nu schimbă publicarea în profilul B. **Acestea sunt verificări de logică, NU teste Flutter, Cloud Functions, Firestore, reguli de securitate sau date reale.**
+
+**Decizia despre vizibilitatea inițială a linkurilor sociale este finală**. Rămân pentru categoria Profiluri/Membri: defaulturile pentru **câmpuri personalizate nesociale**, pentru total m² și cardurile pe parteneriate/randament, verificarea politicii de confidențialitate și detaliile UI. **Doar documentație; fără cod, Firebase, reguli, deploy.**
