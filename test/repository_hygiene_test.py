@@ -789,6 +789,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         for field in ("backupRetentionDays", "notificationHistoryDays", "androidDownloadUrl", "smsPreviousDayTime", "brandingBackgroundId", "defaultPerDiem"):
             self.assertIn(field, settings)
 
+    def test_home_automatic_backup_maintenance_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        backup = (ROOT / "lib/home/home_backup_maintenance.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'home/home_backup_maintenance.dart';", main)
+        self.assertIn("with _HomeBackupMaintenance", home)
+        self.assertIn("_createAutomaticBackup() async", backup)
+        self.assertIn("_pruneAutomaticBackups() async", backup)
+        self.assertNotIn("Future<void> _createAutomaticBackup()", home)
+        self.assertIn("'uiSettings'", backup)
+        self.assertIn("batch.commit()", backup)
+        self.assertIn("backupRetentionDays", backup)
+
     def test_admin_backup_panel_extracted_with_restore_warning(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
