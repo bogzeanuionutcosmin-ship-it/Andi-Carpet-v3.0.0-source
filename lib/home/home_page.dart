@@ -1480,9 +1480,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     );
   }
 
-  void _startCoreSync() {
-    final db = FirebaseFirestore.instance;
-
+  void _startDefinitionsSync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       db.collection('locationCategories').snapshots().listen((snap) {
         if (snap.docs.isEmpty) {
@@ -1532,6 +1530,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         if (isAdmin) unawaited(_syncUserPermissionSnapshots());
       }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Funcții: $e'); }),
     );
+
+  }
+
+  void _startCoreSync() {
+    final db = FirebaseFirestore.instance;
+
+    _startDefinitionsSync(db);
 
     _coreSubscriptions.add(
       (isAdmin ? db.collection('users') : db.collection('memberDirectory')).snapshots().listen((snap) {
