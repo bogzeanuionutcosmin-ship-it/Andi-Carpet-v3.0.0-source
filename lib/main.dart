@@ -80,6 +80,7 @@ part 'admin/backup_codec.dart';
 part 'admin/admin_backup_actions.dart';
 part 'admin/admin_team_actions.dart';
 part 'admin/admin_member_actions.dart';
+part 'admin/admin_car_actions.dart';
 part 'admin/admin_panel_page.dart';
 part 'schedule/program_page.dart';
 part 'auth/firebase_user_profile.dart';
