@@ -755,3 +755,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `_saveUiSettings`, `_editDaysSetting`, `_uploadCustomBackground`, `_deleteCustomBackground`, `_editAndroidDownloadUrl`, `_editSmsPreviousDayTime`, `_settings` în `lib/admin/admin_settings_actions.dart`, mixin `_AdminSettingsActions`, conectat în `AdminPanelPage` și înregistrat în `main.dart`. Commituri `4301ae3`, `2414208`, `21277bd`.
 - Păstrate configurările de branding/fundal, diurnă implicită, retenție backup/notificări, link APK, ora SMS, învățare și salvare globală în Firestore.
 - Test structural `test_admin_settings_extracted_with_persistent_configuration`, commit `c99149c`. Total 66 Dart parts. CI neconfirmat; fără deploy. Urmează interfața backup și verificarea compilării.
+
+
+## 92. Curățare Administrare: Interfață Backup
+- La verificarea repo-ului, `admin_settings_actions.dart` era deja separat și înregistrat în `main.dart` (schimbare realizată anterior/concurent, a nu se revendica aici).
+- Extras `_backup()` în `lib/admin/admin_backup_panel_actions.dart`, mixin `_AdminBackupPanelActions`, conectat în `AdminPanelPage` și înregistrat în `main.dart`. Commituri `880326c`, `8b2732b`, `9f59843`.
+- Păstrate indicatorii de backup manual/automat, restaurarea snapshot-ului și avertismentul că restaurarea înlocuiește datele operaționale, nu conturile Authentication. Test structural commit `4f2b46d`.
+- Principalele zone Administrare sunt acum extrase. Urmează audit de compilare și integrare, apoi audit general; CI încă neconfirmat, fără deploy.
