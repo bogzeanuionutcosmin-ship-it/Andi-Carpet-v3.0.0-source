@@ -90,3 +90,21 @@ Categorii inițiale de inventariat după curățare: autentificare/roluri, membr
 - **Aprobat ca direcție și ordine de lucru** în conversația din 2026-10-12.
 - Detaliile de implementare, schema logurilor, retenția, drepturile exacte, politica offline și tehnologiile finale sunt **de stabilit ulterior împreună**, nu sunt încă specificații finale.
 - La fiecare decizie ulterioară: notați data, categoria, regula exactă, justificarea, impactul, testele și aprobarea.
+
+## 9. Categoria 1 — Conturi și autentificare (decizii aprobate 2026-10-12)
+
+**Stadiu:** reguli aprobate ca principiu, fără implementare sau schimbări de producție.
+
+1. Înregistrare liberă; acces operațional numai după aprobarea contului de administrator.
+2. Funcțiile profesionale (șofer, developer etc.) sunt separate de autoritatea administrativă; cumularea funcțiilor nu oferă automat privilegii administrative.
+3. **Dezactivare temporară** pentru incidente, suspendare preventivă și blocare rapidă. Blocarea trebuie aplicată și în backend, nu doar în UI; reactivarea se face controlat.
+4. Modificările permisiunilor se reflectă prompt în aplicație și sunt verificate pe server la operațiunile protejate; cache-ul local nu conferă drepturi.
+5. **Ștergere definitivă** pentru foști angajați și conturi de test, nu dezactivare permanentă ca substitut. Se elimină identitatea din Authentication, profilul și datele asociate nenecesare. Se păstrează doar înregistrările cerute legal sau indispensabile integrității operaționale, cu minimizarea datelor personale, acces și retenție limitate. Nu se șterg automat operațiunile altor persoane ori documentele obligatorii. Înaintea implementării: inventar de dependențe, previzualizarea ștergerii, confirmare explicită, operațiune securizată pe server, protecția ultimului administrator și tratarea eșecurilor parțiale. Conturile de test fără dependențe relevante pot fi eliminate integral.
+6. Utilizatorul poate modifica datele proprii de profil permise, dar nu își poate acorda funcții, drepturi sau statut de aprobare.
+7. Întreruperea conexiunii nu provoacă inutil delogarea; operațiunile sensibile impun verificarea identității și drepturilor.
+
+**Clarificare:** vechea propunere «dezactivare în loc de ștergere» este înlocuită expres cu «dezactivare temporară pentru incidente + ștergere definitivă la eliminarea unui cont», sub condițiile de mai sus.
+
+**Riscuri de verificat la implementare:** controlul accesului în regulile Firestore și Cloud Functions pentru conturile inactive; revocarea drepturilor fără întârziere periculoasă; migrarea badge_v2 care poate goli functionIds; ștergerea Authentication și Firestore nu este atomică. Nu sunt declarate rezolvate.
+
+**Urmează:** definirea regulilor pentru funcții și permisiuni. Nu se modifică încă aplicația.
