@@ -717,3 +717,30 @@ Nu se implementează niciuna fără o alegere clară. Celelalte reguli aprobate 
 Această decizie **închide definitiv întrebarea din secțiunea 20.6**, unde varianta «numai titularul și administratorul» figura anterior drept *recomandare neaprobată*. **Secțiunea 21 prevalează** pentru această alegere. Restul deciziilor rămân valabile: ambele persoane din echipă primesc m² integrați integral, parteneriatele reiau istoricul la reunire, indicatorii procentuali rămân pe componență, autonomia ascunderii din propriul profil este păstrată, iar linkurile sociale primesc iconurile corespunzătoare.
 
 **Nu este implementare**: nicio modificare Flutter, Firebase, `firestore.rules`, Cloud Functions, date reale, APK sau deploy. Urmează stabilirea valorilor implicite de vizibilitate pentru celelalte câmpuri și proiectarea de securitate, înainte de implementare și teste.
+
+## 22. Confirmare: telefonul și emailul inițial vizibile colegilor (2026-10-13)
+
+### 22.1 Decizie explicită aprobată
+
+În răspuns la întrebarea «telefonul și adresa de e-mail să fie inițial vizibile colegilor, cu posibilitate de ascundere, sau inițial private și afișate numai dacă membrul le face vizibile?», proprietarul a ales expres **«Inițial vizibile»**.
+
+**Regulă funcțională APROBATĂ pentru profilurile membrilor:** atât **numărul de telefon**, cât și **adresa de e-mail de contact** sunt **vizibile implicit altor membri autentificați**, atât la membrii existenți cât și la cei nou înregistrați, **atâta timp cât titularul nu le-a ascuns** și cât profilul are dreptul să apară în director. Cele două setări sunt **independente**: telefonul poate fi vizibil și e-mailul ascuns, ori invers, ori amândouă vizibile/ascunse. Titularul și administratorul autorizat văd datele proprii/autorizate chiar și când sunt ascunse colegilor.
+
+**Important: alegerea aceasta NU extinde vizibilitatea diurnelor**. Ele rămân **obligatoriu private: numai titular și administrator**, conform secțiunii 21, fără opțiune de publicare. Nu se extinde nici la câmpuri secrete ale sistemului sau alte date de profil care nu au încă default aprobat.
+
+### 22.2 Algoritmul pentru viitoarea implementare a opțiunilor
+
+1. Lipsa unei preferințe explicite pentru `phone` / `contactEmail` în profilul unui membru **activ și deja vizibil în director** înseamnă **vizibil implicit** pentru acel câmp. Preferința explicită `false` prevalează; o revenire la vizibil se face numai la alegerea titularului sau printr-o operațiune administrativă permisă expres și auditabilă. Nu transformăm implicit un câmp fără valoare într-un câmp cu date fictive.
+2. **Control independent pentru fiecare:** comutator `Telefon — vizibil colegilor`, respectiv `E-mail — vizibil colegilor`, ambele active în starea inițială. Un click schimbă doar câmpul propriu și preferința lui; nu modifică ce se vede în profilul partenerului.
+3. **Excepție de profil complet ascuns/inactiv:** opțiunea pentru un câmp nu poate eluda regula existentă `hiddenFromMembers`, ascunderea unei identități cu rol privilegiat sau statutul de inactiv. În special, nu publicăm automat profilele de administrator care sunt excluse azi din `memberDirectory` doar pentru că telefonul și e-mailul au default `true`.
+4. **Diferență între email de autentificare și contact:** în cod există `AppUser.email` pentru autentificare/identificare, iar proiecția publică `functions/member_directory_projection.js::FIELDS` **NU include azi emailul**. Prin urmare, proiectarea trebuie să definească precis valoarea afișabilă drept **email de contact ales/admis pentru profil** (poate coincide cu adresa utilizatorului dacă produsul o oferă ca adresă de contact), fără a expune tokenuri, parole, credențiale sau metadata Auth. Pentru utilizatorii existenți, migrarea/afișarea valorii de contact trebuie să respecte această decizie și drepturile aplicabile, iar schimbarea emailului de login nu va modifica necontrolat accesul.
+5. **Backend cu filtrare efectivă:** `memberDirectory` permite citirea tuturor câmpurilor sale de către membrii activi, deci când `visibility.phone=false` ori `visibility.email=false`, proiecția backend trebuie să **OMITĂ** efectiv acea valoare. Nu trimitem datele ascunse către client și apoi doar ascundem `ListTile`. La activarea/dezactivarea publicării, se regenerează corect proiecția server-side și se verifică întârzierea triggerului, revocarea vizibilității din cache și citirile directe. Soluția actuală conține `phone` în proiecție, dar nu `email`; nicio modificare a Firebase nu este făcută în etapa curentă.
+6. **Nu permitem depășirea permisiunilor:** utilizatorii își pot actualiza propriile preferințe de profil doar pentru câmpurile permise, nu pe ale altora; `firestore.rules` trebuie adaptate/testate înaintea unui rollout. Un coleg nu poate citi `users/{uid}` privat doar pentru a afla datele ascunse.
+7. **Contact operațional distinct:** dacă numărul de telefon este necesar legitim unor fluxuri administrative/SMS, ascunderea lui din **profilul colegilor** nu schimbă automat configurația operațională a echipei sau dreptul administratorului de a vedea contactul. Revizuim separat fiecare utilizare operativă, fără a presupune că o preferință socială revocă obligații legale.
+8. **Etichetare clară și testare:** previzualizare sau explicație `Vizibil pentru ceilalți membri` și starea implicită explicită. Testele viitoare vor acoperi cele 4 combinații ale celor două opțiuni, owner/admin vs coleg, profil ascuns/inactiv, membru vechi fără preferințe, event trigger depășit, offline cache, date lipsă și acces direct la `memberDirectory`.
+
+### 22.3 Statut
+
+**Confidențialitatea implicită pentru telefon/e-mail este DECISĂ**, nu se mai cere confirmare. **Nu sunt decise implicit** valorile inițiale pentru rețelele sociale, câmpurile personalizate, m² și randamentele de parteneriat — acestea se discută separat. Excepția de diurne private rămâne validă.
+
+**Doar documentație în această etapă; nicio modificare a codului, a proiecției backend, datelor Firebase, regulilor Firestore, versiunilor, APK ori deploy.**
