@@ -277,6 +277,19 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "StreamBuilder", "mark_chat_unread"):
             self.assertIn(contract, module)
 
+    def test_feedback_page_extracted_preserving_form_contract(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/feedback/feedback_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'feedback/feedback_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class FeedbackPage extends StatefulWidget",
+                       "class _FeedbackPageState extends State<FeedbackPage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for contract in ("TabController", "initialTab", "details.dispose()",
+                         "expected.dispose()", "FirebaseFirestore.instance"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
