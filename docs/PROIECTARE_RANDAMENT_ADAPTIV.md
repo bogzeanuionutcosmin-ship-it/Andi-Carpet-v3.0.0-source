@@ -401,3 +401,53 @@ Au fost rulate **8 verificări JavaScript, toate trecute (8/8)** pe seturi stric
 - **Ales acum prin delegare:** familia estimatorului robust Theil–Sen, verificările minimale pentru suficiența datelor, referința comună când există și fallback fără auto-referință, integrarea Learning ca sursă de rezervă, plus cerința explicită de afișare în profilurile membrilor.
 - **De validat tehnic înainte de implementare:** verificarea reală a pragurilor de 6 locații / 3 suprafețe / 25% interval / eroare mediană de 30%, alegerea cohortelor, precizia pe date reale, timpii mixt-fațadă, versiunile fizice, snapshotul de la START, securitatea/permisiunile profilurilor, volumul Firestore și testarea pe un mediu de test/staging. Dacă pragurile se dovedesc prea restrictive, le ajustăm **documentat**, nu inventăm rezultate.
 - **Doar documentație în acest pas.** Niciun cod Flutter, Firebase, date reale, reguli de securitate, producție, APK ori deploy modificate. Cele 8 verificări sunt aritmetice pe seturi fictive; nu au fost rulate teste Flutter ori CI.
+
+## 15. Durate mixte mochetă-fațadă: audit și alegere propusă, în așteptarea clarificării operaționale (2026-10-13)
+
+> **STATUT:** analiză de cod și **PROPUNERE pentru aprobare**, NU decizie funcțională nouă confirmată. Utilizatorul a spus «Continuăm», după stabilirea statisticii și a profilurilor; asta autorizează analiza/documentarea, **nu** aprobarea automată a unei noi întrebări sau a unui nou buton.
+
+### 15.1 Constatare read-only, verificată din surse
+
+- `lib/dashboard/dashboard_page.dart::_startLocation` setează un singur `startedAt` când începe lucrarea, iar `_finishLocation` păstrează același START și salvează un singur `finishedAt`; la STOP, în implementarea **actuală**, întreabă necondiționat despre fațadă și salvează `facadeDone` DA/NU. Necondiționarea este deja un **defect cunoscut**, deoarece regula anterioară cere întrebarea **numai pentru fațadă planificată**.
+- `lib/models/app_data_models.dart::CentralizerRecord` conține `facadePlanned` și `facadeDone`, dar **NU** are timp propriu de fațadă, delimitare a intervalului de mochetă versus fațadă, timestamp al fațadei efectuate ori flag verificat «aceeași durată conține fațadă». `duration` este strict `finishedAt-startedAt` pentru o intervenție `completed`.
+- `lib/centralizer/centralizer_page.dart` permite creare manuală și corectarea orelor, dar nu atribuie minute separate fațadei. `lib/home/home_page.dart::_recordMap` scrie doar `facadePlanned/facadeDone` și START/STOP; nu există despărțire temporală.
+- Prin urmare, **`facadeDone=true` NU dovedește singur că fațada a fost în interiorul START–STOP de mochetă**: poate să fi fost lucrată după STOP, mai târziu sau poate reprezenta o editare. La fel, `facadePlanned=true` NU dovedește că timpul de fațadă a fost efectiv inclus. Timpul mixt nu se poate reconstrui din boolean.
+- Reguli deja aprobate: fațada este serviciu **adițional** cu status binar Realizată/Nerealizată, fără m² parțiali sau timp/procent de progres; un rezultat Nerealizată nu împiedică statusul de mochetă Finalizată ori STOP grafic; fațadele confirmate intră în Centralizator pentru facturare, iar revenirea ulterioară nu rescrie timpul mochetei; fără «pauză intervenție» pe START–STOP.
+
+### 15.2 Algoritm de eligibilitate propus — conservator fără timp fictiv
+
+Un interval de lucru de mochetă se clasifică în preprocesarea **randamentului**, diferit de statusul operațional și de facturare:
+
+| Informația demonstrabilă pentru intervalul START–STOP | Antrenare Theil–Sen pentru mochetă | Randament mochetă |
+|---|---|---|
+| Doar mochetă finalizată, fără fațadă/alt serviciu în același interval, timp valid | Da, dacă și m²/configurația sunt verificate și alte condiții statistice trec | Da, dacă există `T_ref` valid |
+| Fațadă planificată, răspuns NU, niciun alt serviciu în același interval | Da, după celelalte verificări | Da, după fallback-ul aprobat |
+| Fațadă efectuată ulterior într-o vizită distinctă, **dovedită în afara intervalului mochetă** | Da pentru intervenția de mochetă curată | Da; niciun efect retroactiv al fațadei |
+| Fațadă efectuată **în interiorul** aceluiași interval START–STOP, fără timp separat credibil | **Nu** | **Nu** — exclusă **atât durata reală cât și referința** din procent; rămâne muncă operațională Finalizată |
+| Moment fațadă incert la o execuție veche cu `facadeDone=true`, fără audit temporal | **Nu** până când există o separare verificabilă | **Nu** dacă durata nu poate fi demonstrată ca exclusiv de mochetă; motiv «timp mixt/neclar» |
+| Lucrare numai de fațadă la revenire | Nu este observație de mochetă | Nu afectează scorul mochetei, dar intră în evidența fațadei realizate |
+
+**Important:** A exclude o pereche din etalon/scor pentru lipsă de separare temporală **NU** anulează statusul lucrării, nu micșorează suprafața totală facturabilă a fațadei, nu șterge istoricul și nu penalizează echipa cu 0%. Pentru afișaj se arată acoperirea și motivul, separat de procent. Dacă datele neclare domină, este posibil «Date insuficiente»; fiind indicator informativ, **integritatea e preferabilă unui procent arbitrar**.
+
+### 15.3 Simulare matematică (date strict fictive)
+
+O curățare de mochetă are `T_ref=60 minute` și `T_mochetă=50 minute`. O fațadă adițională a durat **30 minute**, dar timpul său **NU** este disponibil în schema actuală; valoarea este exclusiv cunoscută în scenariul fictiv pentru a demonstra eroarea.
+
+- Dacă înregistrăm greșit totul ca o singură execuție de mochetă, `T_real=80` și scorul devine **75%** (`60/80`).
+- Dacă am avea durată reală demonstrabilă a mochetei, aceasta ar fi 50 minute, scor **100%** după plafonare (`60/50=120%` plafonat). Însă **schema actuală nu ne permite să scădem cele 30 minute în mod legitim**, deci **nu aplicăm niciun scăzământ inventat**.
+- Dacă fațada a fost efectuată ulterior, separat de cele 50 minute de mochetă, scorul mochetei rămâne **100%**; fațada apare numai în evidența sa.
+- În algoritmul propus, o execuție mixtă nedelimitată **nu intră în niciuna dintre sumele** `ΣT_ref` și `ΣT_real`. Nu se face medie de procente pe săli.
+
+Au trecut **5/5 verificări JS** pe aceste scenarii: interval curat, eroarea 75% din mixt, excluderea mixtului, păstrarea scorului la revenire separată și excluderea simultană a ambilor termeni. **Acestea sunt exemple aritmetice, nu teste Flutter/Firestore/CI.**
+
+### 15.4 Posibile interfețe viitoare, de decis doar după răspunsul operațional al utilizatorului
+
+- **Varianta fără butoane suplimentare:** dacă fațada este planificată, STOP cere DA/NU numai conform regulilor existente. În caz DA, dacă nu se poate stabili în mod cert când a fost făcută, execuția este marcată «mixt/neclar» și neeligibilă pentru randament. Simplă, dar poate reduce acoperirea.
+- **Variantă cu o singură clarificare contextuală (recomandată dacă situația apare des):** numai când fațada planificată este confirmată DA se solicită minimal «Fațada a fost executată în timpul intervalului START–STOP al mochetei?» cu opțiuni DA/NU/NU ȘTIU; NU ȘTIU este tratat conservator, nu ca NU. Aceasta nu adaugă buton de pauză, contor pentru fațadă ori executare parțială. Opțiunile și momentul întrebării **nu sunt aprobate**; înainte de design se întreabă operatorul cum se desfășoară fizic munca.
+- **Alternativă după observație operațională:** dacă echipele execută mereu fațada după STOP mochetă, se poate modela un eveniment separat binar al fațadei, cu data reală, fără cronometru suplimentar; dar această premisă **nu este cunoscută și nu trebuie impusă**.
+
+### 15.5 Întrebare funcțională încă deschisă
+
+**Când echipa efectuează fațada în aceeași vizită, o curăță de regulă înainte de STOP-ul mochetei sau după STOP?** Răspunsul stabilește dacă se poate păstra intervalul curat fără verificări suplimentare ori dacă avem nevoie de marcaj explicit al timpului mixt, fără timpi inventați.
+
+**Până la răspuns:** acesta este un **proiect de regulă**, nu o condiție aprobată de utilizator și nu cod de implementat. Modul în care confirmăm fațada, câmpurile noi, permisiunile de editare, revenirea ulterioară și afișarea în profiluri rămân conforme cu deciziile deja luate și etapele proiectului. Fără modificări cod, Firebase, reguli, producție sau deploy.
