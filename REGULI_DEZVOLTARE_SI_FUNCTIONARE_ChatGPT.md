@@ -1,4 +1,21 @@
-# AndiCarpet — Decizii și reguli de dezvoltare și funcționare (ChatGPT)
+# AndiCarpet — Condiții obligatorii de lucru și reguli de dezvoltare
+
+## Condiții obligatorii de lucru
+
+Aceste reguli au prioritate în analiza, proiectarea, modificarea și testarea codului. Se aplică fiecărei implementări, corecții, refactorizări și optimizări.
+
+1. **Analiză înainte de implementare.** ChatGPT inspectează întotdeauna codul și documentația relevante înainte de a modifica ceva: verifică dacă funcționalitatea există deja, dacă există duplicate, dependențe, efecte secundare și detalii care ar putea fi omise.
+2. **Lucru curat și proiectare riguroasă.** Analizăm și proiectăm în detaliu, luând în calcul ipotezele rezonabile, cazurile-limită, excepțiile, concurența și impactul asupra întregii aplicații.
+3. **Integritatea codului existent.** Orice implementare trebuie să respecte celelalte funcții, să nu degradeze comportamente existente, să nu dubleze logica, să nu lase cod mort, fragmente nefolosite sau caractere rătăcite. Se verifică importurile, referințele, compatibilitatea, testele și build-ul.
+4. **Defectele descoperite sunt semnalate și prioritizate.** Când ChatGPT găsește probleme de funcționare, explică impactul, propune rezolvări și, dacă este necesar, schimbări de comportament. Corecțiile urgente de siguranță și integritate au prioritate; schimbările funcționale se discută înainte de aplicare.
+5. **Inițiativă tehnică.** Dacă ChatGPT identifică o soluție mai bună, mai simplă, mai sigură sau mai eficientă, o propune imediat, cu argumente și compromisuri, fără să o impună tacit.
+6. **Eficiența bazei de date.** Evităm creșterea inutilă a stocării, documentele duplicate, scrierile și citirile excesive, listener-ele redundante și costurile Firestore. Monitorizăm utilizarea și proiectăm pentru a rămâne în limitele planului; nu pretindem că o modificare garantează consum zero.
+7. **Internet, GPS și timp real.** Aplicația este proiectată pentru conectivitate și localizare: actualizări cât mai prompte, sincronizare coerentă, tratarea pierderii conexiunii, permisiuni GPS, consum rezonabil de baterie și date, protecția confidențialității și recuperare după erori. „Timp real” înseamnă latență minimă fezabilă, nu promisiunea imposibilă de funcționare online fără rețea.
+8. **Logica funcționării are prioritate maximă.** Cerințele utilizatorului sunt analizate critic. Dacă o idee este contradictorie, riscantă, ineficientă sau tehnic nepotrivită, ChatGPT explică de ce și propune alternativa logică și corectă; nu implementează automat o cerință greșită doar pentru a o confirma.
+9. **Verificare înainte de finalizare.** Pentru orice schimbare: inventar de impact, teste relevante, CI/build unde sunt disponibile, documentarea deciziilor și raportarea sinceră a rezultatului. Nu confundăm testele structurale cu validarea funcțională. Nu facem deploy sau modificări de producție fără aprobare explicită.
+
+---
+
 
 > Document separat de nota operațională `ChatGpt`. Este un registru al DECIZIILOR și al planului aprobat de proprietarul proiectului. Nu confundați propunerile viitoare cu funcționalități deja implementate. Actualizați-l continuu când se stabilesc reguli noi.
 
