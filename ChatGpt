@@ -805,3 +805,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras din `_startCoreSync()` trei abonări Firestore (`locationCategories`, `backgrounds`, `functions`) în `_startDefinitionsSync(FirebaseFirestore db)` în HomePage, păstrând ordinea inițială, refresh-ul financiar și sincronizarea permisiunilor. Commit `a7faf3a`.
 - Adăugat test structural de regresie pentru cele trei colecții și apelurile secundare, commit `1af305e`.
 - Urmează validarea CI, apoi separarea celorlalte abonări din HomePage. Fără deploy.
+
+
+## 99. Reguli obligatorii aprobate și separare sincronizare director membri
+- Proprietarul a stabilit explicit condițiile obligatorii de lucru: analiză înainte de implementare, prevenirea duplicatelor/regresiilor/codului mort, proiectare logică, propuneri proactive, economie Firestore, internet/GPS/timp real, testare și refuz argumentat al cerințelor ilogice. Au fost puse chiar la începutul `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md`, commit `35b8780`.
+- CI etapa 98: SUCCESS, run 38217783985.
+- Extras blocul de abonare la `users` / `memberDirectory` în `_startDirectorySync(FirebaseFirestore db)` din `_startCoreSync`, păstrând actualizarea echipelor și sincronizarea financiară. Commit `84d2c4b`; test structural `test_home_directory_sync_isolated`, commit `53f2f16`.
+- Urmează verificare CI. Nu s-a făcut deploy. După modularizare trecem la stabilirea detaliată a regulilor fiecărei funcții.
