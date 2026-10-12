@@ -451,3 +451,42 @@ Au trecut **5/5 verificări JS** pe aceste scenarii: interval curat, eroarea 75%
 **Când echipa efectuează fațada în aceeași vizită, o curăță de regulă înainte de STOP-ul mochetei sau după STOP?** Răspunsul stabilește dacă se poate păstra intervalul curat fără verificări suplimentare ori dacă avem nevoie de marcaj explicit al timpului mixt, fără timpi inventați.
 
 **Până la răspuns:** acesta este un **proiect de regulă**, nu o condiție aprobată de utilizator și nu cod de implementat. Modul în care confirmăm fațada, câmpurile noi, permisiunile de editare, revenirea ulterioară și afișarea în profiluri rămân conforme cu deciziile deja luate și etapele proiectului. Fără modificări cod, Firebase, reguli, producție sau deploy.
+
+## 16. Clarificare reală: cele două activități se desfășoară în paralel (2026-10-13)
+
+> **FAPT OPERAȚIONAL CONFIRMAT, CU EFECT ASUPRA PROIECTĂRII:** răspunsul proprietarului la întrebarea din secțiunea 15 a fost: **«De obicei fațadele sunt făcute în același timp cu mocheta, cei 2 membrii își împart atribuțiile».** Aceasta descrie o intervenție cu muncă **concurentă**, nu două lucrări făcute succesiv. «De obicei» înseamnă că **nu toate** intervențiile trebuie presupuse automat mixte/concurente.
+
+### 16.1 Efectul asupra regulilor anterioare (precizare nouă obligatorie)
+
+1. Echipă operațională de **maximum doi membri**. Când este **numai mochetă**, participarea ambilor la curățarea normală rămâne regula deja stabilită. Când există **mochetă + fațadă simultan**, cei doi membri participă la **aceeași intervenție a echipei**, însă **își împart atribuțiile**: un membru poate curăța mocheta în timp ce celălalt fațada, eventual alternând sarcinile. **Nu presupunem că ambii curăță mocheta în același moment**. Această clarificare de utilizare reală **completează și limitează explicit** formularea prea absolută «ambii membri curăță mocheta la fiecare locație» din regulile anterioare, pentru vizitele mixte; nu presupune permiterea unei echipe operaționale de un singur om.
+2. Cronometrul unic `startedAt → finishedAt` măsoară **timpul calendaristic al intervenției echipei**, nu suma minutelor de muncă ale membrilor. Pentru două activități paralele, `durata_totală ≠ durata_mochetă + durata_fațadă`. Într-un exemplu teoretic perfect sincronizat, 80 min mochetă + 60 min fațadă paralele duc la ~80 min calendaristice, **nu** 140 min. În practică pot exista pregătiri, schimburi de sarcini sau etape, deci nici formula `MAX` nu este adevăr general / date măsurate.
+3. **Fără minute fictive** alocate mochetei/fațadei, fără înmulțirea intervalului cu doi, fără „pauză” a intervenției, fără cronometru obligatoriu pe membru, fără procent personal și fără transformarea fațadei într-o lucrare parțială. Fațada rămâne serviciu **adițional cu DA/NU**, evidențiat pentru facturare când a fost efectiv realizat.
+4. **Nu mai este potrivită ca soluție implicită respingerea tuturor intervențiilor mixte**, deoarece proprietarul a clarificat că sunt frecvente și ar duce la pierderea unei părți importante din istoric. **Totuși** includerea lor într-un randament declarat anterior «exclusiv pentru curățarea mochetei» reprezintă o **extindere semantică** și **necesită validarea proprietarului** înainte de implementare. Nu interpretăm faptul operațional drept aprobare pentru includerea procentuală a muncii de fațadă.
+
+### 16.2 Algoritmul recomandat, PROPUNERE pentru decizia următoare
+
+**Modele interne pentru două moduri distincte de intervenție, dar în continuare DOAR două procente afișate ale echipei**:
+
+- **Mochetă simplă:** `T_ref_carpet = a_carpet + b_carpet × m²_mochetă`, coeficienți estimați robust prin metoda Theil–Sen aleasă, cu Learning compatibil cu versiunea fizică și fallback-ul deja aprobat.
+- **Mochetă + fațadă în paralel (mixt):** `T_ref_mixed` este **durata de referință pentru intervenția simultană ca întreg**, învățată **numai din alte intervenții mixte comparabile**, fără a deduce direct minute de fațadă sau a presupune că două durate se adună. Dacă există suficiente cazuri independente, o primă aproximație poate fi un model Theil–Sen distinct `a_mixed + b_mixed × m²_mochetă`, **comparabilitatea fiind condiționată și de tipul/configurația lucrării de fațadă**. `Location.facadeM2`, **numai dacă este măsurat fiabil**, poate ajuta la grupare/modelare ca **suprafață distinctă**; nu se însumează cu `surfaceM2`. Lipsa m² de fațadă nu primește 0 fictiv și nu justifică extrapolări arbitrare.
+- **Alegerea modelului:** numai dintr-un marcaj/istoric verificabil **«doar mochetă / mixte simultane / fațadă ulterior»**, fără a deduce automat concomitența din `facadePlanned=true` sau `facadeDone=true`. Evenimentul ulterior de fațadă trebuie păstrat distinct, iar corecțiile statusului nu schimbă implicit intervalul curățării mochetei. Cum captăm aceasta **rămâne de decis**, cu efort UI minim și fără butoane care să dubleze START/STOP.
+- **Calitate:** modelele sunt antrenate independent pe date istorice certe și clase similare. Fără suficiente cazuri mixte pentru o referință comparabilă, **nu aplicăm modelul de mochetă pură unui START–STOP mixt**; contribuția mixtă rămâne neeligibilă pentru procent până când apare etalon credibil, fără a elimina evenimentul din Centralizator. Istoricul și Learning pot să crească treptat gradul de acoperire. Nu inventăm coeficienții și nu tratăm refuzuri ca finalizări.
+- **Agregare propusă:** dacă utilizatorul aprobă includerea lucrărilor mixte în indicatorul informativ, perechile `T_ref_carpet/T_real_carpet_only` și `T_ref_mixed/T_real_mixed` se pot **însuma împreună**, înaintea plafonării la 100%, separat pentru «Luna în curs» și «General», fără procent pe sală și fără un al treilea procent pentru fațadă. Eticheta indicatorului trebuie să reflecte onest faptul că măsoară **eficiența curățării efectuate de echipă în locație**, inclusiv vizitele în care fațada și mocheta sunt simultane — **nu** un cronometru izolat al mochetei. **Această extindere NU este aprobată acum.**
+
+**Alternativa compatibilă strict cu „numai mochetă”:** intervalele mixte nelimitate temporal rămân în evidența operațională și în Learning al regimului mixt (nu în modelul pur), dar **nu intră în randamentul exclusiv al mochetei**; pe UI se arată acoperirea. Această variantă evită amestecarea serviciilor, însă poate pierde multe lucrări din scor. Alegerea între cele două **necesită proprietarul**, fiind o diferență de sens al procentului.
+
+### 16.3 Simulare simplă (numai numere fictive)
+
+- Lucrare **numai mochetă**: timp de referință 80 min, timp real 90 min ⇒ dacă este singura eligibilă: **88,89%**.
+- Lucrare **mixtă simultană**: timp de referință comparabil învățat **din alte lucrări mixte** 110 min, timp real comun 100 min ⇒ raport brut 110%, plafonat 100% în cazul separat de test. **Nu reprezintă două durate individuale însumate.**
+- Dacă este **aprobată** includerea tipului mixt și ambele referințe sunt valide, agregarea celor două perechi este `min(100%, 100×(80+110)/(90+100)) = 100%`, **un singur procent per perioadă**.
+- **Greșeală:** aplicarea directă unui interval mixt a unui etalon de **mochetă pură** de 80 minute ar da `100×(80+80)/(90+100) = 84,21%` și ar putea penaliza artificial o echipă care a executat simultan și fațada.
+- Dacă rămânem la regula **strict numai mochetă**, se evaluează exclusiv lucrarea de mochetă pură, adică 88,89%; intervenția mixtă este evidențiată separat, nu «refuzată».
+
+**Verificări matematice JavaScript independente (4/4) pe aceste exemple fictive:** interval paralel nu este suma duratelor, agregare plafonată, comparație greșită pur-versus-mixt penalizantă și excluderea perechii mixte dintr-un etalon pur. **Nu s-au testat date reale, Dart/Flutter ori CI.**
+
+### 16.4 Decizie de produs solicitată în continuare
+
+**Întrebarea necesară este despre sensul procentului, nu despre cum lucrează echipa:** preferă proprietarul să includem și intervențiile mixte în **aceleași două randamente ale echipei, dar numai dacă au etalon mixt comparabil și fără minute inventate** (recomandat pentru acoperire), **sau** să păstrăm randamentul strict numai al mochetei, excluzând perioadele mixte fără interval de mochetă distinct?
+
+**În această sesiune s-a decis DOAR faptul operațional al lucrului simultan și împărțirii atribuțiilor.** Alegerea includerii mixte, modalitatea de înregistrare și cohortele statistice rămân de aprobat. Fără Dart/Firebase/reguli de securitate/backup/deploy.
