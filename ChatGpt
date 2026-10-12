@@ -630,3 +630,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - În `lib/main.dart` introdus `part 'admin/admin_panel_page.dart';` și eliminat blocul extras, reducând fișierul la ~13,1k caractere; commit `c83ec787`.
 - Urgent: adaugă test de regresie pentru existența part-ului, unicitatea claselor și contractele de Administrare. Verifică testele Python care presupun că implementarea Administrării este în main.dart și adaptează numai sursele testelor. Verifică toate cele 5 joburi CI; niciun rezultat verde nu este confirmat pentru #53.
 - Nu s-au modificat intenționat permisiunile, logica de backup/restore, datele Firebase sau regulile diurnelor. Testul real Daniel -> utilizator rămâne amânat până după curățare. Nu face deploy web/APK fără cerere explicită.
+
+
+## 72. Audit post-extragere Administrare și întărire contract Decont
+- Verificat direct `lib/main.dart` (~13,1 KB), `lib/admin/admin_panel_page.dart` (~126,3 KB) și `test/repository_hygiene_test.py`; clasele AdminPanel sunt doar în modulul separat și `part` este prezent.
+- Confirmate textual în modulul Admin funcțiile `_exportBackup`, `_restoreBackup`, `saveLocation`, `deleteLocation`.
+- Contractul pentru suma manuală din Decont a fost întărit pentru a verifica expresia regex completă din `expense_page.dart`, nu doar `hasMatch(normalized)`; commit `afc6bbec`.
+- Conectorul GitHub pentru workflow runs întoarce doar run-uri PR; pentru commiturile push interogate a întors listă goală. Aceasta NU este dovadă de CI verde sau de lipsa workflow-ului. Rezultatele celor 5 joburi sunt încă neconfirmate.
+- Continuă auditul testelor cu presupuneri despre `main.dart` și verifică CI din GitHub Actions înainte de alte extrageri majore. Nu publica web/APK fără cerere.
