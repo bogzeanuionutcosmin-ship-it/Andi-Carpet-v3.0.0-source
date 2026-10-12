@@ -731,3 +731,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `_learning(bool ocr)` în `lib/admin/admin_learning_actions.dart`, mixin `_AdminLearningActions`, înregistrat în `main.dart` și conectat în `AdminPanelPage`. Commituri `81a1bc9`, `73b9291`, `9bbf45d`.
 - Păstrate setările modului de aprobare manuală, estimările `learnedDurationEstimate`, propunerile de grafice și salvarea prin `_saveUiSettings`.
 - Test de regresie `test_admin_learning_diagnostics_extracted`, commit `f2fffd5`. Total 62 Dart parts. Compilarea curentă CI nu este încă confirmată; nu face deploy înainte de validare.
+
+
+## 88. Curățare Administrare: Notificări, Rapoarte și Audit
+- Extras `_sendSystemNotification`, `_notifications`, `_reports`, `_audit` în `lib/admin/admin_communications_actions.dart`, mixin `_AdminCommunicationsActions`, conectat în `AdminPanelPage` și declarat ca `part` în `main.dart`. Commituri `b138b49`, `21f811c`, `7e59924`.
+- Păstrate contractele pentru notificările către utilizatorii activi, exporturile PDF pentru centralizatoare, financiar și audit și afișarea istoricului.
+- Test structural în `test/repository_hygiene_test.py`, commit `95ee5e7`. Total 63 Dart parts. CI pentru commiturile recente de verificat; fără deploy.
