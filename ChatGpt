@@ -599,3 +599,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Cauza unică: `test_manual_amount_and_map_route_regressions` căuta mesajul `Schematic fallback when Mapbox cannot provide road geometry.` în `lib/main.dart`, dar codul există neschimbat în `lib/map/map_page.dart`.
 - Reparat testul: verifică separat mesajul în `map_page.dart`, păstrând verificările de sume manuale în `main.dart`; commit `a622e7c5`.
 - CI după fix încă neconfirmat. Nu s-a modificat codul Dart sau comportamentul aplicației.
+
+
+## 68. Modul #52 ExpensePage / Decont
+- CI SUCCESS pentru #51 Hartă, commit `a39a754a`, run `38196992564`.
+- Extras verbatim `ExpensePage` și `_ExpensePageState` (~76,9k caractere) în `lib/expenses/expense_page.dart`, înregistrat `part` în main; commituri `ec810dae`, `b7cf64a9`.
+- Păstrate fluxurile de diurnă și decont, lista destinatarilor `visibleTeamMemberIds`, cheltuielile, deconturile, permisiunile, PDF export și callbackurile fără modificări funcționale.
+- Test de regresie nou pentru directivă, unicitatea claselor și contractele Decont; commit `e669bc9b`.
+- CI #52 încă neconfirmat. Important: avans diurnă peste dreptul acumulat este intenționat; legacy și v2 rămân separate; testul real Daniel -> utilizator rămâne amânat până după curățare.
