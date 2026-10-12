@@ -513,3 +513,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras textual `_Page` (~4478 caractere) în `lib/ui/page_shell.dart` cu `part of '../main.dart';`, commituri `7e178690`, `1de96bc6`.
 - Păstrate: `LayoutBuilder`, prag responsiv de 600px, branding din setările active sau logo standard, scroll, titlu/subtitlu și acțiuni. Test regresie nou `test_responsive_page_shell_extracted_preserving_branding`, commit `5d321933`.
 - Următorul pas: verifică CI HEAD, repară eventualele teste vechi dependente de main.dart, continuă auditul de corectitudine și extragerile sigure. Nu schimba comportamentul sau ordinea etapelor stabilită în `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md`.
+
+
+## 57. Modul #44: widgeturi sumar statistici, sume și informații
+- CI pentru modul #43 confirmat verde: commit `f75f4f32`, run `38193569710`.
+- Extrase textual `_StatCard`, `_MoneyCard`, `_InfoCard` din `lib/main.dart` în `lib/ui/summary_cards.dart`, commituri `54c80281` și `704c5b99`.
+- Păstrate contractele: icon sau asset obligatoriu la statistici, accent pe secțiune, formatare sumă cu două zecimale în lei, callback onTap și afișare ListTile pentru informații.
+- Test regresie adăugat în `test/repository_hygiene_test.py`, commit `2e37b6a9`.
+- Verifică CI la HEAD, continuă auditul logicii și al testelor. Nu altera regulile funcționale și urmează ordinea din registrul separat de reguli.
