@@ -783,3 +783,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extins testul structural de regresie pentru retenția notificărilor și `notificationHistoryDays`, commit `ea4a4a4`.
 - Audit preliminar: `_startCoreSync()` din HomePage este încă un bloc mare (~22 KB) cu multe dependențe de stare, notificări, chat și permisiuni. Nu se extrage mecanic fără inventarierea contractelor mixinului și testare Flutter. Continuarea: subdivizare controlată și auditul migrației `badge_v2` pentru a preveni resetarea funcțiilor utilizatorilor.
 - Fără deploy. CI pentru acest pas încă de verificat.
+
+
+## 96. Rezolvare permisiuni centralizată în mixin
+- CI pentru etapa 95: run 38216568564 SUCCESS.
+- Mutat `_effectivePermissionsForIds(Iterable<String>)` din `lib/home/home_page.dart` în `lib/home/home_permission_maintenance.dart` lângă sincronizarea permisiunilor; implementarea păstrată neschimbată. Commituri `aa5d4b1`, `dc23ab9`.
+- Extins testul structural pentru a verifica existența rezolvării permisiunilor doar în modulul nou, commit `11278f8`.
+- Audit `_startCoreSync`: 15 stream subscriptions și logică de chat, notificări, utilizatori, setări; separarea necesită contracte explicite pentru starea HomePage. Nu am modificat încă acest bloc pentru a evita regresii.
+- Migrarea badge_v2: implementarea curentă șterge definiții și resetează `functionIds` pentru membrii non-admin la prima rulare; necesită decizie funcțională înainte de schimbare. Fără deploy; verificare CI în curs.
