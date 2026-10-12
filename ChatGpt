@@ -674,3 +674,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Acum `uiSettings` este decodificat și verificat integral în preflight, înainte de confirmare și orice ștergere; valoarea validată se reutilizează la salvare, commit `1902d00`.
 - Testul structural verifică explicit ordinea validare documente -> validare setări -> confirmare -> ștergere și folosirea setărilor validate; commit `8828c3c`.
 - Risc rămas: întreruperea rețelei, drepturi Firestore și limitele batch pot produce restaurări parțiale; nu declara atomicitate sau CI verde fără dovezi. Nu s-a făcut deploy.
+
+
+## 79. Protecție la restaurarea backupurilor automate
+- În `_restoreAutomaticBackup`, vechiul cod itera TOATE colecțiile permise și le ștergea chiar dacă snapshot-ul nu conținea elemente pentru ele. Acesta este un risc de pierdere de date la snapshot-uri incomplete.
+- Commit `0d78665`: preflight complet al documentelor, ID-urilor, duplicatelor și setărilor UI; snapshot fără documente/colecții valide este respins. Restaurarea atinge doar colecțiile efectiv prezente în snapshot (`grouped.keys`). Colecțiile absente rămân nemodificate. Test de regresie commit `eee08c2`.
+- Limitare intenționată: o colecție intenționat goală nu poate fi dedusă doar din absența documentelor în snapshot. Pentru restaurare exactă a colecțiilor goale, formatul snapshot trebuie să declare explicit colecțiile incluse și numărul documentelor. Rămâne riscul de eșec în mijlocul batch-urilor Firestore; nu există atomicitate globală. CI neconfirmat; fără deploy.
