@@ -762,3 +762,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `_backup()` în `lib/admin/admin_backup_panel_actions.dart`, mixin `_AdminBackupPanelActions`, conectat în `AdminPanelPage` și înregistrat în `main.dart`. Commituri `880326c`, `8b2732b`, `9f59843`.
 - Păstrate indicatorii de backup manual/automat, restaurarea snapshot-ului și avertismentul că restaurarea înlocuiește datele operaționale, nu conturile Authentication. Test structural commit `4f2b46d`.
 - Principalele zone Administrare sunt acum extrase. Urmează audit de compilare și integrare, apoi audit general; CI încă neconfirmat, fără deploy.
+
+
+## 93. Audit general: început separare HomePage
+- După CI #514 verde (5/5), inventarul `lib/` arată `home/home_page.dart` ca cel mai mare fișier rămas (~145 KB); alte fișiere mari: `expenses/expense_page.dart`, `schedule/program_page.dart`, `map/map_page.dart`.
+- Extras `_createAutomaticBackup` și `_pruneAutomaticBackups` din HomePage în `lib/home/home_backup_maintenance.dart` (mixin `_HomeBackupMaintenance`), păstrând snapshot-urile Firestore, setările UI și retenția. Commituri `0385e74`, `d3ff6dd`, `2c04769`.
+- Test structural `test_home_automatic_backup_maintenance_extracted`, commit `a996362`. Urmează confirmarea CI pentru această etapă și auditul altor blocuri mari. Fără deploy.
