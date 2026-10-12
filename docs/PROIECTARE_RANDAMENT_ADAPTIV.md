@@ -133,3 +133,42 @@ Trebuie distinse:
 4. Abia după aprobarea numerelor și regulilor rămase, se scriu teste și cod pe ramură separată, cu PR/CI, fără modificări implicite de Firebase sau deploy.
 
 **Stadiu la confirmare:** doar documentație; niciun cod, date Firestore, reguli de securitate sau deploy modificate prin această decizie.
+
+## 10. Schimbarea reală a configurației fizice a sălii — clarificare explicită 13.10.2026
+
+**Răspunsul proprietarului:** «Sala chiar își schimbă fizic formatul». Aceasta lămurește cauza operațională obișnuită a modificării suprafețelor: **nu trebuie tratată automat drept corectarea unei măsurători greșite**. Pot apărea reamenajări, compartimentări sau reorganizări ale spațiului; o schimbare de format poate modifica dificultatea chiar dacă m² nu se schimbă.
+
+### Regulă funcțională rezultată (aprobată ca principiu, nu implementare tehnică)
+
+1. **Versiuni temporale ale configurației:** noua suprafață/configurație a locației este valabilă **din momentul real al schimbării fizice**, nu automat din ziua când un administrator deschide formularul. Se păstrează separat istoricul anterior, fără rescrierea duratelor ori a intervențiilor efectuate.
+2. **Lucrările se compară cu situația fizică relevantă din momentul execuției:** o curățare efectuată înainte de schimbare nu primește automat noua suprafață. O curățare de după schimbare folosește noua referință. Aceasta se aplică atât agregării lunare, cât și celei generale.
+3. **Learning recunoaște schimbarea:** istoria veche rămâne utilă ca reper, în special după normalizarea la m² și compararea între lucrări, dar **durata absolută a vechii configurații nu este echivalentă automat cu durata noii configurații**. O versiune nouă poate primi inițial o estimare mai puțin sigură, îmbunătățită de execuțiile noi și alte lucrări comparabile; istoricul nu se șterge.
+4. **Randamentul rămâne orientativ și global al echipei**, cu exact două procente «Luna în curs» și «General», actualizabile la informații noi, plafonate la 100%, fără consecințe salariale și fără scor pe sală.
+5. **Distincție pentru excepții:** dacă totuși se corectează o valoare tastată greșit, aceasta reprezintă o rectificare de date și are alt efect decât schimbarea fizică. Nu presupunem că fiecare editare a suprafeței este o rectificare retroactivă.
+
+### Exemplu fictiv
+
+- Până la 30 septembrie: sala are 200 m²; intervențiile efectuate atunci se raportează la 200 m².
+- De la 1 octombrie: spațiul este reamenajat și mocheta are 150 m²; lucrările următoare folosesc 150 m².
+- Dacă editarea este introdusă în aplicație pe 4 octombrie, data relevantă a modificării **rămâne 1 octombrie** dacă aceasta este data efectivă cunoscută. Nu aplicăm 150 m² retrospectiv în septembrie.
+- Dacă mobilierul sau compartimentarea se schimbă, dar mocheta rămâne 150 m², o schimbare de configurație poate fi încă relevantă pentru estimarea duratei.
+
+### Soluție tehnică propusă, de validat înainte de implementare
+
+- Pentru o **schimbare reală**, interfața poate solicita minimal noua suprafață, data intrării în vigoare și, opțional, o notă «reamenajare/configurație schimbată». Data editării și identitatea autorului se pot înregistra automat pentru audit minimal. Nu introducem formular complicat ori aprobări suplimentare doar pentru indicatorul informativ.
+- Se recomandă o **revizie temporală minimă per locație** (identificator/configurație, `validFrom`, `surfaceM2` și eventual observație) sau un mecanism echivalent, împreună cu un **snapshot m²/configurație** al fiecărei **noi** intervenții fizice în momentul relevant. Comparați costul acestor opțiuni și eventual folosirea lor combinată înainte de a schimba schema; nu copiați toată locația la fiecare intervenție.
+- Datele istorice legacy nu au în prezent snapshot al suprafeței. **Nu le atribuiți automat un m² istoric exact pornind de la valoarea curentă.** Dacă se cunoaște fără ambiguitate perioada unei configurații, asocierile pot fi verificate; altfel, aplicația folosește istoricul numai pe dimensiunile disponibile (de exemplu durate/estimări) și marchează incertitudinea.
+- Dacă formatul se modifică în timpul unei intervenții active, situația este atipică și necesită validare/caz documentat; nu rescrieți automat START/STOP sau m² după ora editării.
+- Modificarea unei locații poate duce la **recalcularea indicatorului curent** (și la scăderea temporară a încrederii estimării), dar nu rescrie munca trecută, echipele ori documentele financiare. Nu declanșați scrieri Firestore la fiecare actualizare a Dashboard-ului.
+
+### Teste necesare la implementare
+
+1. Configurația A până la data X, B după X; istoria folosește referința corespunzătoare și totalurile se calculează fără duble numărări.
+2. Editarea introdusă ulterior datei reale nu propagă greșit m² noi la lucrări vechi.
+3. Format nou cu aceiași m² poate schimba gradul de comparabilitate pentru Learning.
+4. Trecere peste miezul nopții/în lună nouă: timpul fizic al execuției nu se confundă cu data operațională; regula temporală e deterministă.
+5. Corecția tastării greșite este gestionată separat de schimbarea fizică; intervențiile vechi nu se modifică accidental.
+6. Legacy fără snapshot rămâne utilizabil prudent, fără inventarea unei suprafețe.
+7. Înlocuire membri, offline, două dispozitive, schimbări de configurație concurente și recalculare fără scrieri Firestore la fiecare refresh.
+
+**Aprobat explicit acum:** faptul că sălile își pot schimba **real** formatul și că această schimbare nu este automat o eroare de măsurare. **Propus, dar încă de proiectat:** câmpurile exacte, UI-ul, snapshoturile, reviziile, data implicită de efect și algoritmul statistic de adaptare. Nu există modificări ale codului sau ale datelor de producție în această etapă.
