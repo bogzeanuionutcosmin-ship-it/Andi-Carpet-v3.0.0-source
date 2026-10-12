@@ -352,6 +352,17 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "Icon(icon,size:30)", "Text(text)", "EdgeInsets.all(28)"):
             self.assertIn(contract, module)
 
+    def test_settings_page_extracted_preserving_account_actions(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/settings/settings_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'settings/settings_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for name in ("SettingsPage", "_SettingsPageState"):
+            self.assertNotIn("class " + name + " extends ", main)
+            self.assertEqual(module.count("class " + name + " extends "), 1)
+        for contract in ("widget.onLogout", "Icons.logout", "Ieșire din cont"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
