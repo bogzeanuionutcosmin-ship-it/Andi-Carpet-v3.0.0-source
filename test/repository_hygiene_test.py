@@ -164,6 +164,21 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "await doc.reference.delete();"):
             self.assertIn(contract, module)
 
+    def test_location_phone_contacts_screen_extracted_once(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/contacts/location_contacts_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'contacts/location_contacts_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class MessagesContactsPage extends StatefulWidget",
+                       "class _MessagesContactsPageState extends State<MessagesContactsPage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("Uri(scheme:'tel',path:clean)", module)
+        self.assertIn("Future<LocationContact?> _contactDialog(", module)
+        self.assertIn("canEditContacts", module)
+        self.assertIn("canManageTemplates", module)
+        self.assertIn("smsEnabled", module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
