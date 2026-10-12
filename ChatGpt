@@ -667,3 +667,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - În `lib/admin/admin_panel_page.dart`, `_restoreBackup` validează ACUM toate colecțiile permise, toate ID-urile de documente și toate payload-urile decodificate înainte de dialogul de confirmare și înainte de prima ștergere Firestore; commit `3e3d03f`.
 - Se respinge backupul invalid fără modificări în baza de date, în loc de restaurare parțială din cauza unui document corupt întâlnit târziu. Testul de regresie a fost actualizat să impună ordinea preflight -> confirmare -> ștergere; commit `5eaf951`.
 - Rămâne limitarea de atomicitate la erori de rețea/permisiuni în timpul restaurării și riscul unor fișiere foarte mari. CI nu este încă confirmat. Nu s-a făcut deploy.
+
+
+## 78. Validarea setărilor UI înainte de restaurare
+- Auditul a descoperit că `_backupDecode(parsed['uiSettings'])` se executa după restaurarea colecțiilor; setări corupte puteau produce eșec târziu și restaurare parțială.
+- Acum `uiSettings` este decodificat și verificat integral în preflight, înainte de confirmare și orice ștergere; valoarea validată se reutilizează la salvare, commit `1902d00`.
+- Testul structural verifică explicit ordinea validare documente -> validare setări -> confirmare -> ștergere și folosirea setărilor validate; commit `8828c3c`.
+- Risc rămas: întreruperea rețelei, drepturi Firestore și limitele batch pot produce restaurări parțiale; nu declara atomicitate sau CI verde fără dovezi. Nu s-a făcut deploy.
