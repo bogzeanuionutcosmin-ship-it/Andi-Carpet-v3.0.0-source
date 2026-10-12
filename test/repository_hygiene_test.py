@@ -21,7 +21,8 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_main_has_no_accidentally_appended_duplicate(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertEqual(source.count("class _Empty extends StatelessWidget"), 1)
-        self.assertEqual(source.count("const Map<String,String> _andiStickerAssets"), 1)
+        modules = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "lib").rglob("*.dart"))
+        self.assertEqual(modules.count("const Map<String,String> _andiStickerAssets"), 1)
         self.assertEqual(source.count("class PrivateChatPage extends StatefulWidget"), 1)
         self.assertNotIn("\n).hasMatch(normalized)) return null;", source)
 
@@ -39,7 +40,7 @@ class RepositoryHygieneTests(unittest.TestCase):
                 self.assertEqual(asset.read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
 
     def test_sticker_picker_and_both_chat_surfaces_render_images(self):
-        source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "lib").rglob("*.dart"))
         self.assertIn("final keys = <String>[..._andiStickerAssets.keys, ..._andiCustomEmojis.keys];", source)
         self.assertIn("Image.asset(asset, width: size, height: size, fit: BoxFit.contain)", source)
         self.assertGreaterEqual(source.count("_andiReactionWidget("), 4)
