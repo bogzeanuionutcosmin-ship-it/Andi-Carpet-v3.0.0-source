@@ -607,3 +607,12 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Păstrate fluxurile de diurnă și decont, lista destinatarilor `visibleTeamMemberIds`, cheltuielile, deconturile, permisiunile, PDF export și callbackurile fără modificări funcționale.
 - Test de regresie nou pentru directivă, unicitatea claselor și contractele Decont; commit `e669bc9b`.
 - CI #52 încă neconfirmat. Important: avans diurnă peste dreptul acumulat este intenționat; legacy și v2 rămân separate; testul real Daniel -> utilizator rămâne amânat până după curățare.
+
+
+## 69. Reparare CI după extragerea Decont (#52)
+- CI #51 confirmat SUCCESS la `a39a754a`, run `38196992564`.
+- #52 Decont a fost extras în `lib/expenses/expense_page.dart`, cu part în main și teste de regresie (detalii în secțiunea anterioară).
+- CI la `da478325` run `38197751303` a eșuat numai din două aserțiuni Python învechite: `test_annual_only_confirmed_actual_receipts` și `test_manual_amount_and_map_route_regressions`; Firebase Functions, Node și Firestore emulator SUCCESS.
+- Am actualizat `test/decont_05_08_source_contract_test.py` să includă `lib/expenses/expense_page.dart` în sursa verificată, commit `41e66946`.
+- Am actualizat `test/repository_hygiene_test.py` să verifice validarea sumelor în `lib/expenses/expense_page.dart`, păstrând contractul hărții separat, commit `3ee2e48c`.
+- Nicio schimbare a logicii diurnelor, avansurilor sau datelor reale. CI după corecții neconfirmat; așteaptă rezultatul.
