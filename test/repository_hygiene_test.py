@@ -769,14 +769,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         for contract in ("_exportBackup", "_restoreBackup", "saveLocation", "deleteLocation"):
             self.assertIn(contract, admin)
 
-    def test_backup_restore_rejects_invalid_collection_before_deletion(self):
+    def test_backup_restore_preflights_all_documents_before_deletion(self):
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
         restore = admin.split("Future<void> _restoreBackup() async {", 1)[1].split("Widget _reports()", 1)[0]
-        validation = restore.index("if(entry.value is! Map)")
+        validation = restore.index("for(final entry in rawCollections.entries)")
+        decoding = restore.index("final decoded=_backupDecode(rawEntry.value)")
+        confirmation = restore.index("final ok=await showDialog<bool>")
         deletion = restore.index("batch.delete(doc.reference)")
-        self.assertLess(validation, deletion)
-        self.assertIn("return;", restore[validation:deletion])
-        self.assertIn("Backup invalid:", restore[validation:deletion])
+        self.assertLess(validation, decoding)
+        self.assertLess(decoding, confirmation)
+        self.assertLess(confirmation, deletion)
+        self.assertIn("if(decoded is! Map)throw FormatException", restore)
+        self.assertIn("if(id.isEmpty||id.contains('/'))", restore)
+        self.assertIn("Backup invalid. Nu s-au modificat date:", restore)
 
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
