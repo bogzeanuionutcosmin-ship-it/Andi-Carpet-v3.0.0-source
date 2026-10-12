@@ -18,6 +18,19 @@ class RepositoryHygieneTests(unittest.TestCase):
             with self.subTest(path=str(path.relative_to(ROOT))):
                 json.loads(path.read_text(encoding="utf-8"))
 
+    def test_all_declared_dart_parts_exist_and_belong_to_main(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        paths = re.findall(r"^part '([^']+)';$", main, flags=re.MULTILINE)
+        self.assertGreaterEqual(len(paths), 50)
+        self.assertEqual(len(paths), len(set(paths)), "Duplicate Dart part directives")
+        for relative in paths:
+            with self.subTest(part=relative):
+                self.assertNotIn("..", Path(relative).parts)
+                module = ROOT / "lib" / relative
+                self.assertTrue(module.is_file(), "Missing Dart part: " + relative)
+                content = module.read_text(encoding="utf-8")
+                self.assertIn("part of '../main.dart';", content)
+
     def test_main_has_no_accidentally_appended_duplicate(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         modules = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "lib").rglob("*.dart"))
