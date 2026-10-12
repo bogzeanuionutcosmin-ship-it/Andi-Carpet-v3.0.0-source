@@ -90,3 +90,10 @@ Categorii inițiale de inventariat după curățare: autentificare/roluri, membr
 - **Aprobat ca direcție și ordine de lucru** în conversația din 2026-10-12.
 - Detaliile de implementare, schema logurilor, retenția, drepturile exacte, politica offline și tehnologiile finale sunt **de stabilit ulterior împreună**, nu sunt încă specificații finale.
 - La fiecare decizie ulterioară: notați data, categoria, regula exactă, justificarea, impactul, testele și aprobarea.
+
+
+## 9. Evidență aplicare reguli — 2026-10-12
+
+- Lotul `refactor/home-codecs-sync-20261012` continuă exclusiv etapa 1: modularizare HomePage fără schimbare intenționată de comportament. Raport: `AUDIT_MODULARIZARE_2026-10-12.md`; continuitate: `ChatGpt`, secțiunea 100.
+- Nicio regulă funcțională nouă nu a fost aprobată sau implementată. Datele Firebase, regulile de securitate și configurația de producție nu sunt modificate; deploy-ul este interzis în această sesiune conform cererii proprietarului.
+- Cache-urile fără cititori și parserul repetat sunt candidate de curățare, nu autorizare implicită de schimbare a erorilor, identității încasărilor sau migrare a datelor. Rămâne obligatorie validarea CI pe SHA final înainte de merge și următorul lot.

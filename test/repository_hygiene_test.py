@@ -789,6 +789,71 @@ class RepositoryHygieneTests(unittest.TestCase):
         for field in ("backupRetentionDays", "notificationHistoryDays", "androidDownloadUrl", "smsPreviousDayTime", "brandingBackgroundId", "defaultPerDiem"):
             self.assertIn(field, settings)
 
+    def test_home_document_codecs_extracted_without_duplicate_implementations(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        codecs = (ROOT / "lib/home/home_document_codecs.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'home/home_document_codecs.dart';", main)
+        self.assertIn("_HomeDocumentCodecs", home)
+        self.assertIn("AppSettings get settings;", codecs)
+        self.assertNotIn("FirebaseFirestore.instance", codecs)
+        # Abstract mixin contracts are allowed; implementations must occur once.
+        library = "\n".join((ROOT / "lib" / path).read_text(encoding="utf-8")
+                            for path in re.findall(r"^part '([^']+)';$", main, re.MULTILINE))
+        for model in ("location", "category", "function", "team", "car", "schedule",
+                      "record", "notification", "expense", "perDiem", "settlement", "finance"):
+            for suffix in ("Map", "FromDoc"):
+                name = "_" + model + suffix
+                pattern = r"^  [^\n]+ " + re.escape(name) + r"\([^\n]*\) (?:=>|\{)"
+                with self.subTest(method=name):
+                    self.assertEqual(len(re.findall(pattern, codecs, re.MULTILINE)), 1)
+                    self.assertEqual(len(re.findall(pattern, library, re.MULTILINE)), 1)
+                    self.assertEqual(len(re.findall(pattern, home, re.MULTILINE)), 0)
+        for field in ("actualReceivedAmount", "receivedEntries", "facadeDone", "financialManagerId"):
+            self.assertIn("'" + field + "'", codecs)
+        self.assertEqual(codecs.count("_doubleFrom(d['perDiemRate'], settings.defaultPerDiem)"), 2)
+
+    def test_home_seed_catalog_is_unique_and_local(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        seed = (ROOT / "lib/home/home_location_seed.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'home/home_location_seed.dart';", main)
+        self.assertIn("_HomeLocationSeed", home)
+        self.assertNotIn("List<Location> _seedLocations() {", home)
+        self.assertEqual(seed.count("List<Location> _seedLocations() {"), 1)
+        ids = re.findall(r"Location\(id:'([^']+)'", seed)
+        self.assertEqual(len(ids), 103)
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertNotIn("FirebaseFirestore", seed)
+        self.assertIn("locations = _seedLocations();", home)
+
+    def test_home_core_sync_preserves_subscription_order_and_lifecycle(self):
+        home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        core = home.split("  void _startCoreSync() {", 1)[1].split("  Future<void> _writeLearningEvent(", 1)[0]
+        calls = re.findall(r"^    (_start\w+Sync)\(db\);$", core, re.MULTILINE)
+        self.assertEqual(calls, ["_startDefinitionsSync", "_startDirectorySync",
+                                "_startOwnProfileSync", "_startOperationsSync",
+                                "_startNotificationSync", "_startChatSync", "_startSettingsSync"])
+        self.assertNotIn(".snapshots()", core)
+        sync = home.split("  void _startAuditSync(", 1)[1].split("  Future<void> _writeLearningEvent(", 1)[0]
+        self.assertEqual(sync.count("_coreSubscriptions.add("), 15)
+        self.assertIn("for (final sub in _coreSubscriptions) { sub.cancel(); }", home)
+        self.assertIn("if (isAdmin) {\n      _startAuditSync(db);", core)
+        self.assertIn("_startFinancialSync();", core)
+
+    def test_home_sync_groups_preserve_visibility_limits_and_errors(self):
+        home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        groups = [("_startOwnProfileSync", "_startOperationsSync", ["if (!isAdmin)", "doc(currentUserId)", "Profil propriu: $e"]),
+                  ("_startOperationsSync", "_startNotificationSync", ["collection('teams')", "collection('cars')", "collection('locations')", "collection('schedules')", "collection('records')", "_applyTeamMembership();", "_startFinancialSync();", "_maybeAutoCloseResolvedSchedules"]),
+                  ("_startNotificationSync", "_startChatSync", ["where('userId', isEqualTo: currentUserId)", "_notificationsPrimed", "_knownNotificationIds", "_allowPersonalAlert", "Notificări: $e"]),
+                  ("_startChatSync", "_startSettingsSync", ["where('recipientId', isEqualTo: currentUserId)", "orderBy('createdAt', descending: true).limit(20)", "mandatoryChatAlert", "_hiddenUserIds", "_recomputeGroupUnread();", "Chat comun: $e"]),
+                  ("_startSettingsSync", "_startCoreSync", ["doc('uiSettings')", "_runAutomaticMaintenance()", "Setări UI: $e"])]
+        for name, following, contracts in groups:
+            group = home.split("  void " + name + "(FirebaseFirestore db) {", 1)[1].split("  void " + following, 1)[0]
+            for contract in contracts:
+                with self.subTest(group=name, contract=contract):
+                    self.assertIn(contract, group)
+
     def test_home_directory_sync_isolated(self):
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
         self.assertIn("void _startDirectorySync(FirebaseFirestore db)", home)

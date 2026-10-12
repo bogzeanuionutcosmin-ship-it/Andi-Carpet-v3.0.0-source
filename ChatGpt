@@ -812,3 +812,12 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - CI etapa 98: SUCCESS, run 38217783985.
 - Extras blocul de abonare la `users` / `memberDirectory` în `_startDirectorySync(FirebaseFirestore db)` din `_startCoreSync`, păstrând actualizarea echipelor și sincronizarea financiară. Commit `84d2c4b`; test structural `test_home_directory_sync_isolated`, commit `53f2f16`.
 - Urmează verificare CI. Nu s-a făcut deploy. După modularizare trecem la stabilirea detaliată a regulilor fiecărei funcții.
+
+
+## 100. PR de modularizare HomePage — 2026-10-12
+- Bază `54bd851` verificată: CI run `38219376683` SUCCESS. Documentele obligatorii și auditul tehnic au fost citite integral înainte de modificări. Lucru exclusiv pe `refactor/home-codecs-sync-20261012`.
+- Extrase textual 28 metode de conversie în `_HomeDocumentCodecs` și catalogul de 103 locații în `_HomeLocationSeed`. Două parts noi, total 71. Contract explicit `AppSettings get settings` pentru valorile implicite financiare.
+- `_startCoreSync` delegă profilul propriu, operațiile, notificările, chatul și setările în cinci metode locale. Aceleași instrucțiuni, ordine și abonări; lifecycle păstrat. HomePage 136.564 -> 95.603 bytes.
+- Reconstrucția locală a sursei originale confirmă echivalența byte cu byte a blocurilor mutate. 107 teste Python și 3 Node PASS; syntax Functions și diff-check PASS. Flutter lipsește local; testele Dart, build web, dependențele Functions și emulatorul sunt în CI-ul PR și trebuie confirmate pe SHA final.
+- Audit complet și pași rămași în `AUDIT_MODULARIZARE_2026-10-12.md`: cache-uri numai scrise, parser încasări repetat, test ledger în lib în afara suitei test/. Nicio eliminare presupusă; migrarea badge_v2 și riscurile restaurării rămân prioritare pentru analiza ulterioară.
+- Fără modificări Firebase, reguli/config producție, versiune, deploy, merge sau teste pe date reale. Modularizarea completă NU este încă terminată; continuarea sigură este separarea serviciilor de sincronizare și a celorlalte ecrane mari după CI verde.

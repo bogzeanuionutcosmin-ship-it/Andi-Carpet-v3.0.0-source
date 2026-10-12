@@ -98,6 +98,8 @@ part 'auth/account_access_pages.dart';
 part 'home/home_backup_maintenance.dart';
 part 'home/home_permission_maintenance.dart';
 part 'home/home_page.dart';
+part 'home/home_document_codecs.dart';
+part 'home/home_location_seed.dart';
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';
