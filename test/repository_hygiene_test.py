@@ -191,6 +191,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("Istoric update", module)
         self.assertIn("_appVersionLabel", module)
 
+    def test_sms_gateway_management_ui_extracted_once(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/notifications/sms_gateway_card.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'notifications/sms_gateway_card.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class SmsManagerGatewayCard extends StatefulWidget",
+                       "class _SmsManagerGatewayCardState extends State<SmsManagerGatewayCard>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("_smsGatewayChannel.invokeMapMethod<String,dynamic>('gatewayStatus')", module)
+        self.assertIn("FirebaseAuth.instance.currentUser", module)
+        self.assertIn("getIdToken(true)", module)
+        self.assertIn("TargetPlatform.android", module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
