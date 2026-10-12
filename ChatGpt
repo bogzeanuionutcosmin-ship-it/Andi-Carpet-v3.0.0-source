@@ -416,3 +416,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras `AppInformationPage` din `lib/main.dart` în `lib/ui/app_information_page.dart` cu `part of '../main.dart';`; păstrate istoricul intern `_builtInHistory`, taburile Capabilități/Istoric update și eticheta versiunii `_appVersionLabel`. Commituri `a24fc62d`, `a531b685`.
 - Test de regresie structurală în `test/repository_hygiene_test.py`, commit `5cb63e7c`.
 - Așteaptă CI pe ultimul commit. Nu au fost modificate funcții, permisiuni, date Firestore sau deploy.
+
+
+## 44. Modul #34: card administrare SMS gateway Android
+- CI checkpoint `3cf40e62` SUCCESS, run `38187059722`.
+- Extras `SmsManagerGatewayCard` și `_SmsManagerGatewayCardState` din `lib/main.dart` în `lib/notifications/sms_gateway_card.dart`, păstrând `part of '../main.dart';` și toate apelurile originale de Android MethodChannel, verificările de platformă și tokenul Firebase Auth. Commituri `3512e6c5`, `84fc55d1`.
+- Test de regresie pentru legare, unicitatea claselor și contractele gateway/auth în `test/repository_hygiene_test.py`, commit `31a7266c`.
+- Ultimul commit necesită verificare CI; fără deploy și fără modificări în Firebase Rules, SMS backend sau date.
