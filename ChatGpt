@@ -791,3 +791,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extins testul structural pentru a verifica existența rezolvării permisiunilor doar în modulul nou, commit `11278f8`.
 - Audit `_startCoreSync`: 15 stream subscriptions și logică de chat, notificări, utilizatori, setări; separarea necesită contracte explicite pentru starea HomePage. Nu am modificat încă acest bloc pentru a evita regresii.
 - Migrarea badge_v2: implementarea curentă șterge definiții și resetează `functionIds` pentru membrii non-admin la prima rulare; necesită decizie funcțională înainte de schimbare. Fără deploy; verificare CI în curs.
+
+
+## 97. Separare sincronizare audit administrator
+- CI etapa 96 confirmat SUCCESS (run 38216913382, commit `e2e538e9`).
+- Din `_startCoreSync()` extras blocul de abonare la colecția `audit` într-o metodă locală `_startAuditSync(FirebaseFirestore db)`; accesul rămâne exclusiv admin, limită 500 intrări, aceeași tratare a erorilor și aceeași abonare urmărită pentru `dispose`. Commit `fa28aff`.
+- Test structural nou `test_home_audit_sync_isolated_from_core_sync` pentru restricția admin, colecție, limită și error handling, commit `8628c92`.
+- Urmează verificare CI pentru această etapă; apoi separarea atentă a celorlalte fluxuri de sincronizare. Migrarea destructivă `badge_v2` rămâne în lista de audit, fără modificare de comportament și fără deploy.
