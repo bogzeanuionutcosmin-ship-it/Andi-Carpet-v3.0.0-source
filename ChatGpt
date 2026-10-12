@@ -775,3 +775,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras din `home_page.dart` în `lib/home/home_permission_maintenance.dart` sincronizarea `effectivePermissions`, inițializarea locațiilor, inițializarea definițiilor și migrarea `badge_v2`, fără schimbări intenționate de comportament. Atenție: migrarea badge_v2 resetează funcțiile utilizatorilor conform logicii existente; acest comportament trebuie revizuit în auditul de reguli și permisiuni, nu executat arbitrar.
 - Înregistrat noul mixin în `main.dart`, plus test de contract structural `test_home_permission_maintenance_extracted`. Commituri `d32d492`, `70a48b7`, `e2cea1c`, `13b6f6b`.
 - De verificat noul CI Flutter și Python; fără deploy. Următoarea etapă: auditul blocurilor de sincronizare HomePage și corectitudinea permisiunilor.
+
+
+## 95. CI confirmat și retenția notificărilor extrasă
+- CI #520 (run 38216258076) confirmat SUCCESS după corectarea declarațiilor `_locationMap`, `_categoryMap`, `_functionMap` din mixinul de permisiuni, commit `35ac6f6`.
+- Extras `_pruneOldNotifications` din HomePage în mixinul existent `lib/home/home_backup_maintenance.dart`, lângă retenția backup-urilor, fără schimbare de comportament; commituri `97742fe`, `d2c2ad6`.
+- Extins testul structural de regresie pentru retenția notificărilor și `notificationHistoryDays`, commit `ea4a4a4`.
+- Audit preliminar: `_startCoreSync()` din HomePage este încă un bloc mare (~22 KB) cu multe dependențe de stare, notificări, chat și permisiuni. Nu se extrage mecanic fără inventarierea contractelor mixinului și testare Flutter. Continuarea: subdivizare controlată și auditul migrației `badge_v2` pentru a preveni resetarea funcțiilor utilizatorilor.
+- Fără deploy. CI pentru acest pas încă de verificat.
