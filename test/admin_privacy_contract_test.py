@@ -5,7 +5,7 @@ class AdminPrivacyContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.rules=(ROOT/'firestore.rules').read_text()
-        cls.dart=(ROOT/'lib/main.dart').read_text() + '\n' + (ROOT/'lib/home/home_page.dart').read_text()
+        cls.dart='\n'.join(p.read_text(encoding='utf-8') for p in (ROOT/'lib').rglob('*.dart'))
         cls.js=(ROOT/'functions/index.js').read_text()
     def test_private_profiles_no_member_read(self):
         block=self.rules.split('match /users/{userId} {')[1].split('match /memberDirectory/')[0]
