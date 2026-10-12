@@ -375,6 +375,18 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "widget.functionDefinitions"):
             self.assertIn(contract, module)
 
+    def test_centralizer_page_extracted_preserving_records_and_export(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/centralizer/centralizer_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'centralizer/centralizer_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for name in ("CentralizerPage", "_CentralizerPageState"):
+            self.assertNotIn("class " + name + " extends ", main)
+            self.assertEqual(module.count("class " + name + " extends "), 1)
+        for contract in ("widget.records", "widget.saveRecord",
+                         "widget.canEditCentralizer", "widget.locations", "exporting"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
