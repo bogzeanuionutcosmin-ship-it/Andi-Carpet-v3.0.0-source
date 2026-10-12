@@ -768,3 +768,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - După CI #514 verde (5/5), inventarul `lib/` arată `home/home_page.dart` ca cel mai mare fișier rămas (~145 KB); alte fișiere mari: `expenses/expense_page.dart`, `schedule/program_page.dart`, `map/map_page.dart`.
 - Extras `_createAutomaticBackup` și `_pruneAutomaticBackups` din HomePage în `lib/home/home_backup_maintenance.dart` (mixin `_HomeBackupMaintenance`), păstrând snapshot-urile Firestore, setările UI și retenția. Commituri `0385e74`, `d3ff6dd`, `2c04769`.
 - Test structural `test_home_automatic_backup_maintenance_extracted`, commit `a996362`. Urmează confirmarea CI pentru această etapă și auditul altor blocuri mari. Fără deploy.
+
+
+## 94. HomePage: separare mentenanță permisiuni și migrări
+- CI #514 verde 5/5; etapa 93 confirmată și de CI la commit `65a6d389` (run 38215342455).
+- Extras din `home_page.dart` în `lib/home/home_permission_maintenance.dart` sincronizarea `effectivePermissions`, inițializarea locațiilor, inițializarea definițiilor și migrarea `badge_v2`, fără schimbări intenționate de comportament. Atenție: migrarea badge_v2 resetează funcțiile utilizatorilor conform logicii existente; acest comportament trebuie revizuit în auditul de reguli și permisiuni, nu executat arbitrar.
+- Înregistrat noul mixin în `main.dart`, plus test de contract structural `test_home_permission_maintenance_extracted`. Commituri `d32d492`, `70a48b7`, `e2cea1c`, `13b6f6b`.
+- De verificat noul CI Flutter și Python; fără deploy. Următoarea etapă: auditul blocurilor de sincronizare HomePage și corectitudinea permisiunilor.
