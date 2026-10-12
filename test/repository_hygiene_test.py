@@ -426,6 +426,19 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "FlutterMap", "MarkerLayer", "PolylineLayer"):
             self.assertIn(contract, module)
 
+    def test_expense_page_extracted_preserving_per_diem_workflows(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/expenses/expense_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'expenses/expense_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for name in ("ExpensePage", "_ExpensePageState"):
+            self.assertNotIn("class " + name + " extends ", main)
+            self.assertEqual(module.count("class " + name + " extends "), 1)
+        for contract in ("visibleTeamMemberIds", "widget.perDiems",
+                         "widget.settlements", "widget.expenses",
+                         "widget.canEditOwnDecont", "exporting"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
