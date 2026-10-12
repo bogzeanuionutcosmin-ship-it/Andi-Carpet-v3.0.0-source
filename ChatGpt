@@ -409,3 +409,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - `MessagesContactsPage` este de fapt interfața pentru contacte telefonice asociate locațiilor (nu lista membrilor din chat). Mutată împreună cu `_MessagesContactsPageState` în `lib/contacts/location_contacts_page.dart` prin `part of`, fără schimbare de logică. Commituri `ba780083`, `cd2d7cd1`.
 - Păstrate apelul `tel:`, dialogul `LocationContact`, setarea `smsEnabled` și cârligele de permisiuni `canEditContacts`/`canManageTemplates`.
 - Test contract nou în `test/repository_hygiene_test.py`, commit `1bffe3ef`. CI pentru ultimul commit încă de verificat. Fără deploy.
+
+
+## 43. Modul #33: pagina Despre / istoric actualizări
+- La începutul lotului, CI pentru checkpoint `7c55b68b` era încă pending (run `38186772629`); nu presupune succesul fără verificare.
+- Extras `AppInformationPage` din `lib/main.dart` în `lib/ui/app_information_page.dart` cu `part of '../main.dart';`; păstrate istoricul intern `_builtInHistory`, taburile Capabilități/Istoric update și eticheta versiunii `_appVersionLabel`. Commituri `a24fc62d`, `a531b685`.
+- Test de regresie structurală în `test/repository_hygiene_test.py`, commit `5cb63e7c`.
+- Așteaptă CI pe ultimul commit. Nu au fost modificate funcții, permisiuni, date Firestore sau deploy.
