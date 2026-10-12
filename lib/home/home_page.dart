@@ -1923,15 +1923,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     _startFinancialSync();
   }
 
-  Set<String> _effectivePermissionsForIds(Iterable<String> ids) {
-    final out = <String>{};
-    for (final id in ids) {
-      final def = functionById(functionDefinitions, id);
-      if (def != null && def.active) out.addAll(def.permissions);
-    }
-    return out;
-  }
-
   Future<void> _writeLearningEvent({
     required String category,
     required String event,
