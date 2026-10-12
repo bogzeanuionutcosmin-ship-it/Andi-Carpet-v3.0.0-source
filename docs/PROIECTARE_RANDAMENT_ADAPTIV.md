@@ -772,3 +772,44 @@ După confirmarea că telefonul și emailul sunt inițial vizibile colegilor, pr
 **7/7 verificări JavaScript fictive au trecut**: două linkuri fără preferințe istorice sunt vizibile; ascunderea doar a Facebook nu ascunde Instagram; ascunderea ambelor le elimină din proiecția colegului; administratorul și proprietarul le văd; alegerile independente rămân independente; ascunderea din profilul A nu schimbă publicarea în profilul B. **Acestea sunt verificări de logică, NU teste Flutter, Cloud Functions, Firestore, reguli de securitate sau date reale.**
 
 **Decizia despre vizibilitatea inițială a linkurilor sociale este finală**. Rămân pentru categoria Profiluri/Membri: defaulturile pentru **câmpuri personalizate nesociale**, pentru total m² și cardurile pe parteneriate/randament, verificarea politicii de confidențialitate și detaliile UI. **Doar documentație; fără cod, Firebase, reguli, deploy.**
+
+## 24. Confirmare generală: toate câmpurile obișnuite și statisticile din profil inițial vizibile (2026-10-13)
+
+### 24.1 Regula generală aprobată direct de proprietar
+
+La întrebarea «randamentele pe parteneriate și suprafețele de mochetă lucrate să fie și ele inițial vizibile colegilor, cu posibilitatea fiecărui membru de a le ascunde separat în propriul profil?», proprietarul a răspuns **«Da, toate inițial vizibile»**. În contextul deciziilor precedente pentru telefon, email și linkurile sociale, interpretarea coerentă este **o singură regulă generală** pentru **informațiile de profil obișnuite, destinate membrilor autentificați**:
+
+**Inițial vizibile colegilor autentificați**, dar titularul poate ascunde individual ulterior:
+- Telefonul și emailul de contact (setări separate, deja aprobate).
+- Fiecare link Facebook, Instagram, TikTok, YouTube etc. (setare separată per link, icon de platformă, deja aprobate).
+- Numele/porecla, fotografia, funcția, informațiile personale obișnuite ale profilului și câmpurile personalizate **nesociale** create pentru a fi afișate în profil, cu alegeri de ascundere per element.
+- **Totalul personal de m² de mochetă** pe toate echipele, ca volum al lucrărilor comune la care membrul a participat; nu reprezintă m² curățați singur.
+- **Fiecare card de parteneriat istoric**, inclusiv m² de mochetă lucrați împreună, randamentul «Luna în curs» și randamentul «General». Pentru a respecta «ascundere individuală», proiectăm controlul la nivel de card și/sau la nivelul fiecărui indicator din card, fără obligația de a ascunde celelalte parteneriate.
+
+**Excepții obligatorii care prevalează asupra cuvântului «toate»:**
+1. **Diurnele și datele financiare private din profil** rămân **vizibile numai titularului și administratorului autorizat**, fără opțiune de publicare colegilor (decizia expresă din secțiunea 21).
+2. **Datele de sistem sau de autentificare, secretele, tokenurile, câmpurile interne administrative și alte informații care nu sunt destinate profilului social** nu devin publice prin această regulă. Nu se confundă «toate informațiile de profil» cu documentul brut `users` sau cu toate colecțiile Firestore.
+3. **Profilurile indisponibile/ascunse integral/inactive/administratori excluși** rămân sub regulile de acces existente. Defaultul «vizibil» al unui câmp nu forțează publicarea profilului însuși și nu schimbă dreptul la diurne.
+
+### 24.2 Aplicare și continuitatea opțiunilor
+
+- Dacă pentru un câmp ori un card **nu există alegere individuală salvată** (inclusiv utilizatori vechi), acesta este **vizibil implicit** numai atunci când este permis să apară în profilul accesibil colegilor și valoarea există efectiv.
+- Dacă titularul a ascuns un element, valoarea **explicit `false` prevalează** asupra defaultului. Setarea rămâne stabilă la editarea profilului, sincronizare, redenumirea ori reordonarea linkurilor și la revenirea în echipă cu fostul partener. Fiecare câmp personalizat/link/card statistic are nevoie de identificator logic stabil; nu folosim indexul din array.
+- Vizibilitatea la nivel de `randament luna`, `randament general` și `m² per parteneriat` trebuie aplicată fără să dezvăluie indirect o valoare pe care titularul a ales să o ascundă; de exemplu, nu trimitem suma într-un JSON pentru coleg și doar ascundem o etichetă în Flutter. Se folosesc proiecții server filtrate autorizate. Dacă întregul card este ascuns, nu trimitem cardul sau metadatele care îi divulgă existența fără motiv operațional.
+- Fiecare decide exclusiv pentru **propriul profil**; ascunderea unui card de parteneriat în profilul A **NU** împiedică membrul B să îl afișeze în propriul profil, dacă B l-a lăsat vizibil. Adminul autorizat și titularul văd valorile complete potrivit drepturilor.
+- Totalurile m² din profil nu dublează lucrările în Centralizator: aceeași execuție Finalizată de S m² contribuie S m² la fiecare dintre cei doi participanți validați, S m² la parteneriat și **doar S m²** în raportările la nivel de firmă. Revenirea la aceeași pereche continuă istoricul General și m², fără resetare.
+- Câmpurile fără date rămân neafișate/necompletate, nu se inventează linkuri, suprafețe istorice, procente, participanți ori alte valori. Când istoria este incompletă, păstrăm «Date insuficiente»/«total incomplet» chiar dacă indicatorul este implicit vizibil.
+
+### 24.3 Audit tehnic și teste viitoare
+
+- În codul actual `functions/member_directory_projection.js` include `phone`, dar **nu** emailul, `profileFields` sau statisticile. `firestore.rules` face `users` privat titular/admin și `memberDirectory` citibil de membrii activi. **Nu este implementat noul default pentru toate informațiile**; modificarea proiecției backend și a permisiunilor trebuie proiectată și testată într-o etapă de implementare aprobată.
+- Proiecția publică internă trebuie să aibă **allowlist de câmpuri obișnuite**, nu publicarea brută a `users`; să omită valorile ascunse, diurnele și secretele, să reziste la evenimente duplicate/întârziate ale triggerului și să trateze revocarea din cache/offline. Testele de securitate verifică **access direct Firestore/API**, nu doar widgeturi Flutter; adminul/titularul păstrează sursa privată completă.
+- Pentru statistici, preferăm un sumar per titular calculat din date de execuție verificate, apoi filtrat server-side după preferința titularului, fără a oferi membrilor acces liber la colecția `records`. Calendar operațional, ferestre lunare și reveniri în aceeași componență rămân cele deja aprobate.
+
+**12/12 verificări JS fictive trecute în această sesiune**: câmpurile și cardurile sunt vizibile fără preferințe; diurnele sunt private oricare ar fi preferința; ascunderea individuală a telefonului, a unui link, a unui parteneriat ori doar a randamentului General nu modifică alte valori; adminul și titularul văd datele ascunse; alegerea lui A nu modifică profilul lui B; un profil global ascuns rămâne invizibil; `false` explicit nu este înlocuit de default. **Acestea sunt teste de logică simulate, NU teste ale codului Flutter, Firestore, Cloud Functions, CI sau date reale.**
+
+### 24.4 Stare
+
+**DECIZIE FUNCȚIONALĂ ÎNCHISĂ:** nu mai întrebăm separat dacă «m², randament, câmpuri custom» sunt implicit vizibile. Sunt implicit vizibile pentru colegii autorizați, cu control per informație, cu excepțiile financiare și de sistem de mai sus.
+
+**Nu s-a modificat aplicația, `firestore.rules`, Cloud Functions, datele Firebase, producția sau APK.** Continuăm cu proiectarea exactă a ecranului de setări și a accesului real înainte de implementare.
