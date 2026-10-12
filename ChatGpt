@@ -553,3 +553,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Test de regresie nou în `test/repository_hygiene_test.py` pentru declarațiile unice și contractele `widget.user`, `widget.records`, `widget.perDiems`, `widget.functionDefinitions`, commit `fc33931f`.
 - CI #47 încă neconfirmat; verifică rezultatul înainte de a declara verde.
 - Testul real Daniel -> utilizator pentru diurnă rămâne AMÂNAT explicit până după curățare; utilizatorul și-a refăcut apartenența la echipa lui Daniel.
+
+
+## 62. Modul #48 CentralizerPage
+- CI SUCCESS pentru #47, `375464d9`, run `38195212943`.
+- Extras verbatim `CentralizerPage` și `_CentralizerPageState` (~19k caractere) din main în `lib/centralizer/centralizer_page.dart`; part în main. Commituri `e3b4411a`, `01990553`.
+- Nu s-au modificat calculele, înregistrările, drepturile de editare, exportul PDF sau Firestore.
+- Adăugat test de regresie pentru part, declarații unice și contractele de date/editare/export, commit `84a80fd6`.
+- CI #48 încă neconfirmat; verifică rezultatul înainte de a declara verde. Continuă modularizarea atentă a claselor mari.
