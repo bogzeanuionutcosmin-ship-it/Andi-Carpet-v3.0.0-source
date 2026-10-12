@@ -735,7 +735,8 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertIn("RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?$').hasMatch(normalized)", source)
-        self.assertIn("Schematic fallback when Mapbox cannot provide road geometry.", source)
+        map_source = (ROOT / "lib/map/map_page.dart").read_text(encoding="utf-8")
+        self.assertIn("Schematic fallback when Mapbox cannot provide road geometry.", map_source)
         self.assertNotIn("for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }", source)
 
 
