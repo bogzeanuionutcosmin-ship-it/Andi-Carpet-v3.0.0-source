@@ -680,3 +680,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - În `_restoreAutomaticBackup`, vechiul cod itera TOATE colecțiile permise și le ștergea chiar dacă snapshot-ul nu conținea elemente pentru ele. Acesta este un risc de pierdere de date la snapshot-uri incomplete.
 - Commit `0d78665`: preflight complet al documentelor, ID-urilor, duplicatelor și setărilor UI; snapshot fără documente/colecții valide este respins. Restaurarea atinge doar colecțiile efectiv prezente în snapshot (`grouped.keys`). Colecțiile absente rămân nemodificate. Test de regresie commit `eee08c2`.
 - Limitare intenționată: o colecție intenționat goală nu poate fi dedusă doar din absența documentelor în snapshot. Pentru restaurare exactă a colecțiilor goale, formatul snapshot trebuie să declare explicit colecțiile incluse și numărul documentelor. Rămâne riscul de eșec în mijlocul batch-urilor Firestore; nu există atomicitate globală. CI neconfirmat; fără deploy.
+
+
+## 80. Curățare structurală Admin: codec backup separat
+- Extrase funcțiile `_backupEncode` și `_backupDecode` din `_AdminPanelPageState` în noul `lib/admin/backup_codec.dart`, part al bibliotecii `lib/main.dart`; commituri `3cc6bb6`, `7026b3c`, `9e0db64`.
+- Nicio schimbare intenționată a formatului JSON: conversiile Timestamp, GeoPoint, Map și List au fost păstrate. Administrarea folosește funcțiile top-level private prin biblioteca Dart comună.
+- Adăugat test structural și de compatibilitate pentru a preveni duplicarea funcțiilor și pierderea tipurilor codificate; commit `2cf06fa`.
+- Total 54 declarații Dart `part` în `main.dart` după extracție. De verificat CI pentru compilare și teste. Fără deploy.
