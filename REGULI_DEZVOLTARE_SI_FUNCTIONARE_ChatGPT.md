@@ -828,3 +828,18 @@ Specificația comparativă: [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIEC
 **Specificație:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 22, commit `6c7ea6a957219de027b508bfcca84148e0936c78`.
 
 **Doar documentație**: nu s-au modificat codul Flutter, Firestore, Cloud Functions, datele, permisiunile efective, configurația de producție, APK ori deploy. Implementarea va necesita proiectarea și testarea celor 4 combinații de setări, a accesului owner/admin/coleg, a proiecției `memberDirectory` și a datelor istorice.
+
+## 45. Categoria Profiluri/Membri — Linkurile sociale vizibile implicit și ascundere individuală (aprobare explicită 2026-10-13)
+
+**DECIZIE DIRECTĂ A PROPRIETARULUI:** răspunsul **«Da»** la întrebarea dacă linkurile Facebook, Instagram, TikTok și ale celorlalte rețele sociale trebuie să fie **inițial vizibile** colegilor, cu posibilitatea de **ascundere separată a fiecărui link**, confirmă exact această opțiune.
+
+1. Linkurile **rețelelor sociale** din profilurile vizibile intern sunt **implicit vizibile altor membri autentificați** pentru utilizatori noi și existenți, **până la ascunderea explicită a respectivului link de către titular**. Dacă setarea lipsește pentru un link vechi, se interpretează **vizibil**; dacă este explicit ascuns, se respectă la orice actualizare.
+2. **Vizibilitatea este per-link**, independent de telefon/email, total m², randamente/parteneriate și de alte linkuri: Facebook ascuns nu impune ascunderea Instagram, TikTok etc. Identificatorii stabili per câmp sunt necesari pentru ca ascunderea să nu se piardă la reordonarea/renumirea linkurilor.
+3. **Titularul și administratorul autorizat** pot vedea întotdeauna linkurile private în propriul profil/cel administrat, fără a le publica pentru colegi. Membrii pot controla doar propriile preferințe; nu controlează ce afișează partenerul în **profilul acelui partener**.
+4. **Logo-urile platformelor cunoscute** înlocuiesc pictograma generică și linkul textual lung, conform cerinței anterioare: Facebook, Instagram, TikTok, YouTube, LinkedIn, WhatsApp, Telegram, X/Twitter, GitHub etc. Link nerecunoscut = **glob / link extern neutru**, nu logo Google. Recunoașterea se face pe `Uri.host` și domeniu legitim, prevenind spoofing de tip `facebook.com.example.invalid`; deschiderea folosește doar URL-uri valide/sigure.
+5. **Securitate în proiecția backend:** `functions/member_directory_projection.js` nu publică azi `profileFields`; la implementare va proiecta **numai linkurile cu vizibilitate permisă**, nu întregul document privat și nu linkurile ascunse cu un `visible:false` ușor de citit. `memberDirectory` este citibil de membri activi; eliminarea efectivă din proiecție, revocarea/cachingul, Cloud Function trigger și `firestore.rules` se testează. Conturile/ profilele global ascunse nu devin vizibile prin acest default.
+6. **Nu extrapolăm această alegere la orice câmp nou:** vizibilitatea implicită pentru **alte informații personalizate nesociale**, m² și randamentul din profil rămâne de stabilit. **Diurnele rămân doar titular/admin**, fără comutator de publicare, conform secțiunii 43.
+
+**Verificări de logică 7/7 pe date fictive**, inclusiv linkuri social vechi fără setări, ascundere individuală, acces titular/admin, izolarea preferințelor partenerilor. Nu s-au rulat teste Flutter, Firebase, Cloud Functions ori CI.
+
+**Referință:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 23, commit `2a7310eb8fdcf9f2bc13547526d38fdfc6a5f099`. **Doar documentație**, fără modificări de cod, producție, date, reguli Firestore, APK ori deploy.
