@@ -413,6 +413,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("const List<_VerifiedLocationFix> _verifiedLocationFixes", main)
         self.assertNotIn("const List<_VerifiedLocationFix> _verifiedLocationFixes", module)
 
+    def test_map_page_extracted_preserving_locations_and_navigation(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/map/map_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'map/map_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for name in ("MapPage", "_MapPageState"):
+            self.assertNotIn("class " + name + " extends ", main)
+            self.assertEqual(module.count("class " + name + " extends "), 1)
+        for contract in ("widget.locations", "widget.saveLocation",
+                         "widget.hiddenUserIds", "widget.schedules",
+                         "FlutterMap", "MarkerLayer", "PolylineLayer"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
