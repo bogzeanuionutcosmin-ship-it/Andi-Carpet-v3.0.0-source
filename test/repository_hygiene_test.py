@@ -813,6 +813,9 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("'uiSettings'", backup)
         self.assertIn("batch.commit()", backup)
         self.assertIn("backupRetentionDays", backup)
+        self.assertIn("_pruneOldNotifications() async", backup)
+        self.assertIn("notificationHistoryDays", backup)
+        self.assertNotIn("Future<void> _pruneOldNotifications()", home)
 
     def test_admin_backup_panel_extracted_with_restore_warning(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
