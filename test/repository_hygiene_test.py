@@ -363,6 +363,18 @@ class RepositoryHygieneTests(unittest.TestCase):
         for contract in ("widget.onLogout", "Icons.logout", "Ieșire din cont"):
             self.assertIn(contract, module)
 
+    def test_profile_page_extracted_preserving_records_and_per_diem(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/profile/profile_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'profile/profile_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for name in ("ProfilePage", "_ProfilePageState"):
+            self.assertNotIn("class " + name + " extends ", main)
+            self.assertEqual(module.count("class " + name + " extends "), 1)
+        for contract in ("widget.user", "widget.records", "widget.perDiems",
+                         "widget.functionDefinitions"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
