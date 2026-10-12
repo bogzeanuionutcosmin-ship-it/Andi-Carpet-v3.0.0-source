@@ -592,3 +592,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Păstrate datele locațiilor, salvarea locațiilor, ascunderea utilizatorilor, programările, `FlutterMap`, marker-ele și traseele `PolylineLayer` fără schimbări funcționale.
 - Test de regresie pentru part, unicitatea claselor și contractele hărții, commit `b6b9522d`.
 - CI #51 încă neconfirmat. Nu modifica datele sau configurațiile locațiilor; continuă după CI cu Decont și Administrare.
+
+
+## 67. Reparare CI după extragerea MapPage (#51)
+- Run `38196800312`, commit `4a3970b9`, FAILURE în două joburi (Flutter web build la pasul Repository hygiene regression tests și Python source and security contracts); Firebase Functions, Firestore emulator și Node projection SUCCESS.
+- Cauza unică: `test_manual_amount_and_map_route_regressions` căuta mesajul `Schematic fallback when Mapbox cannot provide road geometry.` în `lib/main.dart`, dar codul există neschimbat în `lib/map/map_page.dart`.
+- Reparat testul: verifică separat mesajul în `map_page.dart`, păstrând verificările de sume manuale în `main.dart`; commit `a622e7c5`.
+- CI după fix încă neconfirmat. Nu s-a modificat codul Dart sau comportamentul aplicației.
