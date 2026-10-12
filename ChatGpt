@@ -402,3 +402,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Păstrate exportul `assets/pv_magic.pdf` în `PV_MAGIC.pdf`, scrierea/citirea Firestore `documents`, ordonarea după `date`, afișarea și ștergerea condiționate de `widget.isAdmin`. Nu am schimbat Firestore Rules; condițiile UI nu substituie verificarea regulilor backend.
 - Test de regresie structurală/contract pentru modul și operațiuni în `test/repository_hygiene_test.py`, commit `7ca80ccd`.
 - Așteaptă CI pe ultimul commit. Fără deploy și fără modificări ale datelor.
+
+
+## 42. Modul #32: contacte telefonice ale locațiilor
+- CI pentru checkpoint `9cdb51f9`: SUCCESS run `38185925010`.
+- `MessagesContactsPage` este de fapt interfața pentru contacte telefonice asociate locațiilor (nu lista membrilor din chat). Mutată împreună cu `_MessagesContactsPageState` în `lib/contacts/location_contacts_page.dart` prin `part of`, fără schimbare de logică. Commituri `ba780083`, `cd2d7cd1`.
+- Păstrate apelul `tel:`, dialogul `LocationContact`, setarea `smsEnabled` și cârligele de permisiuni `canEditContacts`/`canManageTemplates`.
+- Test contract nou în `test/repository_hygiene_test.py`, commit `1bffe3ef`. CI pentru ultimul commit încă de verificat. Fără deploy.
