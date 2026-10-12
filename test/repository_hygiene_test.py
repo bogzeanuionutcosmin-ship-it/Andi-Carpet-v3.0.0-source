@@ -789,6 +789,16 @@ class RepositoryHygieneTests(unittest.TestCase):
         for field in ("backupRetentionDays", "notificationHistoryDays", "androidDownloadUrl", "smsPreviousDayTime", "brandingBackgroundId", "defaultPerDiem"):
             self.assertIn(field, settings)
 
+    def test_home_definitions_sync_isolated(self):
+        home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        self.assertIn("void _startDefinitionsSync(FirebaseFirestore db)", home)
+        self.assertIn("_startDefinitionsSync(db);", home)
+        definitions = home.split("void _startDefinitionsSync(FirebaseFirestore db)", 1)[1].split("void _startCoreSync()", 1)[0]
+        for collection in ("locationCategories", "backgrounds", "functions"):
+            self.assertIn("db.collection('" + collection + "')", definitions)
+        self.assertIn("_syncUserPermissionSnapshots()", definitions)
+        self.assertIn("_startFinancialSync()", definitions)
+
     def test_home_audit_sync_isolated_from_core_sync(self):
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
         self.assertIn("void _startAuditSync(FirebaseFirestore db)", home)
