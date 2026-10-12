@@ -263,6 +263,20 @@ class RepositoryHygieneTests(unittest.TestCase):
                          "launchUrl(", "_call(", "memberId", "functionDefinitions"):
             self.assertIn(contract, module)
 
+    def test_members_directory_extracted_preserving_chat_navigation(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/members/members_directory_page.dart").read_text(encoding="utf-8")
+        self.assertEqual(main.count("part 'members/members_directory_page.dart';"), 1)
+        self.assertIn("part of '../main.dart';", module)
+        for symbol in ("class MembersDirectoryPage extends StatefulWidget",
+                       "class _MembersDirectoryPageState extends State<MembersDirectoryPage>"):
+            self.assertNotIn(symbol, main)
+            self.assertEqual(module.count(symbol), 1)
+        for contract in ("chatMode", "PrivateChatPage", "GroupChatPage",
+                         "MemberProfilePage", "_selected", "collection('users')",
+                         "StreamBuilder", "mark_chat_unread"):
+            self.assertIn(contract, module)
+
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
