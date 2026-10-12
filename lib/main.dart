@@ -64,6 +64,7 @@ part 'chat/group_chat_page.dart';
 part 'members/member_profile_page.dart';
 part 'members/members_directory_page.dart';
 part 'feedback/feedback_page.dart';
+part 'schedule/schedule_card_full.dart';
 part 'auth/firebase_user_profile.dart';
 part 'auth/auth_gate.dart';
 part 'auth/login_registration_page.dart';
@@ -6423,8 +6424,6 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
   ]);
 
 }
-
-class _ScheduleCardFull extends StatelessWidget { final WorkSchedule schedule; final List<Location> locations; final List<LocationCategory> categories; final List<CentralizerRecord> records; final bool canEdit; final VoidCallback onAdd; final void Function(ScheduleItem) onRemove; final void Function(int,int) onReorder; const _ScheduleCardFull({required this.schedule,required this.locations,required this.categories,required this.records,required this.canEdit,required this.onAdd,required this.onRemove,required this.onReorder}); @override Widget build(BuildContext context){return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Row(children:[Expanded(child:Text('Zi grafic · ${formatDate(schedule.date)}',style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.bold))),if(canEdit&&!schedule.closed)TextButton.icon(onPressed:onAdd,icon:const Icon(Icons.add),label:const Text('Adaugă locații'))]),if(schedule.autoProposed)_InfoCard(icon:Icons.auto_graph,title:'Ordine propusă · încredere ${(schedule.learningConfidence*100).round()}%',text:schedule.learningExplanation.trim().isEmpty?'Ordinea este informativă. Echipa poate executa locațiile în orice ordine.':schedule.learningExplanation),ReorderableListView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:schedule.items.length,itemBuilder:(c,i){final x=schedule.items[i];final done=records.any((r)=>r.teamId==schedule.teamId&&r.locationId==x.locationId&&r.completed);return Card(key:ValueKey('${x.locationId}_$i'),child:ListTile(leading: Stack(alignment: Alignment.bottomRight, children: [categoryBrandWidget(x.categoryIdSnapshot, size: 38, fallbackColor: categoryColor(categories,x.categoryIdSnapshot,fallbackType:x.typeSnapshot)), Container(width: 20,height:20,decoration:BoxDecoration(color:categoryColor(categories,x.categoryIdSnapshot,fallbackType:x.typeSnapshot),shape:BoxShape.circle,border:Border.all(color:Colors.white,width:1.5)),alignment:Alignment.center,child:Text('${i+1}',style:const TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.bold)))]),title:Text(x.locationNameSnapshot),subtitle:Text('${x.addressSnapshot} · ${done?'Finalizată':'Rămasă'}'),trailing:canEdit&&!schedule.closed?IconButton(onPressed:()=>onRemove(x),icon:const Icon(Icons.delete_outline)):null));},onReorder:canEdit&&!schedule.closed?onReorder:null)])));}}
 
 class _TeamSelector extends StatelessWidget {
   final List<Team> teams; final int selected; final ValueChanged<int> onChanged;
