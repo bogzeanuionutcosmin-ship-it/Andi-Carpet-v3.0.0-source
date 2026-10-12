@@ -725,3 +725,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras acțiunile `_setScheduleClosed`, `_deleteSchedulePermanently`, `_deleteRecord`, `_deleteExpense` și vizualizările `_programs`, `_records`, `_finance` în `lib/admin/admin_operations_actions.dart`, mixin `_AdminOperationsActions on State<AdminPanelPage>`, declarat în `main.dart`. Commituri `e10c741`, `c93dd4d`, `617c393`.
 - Păstrată explicit protecția istoriei execuțiilor la ștergerea unui grafic, precum și colecțiile `schedules`, `records`, `expenses`. Test structural de regresie commit `d53d44b`.
 - Verificarea unei rulări istorice Actions 38198048454 a arătat 3 joburi reușite și 2 eșuate, acestea din urmă din cauza unui SyntaxError în `test/repository_hygiene_test.py` la linia 751; remediul fusese comis ulterior. Rularea istorică NU validează commiturile curente. CI actual rămâne de confirmat. Fără deploy. Total 61 Dart parts.
+
+
+## 87. Curățare Administrare: Învățare / Propuneri automate
+- Extras `_learning(bool ocr)` în `lib/admin/admin_learning_actions.dart`, mixin `_AdminLearningActions`, înregistrat în `main.dart` și conectat în `AdminPanelPage`. Commituri `81a1bc9`, `73b9291`, `9bbf45d`.
+- Păstrate setările modului de aprobare manuală, estimările `learnedDurationEstimate`, propunerile de grafice și salvarea prin `_saveUiSettings`.
+- Test de regresie `test_admin_learning_diagnostics_extracted`, commit `f2fffd5`. Total 62 Dart parts. Compilarea curentă CI nu este încă confirmată; nu face deploy înainte de validare.
