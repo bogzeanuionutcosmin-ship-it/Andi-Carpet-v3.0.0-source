@@ -712,3 +712,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extrase `_editFunctionDefinition`, `_setUserFunctions` și `_members` din `lib/admin/admin_panel_page.dart` în `lib/admin/admin_member_actions.dart`, mixin `_AdminMemberActions on State<AdminPanelPage>`; noul part în `lib/main.dart`. Commituri `73ed934`, `fa02773`, `3ce0827`.
 - Funcțiile de gestionare a conturilor și atribuirea funcțiilor continuă să utilizeze colecțiile Firestore `users` și `functions`, fără schimbări intenționate de reguli de acces. Interfața și operațiile rămân grupate pentru separări ulterioare.
 - Test structural pentru contractele `functionIds`, users/functions și extracție: commit `4478fae`. Total 58 Dart parts declarate. Compilarea CI după această modificare rămâne de confirmat. Fără deploy.
+
+
+## 85. Curățare Administrare: Mașini, Locații, Categorii
+- Extras `_editCar`, `_removeCar`, `_cars` în `lib/admin/admin_car_actions.dart` și `_contactDialog`, `_editLocationAdmin`, `_deleteLocationPermanent`, `_changeLocationStatus`, `_locations`, `_editCategory`, `_deleteCategory`, `_categories` în `lib/admin/admin_location_actions.dart`.
+- Ambele sunt mixin-uri pe `State<AdminPanelPage>` și sunt înregistrate ca `part` în `lib/main.dart`; `lib/admin/admin_panel_page.dart` le utilizează. Commituri mașini `06b5296`, `aa4dce2`, `0ab8087`; locații `ca11161`, `ea933c0`, `669fd15`.
+- Păstrate intenționat apelurile `widget.saveLocation` și `widget.deleteLocation`, legăturile mașină-echipă și logica de categorii. Teste structurale și contracte adăugate în `test/repository_hygiene_test.py`, commit `f6d52d3`.
+- Total 60 module Dart `part` declarate în `main.dart`. CI/build după schimbări de confirmat. Fără deploy.
