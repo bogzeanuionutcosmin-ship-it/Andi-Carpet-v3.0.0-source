@@ -1,7 +1,9 @@
 # AndiCarpet — proiectare randament adaptiv al echipei (DRAFT, 13.10.2026)
 
-> **STATUT: PROPUNERE TEHNICĂ, NU FORMULĂ FINALĂ APROBATĂ ȘI NU FUNCȚIE IMPLEMENTATĂ.**  
+> **STATUT: METODA C APROBATĂ; DETALIILE MATEMATICE ȘI IMPLEMENTAREA SUNT ÎNCĂ ÎN PROIECTARE.**  
 > Baza aprobată: `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md`, secțiunea 28. Scopul este să pregătim alegerea algoritmului cu exemple verificabile. În această etapă **nu modificăm cod, colecții Firebase, reguli, date de producție, APK ori deploy**.
+
+> **DECIZIE ACTUALIZATĂ — 13.10.2026:** utilizatorul a confirmat expres varianta **C**, ca metodă de calcul adaptiv mixt (m² + timp real + istoric comparabil + Learning). Alegerea **familiei de algoritm este aprobată**. Ponderile, etalonul concret, tratamentul m² istorici și formula numerică exactă necesită încă proiectare, simulări și validare înainte de implementare.
 
 ## 1. Scop și restricții deja aprobate
 
@@ -115,3 +117,19 @@ Trebuie distinse:
 10. Lipsă rețea, actualizare întârziată, dataset mare, două dispozitive sincronizate, fără scrieri Firestore declanșate de simpla afișare.
 
 **Următoarea etapă:** după aprobarea direcției variantei C și a politicilor principale, proiectăm formula numerică efectivă, simulăm cu date autorizate/anonimizate, pregătim teste unitare și de integrare; abia ulterior implementăm într-o ramură cu PR/CI, conform regulilor obligatorii.
+
+## 9. Decizie explicită: varianta C aprobată (13.10.2026)
+
+**Confirmare explicită a proprietarului:** «Da confirm» ca răspuns la întrebarea «Confirmăm varianta C, cu etalon adaptiv din suprafețe, istoric comparabil și Learning, în locul unui etalon fix m²/oră?». Varianta **C** este, în consecință, **metoda aleasă** pentru continuarea proiectării. Nu mai este de pus aceeași întrebare de aprobare în conversații viitoare.
+
+**Aprobat acum:** combinarea datelor reale ale lucrărilor (m², START–STOP), istoriei comparabile și estimărilor Learning ca surse alternative/complementare ale unui **reper adaptiv**, agregat pe echipă pentru **Luna în curs** și **General**, actualizat după apariția sau rectificarea informațiilor. Rămân indicatori exclusiv informativi, plafonați la 100% și fără procente pe fiecare sală.
+
+**Nu este încă aprobat:** cifra de referință m²/h, modelul concret (regresie/mediane/altul), coeficienți și ponderi, pragul de încredere, comparabilitatea dintre tipuri de sală, regulile retroactive exacte pentru schimbarea suprafeței, regula pentru execuții mixte mochetă/fațadă și schema de persistență/versionare. Exemplul 120 m²/h este DOAR o simulare și nu trebuie introdus ca setare fixă.
+
+**Pașii următori de proiectare:**
+1. Comparăm tipuri de etalon istoric adaptiv și alegem o metodă robustă pentru loturi mici, inclusiv fără m² ori Learning local; de evitat circularitatea auto-evaluării și introducerea datelor viitoare în etalonul care evaluează aceeași lucrare.
+2. Proiectăm contractul pentru m² modificați: corecție de măsurare versus modificare reală de suprafață de la o dată; fallback transparent pentru înregistrări legacy.
+3. Stabilim eligibilitatea intervențiilor, influența fațadelor combinate și politica de calitate, apoi simulăm pe cazuri-limită și istorii autorizate/anonimizate.
+4. Abia după aprobarea numerelor și regulilor rămase, se scriu teste și cod pe ramură separată, cu PR/CI, fără modificări implicite de Firebase sau deploy.
+
+**Stadiu la confirmare:** doar documentație; niciun cod, date Firestore, reguli de securitate sau deploy modificate prin această decizie.
