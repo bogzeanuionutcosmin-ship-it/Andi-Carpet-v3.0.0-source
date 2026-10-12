@@ -498,3 +498,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Extras textual `_TeamSelector` (~801 caractere) în `lib/teams/team_selector.dart`, `part of '../main.dart';`; `main.dart` include noua directivă `part`. Commituri `c1d8f441`, `6e466db2`.
 - Păstrate lista `Team`, echipa selectată și callback-ul `ValueChanged<int> onChanged` la schimbare. Test structural/regresie `test_team_selector_extracted_preserving_selection_callback`, commit `f3028157`.
 - CI pentru HEAD după notă de verificat. Fără schimbări ale regulilor, datelor, backendului sau deploy-ului.
+
+
+## 55. Decizie strategică: registru separat al regulilor (2026-10-12)
+- Creat documentul `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md`, commit `f42e289c`, separat de această notă operațională.
+- Ordine obligatorie stabilită cu proprietarul: (1) finalizare curățare/modularizare cu teste; (2) stabilirea și aprobarea tuturor regulilor/condițiilor pe fiecare categorie; (3) PRIMA implementare nouă: colectare multiplatformă a erorilor, cache local sigur/offline, Developer Console privată și integrare AI controlată; (4) apoi celelalte funcții.
+- Direcția include diagnostic în timp aproape real, analiză AI, sugestii și PR-uri testate, mediu staging, recuperare locală sigură, fără acces AI nelimitat în producție. Nu se trimit parole/tokenuri/conversații private în loguri. Datele și deploy-ul necesită aprobare.
+- NU începe implementarea sistemului nou înainte de curățare și definirea regulilor. Actualizează permanent AMBELE note; documentul separat este sursa de referință pentru decizii și reguli.
