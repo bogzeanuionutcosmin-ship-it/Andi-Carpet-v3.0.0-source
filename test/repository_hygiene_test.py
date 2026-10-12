@@ -768,6 +768,12 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertEqual(admin.count(declaration), 1)
         for contract in ("_exportBackup", "_restoreBackup", "saveLocation", "deleteLocation"):
             self.assertIn(contract, admin)
+        backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_backup_actions.dart';", main)
+        self.assertIn("with _AdminBackupActions", admin)
+        for method in ("_exportBackup() async", "_restoreAutomaticBackup(String backupId) async", "_restoreBackup() async"):
+            self.assertIn(method, backup)
+            self.assertNotIn("Future<void> " + method, admin)
 
     def test_admin_navigation_catalog_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
@@ -792,14 +798,15 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertEqual(codec.count("dynamic _backupDecode(dynamic value)"), 1)
         self.assertNotIn("dynamic _backupEncode(dynamic value)", admin)
         self.assertNotIn("dynamic _backupDecode(dynamic value)", admin)
-        self.assertIn("_backupEncode(", admin)
-        self.assertIn("_backupDecode(", admin)
+        backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("_backupEncode(", backup)
+        self.assertIn("_backupDecode(", backup)
         self.assertIn("Timestamp.fromDate", codec)
         self.assertIn("GeoPoint(", codec)
 
     def test_automatic_backup_preflight_prevents_missing_collection_deletion(self):
-        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
-        restore = admin.split("Future<void> _restoreAutomaticBackup(String backupId) async {", 1)[1].split("Future<void> _restoreBackup() async {", 1)[0]
+        backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
+        restore = backup.split("Future<void> _restoreAutomaticBackup(String backupId) async {", 1)[1].split("Future<void> _restoreBackup() async {", 1)[0]
         self.assertLess(restore.index("for(final item in items.docs)"), restore.index("batch.delete(doc.reference)"))
         self.assertLess(restore.index("if(grouped.isEmpty)"), restore.index("batch.delete(doc.reference)"))
         self.assertIn("for(final collection in grouped.keys)", restore)
@@ -808,8 +815,8 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("if(validatedSettings!=null)", restore)
 
     def test_backup_restore_preflights_all_documents_before_deletion(self):
-        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
-        restore = admin.split("Future<void> _restoreBackup() async {", 1)[1].split("Widget _reports()", 1)[0]
+        backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
+        restore = backup.split("Future<void> _restoreBackup() async {", 1)[1].split("\n  }\n", 1)[0]
         validation = restore.index("for(final entry in rawCollections.entries)")
         decoding = restore.index("final decoded=_backupDecode(rawEntry.value)")
         settings_validation = restore.index("final decodedSettings=_backupDecode(parsed['uiSettings'])")
