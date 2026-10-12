@@ -1533,11 +1533,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
   }
 
-  void _startCoreSync() {
-    final db = FirebaseFirestore.instance;
-
-    _startDefinitionsSync(db);
-
+  void _startDirectorySync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       (isAdmin ? db.collection('users') : db.collection('memberDirectory')).snapshots().listen((snap) {
         final list = snap.docs.map((doc) {
@@ -1618,6 +1614,15 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         if (mounted) setState(() => coreSyncError = 'Conturi: $e');
       }),
     );
+
+  }
+
+  void _startCoreSync() {
+    final db = FirebaseFirestore.instance;
+
+    _startDefinitionsSync(db);
+
+    _startDirectorySync(db);
 
     // Datele private ale contului propriu nu sunt in directorul public.
     if (!isAdmin) _coreSubscriptions.add(
