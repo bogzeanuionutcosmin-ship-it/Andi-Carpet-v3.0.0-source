@@ -1454,6 +1454,32 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     }
   }
 
+  void _startAuditSync(FirebaseFirestore db) {
+    if (!isAdmin) return;
+    _coreSubscriptions.add(
+      db.collection('audit').orderBy('at', descending: true).limit(500).snapshots().listen((snap) {
+        final list = snap.docs.map((doc) {
+          final d = doc.data();
+          return AuditEntry(
+            id: doc.id,
+            actor: (d['actor'] ?? '').toString(),
+            action: (d['action'] ?? '').toString(),
+            target: (d['target'] ?? '').toString(),
+            at: _dateFrom(d['at']) ?? DateTime.now(),
+          );
+        }).toList();
+        if (!mounted) return;
+        setState(() {
+          audit
+            ..clear()
+            ..addAll(list);
+        });
+      }, onError: (Object e) {
+        if (mounted) setState(() => coreSyncError = 'Audit: $e');
+      }),
+    );
+  }
+
   void _startCoreSync() {
     final db = FirebaseFirestore.instance;
 
@@ -1894,28 +1920,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     );
 
     if (isAdmin) {
-      _coreSubscriptions.add(
-        db.collection('audit').orderBy('at', descending: true).limit(500).snapshots().listen((snap) {
-          final list = snap.docs.map((doc) {
-            final d = doc.data();
-            return AuditEntry(
-              id: doc.id,
-              actor: (d['actor'] ?? '').toString(),
-              action: (d['action'] ?? '').toString(),
-              target: (d['target'] ?? '').toString(),
-              at: _dateFrom(d['at']) ?? DateTime.now(),
-            );
-          }).toList();
-          if (!mounted) return;
-          setState(() {
-            audit
-              ..clear()
-              ..addAll(list);
-          });
-        }, onError: (Object e) {
-          if (mounted) setState(() => coreSyncError = 'Audit: $e');
-        }),
-      );
+      _startAuditSync(db);
       unawaited(_seedLocationsIfNeeded());
       unawaited(_seedDefinitionsIfNeeded());
       unawaited(_migrateFunctionBadgeSystemIfNeeded());
