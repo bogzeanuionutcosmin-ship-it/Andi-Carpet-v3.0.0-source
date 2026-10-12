@@ -521,3 +521,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Păstrate contractele: icon sau asset obligatoriu la statistici, accent pe secțiune, formatare sumă cu două zecimale în lei, callback onTap și afișare ListTile pentru informații.
 - Test regresie adăugat în `test/repository_hygiene_test.py`, commit `2e37b6a9`.
 - Verifică CI la HEAD, continuă auditul logicii și al testelor. Nu altera regulile funcționale și urmează ordinea din registrul separat de reguli.
+
+
+## 58. Modul #45: empty state și auditul testelor vechi
+- Confirmat CI verde pentru modul #44: `6af5f1ef`, run `38193921854`.
+- Extras `_Empty` din finalul `lib/main.dart` în `lib/ui/empty_state.dart` fără schimbare de comportament, commituri `1901362a` și `d46b1af1`.
+- Audit: testul `test_main_has_no_accidentally_appended_duplicate` presupunea incorect că `_Empty` rămâne în main. Modificat să numere definiția în toate fișierele Dart din `lib`, păstrând detectarea duplicatelor. Adăugat test pentru part directive, widget unic și contracte vizuale, commit `cad015bc`.
+- Verifică CI HEAD și continuă analiza claselor mari și a testelor cu ipoteze depășite. Ordinea proiectului și documentul separat de reguli rămân obligatorii.
