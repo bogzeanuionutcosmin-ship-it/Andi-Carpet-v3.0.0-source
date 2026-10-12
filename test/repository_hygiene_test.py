@@ -775,6 +775,18 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
+    def test_admin_learning_diagnostics_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        learning = (ROOT / "lib/admin/admin_learning_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_learning_actions.dart';", main)
+        self.assertIn("_AdminLearningActions", admin)
+        self.assertIn("Widget _learning(bool ocr)", learning)
+        self.assertNotIn("Widget _learning(bool ocr)", admin)
+        self.assertIn("learnedDurationEstimate(", learning)
+        self.assertIn("_saveUiSettings()", learning)
+        self.assertIn("LearningMode.manualApproval", learning)
+
     def test_admin_operations_extracted_with_history_contracts(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
