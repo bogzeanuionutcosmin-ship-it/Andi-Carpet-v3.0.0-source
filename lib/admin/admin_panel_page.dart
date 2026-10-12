@@ -12,43 +12,16 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
     'Dashboard','Echipe','Membri / Conturi','Mașini','Locații','Categorii locații','Grafice de lucru','Centralizator','Decont & Financiar','Learning Center','Learning OCR','Notificări','Rapoarte','Istoric / Audit','Funcții & Drepturi','Setări sistem','Backup & Recuperare'
   ];
 
-  IconData _icon(int i) => const [
-    Icons.dashboard, Icons.groups, Icons.people, Icons.directions_car, Icons.location_on, Icons.category_outlined,
-    Icons.calendar_month, Icons.table_chart, Icons.receipt_long, Icons.auto_graph, Icons.document_scanner,
-    Icons.notifications, Icons.assessment, Icons.history, Icons.security, Icons.palette_outlined, Icons.backup,
-  ][i];
-
-  String _groupFor(int i) {
-    if (i <= 7) return 'Operațional';
-    if (i == 8) return 'Financiar';
-    if (i == 9 || i == 10) return 'Learning';
-    if (i == 11 || i == 14) return 'Administrare';
-    return 'Sistem';
-  }
-
-  String? _adminSectionAsset(int i) => switch (i) {
-    0 => 'assets/ui/tab_dashboard.png',
-    1 => 'assets/ui/teams.png',
-    2 => 'assets/ui/members.png',
-    4 => 'assets/ui/tab_harta.png',
-    6 => 'assets/ui/tab_grafic.png',
-    7 => 'assets/ui/tab_centralizator.png',
-    8 => 'assets/ui/tab_decont.png',
-    12 => 'assets/ui/tab_centralizator.png',
-    14 => 'assets/ui/security.png',
-    _ => null,
-  };
-
   Widget _adminLeading(int i, Color accent) {
     final asset = _adminSectionAsset(i);
-    return asset == null ? Icon(_icon(i)) : appAssetIcon(asset, size: 22, accent: accent, selected: section == i);
+    return asset == null ? Icon(_adminSectionIcon(i)) : appAssetIcon(asset, size: 22, accent: accent, selected: section == i);
   }
 
   Widget _adminMenu({required bool closeDrawer}) {
     final widgets = <Widget>[];
     String? previousGroup;
     for (var i = 0; i < names.length; i++) {
-      final group = _groupFor(i);
+      final group = _adminSectionGroup(i);
       if (group != previousGroup) {
         widgets.add(Padding(
           padding: const EdgeInsets.fromLTRB(16, 18, 12, 6),
@@ -159,7 +132,7 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
     Wrap(spacing:8,runSpacing:8,children:[
       for (final i in [1,2,4,6,8,11,13,14,15])
         ActionChip(
-          avatar: Icon(_icon(i), size:18),
+          avatar: Icon(_adminSectionIcon(i), size:18),
           label: Text(names[i]),
           onPressed: () => setState(() => section = i),
         ),
