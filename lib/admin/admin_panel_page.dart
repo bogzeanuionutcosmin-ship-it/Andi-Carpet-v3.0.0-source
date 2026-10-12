@@ -1478,19 +1478,35 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Fișierul nu este un backup Andi Carpetă valid.')));
       return;
     }
+    // Preflight the entire backup before the first destructive Firestore write.
+    // Validation must happen before the confirmation dialog and deletion loop.
+    const allowedRestoreCollections=<String>{'teams','cars','locations','locationCategories','functions','schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit'};
+    final rawCollections=parsed['collections'] as Map;
+    final validated=<String,Map<String,dynamic>>{};
+    try{
+      for(final entry in rawCollections.entries){
+        final name=entry.key.toString();
+        if(!allowedRestoreCollections.contains(name))continue;
+        if(entry.value is! Map)throw FormatException('Colecția $name nu este un obiect.');
+        final documents=<String,dynamic>{};
+        for(final rawEntry in (entry.value as Map).entries){
+          final id=rawEntry.key.toString();
+          if(id.isEmpty||id.contains('/'))throw FormatException('ID invalid în colecția $name.');
+          final decoded=_backupDecode(rawEntry.value);
+          if(decoded is! Map)throw FormatException('Document invalid în colecția $name.');
+          documents[id]=Map<String,dynamic>.from(decoded);
+        }
+        validated[name]=documents;
+      }
+    }catch(e){
+      if(mounted)showErrorMessage(context,'Backup invalid. Nu s-au modificat date: $e');
+      return;
+    }
     final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Restaurare backup'),content:const Text('Datele operaționale și Auditul din backup vor înlocui colecțiile existente. Conturile Firebase Authentication nu sunt modificate. Continui?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Restaurează'))]))??false;
     if(!ok)return;
     final db=FirebaseFirestore.instance;
-    final collections=(parsed['collections'] as Map).map((k,v)=>MapEntry(k.toString(),v));
-    for(final entry in collections.entries){
+    for(final entry in validated.entries){
       final name=entry.key;
-      if(!['teams','cars','locations','locationCategories','functions','schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit'].contains(name))continue;
-      // Validate the collection payload before deleting any existing records.
-      // A malformed backup must never turn a populated collection into an empty one.
-      if(entry.value is! Map){
-        if(mounted)showErrorMessage(context,'Backup invalid: colecția $name nu conține documente valide. Restaurarea a fost oprită.');
-        return;
-      }
       final current=await db.collection(name).get();
       var batch=db.batch();
       var count=0;
@@ -1499,17 +1515,12 @@ class _AdminPanelPageState extends State<AdminPanelPage>{
         if(count>=400){await batch.commit();batch=db.batch();count=0;}
       }
       if(count>0)await batch.commit();
-      final source=entry.value;
-      if(source is Map){
-        batch=db.batch();count=0;
-        for(final rawEntry in source.entries){
-          final value=_backupDecode(rawEntry.value);
-          if(value is! Map)continue;
-          batch.set(db.collection(name).doc(rawEntry.key.toString()),Map<String,dynamic>.from(value));count++;
-          if(count>=400){await batch.commit();batch=db.batch();count=0;}
-        }
-        if(count>0)await batch.commit();
+      batch=db.batch();count=0;
+      for(final document in entry.value.entries){
+        batch.set(db.collection(name).doc(document.key),Map<String,dynamic>.from(document.value as Map));count++;
+        if(count>=400){await batch.commit();batch=db.batch();count=0;}
       }
+      if(count>0)await batch.commit();
     }
     final savedSettings=_backupDecode(parsed['uiSettings']);
     if(savedSettings is Map)await db.collection('meta').doc('uiSettings').set(Map<String,dynamic>.from(savedSettings),SetOptions(merge:false));
