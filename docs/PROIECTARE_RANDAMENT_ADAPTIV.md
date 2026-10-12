@@ -636,3 +636,56 @@ Următoarea problemă majoră de proiectare la categoria Profiluri/Membri este *
 Contractul minimal de istoric din secțiunea 18 rămâne necesar: **suprafață reală a mochetei la intervenție, identificator unic și cei doi participanți real verificați**. **Nu se vor introduce câmpuri suplimentare care să împartă m² între persoane**, nefiind cerute. Calculăm din intervenții unice, nu stocăm incremental doi contori personali neauditați. În profil afișăm defalcarea pe parteneriate cu «Luna în curs» și «General» și m² de mochetă comuni, plus **un total personal de m² pe toate echipele**. Nu adăugăm procent de performanță individuală, salarizare ori sancțiuni.
 
 **Numai documentare.** Nicio modificare de cod Dart/Flutter, Firebase, securitate, producție, APK ori deploy prin această clarificare.
+
+## 20. Profiluri/Membri — auditul proiecției publice și prezentarea datelor (proiectare 2026-10-13, fără implementare)
+
+### 20.1 Scopul sesiunii și statuarea deciziilor
+
+Utilizatorul a spus «Continuăm» după clarificarea **explicit aprobată** din secțiunea 19: la o lucrare comună de mochetă, **fiecare membru primește în propriul total întreaga suprafață** a sălii, fără împărțire după atribuții; firma numără o singură dată lucrarea. Mai sunt **APROBATE**: total personal de m² pentru toate echipele, două procente per parteneriat cu istoric cumulativ peste reuniri, autonomie de vizibilitate numai în propriul profil, administratorul poate vedea câmpurile ascunse, iconuri specifice rețelelor sociale.
+
+Această secțiune investighează **implementarea de profiluri deja existentă** și propune **layoutul + politica minimă de confidențialitate și acces**. Se păstrează separarea dintre **cerințele aprobate** și **propunerile de default/UI ce încă necesită acceptarea utilizatorului**. Nimic din această analiză nu modifică regulile Firestore, Cloud Functions sau aplicația.
+
+### 20.2 Audit read-only al surselor reale — constatări verificabile
+
+1. `lib/profile/profile_page.dart` folosește `users/{uid}` pentru propriul profil, permite editarea câmpurilor `name,nickname,useNickname,phone,hireDate,contractFunction,photoBase64,profileFields` și afișează statistici de muncă **bazate astăzi pe `teamId` CURENT**, plus **«Diurne încasate»** numai în profilul propriu. `profileFields` au `label,value,type`, fără `id` stabil ori setare individuală de vizibilitate.
+2. `lib/members/member_profile_page.dart` folosește `users` pentru admin sau proprietar și `memberDirectory` pentru ceilalți. Prezintă informații de bază, telefon și încearcă să afișeze `profileFields`, **dar proiecția actuală nu le livrează** vizitatorilor obișnuiți. Nu are statistica istorică pe perechi.
+3. **Constatare importantă din `functions/member_directory_projection.js`:** allowlist `FIELDS` include **`phone`** și `photoBase64` etc., dar **NU `profileFields`, email sau statistici**. Funcția `projectMember` exclude documente cu `hiddenFromMembers=true` și utilizatorii cu `role='admin'`; nu implementează vizibilitate granulară a câmpurilor.
+4. `functions/index.js::syncMemberDirectory` este un trigger `onDocumentWritten('users/{userId}')` și proiectează datele prin **tranzacție care recitește profilul actual**, evitând repopularea pe baza unor evenimente mai vechi. Acest mecanism poate fi extins ulterior, după teste pentru evenimente în afara ordinii și două dispozitive.
+5. **`firestore.rules`:** `match /users/{userId}` permite `get` numai proprietarului/adminului și `list` numai adminului; `memberDirectory/{userId}` este **citibil de orice membru activ** și **needitabil direct de client**. Lista de câmpuri pe care membrul le poate edita la `users` **NU include încă un obiect de preferințe de vizibilitate**. Orice date trimise în `memberDirectory` sunt realmente citibile de colegi, indiferent de ce ascunde widgetul. Nu expunem câmpurile private în acea proiecție, nici ca `visible=false`.
+6. `lib/members/members_directory_page.dart` arată lista membrilor și deschide profilurile; trebuie să respecte opțiunile noului sistem și în listă, căutare, chat, mini-avatar, capturi de cache etc. `hiddenFromMembers` actual este o ascundere globală parțială și **nu poate substitui** controlul per informație.
+
+### 20.3 Structura de afișare propusă — două ecrane, aceeași logică
+
+- **Antet:** nume/poreclă conform preferinței, fotografie, funcții/badge-uri, comunicare; adaptat permisiunilor vizitatorului. Nu presupunem afișarea publică internă a tuturor câmpurilor de autentificare ori administrative.
+- **Activitate — agregat personal:** `Total mochetă — lucrări în echipă` în m², cumul din toate parteneriatele la care utilizatorul **a participat verificabil**. Dacă există intervenții fără m² documentați, arătăm numărul cunoscut ca **subtotal incomplet**, nu un total precis fals. Acesta este **volum comun creditat integral fiecărui participant**, nu suprafață executată de membru separat.
+- **Activitate — parteneriate:** pentru fiecare pereche istorică verificată, un singur card identificat prin cei doi ID-uri stabile, cu partenerul și **«Randament — Luna în curs»**, **«Randament — General»** (max. 100%) și **«Total mochetă curățată împreună»**. Toate episoadele aceleiași perechi contribuie la **General** și la m² cumulativ; datele operaționale ale lunii determină «Luna în curs». Detaliile pot afișa episoadele distincte fără crearea unui al doilea total al aceleiași perechi.
+- **Separarea stărilor:** dacă perechea nu a lucrat deloc în luna curentă, afișăm descriptiv «Fără lucrări luna aceasta»; dacă a lucrat, dar **nu are durate comparabile** pentru procent, afișăm «Date insuficiente»; General rămâne disponibil dacă are istoric valid. Fără cifre inventate și fără confuzie între lipsa de activitate și lipsa etalonului.
+- **Contact și informații personalizate:** telefon, email de contact (nu credential de autentificare), dată angajare/funcție, valori text și linkuri gestionate pe câmp, în acord cu permisiunile. Câmpurile personalizate viitoare primesc **identificator stabil** (nu index în array), astfel încât ascunderea să rămână aplicată câmpului corect la editări, ștergeri și reordonări.
+- **Social:** domeniul HTTP(S) real recunoscut => iconul local al platformei și tooltip; domeniul nerecunoscut => glob/link extern neutru. Nu afișăm logo Facebook pentru `facebook.com.evil.tld`. Linkurile nu sunt încărcate de la site-uri terțe pentru a detecta marca.
+- **Financiar și diurne:** `ProfilePage` include azi «Diurne încasate», pe care `MemberProfilePage` nu le vede. **Este NECESARĂ o decizie explicită a proprietarului despre publicarea internă a diurnelor**. **Recomandarea de securitate propusă** este ca diurnele să rămână vizibile numai titularului și administratorului **implicit**, fără proiecția lor în `memberDirectory` până la un acord clar; nu afirmăm că recomandarea este aprobată.
+
+**Interfață unificată recomandată:** un `ProfileViewData` ori echivalent cu câmpuri deja autorizate pentru privitorul curent, produs fie din `users` pentru titular/admin, fie din proiecția filtrată pentru coleg. Componente Flutter reutilizabile pentru cele două pagini, fără apel la colecția `records` a tuturor echipelor din profilul altcuiva și fără calculatoare diferite ale randamentului.
+
+### 20.4 Politică tehnică propusă pentru fiecare câmp
+
+**Aprobat:** fiecare titular poate decide independent vizibilitatea **din propriul profil**, iar ascunderea cardului comun de către A nu împiedică afișarea aceluiași agregat la B, dacă B alege aceasta; adminul autorizat vede complet în limitele rolului. **Propunere de implementare, nu default deja aprobat:**
+
+- Preferințele sunt salvate **în documentul privat al titularului** sub chei predictibile, de tipul `profileVisibility.<fieldId>`, `profileVisibility.social.<stableLinkId>`, `profileVisibility.partnership.<stablePairKey>`; nomenclatura și structura efectivă se verifică înainte de modificarea Firestore.
+- Proiecția `memberDirectory` generată **numai pe server** elimină fizic câmpurile ascunse, nu trimite valorile și nici metadate sensibile care permit reconstituirea lor. Adminul/titularul citesc documentul privat complet. Evităm publicarea identităților interne de partener ori timestampurilor brute atunci când cardul este ascuns.
+- Preferințele nu sunt **permisiuni de scriere**: membrii își pot schimba doar setările proprii și câmpurile proprii permise; nu își pot modifica randamentul, numărul total de m², `teamId`, rolul sau statistica altui membru.
+- **Proiecție pe eveniment**, doar la modificări relevante și la actualizarea sumarelor autorizate, fără scriere repetată la fiecare redraw ori la fiecare secundă a ceasului. Pentru volume mari, sumarele statistice calculate din sursă de încredere se pot publica într-o proiecție autorizată **filtrată pe titular**, evitând citiri sensibile. Schema exactă se testează cu permisiunile și costurile.
+- **Default de vizibilitate — încă neconfirmat:** câmpuri obișnuite ale profilului să poată fi partajate intern dacă utilizatorul le lasă vizibile; însă **datele financiare, identificatorii de autentificare și alte câmpuri sensibile nu trebuie proiectate automat**. Confidențialitatea telefonului, emailului, datei angajării și a statisticilor comune trebuie prezentată clar titularului pentru alegere, eventual cu o previzualizare «cum mă văd colegii». Nu transformăm «toate informațiile din profil» în acces la întregul document `users`.
+
+### 20.5 Verificări de logică efectuate acum
+
+**14/14 aserțiuni JavaScript fictive trecute:** o persoană ascunde propriul telefon/email/link Facebook/cardul perechii, dar păstrează Instagram vizibil; vizitatorul obișnuit nu vede datele ascunse, adminul și titularul le văd; partenerul afișează legitim propriul card al aceleiași perechi; diurnele sunt ținute private în **prototipul propus**, nu ca regulă finală; recunoașterea domeniului acceptă `m.facebook.com` și respinge `facebook.com.evil.tld`, cu fallback neutru pentru site necunoscut. **Sunt numai teste matematice de filtrare într-o simulare, nu verificarea Cloud Functions actuale, reguli Firebase, Flutter, Firestore, CI ori date reale**. Va trebui testată **revocarea vizibilității** inclusiv din cache și întârzierea triggerului.
+
+### 20.6 Întrebare pentru următoarea decizie
+
+**Diurnele deja afișate în profilul propriu** trebuie să fie:
+- vizibile și altor membri **ca restul câmpurilor de profil**, cu posibilitatea titularului de a le ascunde individual; **sau**
+- vizibile numai titularului și administratorului autorizat (recomandare de confidențialitate), fără publicare în directorul colegilor?
+
+Nu se implementează niciuna fără o alegere clară. Celelalte reguli aprobate (creditul integral al m² pentru ambii, parteneriatul istoric fără reset, libertatea fiecărui profil, iconuri sociale) sunt **fixate**.
+
+**Status:** documentație și analiză de cod read-only; fără modificări Flutter, Firebase, Cloud Functions, reguli de securitate, configurație de producție, APK ori deploy.
