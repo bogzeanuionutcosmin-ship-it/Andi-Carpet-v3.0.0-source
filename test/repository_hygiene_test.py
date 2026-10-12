@@ -769,6 +769,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         for contract in ("_exportBackup", "_restoreBackup", "saveLocation", "deleteLocation"):
             self.assertIn(contract, admin)
 
+    def test_admin_navigation_catalog_extracted(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        catalog = (ROOT / "lib/admin/admin_navigation_catalog.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_navigation_catalog.dart';", main)
+        for symbol in ("_adminSectionIcon(", "_adminSectionGroup(", "_adminSectionAsset("):
+            self.assertIn(symbol, catalog)
+            self.assertIn(symbol, admin)
+        self.assertNotIn("IconData _icon(int i)", admin)
+        self.assertNotIn("String _groupFor(int i)", admin)
+        self.assertNotIn("String? _adminSectionAsset(int i)", admin)
+        self.assertIn("assets/ui/tab_dashboard.png", catalog)
+        self.assertIn("assets/ui/security.png", catalog)
+
     def test_backup_codec_is_extracted_without_duplicate_implementations(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
