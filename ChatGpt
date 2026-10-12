@@ -706,3 +706,9 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - În timpul extracției, prima versiune a fișierului nou a inclus accidental și restul clasei Admin din cauza unui separator cu indentare diferită; a fost corectată IMEDIAT înainte de integrarea în `main.dart` (commit corectiv `e7d4741`). Versiunea integrată conține doar acțiunile de echipe; commituri `bfee3c3`, `9e06e96`.
 - Test de regresie pentru extracție și păstrarea câmpurilor `financialManagerId`, `teamId` și verificarea `perDiems`: commit `c964e6e`.
 - CI/build după modificare trebuie confirmate. Nu modifica drepturile/diurnele până la validare. Total 57 Dart parts declarate. Fără deploy.
+
+
+## 84. Curățare Administrare: Membri și Conturi
+- Extrase `_editFunctionDefinition`, `_setUserFunctions` și `_members` din `lib/admin/admin_panel_page.dart` în `lib/admin/admin_member_actions.dart`, mixin `_AdminMemberActions on State<AdminPanelPage>`; noul part în `lib/main.dart`. Commituri `73ed934`, `fa02773`, `3ce0827`.
+- Funcțiile de gestionare a conturilor și atribuirea funcțiilor continuă să utilizeze colecțiile Firestore `users` și `functions`, fără schimbări intenționate de reguli de acces. Interfața și operațiile rămân grupate pentru separări ulterioare.
+- Test structural pentru contractele `functionIds`, users/functions și extracție: commit `4478fae`. Total 58 Dart parts declarate. Compilarea CI după această modificare rămâne de confirmat. Fără deploy.
