@@ -27,7 +27,7 @@ class AdminSecurityIntegrationContractTest(unittest.TestCase):
         self.assertNotIn('event.data.after.data()', block)
 
     def test_member_profile_uses_public_directory_for_non_admin(self):
-        dart = (ROOT / 'lib/main.dart').read_text()
+        dart = (ROOT / 'lib/members/member_profile_page.dart').read_text()
         self.assertIn("currentUser.role == UserRole.director || memberId == currentUser.id ? 'users' : 'memberDirectory'", dart)
 
     def test_migration_is_explicit_and_removes_stale_entries(self):
