@@ -775,6 +775,18 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
+    def test_admin_settings_extracted_with_persistent_configuration(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        settings = (ROOT / "lib/admin/admin_settings_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_settings_actions.dart';", main)
+        self.assertIn("_AdminSettingsActions", admin)
+        self.assertIn("Future<void> _saveUiSettings()", settings)
+        self.assertIn("Widget _settings()", settings)
+        self.assertNotIn("Future<void> _saveUiSettings()", admin)
+        for field in ("backupRetentionDays", "notificationHistoryDays", "androidDownloadUrl", "smsPreviousDayTime", "brandingBackgroundId", "defaultPerDiem"):
+            self.assertIn(field, settings)
+
     def test_admin_function_rights_extracted_and_admin_protected(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
