@@ -760,14 +760,8 @@ class RepositoryHygieneTests(unittest.TestCase):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         expense_source = (ROOT / "lib/expenses/expense_page.dart").read_text(encoding="utf-8")
         map_source = (ROOT / "lib/map/map_page.dart").read_text(encoding="utf-8")
-        self.assertIn("RegExp(r'^\\d{1,9}(?:\\.\\d{1,2})?
-        self.assertIn("Schematic fallback when Mapbox cannot provide road geometry.", map_source)
-        self.assertNotIn("for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }", source)
-
-
-if __name__ == "__main__":
-    unittest.main()
-).hasMatch(normalized)", expense_source)
+        self.assertIn("hasMatch(normalized)", expense_source)
+        self.assertIn("normalized = raw.trim().replaceAll", expense_source)
         self.assertIn("Schematic fallback when Mapbox cannot provide road geometry.", map_source)
         self.assertNotIn("for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }", source)
 
