@@ -83,6 +83,7 @@ part 'admin/admin_member_actions.dart';
 part 'admin/admin_car_actions.dart';
 part 'admin/admin_location_actions.dart';
 part 'admin/admin_operations_actions.dart';
+part 'admin/admin_learning_actions.dart';
 part 'admin/admin_panel_page.dart';
 part 'schedule/program_page.dart';
 part 'auth/firebase_user_profile.dart';
