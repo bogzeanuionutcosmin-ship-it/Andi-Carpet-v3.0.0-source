@@ -775,6 +775,18 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
+    def test_admin_dashboard_extracted_with_local_usage_warning(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        dashboard = (ROOT / "lib/admin/admin_dashboard_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_dashboard_actions.dart';", main)
+        self.assertIn("_AdminDashboardActions", admin)
+        self.assertIn("Widget _dashboard()", dashboard)
+        self.assertIn("Widget _mapboxUsagePanel()", dashboard)
+        self.assertNotIn("Widget _dashboard()", admin)
+        self.assertIn("requestsByService", dashboard)
+        self.assertIn("NU reprezintă consumul lunar", dashboard)
+
     def test_admin_communications_extracted_with_report_contracts(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
