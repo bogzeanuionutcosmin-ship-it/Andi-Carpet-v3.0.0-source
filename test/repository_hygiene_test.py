@@ -775,6 +775,20 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
+    def test_admin_team_actions_extracted_with_membership_contracts(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
+        teams = (ROOT / "lib/admin/admin_team_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("part 'admin/admin_team_actions.dart';", main)
+        self.assertIn("with _AdminBackupActions, _AdminTeamActions", admin)
+        for name in ("_editTeam(", "_setTeamActive(", "_deleteTeam(", "_cleanupDuplicateTeams(", "_teams()"):
+            self.assertIn(name, teams)
+        self.assertNotIn("Future<void> _editTeam(", admin)
+        self.assertNotIn("Future<void> _deleteTeam(", admin)
+        self.assertIn("financialManagerId", teams)
+        self.assertIn("teamId", teams)
+        self.assertIn("perDiems", teams)
+
     def test_admin_navigation_catalog_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
