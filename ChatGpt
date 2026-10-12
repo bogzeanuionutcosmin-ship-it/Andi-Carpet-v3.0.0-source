@@ -577,3 +577,10 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - Atenție la limita de extracție: după pagina Program urmează constanta de date cartografice `_verifiedLocationFixes` (~8k), care a rămas în `lib/main.dart` pentru a nu muta datele hartă odată cu programările.
 - Test nou pentru part, unicitatea claselor, programări, permisiuni, rutare și păstrarea constantei hartă, commit `56a7cf40`.
 - CI pentru #50 încă neconfirmat; verifică run-ul final. Nu schimba business logic și nu lansa deploy.
+
+
+## 65. Reparare CI după extragerea Program (#50)
+- Run `38196340842` la `d84ac7e4` a eșuat exclusiv la jobul `Python source and security contracts`; Flutter web, Firebase Functions, Firestore emulator și Node projection au trecut.
+- Cauza: patru aserțiuni din `test/grafic_learning_notifications_contract_test.py` căutau încă în `lib/main.dart` logica deja extrasă în `lib/schedule/program_page.dart`.
+- Confirmat că toate patru expresiile de contract există neschimbate în modulul nou. Schimbat sursa testelor din `MAIN` în `PROGRAM`, fără schimbare a algoritmilor de recalculare, cooldown, audit sau SMS; commit `6cc86a66`.
+- Verifică CI pe ultimul commit înainte de a declara reparația validată.
