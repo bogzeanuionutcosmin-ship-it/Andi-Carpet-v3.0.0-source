@@ -792,8 +792,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_firebase_user_profile_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/auth/firebase_user_profile.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'auth/firebase_user_profile.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'auth/firebase_user_profile.dart';", main)
+        self.assertIn("export 'auth/firebase_user_profile.dart';", main)
+        self.assertNotIn("part 'auth/firebase_user_profile.dart';", main)
+        self.assertNotIn("part of", module)
         self.assertNotIn("class FirebaseUserProfile {", main)
         self.assertEqual(module.count("class FirebaseUserProfile {"), 1)
         self.assertIn("bool get isAdmin => role == 'admin';", module)

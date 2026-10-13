@@ -88,7 +88,7 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
           final d = doc.data();
           final roleText = (d['role'] ?? 'member').toString();
           final role = roleText == 'admin' ? UserRole.director : UserRole.member;
-          final function = FirebaseUserProfile._functionFrom(d['function']?.toString(), roleText);
+          final function = FirebaseUserProfile.functionFrom(d['function']?.toString(), roleText);
           final email = (d['email'] ?? '').toString();
           var name = (d['name'] ?? '').toString().trim();
           final nickname = (d['nickname'] ?? '').toString().trim();

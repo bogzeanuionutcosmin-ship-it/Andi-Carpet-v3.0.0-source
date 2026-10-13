@@ -607,3 +607,14 @@ Inventar: **160 fișiere Dart (124 lib, 35 test, 1 script), 63 parts, 97 bibliot
 Auditul read-only pentru următoarele părți nu a identificat încă un modul la fel de mic și independent: QuickAccounts gestionează parole în SecureStorage; FirebaseUserProfile/AuthGate și inițializarea sunt legate de identitate/streams/startup; AppInformationPage păstrează updateHistory și scrierile admin; PageShell/tema folosesc branding global; install flow folosește URL launch extern. Aceste zone rămân pentru loturi viitoare cu interfețe și teste specifice. **Modularizarea completă nu este finalizată; 63 parts încă așteaptă separare graduală.**
 
 PR #20, PR #29/OCR/diurne, PDF/PV, Mapbox, date/rules/config Firebase, billing și producția rămân neatinse. Fără merge, deploy, APK publicat sau modificări în producție.
+
+
+## MOD-IDENTITY-LIBRARY-20261014 — profil Firebase independent, Issue #30
+
+Bază verificată: PR #28 HEAD `3be7a09b6a28122bfae23e8ff779e7765a24cd39`, CI run `38481002554` **5/5 SUCCESS**. Issue #30 a fost citit integral; regulile funcționale deja aprobate nu se reiau și Vision/Error Log rămâne ulterior pe PR dedicat.
+
+`lib/auth/firebase_user_profile.dart` este bibliotecă independentă cu importuri explicite Firebase Auth, Firestore și enumuri. Clasa, constructorul și factory-ul din snapshot păstrează datele/fallbackurile. Singura redenumire este metoda statică privată `_functionFrom` → `functionFrom`, folosită explicit și în adapterul directorului; corpurile clasei și adapterului sunt text-identice după normalizarea acestei redenumiri. Main importă/re-exportă API-ul existent. Nicio citire/scriere, autorizare, flux AuthGate sau regulă de cont nu s-a schimbat.
+
+Testele Dart directe acoperă profil absent, fallback email/nume/status, precedență admin, nickname, conversia permissivă/mutabilitatea functionIds și lookup-ul comun de funcții. Local: **155 Python, 3 Node PASS**, syntax Functions și diff-check PASS. Flutter/Dart indisponibile local; CI pe SHA-ul lotului urmează. Inventar regenerat cu scriptul: **161 Dart (124 lib, 36 teste, 1 script), 62 parts, 99 biblioteci**, zero missing/orphan/duplicate/cicluri.
+
+Următorul lot: izolarea stocării QuickAccounts cu dependență securizată explicită și teste fără acces la credentiale reale; cheia, formatul JSON, plafonul de două conturi și tratarea erorilor trebuie păstrate. Detalii în `docs/MODULARIZARE_AUTH_SERVICII_2026-10-14.md`. PR #19/#20/#21/#29 și producția sunt protejate; fără merge/deploy/APK/rules/config/date live/billing. Modularizarea integrală și auditul diferențial ulterior rămân deschise.
