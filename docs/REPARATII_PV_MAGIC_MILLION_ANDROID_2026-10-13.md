@@ -30,3 +30,19 @@
 - PR-ul nu șterge date Firestore din producție și nu schimbă securitatea. Butoanele admin din viitoarea versiune execută acțiuni doar după confirmarea manuală; ele trebuie testate cu regulile Firestore existente.
 
 **Interdicție:** nu face merge automat, nu publica web/APK, nu schimba Firebase Storage/Rules/billing și nu corecta/suprascrie retroactiv documentul Million fără fișierul-sursă și confirmare.
+
+## Fișierul PV Million primit — integrare binară în așteptare (2026-10-13)
+
+Proprietarul a furnizat explicit PDF-ul original `Proces_Verbal_Million_AndiCarpet.pdf` în conversația AndiCarpet. Fișierul a fost deschis și verificat local:
+- **PDF 1.3**, **1 pagină A4**, necriptat, **1.399.921 octeți**;
+- SHA-256: `3bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23`;
+- formă tipărită de recepție a lucrărilor de curățare a mochetei MILLION, cu date locație/client, verificarea permisiunii, managerul informat, zone curățate, rezultat și semnături; **document scanat/imagine, fără strat text**, nu este formular interactiv;
+- nu se modifică documentul, nu se înlocuiește cu un formular aproximat ori cu PDF reconstruit.
+
+### Implementare pregătită
+
+În `lib/documents/documents_page.dart` există acum cardul **PV Million** cu `Descarcă PV Million` și `Partajează PV Million`, care citesc `assets/pv_million.pdf`. Cardul are protecție de disponibilitate: până la adăugarea REALĂ a fișierului binar, butoanele rămân ascunse și este afișat doar avertismentul de integrare în curs. Niciun fișier fictiv nu se distribuie și fișa Million existentă în Firebase nu se șterge.
+
+**Blocaj de transport:** conexiunea GitHub din conversația aceasta primește conținut de fișier doar ca text/base64 și nu poate transfera direct atașamentul binar local de 1,4 MB printr-o cale de fișier. Este necesară încărcarea **exact a octeților originali** în ramura `fix/documents-pv-download-20261013`, calea `assets/pv_million.pdf`, folosind ChatGPT Work cu fișierul atașat sau interfața GitHub Upload files. Nu se încarcă în `main`. După upload, verificați SHA-256, disponibilitatea în pachetul Flutter, teste, Android debug build și CI complet pe noul SHA.
+
+**Atenție:** dacă fișierul nu este încă în repository, cardul este **doar pregătit**, nu implementat complet. Nu realizați merge, deploy sau anunțați descărcarea PV Million ca funcțională până când assetul este prezent și verificat.
