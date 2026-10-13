@@ -1009,3 +1009,16 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 6. Testare obligatorie pe chat grup/privat, derulare, minimizare, schimbare conversație, mesaj nou concurent, F5/relogin, două dispozitive, ceas greșit, offline și acces autorizat.
 
 **Detalii:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md` secțiunea 14. **Numai documentație**, fără modificări de aplicație ori Firebase. Propunerile 1 (Learning) și 2 (ordinea în clopoțel) rămân confirmate anterior; următoarea propunere de notificări se prezintă individual.
+
+## 55. Notificări — propunerea 4 confirmată: gruparea alertelor de chat (2026-10-13)
+
+**Aprobare expresă a proprietarului: «Confirm»** la propunerea 4.
+
+1. **Notificări de chat grupate:** toate mesajele noi din **aceeași conversație** primite într-un interval de aproximativ **30 de secunde** apar într-un **singur card**, actualizat cu numărul real al mesajelor necitite. Exemplu «Daniel — 5 mesaje noi». Fiecare conversație are propriul card; Chat live nu se contopește cu un chat privat.
+2. **Maximum un sunet per grup** în fereastra respectivă, numai când permisiunile și preferințele permit sunet. Actualizarea aceluiași card nu generează încă un pop-up/sunet. Mesajele noi după intervalul de grupare pot semnala o serie nouă, fără duplicarea celor deja afișate.
+3. **Citirea adevărată** în chat marchează mesajele citite și elimină notificarea aferentă din necitite; starea este persistentă pe server, corectă după refresh/reconectare. Nu se numără mesajele proprii.
+4. **Propunerea 3 rămâne aplicabilă:** dacă un mesaj este efectiv afișat în conversația activă, el nu produce alertă sau contor. Dacă utilizatorul vede o porțiune veche, aplicația e în fundal sau mesajul provine din altă conversație, se respectă notificarea pentru mesaje încă nevăzute.
+5. **Deduplicare și drepturi:** cheia de agregare este per cont + ID conversație; mesajele și evenimentele au ID-uri stabile între Firestore, FCM, badge și istoric. Mesajele critice Admin/Sistem, erorile urgente și sugestiile Learning ce cer aprobare își păstrează canalele/prioritățile separate.
+6. La implementare se testează pe Android/web: mesaje multiple în 30 de secunde, chat-uri diferite, actualizări fără sunet dublu, conversație vizibilă, conversație derulată, schimbare cont/dispozitiv, offline, push+listener, F5, click pe card și corectitudinea citirii.
+
+**Audit tehnic:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md`, secțiunea 15. **Numai documentație:** nu s-a modificat codul, Firebase, regulile, datele, CI, APK sau deploy. Următoarea propunere despre notificări se discută individual.
