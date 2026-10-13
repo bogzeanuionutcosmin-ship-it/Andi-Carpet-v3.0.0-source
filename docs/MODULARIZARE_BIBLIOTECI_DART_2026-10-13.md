@@ -261,3 +261,8 @@ Runul `38461011616` pe `2266f53b41d30b62dab304d1f6649eb1aa1a38af`: Python/securi
 ## MOD-INTERACTIVE-BADGE-CI-IMPORT-FIX-20261013
 
 Rerunul `38461236529` a trecut Python/security, Node, Functions și Firestore **4/5**. Flutter a găsit importul lipsă pentru `PointerDeviceKind` folosit de `TestGesture`; am adăugat importul selectiv `dart:ui`. Codul de producție nu se modifică. CI integral pentru testul corectat este în așteptare.
+
+
+## MOD-INTERACTIVE-BADGE-CI-HOVER-FIX-20261013
+
+Runul `38461449964`: tap/pin/toggle a trecut, iar celelalte patru joburi au trecut. Cazul hover/exit nu a produs onExit după mutarea la un punct de pe suprafață acoperită de overlay. Testul elimină acum pointerul mouse explicit după hover, emițând pointer removal către MouseRegion; overlay-ul trebuie să dispară. Componenta nu s-a modificat. Rerun CI integral în așteptare.

@@ -51,9 +51,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('badge-test:86.0'), findsOneWidget);
 
-    await mouse.moveTo(const Offset(1, 1));
+    await mouse.removePointer();
     await tester.pumpAndSettle();
     expect(find.text('badge-test:86.0'), findsNothing);
-    await mouse.removePointer();
   });
 }
