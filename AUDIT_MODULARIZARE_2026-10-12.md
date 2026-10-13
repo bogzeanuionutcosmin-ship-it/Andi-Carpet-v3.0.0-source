@@ -204,3 +204,25 @@ Validare locală: **134 teste Python PASS, 3 Node PASS, syntax Functions PASS, g
 Riscuri existente reconfirmate, **necorectate pentru a păstra comportamentul**: START folosește verificare locală înainte de scriere, fără garanție contra concurenței; detecția GPS vine după scrierea liveLocations și nu rulează dacă aceasta eșuează; închiderea legacy consideră și Refuzată drept rezolvată, contrar specificației viitoare; payload GPS conține fotografia; delayed restart GPS nu are gard mounted. Sunt puncte de analiză/remediere ulterioară cu contracte, nu incidente de producție dovedite.
 
 Modularizarea integrală **NU este finalizată**: `part` păstrează cuplarea; Home mai conține starea/orchestrarea/UI, iar Expense/Program/Map/Dashboard, PDF și modele cer continuare. Bibliotecile independente și testele funcționale autentificate/Android/background rămân de făcut. Nu se șterg assets, cacheuri sau module v2 pe presupuneri. PR #28 rămâne Draft; PR #15/#19/#20/#21 neatinse. Fără merge, deploy, Firebase live/rules/config, migrare, billing, versiune ori APK publicat.
+
+## MOD-SCREEN-ACTIONS-20261013 — continuare cumulativă PR #28
+
+Bază: `ded22405ba3d542e9f264eab11fbdf36ca22f411`, **CI run 38372097984 5/5 completed/success** verificat înainte de acest lot.
+Separare textuală a **91 metode în 8 module**, fără editări interne. Verificare independentă: fiecare bloc din extensii există o singură dată în sursa Git de bază, iar eliminarea blocurilor reproduce EXACT fiecare pagină actuală. Pentru Dashboard s-au concatenat două blocuri separate din aceeași clasă. State/getterele/UI/override rămân în pagini, callbackurile neschimbate.
+
+| Pagină | Caractere înainte → după | Module noi |
+|---|---:|---|
+| Decont | 76.911 → 19.722 | expense_settlement_actions, expense_per_diem_actions, expense_document_actions |
+| Program | 66.377 → 17.370 | program_route_learning_actions, program_graph_actions |
+| Hartă | 55.293 → 31.948 | map_verified_import_actions, map_location_actions |
+| Dashboard | 39.856 → 24.344 | dashboard_work_actions |
+
+Total mutat în acest lot: **145.053 caractere**; cumulativ în sesiune: **180.065 caractere / 118 metode / 12 module noi**. Include OCR/manual/deduplicare/documente/PDF, distribuiri/confirmări/refuzuri/contestații/suplimentări de diurnă, deplasări/încasări/calcule generale, Learning rutare/transfer zile, START/STOP/pauză/grafic/export, import GPS/poziționare și execuții dashboard. Nicio schimbare de praguri, drepturi, sume, colecții sau ordine async. Avansul diurnei, zero ca refuz reversibil, rollback confirmare, cele două tranzacții de contestație și Undo IEȘI sunt literal păstrate.
+
+**Validare locală:** 141 Python PASS (7 contracte noi), 3 Node PASS, syntax Functions/diff-check PASS. Nouă teste vechi căutau codul în paginile de origine; au fost adaptate la sursa nouă fără slăbirea aserțiunilor. Flutter/Dart lipsesc local; Flutter test/web release, Functions dependencies și Firestore emulator demo se verifică în CI pe HEAD final. Rezultatul final SHA/run se înscrie în descrierea PR după terminare.
+
+**Riscuri existente reconfirmate, necorectate:** transferul zilelor/START/crearea graficelor au salvări succesive și pot rămâne parțiale la eroare; importul GPS mută obiectele locale înainte de batch.commit; unele editoare modifică obiecte înainte de salvare; controller-ele dialogului OCR nu au dispose după animație; ascunderea UI admin nu este autorizare server-side. Geocoderele au output/fallback diferite și nu sunt unificate orbește. Nu se deduc incidente live din analiza statică.
+
+**Inventar:** 113 fișiere Dart / 89 parts; nicio clasă duplicată, niciun part lipsă/neconectat; audit git păstrează 12 grupuri de assets/configuri identice cunoscute. `part of main.dart` rămâne tranzitoriu. Modularizarea integrală **NU este finalizată**: biblioteci independente, modele/PDF, starea/prezentarea paginilor și Map rendering/GPS, candidatele de cod mort și parsarea receivedEntries rămân de analizat. Cache-urile numai scrise nu sunt eliminate deoarece evaluarea `_encoded` poate influența erorile. Testele structurale/web nu înlocuiesc testele autentificate și fizice Android/background. Vision/Error Log rămâne prima implementare nouă ulterioară, fără activare aici.
+
+PR #28 Draft/Open; PR #15/#19/#20/#21 neatinse. Fără merge, deploy, date/rules/config Firebase producție, migrare, billing, versiune ori APK publicat.

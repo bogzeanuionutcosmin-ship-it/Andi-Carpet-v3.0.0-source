@@ -408,9 +408,10 @@ class RepositoryHygieneTests(unittest.TestCase):
         for name in ("DashboardPage", "_DashboardPageState"):
             self.assertNotIn("class " + name + " extends ", main)
             self.assertEqual(module.count("class " + name + " extends "), 1)
+        features = module + (ROOT / "lib/dashboard/dashboard_work_actions.dart").read_text(encoding="utf-8")
         for contract in ("widget.teams", "widget.records", "widget.schedules",
                          "showSuccessMessage", "showErrorMessage"):
-            self.assertIn(contract, module)
+            self.assertIn(contract, features)
 
     def test_program_page_extracted_preserving_schedule_and_map_data(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
@@ -420,9 +421,10 @@ class RepositoryHygieneTests(unittest.TestCase):
         for name in ("ProgramPage", "_ProgramPageState"):
             self.assertNotIn("class " + name + " extends ", main)
             self.assertEqual(module.count("class " + name + " extends "), 1)
+        features = module + (ROOT / "lib/schedule/program_graph_actions.dart").read_text(encoding="utf-8") + (ROOT / "lib/schedule/program_route_learning_actions.dart").read_text(encoding="utf-8")
         for contract in ("widget.schedules", "widget.locations", "widget.saveSchedule",
                          "widget.canEditTeam", "_roadRouteFuture"):
-            self.assertIn(contract, module)
+            self.assertIn(contract, features)
         self.assertIn("const List<_VerifiedLocationFix> _verifiedLocationFixes", main)
         self.assertNotIn("const List<_VerifiedLocationFix> _verifiedLocationFixes", module)
 
@@ -434,10 +436,11 @@ class RepositoryHygieneTests(unittest.TestCase):
         for name in ("MapPage", "_MapPageState"):
             self.assertNotIn("class " + name + " extends ", main)
             self.assertEqual(module.count("class " + name + " extends "), 1)
+        features = module + (ROOT / "lib/map/map_verified_import_actions.dart").read_text(encoding="utf-8") + (ROOT / "lib/map/map_location_actions.dart").read_text(encoding="utf-8")
         for contract in ("widget.locations", "widget.saveLocation",
                          "widget.hiddenUserIds", "widget.schedules",
                          "FlutterMap", "MarkerLayer", "PolylineLayer"):
-            self.assertIn(contract, module)
+            self.assertIn(contract, features)
 
     def test_expense_page_extracted_preserving_per_diem_workflows(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
@@ -1108,7 +1111,7 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        expense_source = (ROOT / "lib/expenses/expense_page.dart").read_text(encoding="utf-8")
+        expense_source = (ROOT / "lib/expenses/expense_document_actions.dart").read_text(encoding="utf-8")
         map_source = (ROOT / "lib/map/map_page.dart").read_text(encoding="utf-8")
         self.assertIn("hasMatch(normalized)", expense_source)
         self.assertIn("normalized = raw.trim().replaceAll", expense_source)
