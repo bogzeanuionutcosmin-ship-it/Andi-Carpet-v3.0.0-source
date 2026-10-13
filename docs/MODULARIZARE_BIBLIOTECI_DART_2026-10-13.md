@@ -204,3 +204,8 @@ Test Dart direct verifică child-ul, Base64 invalid și overlay-ul pentru teme l
 Nu s-au schimbat PDF-urile, fonturile, download/share, Mapbox, rutarea, OCR, diurnele, permisiunile financiare sau PR #29. Hashurile PV Magic/Million și asseturile protejate rămân responsabilitatea testelor/CI pe tree-ul remote. PageShell rămâne part fiindcă citește branding prin `_activeAppSettingsForBranding` global mutabil; fără contract explicit de branding, extragerea nu este sigură. Modularizarea integrală nu este finalizată.
 
 CI pentru commitul acestui lot: în așteptare. După 5/5 SUCCESS, următorul pas este audit read-only al următoarelor componente UI cu stare izolabilă; PageShell/auth/sync și download/share rămân blocate până la adaptere fără schimbarea contractelor.
+
+
+## MOD-APP-BACKDROP-CI-CORRECTION-20261013
+
+Runul CI `38426558633` pentru `a0306d882a602afe9234108917fdfe93a2f2dc80` a eșuat în două joburi din aceeași cauză: blobul snapshotului de dependențe a fost trunchiat la transmiterea din checkout și `json.loads` a raportat eroare la primul caracter. Celelalte trei joburi: Node projection și Firebase Functions PASS; Firestore emulator încă rula la verificare. Widget test nu a fost atins deoarece CI s-a oprit în testul Python. Am regenerat fișierul JSON complet (164.045 bytes), l-am verificat local cu parserul JSON și am transmis corecția ca blob complet. Urmează CI integral pe commitul corectiv; lotul nu este considerat validat până la 5/5.
