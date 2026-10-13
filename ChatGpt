@@ -1149,3 +1149,11 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - **Doar documentație/audit:** nu a fost modificat codul, GitHub Actions, cheia efectivă, Firebase, aplicația instalată, APK ori deploy. Nu promiteți că un APK construit acum e compatibil cu instalarea existentă.
 
 **Continuitatea următoarei discuții:** adresați o întrebare scurtă, concretă pentru aprobarea **unei singure** propuneri privind Learning: de pildă, cardurile Learning care cer acceptare/respingere rămân marcate până la răspuns, iar cele informative dispar din indicator după deschiderea clopoțelului. Următoarele opțiuni abia după răspuns.
+
+## 131. Confirmare Learning — propunerea 1 aprobată (2026-10-13)
+
+Proprietarul a răspuns «Confirm propunerea 1 pentru notificările Learning. Trecem la următoarea.»
+
+**APROBAT:** Learning are notificări **violet-indigo cu icon specific și prioritate mare** în clopoțel. Propunerile care necesită acord rămân ca acțiuni până la **Aplică / Respinge / Amână la termen**; cele doar informative rămân în istoric și devin citite la deschiderea clopoțelului, fără pop-up repetat. «Citit» nu înseamnă «rezolvat» și Learning nu efectuează unilateral schimbări supuse aprobării.
+
+Continuați cu **o singură propunere** nouă despre notificări pentru confirmare; nu reîntrebați ce s-a aprobat deja. Numai documentație, fără Flutter/Firebase/Rules/CI/deploy.
