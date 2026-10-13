@@ -161,7 +161,7 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("initialZoom: 17", module)
         self.assertIn("TileLayer(", module)
 
-    def test_documents_library_extracted_without_behavior_change(self):
+    def test_documents_library_extracted_with_explicit_pv_fixes(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/documents/documents_page.dart").read_text(encoding="utf-8")
         self.assertEqual(main.count("part 'documents/documents_page.dart';"), 1)
@@ -170,13 +170,23 @@ class RepositoryHygieneTests(unittest.TestCase):
                        "class _DocumentsPageState extends State<DocumentsPage>"):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
-        for contract in ("assets/pv_magic.pdf", "PV_MAGIC.pdf",
-                         "collection('documents').doc(result.id).set(",
-                         "collection('documents').orderBy('date',descending:true).snapshots()",
-                         "if(widget.isAdmin)FilledButton.icon(",
-                         "trailing:widget.isAdmin?IconButton(",
-                         "await doc.reference.delete();"):
+        # Behavior now intentionally changed: native PDF is saved, not shared
+        # instead of downloaded; Magic can be hidden; metadata deletion is gated.
+        for contract in (
+            "assets/pv_magic.pdf",
+            "PV_MAGIC.pdf",
+            "collection('documents').doc(result.id).set(",
+            "orderBy('date', descending: true).snapshots()",
+            "if (widget.isAdmin)",
+            "_deleteDocument(",
+            "await document.reference.delete()",
+            "_setMagicVisibility(",
+            "isProtocolDocument(",
+            "Descarcă PDF",
+            "Partajează PDF",
+        ):
             self.assertIn(contract, module)
+
 
     def test_location_phone_contacts_screen_extracted_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
