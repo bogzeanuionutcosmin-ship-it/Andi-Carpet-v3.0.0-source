@@ -1179,3 +1179,16 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 6. **Teste viitoare:** două săli alăturate ori etaje în aceeași clădire, geofence suprapuse, GPS imprecis/salturi, START manual înainte de auto și curse reale manual-auto, două dispozitive/membri, retry/offline, reîntoarcere temporară, plecare fără finalizare, sală refuzată, STOP dublu, timestamp corect, date obligatorii, fațadă planificată/neplanificată, audit și zero erori false.
 
 **Status:** decizie aprobată în documentație, nu funcționalitate implementată; fără Dart, Firebase/Rules, date reale sau deploy.
+
+## 68. Learning GPS — propunerea 17 CONFIRMATĂ: plecări temporare adaptiv, STOP cu confirmare (2026-10-13)
+
+**Aprobare expresă:** «Confirm varianta A pentru propunerea 17 AndiCarpet: detectare adaptivă a plecărilor temporare, STOP doar cu confirmare.»
+
+1. Learning diferențiază **ieșirea temporară** din proximitatea sălii (de exemplu mers la mașină/materiale sau deplasare scurtă) de **plecarea probabil definitivă**, folosind durata și stabilitatea absenței, precizia/continuitatea semnalului GPS, istoricul de sosiri/plecări confirmate și contextul graficului/intervenției.
+2. La absențe scurte ori ambigue, sistemul **NU propune imediat STOP**, nu declară lucrarea finalizată și nu modifică ora START sau statutul ei. Pragurile nu sunt fixate arbitrar la 10 minute: se vor calibra și valida pe date de test și semnale fiabile, cu fallback conservator.
+3. Dacă plecarea devine probabil definitivă, sistemul poate **propune STOP**, dar numai utilizatorul autorizat **confirmă STOP** după completarea informațiilor obligatorii; Learning nu execută niciodată STOP singur. Revenirea la sală înainte de confirmare poate retrage/recalibra propunerea fără a șterge intervenția.
+4. **Săli vecine / suprapuneri GPS:** simpla deplasare între zone vecine nu validează plecarea definitivă. Nu pornim altă sală și nu închidem sala curentă pe baza unui salt GPS; identificatorii grafic/zi/intervenție și eventualele confirmări prevalează. START manual anterior este recunoscut și nu se dublează (propunerile 15–16).
+5. **Economisire cu prioritate pentru funcționalitate:** optimizarea Mapbox/Firebase/cache nu degradează detecția Learning, inclusiv în background, în limitele permisiunilor Android și ale preciziei disponibile. Lipsa GPS sau lipsa internetului nu este dovadă de plecare.
+6. **Teste viitoare:** ieșire scurtă și întoarcere, mers la mașină, deplasare între două săli apropiate, semnal GPS oscilant sau lipsă, două dispozitive/membri, ture de noapte, START manual urmat de automatizare, false pozitive/negative și STOP propus doar când există probabilitate susținută. Verificați completarea câmpurilor și auditul înaintea confirmării.
+
+**Status:** regulă aprobată/documentată, fără implementare Flutter/Firebase ori teste live; nu se face deploy.
