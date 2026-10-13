@@ -324,3 +324,17 @@ Răspunsul la întrebarea «fundal comun sau personal în chatul privat?» este 
 5. Toate operațiile sunt de implementat cu teste Flutter/Rules/Storage/emulator și pe Android/web reale, **nu au fost implementate ori executate în această sesiune**.
 
 **Stare:** deciziile privind sincronizarea comună a wallpaperului și prezența/orarul mesajelor sunt APROBATE funcțional. Detaliile de schemă și mecanism sunt recomandări tehnice, nu schimbări live. Niciun Dart/Flutter/Firestore/Cloud Functions/Storage, build ori deploy nu a fost modificat.
+
+## 14. Propunerea 3 CONFIRMATĂ — fără notificare pentru mesajele deja văzute într-un chat activ (2026-10-13)
+
+**Aprobare explicită:** la propunerea 3, proprietarul a răspuns «Confirm». Regula se aplică atât **Chat live**, cât și **mesajelor private**.
+
+- Când conversația **exactă** este deschisă, aplicația este vizibilă/în prim-plan și mesajul nou este efectiv afișat în zona vizibilă (ori utilizatorul îl parcurge), **nu** se afișează popup/banner duplicat, **nu** se emite un sunet suplimentar și **nu** crește badge-ul ei de necitite. Mesajul apare direct în conversație.
+- Dacă utilizatorul are chatul deschis dar este derulat sus și **mesajul nou nu e încă văzut**, sau aplicația e minimizată/inactivă, nu se marchează artificial drept citit. Poate fi afișat un indicator discret «mesaje noi» până la vizualizare, cu regulile de popup deja stabilite.
+- Un mesaj din **altă conversație** este notificat conform preferințelor/categoriei de notificare și adaugă contorul acelei conversații dacă este într-adevăr necitit; chatul A deschis nu dezactivează notificările lui B.
+- Citirea se persistă **atomic/monoton și autorizat** pe server: cursorul grupului ori `readAt` privat se avansează numai pentru mesaje realmente afișate și nu regresează după refresh, reconnect, sesiuni multiple. Numărul pe care îl vede utilizatorul provine din aceeași stare persistentă, nu doar `setState` local. Nu numărăm mesajele proprii.
+- Deduplicare între listenerul Firestore, FCM/push OS și banner; nu arătăm un al doilea popup doar pentru că mesajul a sosit pe două canale. **Nu blocăm notificările importante din alte conversații.** Starea de citire este pe cont/conversație, iar prezentarea popup/sunet este pe dispozitiv/sesiune, fără a suprascrie alte sesiuni active.
+- La aplicație în background/închisă, notificarea de chat poate fi livrată normal după preferințe și politica de protecție a textului pe lockscreen. În prim-plan, doar mesajele efectiv văzute sunt exceptate.
+- **Scenarii de test viitoare:** 2 mesaje cât conversația e vizibilă; derulare la mesaje vechi; mesaj într-un alt chat; chat minimizat; aplicație în background; două dispozitive; reconectare; mesaj de la sine; scriere eșuată; duplicate FCM+Firestore; revocare permisiuni; ceasuri diferite.
+
+**Statut:** propunerea 3 APROBATĂ doar ca regulă de produs; NU implementată ori testată live. Fără schimbări Flutter, Cloud Functions, Firebase Rules, date sau deploy.
