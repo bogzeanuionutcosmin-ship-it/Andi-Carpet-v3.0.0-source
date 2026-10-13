@@ -151,4 +151,12 @@ Nicio schimbare în Documents/download/share/PDF/assets sau PR #29. Următorul c
 
 CI inițial al acestui lot, run `38389669780` pe `acaf495b95f18c2a7490348625c89691974a2926`, a avut 4/5 SUCCESS. Testul Python, Node, Functions și emulatorul au trecut. Jobul Flutter a oprit la compilare: `interactive_member_badges.dart` folosea simbolul privat `_badgeGraphic` din altă bibliotecă `part of main`; acel simbol nu mai era vizibil după extragere. 52 teste au trecut, iar 5 test files nu s-au putut compila.
 
-Remediu: expunem widgetul ca `badgeGraphic` în biblioteca Material și reținem wrapper-ul privat `_badgeGraphic` în main pentru callbackurile/part-urile existente. Corpul funcției rămâne identic la normalizarea numelui. Contractul static și testul direct verifică această punte. Testele locale Python/Node, auditul import-export și diff-check PASS; CI complet al SHA corectat încă trebuie rulat. Nicio altă funcționalitate schimbată.
+Remediu: expunem widgetul ca `badgeGraphic` în biblioteca Material și reținem wrapper-ul privat `_badgeGraphic` în main pentru callbackurile/part-urile existente. Corpul funcției rămâne identic la normalizarea numelui. Contractul static și testul direct verifică această punte. Corecția `b503f0ffbd44d0660e71aee360319d61f70f8466` a fost validată de CI run `38390010291`: **5/5 SUCCESS**, inclusiv Flutter tests și web release. Nicio altă funcționalitate schimbată.
+
+## MOD-EMPTY-STATE-LIBRARY-20261013 — componentă goală independentă
+
+Bază de lot: PR #28 după corecția CI `b503f0ffbd44d0660e71aee360319d61f70f8466`, run `38390010291` 5/5 SUCCESS. `ui/empty_state.dart` devine bibliotecă Material independentă; corpul UI rămâne identic după redenumirea clasei private `_Empty` în publicul intern `EmptyState`, SHA-256 `2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92`. Wrapper-ul privat `_Empty` din main păstrează constructorul/contractul tuturor callsite-urilor.
+
+Test Flutter direct validează Card/icon/text; test Python validează SHA-ul corpului, importul explicit și wrapper-ul. Inventar regenerat: 136 Dart (118 lib, 17 teste, 1 script), **75 parts**, 61 biblioteci (43 lib, 17 teste, 1 script), fără missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, 116 hashuri protejate, audit import/export și diff-check PASS. Flutter SDK nu este local; CI pe commitul nou trebuie să confirme testul Flutter și toate celelalte joburi.
+
+PDF/Mapbox/download/share, PR #20 și PR #29 neatins. Următoarea analiză după CI: componente independente Home/UI; nu se mută auth/sync sau widgeturile ce folosesc stare privată fără adapter complet.

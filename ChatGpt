@@ -1495,4 +1495,10 @@ PDF, Documents, download/share, Android/web, Mapbox și PR #29 rămân neatinse.
 
 ### Corecție obligatorie din CI
 
-Primul CI run `38389669780` pe `acaf495b95f18c2a7490348625c89691974a2926`: **4/5 SUCCESS**. Flutter a eșuat la compilare deoarece part-ul `interactive_member_badges.dart` apela `_badgeGraphic`, care devenise privat bibliotecii separate. 52 teste au trecut; 5 test files nu s-au putut compila. Am expus `badgeGraphic` în biblioteca nouă și păstrat wrapper-ul `_badgeGraphic` privat în main, cu aceeași semnătură. Testele locale Python 151/151 și Node 1/1, audit și `git diff --check` PASS. CI complet pentru commitul corectiv urmează; nu încep alt lot până atunci.
+Primul CI run `38389669780` pe `acaf495b95f18c2a7490348625c89691974a2926`: **4/5 SUCCESS**. Flutter a eșuat la compilare deoarece part-ul `interactive_member_badges.dart` apela `_badgeGraphic`, care devenise privat bibliotecii separate. 52 teste au trecut; 5 test files nu s-au putut compila. Am expus `badgeGraphic` în biblioteca nouă și păstrat wrapper-ul `_badgeGraphic` privat în main, cu aceeași semnătură. Testele locale Python 151/151 și Node 1/1, audit și `git diff --check` PASS. Corecția `b503f0ffbd44d0660e71aee360319d61f70f8466` a trecut run `38390010291` **5/5 SUCCESS**.
+
+## Continuare — EmptyState independent
+
+`ui/empty_state.dart` este bibliotecă Material independentă. Funcția UI/clasa corp rămâne identică după redenumirea `_Empty` → `EmptyState`, hash `2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92`. Main păstrează wrapper privat `_Empty` cu aceiași parametri pentru toate părțile; test Flutter importă noua bibliotecă și verifică Card/icon/text, iar testul Python protejează corpul și adapterul.
+
+Inventar: 136 Dart (118 lib,17 teste,1 script), **75 parts**, 61 biblioteci (43 lib,17 test,1 script), fără missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, dependency audit, 116 hashuri protejate și diff-check PASS. CI pentru noul SHA este în așteptare; nu continuăm până la 5/5 SUCCESS.

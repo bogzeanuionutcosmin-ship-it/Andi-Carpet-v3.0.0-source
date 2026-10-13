@@ -358,10 +358,19 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_empty_state_extracted_preserving_content(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/empty_state.dart").read_text(encoding="utf-8")
-        self.assertEqual(main.count("part 'ui/empty_state.dart';"), 1)
-        self.assertIn("part of '../main.dart';", module)
-        self.assertNotIn("class _Empty extends StatelessWidget", main)
-        self.assertEqual(module.count("class _Empty extends StatelessWidget"), 1)
+        self.assertNotIn("part 'ui/empty_state.dart';", main)
+        self.assertIn("import 'ui/empty_state.dart' as empty_state;", main)
+        self.assertNotIn("part of", module)
+        self.assertIn("import 'package:flutter/material.dart';", module)
+        self.assertEqual(module.count("class EmptyState extends StatelessWidget"), 1)
+        module_body = module.split("\n\n", 1)[1].replace(
+            "class EmptyState extends StatelessWidget", "class _Empty extends StatelessWidget", 1)
+        self.assertEqual(
+            hashlib.sha256(module_body.encode("utf-8")).hexdigest(),
+            "2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92",
+        )
+        self.assertIn("class _Empty extends StatelessWidget", main)
+        self.assertIn("empty_state.EmptyState(icon: icon, text: text)", main)
         for contract in ("required this.icon", "required this.text",
                          "Icon(icon,size:30)", "Text(text)", "EdgeInsets.all(28)"):
             self.assertIn(contract, module)

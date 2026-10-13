@@ -52,6 +52,7 @@ import 'models/permission_status_labels.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';
+import 'ui/empty_state.dart' as empty_state;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
@@ -83,7 +84,6 @@ part 'schedule/schedule_card_full.dart';
 part 'teams/team_selector.dart';
 part 'ui/page_shell.dart';
 part 'ui/summary_cards.dart';
-part 'ui/empty_state.dart';
 part 'settings/settings_page.dart';
 part 'profile/profile_page.dart';
 part 'centralizer/centralizer_page.dart';
@@ -162,6 +162,14 @@ String _adminSectionGroup(int index) => admin_navigation.adminSectionGroup(index
 String? _adminSectionAsset(int index) => admin_navigation.adminSectionAsset(index);
 Widget _badgeGraphic(String asset, {required double size, Color? color}) =>
     badgeGraphic(asset, size: size, color: color);
+
+class _Empty extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _Empty({required this.icon, required this.text});
+  @override
+  Widget build(BuildContext context) => empty_state.EmptyState(icon: icon, text: text);
+}
 
 // PDF composition adapters preserve existing private callers in PDF and JPEG exports.
 class _ApplicationPdfFonts implements pdf_format.PdfFontProvider {

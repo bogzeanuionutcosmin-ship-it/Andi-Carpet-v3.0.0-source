@@ -245,7 +245,9 @@ Inventar curent: 135 fișiere Dart / 76 parts / 59 biblioteci, fără lipsuri/or
 
 ### Corecție CI — helper privat folosit din part
 
-Run `38389669780` a încheiat 4/5: Flutter a eșuat la compilare deoarece `interactive_member_badges.dart` (part of main) nu mai putea vedea `_badgeGraphic`, privat în biblioteca extrasă. 52 teste au trecut; 5 fișiere de test au fost blocate de eroarea de compilare, nu de aserțiuni. Celelalte patru joburi au trecut. Corecție: `badgeGraphic` public în biblioteca nouă și wrapper privat `_badgeGraphic` în main cu aceeași semnătură. SHA al corpului normalizează numele și rămâne identic. Testele locale PASS; run CI pe commitul corectiv urmează.
+Run `38389669780` a încheiat 4/5: Flutter a eșuat la compilare deoarece `interactive_member_badges.dart` (part of main) nu mai putea vedea `_badgeGraphic`, privat în biblioteca extrasă. 52 teste au trecut; 5 fișiere de test au fost blocate de eroarea de compilare, nu de aserțiuni. Celelalte patru joburi au trecut. Corecție: `badgeGraphic` public în biblioteca nouă și wrapper privat `_badgeGraphic` în main cu aceeași semnătură. SHA al corpului normalizează numele și rămâne identic. Commit corectiv `b503f0ffbd44d0660e71aee360319d61f70f8466`, CI run `38390010291`, 5/5 SUCCESS.
+
+Următorul lot: componenta `ui/empty_state.dart` este desprinsă cu import Material explicit și wrapper `_Empty` în main, păstrând callsite-urile. Corpul widgetului, după normalizarea numelui clasei, rămâne SHA-256 `2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92`. Test Dart verifică renderul direct; inventar nou 136 Dart / 75 parts / 61 biblioteci, zero missing/orphan/duplicate/cicluri. Teste locale și hashurile PDF protejate PASS; CI pentru acest lot încă trebuie verificat.
 
 ## MOD-SCREEN-ACTIONS-CI-FIX-20261013
 
