@@ -66,7 +66,7 @@ import 'ui/info_card.dart' as info_card;
 import 'ui/stat_card.dart' as stat_card;
 import 'ui/app_backdrop.dart' as app_backdrop;
 import 'ui/install_app_buttons_view.dart' as install_buttons;
-import 'ui/interactive_badge_preview.dart' as badge_preview;
+import 'ui/interactive_member_badges.dart' as member_badges;
 import 'ui/auth_status_views.dart' as auth_status;
 import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;
 import 'map/verified_location_fix.dart' as verified_fix;
@@ -81,7 +81,6 @@ part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
-part 'ui/interactive_member_badges.dart';
 part 'ui/app_root_theme.dart';
 part 'ui/app_information_page.dart';
 part 'notifications/sms_gateway_card.dart';
@@ -187,6 +186,18 @@ Widget appBrandLogo(AppSettings settings, {double width = 520, double height = 1
 
 dynamic _backupEncode(dynamic value) => backup_codec.encodeBackupValue(value);
 dynamic _backupDecode(dynamic value) => backup_codec.decodeBackupValue(value);
+
+Widget functionKeyWidget(String key, {double size = 32, Color? color}) =>
+    member_badges.functionKeyWidget(key, size: size, color: color);
+List<String> effectiveBadgeKeysForFunctionIds(
+        List<FunctionDefinition> defs, Iterable<String> ids) =>
+    member_badges.effectiveBadgeKeysForFunctionIds(defs, ids);
+Widget badgeStripWidget(Iterable<String> keys, {double size = 32, Color? color}) =>
+    member_badges.badgeStripWidget(keys, size: size, color: color);
+Widget memberBadgeStripWidget(
+        List<FunctionDefinition> defs, Iterable<String> functionIds,
+        {double size = 32}) =>
+    member_badges.memberBadgeStripWidget(defs, functionIds, size: size);
 
 class _TeamSelector extends StatelessWidget {
   final List<Team> teams;
@@ -314,21 +325,6 @@ class _AppBackdrop extends StatelessWidget {
       child: child,
     );
   }
-}
-
-class _InteractiveBadgeIcon extends StatelessWidget {
-  final String asset;
-  final double size;
-  final Color? color;
-  const _InteractiveBadgeIcon({required this.asset, required this.size, this.color});
-
-  @override
-  Widget build(BuildContext context) => badge_preview.InteractiveBadgePreview(
-        asset: asset,
-        size: size,
-        color: color,
-        badgeGraphic: _badgeGraphic,
-      );
 }
 
 class _FirebaseLoading extends StatelessWidget {

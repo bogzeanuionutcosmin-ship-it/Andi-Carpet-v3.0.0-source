@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 155,
+  "dart_files": 156,
   "lib_dart_files": 122,
-  "test_dart_files": 32,
+  "test_dart_files": 33,
   "script_dart_files": 1,
-  "parts": 64,
-  "libraries": 91,
+  "parts": 63,
+  "libraries": 93,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -90,7 +90,7 @@
       "lib/ui/icon_badge_catalog.dart",
       "lib/ui/info_card.dart",
       "lib/ui/install_app_buttons_view.dart",
-      "lib/ui/interactive_badge_preview.dart",
+      "lib/ui/interactive_member_badges.dart",
       "lib/ui/money_card.dart",
       "lib/ui/section_visual_helpers.dart",
       "lib/ui/stat_card.dart",
@@ -172,6 +172,13 @@
     "lib/ui/info_card.dart": [],
     "lib/ui/install_app_buttons_view.dart": [],
     "lib/ui/interactive_badge_preview.dart": [],
+    "lib/ui/interactive_member_badges.dart": [
+      "lib/models/default_categories_functions.dart",
+      "lib/models/location_status_and_functions.dart",
+      "lib/ui/icon_badge_catalog.dart",
+      "lib/ui/interactive_badge_preview.dart",
+      "lib/ui/section_visual_helpers.dart"
+    ],
     "lib/ui/money_card.dart": [],
     "lib/ui/section_visual_helpers.dart": [
       "lib/models/app_data_models.dart"
@@ -245,6 +252,10 @@
     ],
     "test/interactive_badge_preview_test.dart": [
       "lib/ui/interactive_badge_preview.dart"
+    ],
+    "test/interactive_member_badges_library_test.dart": [
+      "lib/models/location_status_and_functions.dart",
+      "lib/ui/interactive_member_badges.dart"
     ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
@@ -2145,8 +2156,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 25816,
-      "sha256": "53899df02fac2d5eeab5bad3e35425b206383479bd580541ebbdf855fe382cda",
+      "bytes": 26037,
+      "sha256": "9f176ad3ec03dec3a502978d256275bdde8be0e626fa96ab1134da5de345e439",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2771,12 +2782,12 @@
         },
         {
           "kind": "import",
-          "text": "import 'ui/interactive_badge_preview.dart' as badge_preview;",
+          "text": "import 'ui/interactive_member_badges.dart' as member_badges;",
           "uris": [
-            "ui/interactive_badge_preview.dart"
+            "ui/interactive_member_badges.dart"
           ],
           "local_targets": [
-            "lib/ui/interactive_badge_preview.dart"
+            "lib/ui/interactive_member_badges.dart"
           ]
         },
         {
@@ -2907,16 +2918,6 @@
           ],
           "local_targets": [
             "lib/contacts/location_contacts_page.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'ui/interactive_member_badges.dart';",
-          "uris": [
-            "ui/interactive_member_badges.dart"
-          ],
-          "local_targets": [
-            "lib/ui/interactive_member_badges.dart"
           ]
         },
         {
@@ -3507,10 +3508,6 @@
         },
         {
           "kind": "class",
-          "name": "_InteractiveBadgeIcon"
-        },
-        {
-          "kind": "class",
           "name": "_FirebaseLoading"
         },
         {
@@ -3553,6 +3550,10 @@
         "_resolvedFontFamily",
         "_activeLogoAsset",
         "appBrandLogo",
+        "functionKeyWidget",
+        "effectiveBadgeKeysForFunctionIds",
+        "badgeStripWidget",
+        "memberBadgeStripWidget",
         "_adminSectionIcon",
         "_adminSectionGroup",
         "_adminSectionAsset",
@@ -4708,8 +4709,8 @@
     },
     {
       "path": "lib/schedule/schedule_card_full.dart",
-      "bytes": 5094,
-      "sha256": "cebc20c984cfa3db10f27a5808dbfc7d5b21a171e671e38da5d0f3a4575d6e4d",
+      "bytes": 5125,
+      "sha256": "911dbf8c6eb9ded59543249ebefe2f19feea4c544ff4edda953572d12f6bc3da",
       "owner": "lib/schedule/schedule_card_full.dart",
       "directives": [
         {
@@ -5209,22 +5210,75 @@
     },
     {
       "path": "lib/ui/interactive_member_badges.dart",
-      "bytes": 1953,
-      "sha256": "fa126e136dd30cc68442b1ed3188695bdde0ba3c6ffe04d587da5658600f1dca",
-      "owner": "lib/main.dart",
+      "bytes": 2682,
+      "sha256": "249919a8512c644135994ba9c0987d81a90ddc4c9c00257b718cb4ccf80e22c9",
+      "owner": "lib/ui/interactive_member_badges.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/default_categories_functions.dart';",
+          "uris": [
+            "../models/default_categories_functions.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/default_categories_functions.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/location_status_and_functions.dart';",
+          "uris": [
+            "../models/location_status_and_functions.dart"
+          ],
+          "local_targets": [
+            "lib/models/location_status_and_functions.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'icon_badge_catalog.dart';",
+          "uris": [
+            "icon_badge_catalog.dart"
+          ],
+          "local_targets": [
+            "lib/ui/icon_badge_catalog.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'interactive_badge_preview.dart' as badge_preview;",
+          "uris": [
+            "interactive_badge_preview.dart"
+          ],
+          "local_targets": [
+            "lib/ui/interactive_badge_preview.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'section_visual_helpers.dart';",
+          "uris": [
+            "section_visual_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/ui/section_visual_helpers.dart"
           ]
         }
       ],
-      "declarations": [],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "_InteractiveBadgeIcon"
+        }
+      ],
       "top_level_functions": [
         "functionKeyWidget",
         "effectiveBadgeKeysForFunctionIds",
@@ -6175,6 +6229,54 @@
       ]
     },
     {
+      "path": "test/interactive_member_badges_library_test.dart",
+      "bytes": 2173,
+      "sha256": "84e013824c5f866a60d4c1f43b8ebe192330d4cc6ebcff0f0e8612a99d198b41",
+      "owner": "test/interactive_member_badges_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/location_status_and_functions.dart';",
+          "uris": [
+            "package:andi_carpeta/models/location_status_and_functions.dart"
+          ],
+          "local_targets": [
+            "lib/models/location_status_and_functions.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/interactive_member_badges.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/interactive_member_badges.dart"
+          ],
+          "local_targets": [
+            "lib/ui/interactive_member_badges.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
       "path": "test/model_library_boundaries_test.dart",
       "bytes": 3691,
       "sha256": "092848ad67d0fdaf1291447d97c6482c61007964c5325deba64e767713a86859",
@@ -6650,8 +6752,8 @@
     },
     {
       "path": "test/schedule_card_full_library_test.dart",
-      "bytes": 3492,
-      "sha256": "a6d2b4bec7aa37b55f1f2a79c2b88a1e66594cf68c019e3d8287a18de82d812c",
+      "bytes": 3674,
+      "sha256": "0f7063c82d8307bba6e802982e3b2eabea38d8a96ee6a18cd8181c0a493c0b4e",
       "owner": "test/schedule_card_full_library_test.dart",
       "directives": [
         {

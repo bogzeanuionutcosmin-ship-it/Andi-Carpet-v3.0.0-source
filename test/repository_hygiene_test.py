@@ -676,16 +676,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/interactive_member_badges.dart").read_text(encoding="utf-8")
         preview = (ROOT / "lib/ui/interactive_badge_preview.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'ui/interactive_member_badges.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
-        self.assertIn("import 'ui/interactive_badge_preview.dart' as badge_preview;", main)
-        self.assertEqual(main.count("class _InteractiveBadgeIcon extends StatelessWidget"), 1)
-        self.assertIn("badgeGraphic: _badgeGraphic", main)
-        for symbol in ("Widget functionKeyWidget(",
-                       "List<String> effectiveBadgeKeysForFunctionIds(",
-                       "Widget badgeStripWidget(", "Widget memberBadgeStripWidget("):
-            self.assertNotIn(symbol, main)
-            self.assertEqual(module.count(symbol), 1)
+        self.assertIn("import 'ui/interactive_member_badges.dart' as member_badges;", main)
+        self.assertNotIn("part of '../main.dart';", module)
+        self.assertIn("import 'interactive_badge_preview.dart' as badge_preview;", module)
+        self.assertEqual(main.count("class _InteractiveBadgeIcon extends StatelessWidget"), 0)
+        self.assertIn("badgeGraphic: badgeGraphic", module)
+        for name, signature in (
+            ("functionKeyWidget", "Widget functionKeyWidget("),
+            ("effectiveBadgeKeysForFunctionIds", "List<String> effectiveBadgeKeysForFunctionIds("),
+            ("badgeStripWidget", "Widget badgeStripWidget("),
+            ("memberBadgeStripWidget", "Widget memberBadgeStripWidget("),
+        ):
+            self.assertEqual(main.count(signature), 1)
+            self.assertEqual(module.count(signature), 1)
+            self.assertIn(f"member_badges.{name}(", main)
         self.assertIn("if (widgets.length >= 3) break;", module)
         self.assertIn("badge == 'badge_machine' ? 'badge_worker' : badge", module)
         self.assertNotIn("_InteractiveBadgeIconState", module)
@@ -695,6 +699,16 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("if (!_pinned) _hidePreview();", preview)
         self.assertIn("void _hidePreview()", preview)
         self.assertIn("typedef BadgeGraphicBuilder", preview)
+
+    def test_standalone_member_badge_helpers_keep_order_filtering_and_limit(self):
+        module = (ROOT / "lib/ui/interactive_member_badges.dart").read_text(encoding="utf-8")
+        for contract in ("if (def == null || !def.active) continue;",
+                         "if (!out.contains(badge)) out.add(badge);",
+                         "if (out.length >= 3) return out;",
+                         "badge == 'badge_machine' ? 'badge_worker' : badge",
+                         "normalized == 'badge_coordinator' || !seen.add(normalized)",
+                         "keys.where((key) => key.trim().isNotEmpty).take(3)"):
+            self.assertIn(contract, module)
 
     def test_location_category_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
