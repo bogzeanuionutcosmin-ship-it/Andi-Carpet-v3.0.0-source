@@ -266,3 +266,10 @@ Rerunul `38461236529` a trecut Python/security, Node, Functions și Firestore **
 ## MOD-INTERACTIVE-BADGE-CI-HOVER-FIX-20261013
 
 Runul `38461449964`: tap/pin/toggle a trecut, iar celelalte patru joburi au trecut. Cazul hover/exit nu a produs onExit după mutarea la un punct de pe suprafață acoperită de overlay. Testul elimină acum pointerul mouse explicit după hover, emițând pointer removal către MouseRegion; overlay-ul trebuie să dispară. Componenta nu s-a modificat. Rerun CI integral în așteptare.
+
+
+## MOD-INTERACTIVE-BADGE-CI-GREEN-20261013
+
+Lotul `interactive_badge_preview.dart` este validat pe commitul cod `c393e891546fc997a0811a70d9cbf4d77e49f389`, workflow run `38461684523`: **5/5 joburi SUCCESS** (Python/security, Node, Firestore emulator, Functions, Flutter/widget + web build). Testele directe verifică pin/toggle, preview la hover și închiderea/cleanup la pointer exit. Inventar: 146 Dart (122 lib, 23 tests, 1 script), 73 parts, 73 biblioteci, fără missing/orphan/duplicate/cicluri.
+
+Audit read-only: `app_root_theme.dart` citește setări mutable și scrie `_activeAppSettingsForBranding`; nu are încă un contract independent sigur. Următorul lot exact: extragerea UI-ului `auth_status_components.dart` într-o bibliotecă Material cu `logo` și `onSignOut` injectate; wrapperele existente păstrează constructors/callsites și apelul Firebase Auth. Nu schimbă fluxul de autentificare/permisiuni.
