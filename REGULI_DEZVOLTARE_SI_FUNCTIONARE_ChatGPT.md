@@ -1048,18 +1048,19 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 
 **Status:** numai regulă aprobată și documentată; fără cod, reguli Firebase, date de producție, build sau deploy. Următoarea propunere se discută separat cu proprietarul.
 
-## 58. Notificări — propunerea 7 CONFIRMATĂ: modul Nu deranja (2026-10-13)
+## 58. Notificări — propunerea 7 CONFIRMATĂ și CLARIFICATĂ: Nu deranja fără notificări de sistem (2026-10-13)
 
-**Aprobare expresă:** «Confirm propunerea 7 pentru AndiCarpet.»
+**Aprobare inițială:** «Confirm propunerea 7 pentru AndiCarpet.»
+**Corecție expresă ulterioară a proprietarului:** «În modul nu deranjați notificările să nu apară nici în bară sau pe ecranul telefonului. În modul nu deranjați notificările apar doar la deschiderea aplicației.» **Această corecție prevalează față de orice exprimare anterioară despre alerte critice sau notificări doar silențioase.**
 
-1. Fiecare utilizator poate activa un mod personal **Nu deranja** manual, pentru **o perioadă aleasă** sau prin **program automat pe intervale orare**. Se afișează clar când este activ și când expiră.
-2. În timpul modului, notificările obișnuite sunt în continuare primite și păstrate în istoricul aplicației și în contoarele necitite, însă **nu produc sunet, vibrație sau popup intruziv**. Nu se marchează automat ca citite sau rezolvate doar din cauza modului.
-3. **Notificările critice autentificate** care necesită intervenție imediată rămân vizibile în aplicație (clopoțel/lista de acțiuni), dar **nu forțează sunetul telefonului** și nu ocolesc permisiunile sau restricțiile Android/web. Se păstrează diferențierea dintre critic autentificat și un titlu arbitrar «urgent».
-4. Preferința aparține utilizatorului, nu schimbă comportamentul colegilor. Modurile manual/temporizat/programat au nevoie de o precedență deterministă, intervale peste miezul nopții, fus orar corect, respectarea setărilor OS și expirare sigură; detaliile tehnice se proiectează la implementare.
-5. La implementare se testează: activare/dezactivare manuală, expirare, ore recurente și tură de noapte, restart/relogin, două dispozitive, schimbare fus orar, offline/reconectare, mesaj privat/Chat live/Learning, alerte autentice Admin/Sistem, badge-uri și deduplicare FCM/Firestore.
+1. Fiecare utilizator poate activa **Nu deranja** manual, pentru o perioadă aleasă sau prin program recurent, cu stare și expirare clar vizibile în aplicație.
+2. Cât este activ, **NICIO notificare AndiCarpet, indiferent de categorie sau prioritate, nu apare în sistemul de notificări al telefonului**: fără icon/card în bara/status bar sau sertarul de notificări, fără notificare pe ecranul blocat, fără heads-up, popup, banner de sistem, sunet ori vibrație. Se aplică inclusiv mesajelor Chat live/privat, Learning, diurnelor, erorilor și mesajelor Admin/Sistem, inclusiv celor critice. Echivalent pentru notificările de browser/web atunci când clientul nu este deschis: nu emitem notificări ale sistemului de operare/browserului.
+3. **Notificările nu se pierd**: se păstrează server-side, cu istoric, contoare necitite și acțiuni în așteptare. Utilizatorul le vede **numai în interiorul aplicației când o deschide sau o are activă**, prin clopoțel și, pentru cele ce cer intervenție, centrul de acțiuni; fără popupuri intruzive. Citit, prezentat și rezolvat rămân stări distincte. O notificare critică este în continuare evidențiată clar **în aplicație**, niciodată exceptată de la blocarea alertelor OS.
+4. **Implementare tehnică obligatorie:** nu este suficientă trimiterea unui push normal cu sunet dezactivat — acesta ar putea totuși apărea în bară/ecran. Când Nu deranja e activ, backendul/transportul nu trebuie să livreze push-uri cu payload de afișare automată; clientul Android și service-workerul web nu trebuie să publice notificări OS pentru acele evenimente. Persistența evenimentelor este independentă de livrarea push. La intrarea în aplicație se citește din sursa autorizată starea curentă, inclusiv elementele primite în perioada Nu deranja. Verificați comportamentul la activarea/dezactivarea simultană și evitarea unui push în curs de livrare; unde platforma permite, retrageți notificările AndiCarpet deja publicate la activare, fără promisiuni de control asupra altor aplicații sau a alertelor OS deja afișate.
+5. Modurile manual, temporizat și automat respectă fusuri orare, perioade care trec peste miezul nopții, restart, offline, schimbare cont și dispozitive multiple. Dacă starea sincronizată nu este disponibilă, se aplică o politică conservatoare care nu produce alerte OS contrar preferinței utilizatorului. Nu deranja este setare AndiCarpet, fără a cere sau modifica modul global Nu deranja al telefonului.
+6. **Teste viitoare:** zero notificări în bara Android, sertar, lock screen, heads-up și în browser când Nu deranja e activ, inclusiv Admin/Sistem critic, FCM cu aplicația închisă/background, app deschisă și web service-worker; mesaje/acțiuni păstrate și afișate la deschiderea aplicației; alternare rapidă on/off, restart, offline/reconectare, multidispozitiv, expirare și program peste miezul nopții, badge corect, deduplicare și notificări anterior afișate.
 
-**Status:** regula este CONFIRMATĂ și documentată, nu implementată sau testată în produs; fără schimbări de cod, Firestore, Functions, date de producție, APK sau deploy.
-
+**Status:** regulă de comportament CONFIRMATĂ și clarificată, încă NEIMPLEMENTATĂ. Fără modificări Dart/Firebase/FCM/date live/deploy.
 ## 59. Notificări — propunerea 8 CONFIRMATĂ: reamintiri pentru acțiuni în așteptare (2026-10-13)
 
 **Aprobare expresă:** «Confirm propunerea 8 pentru AndiCarpet, inclusiv intervalele recomandate.»
@@ -1067,8 +1068,21 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 1. Doar notificările asociate unor **acțiuni încă necesare** pot genera reamintiri (de exemplu aprobare Learning sau intervenție necesară după o eroare). Informările simple, mesajele deja citite fără acțiune și operațiile deja rezolvate nu sunt reamintite.
 2. Pentru aceeași acțiune încă activă: **prima reamintire după 30 de minute**, **a doua după 2 ore**, ulterior **cel mult o reamintire la fiecare 24 de ore**. Intervalele se raportează la momentul inițial al acțiunii; dacă sincronizarea întârzie, nu se declanșează un val de notificări recuperate.
 3. Reamintirile se **opresc imediat** după rezolvare, respingere sau expirarea relevanței; pentru **Amână** sunt suspendate până la termenul ales, apoi se reia evaluarea stării actuale fără notificări pentru acțiuni deja închise. Simpla citire a notificării NU înseamnă rezolvare.
-4. Reamintirile **respectă Nu deranja** (propunerea 7) și preferințele personale (propunerea 6), fără forțarea sunetului, vibrației sau popupurilor. Acțiunile critice autentificate rămân vizibile în aplicație, conform regulilor precedente.
+4. Reamintirile **respectă Nu deranja** (propunerea 7, clarificată strict) și preferințele personale (propunerea 6): cât Nu deranja este activ, **nu produc nicio notificare OS** (nici în bară, nici pe ecranul telefonului/browserului), indiferent de prioritate. Toate acțiunile și reamintirile relevante rămân vizibile numai în aplicație, la deschidere.
 5. Implementarea va utiliza un ID stabil de acțiune, verificare server-side a stării și destinatarului autorizat înainte de orice livrare, deduplicare între sesiuni/FCM/Firestore și rate limiting. Se evită buclele, notificarile învechite, scurgerile între conturi și costurile de joburi inutile.
 6. **Teste viitoare:** 30 min, 2 ore, repetare la 24 h, rezolvare înaintea pragului, amânare și expirare, refuz, critic vs informativ, offline și reconectare, mai multe dispozitive, mutarea acțiunii către alt responsabil, fusuri orare, Nu deranja, tokenuri push duplicate și revenire după întreruperi.
 
 **Status:** regulă aprobată/documentată, fără implementare, migrare de date, modificări Firebase sau deploy. Următoarea propunere se discută individual.
+
+## 60. Notificări — propunerea 9 CONFIRMATĂ: centru de acțiuni în așteptare (2026-10-13)
+
+**Aprobare expresă:** «Confirm propunerea 9 pentru AndiCarpet.»
+
+1. În clopoțel, separat de istoricul notificărilor informative, există secțiunea **„Acțiuni în așteptare”** pentru sarcini reale adresate utilizatorului: de exemplu propuneri Learning care cer decizie, probleme operaționale încă nerezolvate, confirmări de diurnă și alte cereri autorizate.
+2. Fiecare card afișează **ce trebuie făcut, motivul, data/ora, prioritatea, starea și accesul direct la ecranul/obiectul exact**. La deschidere se reverifică drepturile și starea curentă; simplul tap sau marcarea drept citit nu finalizează acțiunea.
+3. **Acțiunile rezolvate sunt eliminate automat din lista activă**, dar evenimentul și rezultatul rămân în istoric/audit. **Acțiunile amânate** sunt afișate într-o zonă separată cu termenul ales, nu se confundă cu cele încă scadente; la termen se reevaluează dacă mai necesită rezolvare.
+4. Lista nu poate fi îngropată de zeci de informări obișnuite; prioritatea reală și timpul disting acțiunile. ID-urile stabile, permisiunile verificate în backend, reconcilierea între dispozitive și deduplicarea împiedică aparițiile false/duble sau menținerea sarcinilor închise.
+5. **Compatibilitate cu propunerea 7 CLARIFICATĂ:** în Nu deranja nu există absolut nicio notificare de sistem pe telefon/browser, nici pentru acțiunile critice; utilizatorul găsește centrul și acțiunile doar **după deschiderea aplicației**. Propunerea 8 poate păstra termenele de reamintire intern, însă nu emite alerte în bara/ecranul telefonului cât Nu deranja este activ.
+6. **Teste viitoare:** 50 de informări + 3 acțiuni rămase proeminente, rezolvare din alt dispozitiv, amânare și expirarea termenului, revocare rol, diurnă confirmată, sugestie Learning respinsă, eroare deja remediată, offline/reconectare și Nu deranja fără notificări OS.
+
+**Status:** aprobarea este exclusiv documentară; fără cod, Firebase, date, teste live sau deploy. Următoarele decizii se discută pe rând.
