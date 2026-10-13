@@ -249,6 +249,8 @@ Run `38389669780` a încheiat 4/5: Flutter a eșuat la compilare deoarece `inter
 
 Următorul lot: componenta `ui/empty_state.dart` este desprinsă cu import Material explicit și wrapper `_Empty` în main, păstrând callsite-urile. Corpul widgetului, după normalizarea numelui clasei, rămâne SHA-256 `2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92`. Test Dart verifică renderul direct; inventar nou 136 Dart / 75 parts / 61 biblioteci, zero missing/orphan/duplicate/cicluri. Teste locale și hashurile PDF protejate PASS; CI pentru acest lot încă trebuie verificat.
 
+CI run `38390449115` pe `9ba22143a734d83ac1b9d410e88b2079f577c946`: 4/5 SUCCESS. Flutter a eșuat la compilare pentru că `EmptyState` avea constructorul vechi `const _Empty`; 52 teste au trecut, 6 fișiere nu s-au putut compila, celelalte joburi au trecut. Constructor redenumit la `EmptyState`; wrapper-ul privat main neschimbat. Hashul sursei normalizează atât clasa cât și constructorul. Testele statice locale trec; CI pentru corecție urmează.
+
 ## MOD-SCREEN-ACTIONS-CI-FIX-20261013
 
 CI run 38372790209 pe `23d88a4cad17eb21ae9e3af34e4023641a796928`: 4 joburi SUCCESS, Flutter FAILURE la compilarea widget_test, înainte de build web. Cauză exactă: în extensia Decont, `const DropdownMenuItem(value: _legacySettlementKey, ...)` nu poate rezolva implicit constanta statică a State în context const. Corecție strictă: `value: _ExpensePageState._legacySettlementKey`; aceeași valoare/instanță const/comportament, fără schimbare business. Nu eliminăm const și nu schimbăm identificatorul legacy.

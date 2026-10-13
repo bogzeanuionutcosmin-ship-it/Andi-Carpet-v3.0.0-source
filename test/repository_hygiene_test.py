@@ -364,7 +364,8 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("import 'package:flutter/material.dart';", module)
         self.assertEqual(module.count("class EmptyState extends StatelessWidget"), 1)
         module_body = module.split("\n\n", 1)[1].replace(
-            "class EmptyState extends StatelessWidget", "class _Empty extends StatelessWidget", 1)
+            "class EmptyState extends StatelessWidget", "class _Empty extends StatelessWidget", 1
+        ).replace("const EmptyState(", "const _Empty(", 1)
         self.assertEqual(
             hashlib.sha256(module_body.encode("utf-8")).hexdigest(),
             "2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92",

@@ -155,8 +155,12 @@ Remediu: expunem widgetul ca `badgeGraphic` în biblioteca Material și reținem
 
 ## MOD-EMPTY-STATE-LIBRARY-20261013 — componentă goală independentă
 
-Bază de lot: PR #28 după corecția CI `b503f0ffbd44d0660e71aee360319d61f70f8466`, run `38390010291` 5/5 SUCCESS. `ui/empty_state.dart` devine bibliotecă Material independentă; corpul UI rămâne identic după redenumirea clasei private `_Empty` în publicul intern `EmptyState`, SHA-256 `2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92`. Wrapper-ul privat `_Empty` din main păstrează constructorul/contractul tuturor callsite-urilor.
+Bază de lot: PR #28 după corecția CI `b503f0ffbd44d0660e71aee360319d61f70f8466`, run `38390010291` 5/5 SUCCESS. `ui/empty_state.dart` devine bibliotecă Material independentă; corpul UI rămâne identic după redenumirea clasei și constructorului `_Empty` în `EmptyState`, SHA-256 normalizat `2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92`. Wrapper-ul privat `_Empty` din main păstrează constructorul/contractul tuturor callsite-urilor.
 
 Test Flutter direct validează Card/icon/text; test Python validează SHA-ul corpului, importul explicit și wrapper-ul. Inventar regenerat: 136 Dart (118 lib, 17 teste, 1 script), **75 parts**, 61 biblioteci (43 lib, 17 teste, 1 script), fără missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, 116 hashuri protejate, audit import/export și diff-check PASS. Flutter SDK nu este local; CI pe commitul nou trebuie să confirme testul Flutter și toate celelalte joburi.
 
 PDF/Mapbox/download/share, PR #20 și PR #29 neatins. Următoarea analiză după CI: componente independente Home/UI; nu se mută auth/sync sau widgeturile ce folosesc stare privată fără adapter complet.
+
+### Corecție CI — redenumirea constructorului
+
+Run `38390449115` pe `9ba22143a734d83ac1b9d410e88b2079f577c946`: 4/5 SUCCESS. Flutter a oprit compilarea deoarece clasa redenumită `EmptyState` păstra constructorul vechi `const _Empty`, invalid în noua bibliotecă. 52 teste trecuseră; 6 fișiere nu s-au putut compila din cauza erorii. Corecție: constructorul public al componentei se numește acum `EmptyState`; wrapper-ul privat din main păstrează în continuare `const _Empty`. Hashul structural normalizează și numele constructorului. Python/Node/Functions/Firestore trec local/CI; CI complet al SHA corectat urmează.
