@@ -4552,8 +4552,8 @@
     },
     {
       "path": "test/model_library_boundaries_test.dart",
-      "bytes": 3669,
-      "sha256": "832528f516fb7e0918e5a2932c6890d5c358e162480aeb42e518308786029838",
+      "bytes": 3691,
+      "sha256": "092848ad67d0fdaf1291447d97c6482c61007964c5325deba64e767713a86859",
       "owner": "test/model_library_boundaries_test.dart",
       "directives": [
         {

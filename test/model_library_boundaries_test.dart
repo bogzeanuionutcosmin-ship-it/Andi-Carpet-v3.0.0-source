@@ -16,7 +16,7 @@ void main() {
     final legacy.FunctionDefinition function = FunctionDefinition(
       id: 'driver', name: 'Driver', iconKey: 'badge_driver', colorValue: 0,
     );
-    expect(category.color, Colors.indigo);
+    expect(category.color.toARGB32(), Colors.indigo.toARGB32());
     expect(function.badgeKeys, ['badge_driver']);
   });
 

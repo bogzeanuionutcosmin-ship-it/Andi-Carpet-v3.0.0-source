@@ -44,3 +44,7 @@ Cele 5 exporturi PDF folosesc modele, enumuri/extensii, date operaționale, gene
 PR #29 verificat read-only la `5b639953f6fed804b10e98561fc6a388b1d377f2`, ramură separată din main. **Nu schimbăm** ocr_parser.dart, ocr_parser_test.dart, tests/firestore/diurna.test.cjs, documentația sa ori regulile financiare; nu integrăm PR #29. Parserul său și diagnosticul autorizării rămân pe acel front.
 
 Fără merge, deploy, Firebase producție/date/rules/config, billing, versiune, migrare sau APK publicat. PR #28 rămâne Draft. Modularizarea completă NU este finalizată. Următorul lot recomandat: helper graphDefaultName → modele centrale → date operaționale/Learning, cu CI 5/5 după fiecare lot; PDF doar după eliminarea controlată a dependențelor private și reverificarea PR #20.
+
+## MOD-MODEL-LIBRARIES-1-CI-TEST-FIX-20261013
+
+Lotul `bd10f05cbbd82bc57a740315b60fc00b88727c81`, run 38374611001: 4/5 joburi SUCCESS; Flutter compilează, 50 teste PASS și un test nou FAIL. Cauză în aserțiunea nouă, nu în model: getterul existent construiește Color(argb), iar testul îl compara cu MaterialColor Colors.indigo; egalitatea tipurilor de culoare nu este garantată. Test corectat să compare toARGB32 pentru aceeași valoare. Nu se schimbă getterul/modelul/culorile/UI; corpurile celor 5 modele rămân identice. CI se reverifică pe SHA corectat înainte de lotul 2.
