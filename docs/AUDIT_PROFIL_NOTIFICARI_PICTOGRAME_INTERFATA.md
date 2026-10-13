@@ -99,3 +99,80 @@ Mesajul proprietarului, în esență:
 4. **La sfârșit:** modificări controlate în PR, CI/teste Flutter/Functions/Rules/web/Android, validare în browser și pe telefoane, dovada versiunii/SHA efectiv publicat, apoi release/deploy numai după aprobare.
 
 **Următoarea clarificare utilă:** ce manifestări observă concret utilizatorul la notificări (lipsă, întârziere, repetare, fără sunet, neafișare, imposibilitate de marcare ca citit), pe ce platformă și în ce stare a aplicației? Alegeți o singură întrebare concentrată; nu presupuneți motivul.
+
+## 9. Reguli confirmate pentru notificările inteligente și Chat live (decizie proprietar 2026-10-13; documentare, fără implementare)
+
+### 9.1 Cerințe reale și comportamente greșite raportate de utilizator
+
+Proprietarul descrie în utilizarea reală:
+- **Chat live**: badge-ul numeric «1» ori alt număr revine după fiecare reîncărcare, chiar după ce a intrat în chat să citească.
+- **Pop-up-uri**: unele alerte se repetă la redeschiderea aplicației inclusiv după ce notificările au fost citite.
+- **Dialogul „Ai terminat sala?” și „ANULEAZĂ”**: apasă Anulează și intervenția se **redeschide**; dorește eliminarea tipului acesta de feedback reversibil/derutant.
+- **Notificări persistente numai când solicită răspuns ori acțiune reală și imediată**; restul informărilor trebuie să fie scurte, neintruzive și să dispară.
+- **Clopoțelul:** la deschidere să se presupună citirea și să se marcheze automat ca citite; simplificare față de controlul «Marchează ca citit» cerut anterior.
+- **Paletă obligatorie a feedbackului tranzitoriu:** **VERDE** succes/salvare confirmată (sală începută/finalizată), **GALBEN** așteptare de acces în sală ori acțiune de schimbare a stării locației, **ROȘU** erori/probleme/conflicte (inclusiv imposibilitatea salvării închiderii). Mesajele reale de **Admin/Sistem** primesc aspect propriu **elegant/premium, diferit** de aceste categorii.
+
+Acestea sunt **decizii funcționale explicite** și simptome reale raportate, dar **nu au fost aplicate în cod**.
+
+### 9.2 Rezultatul auditului țintit al codului — surse exacte
+
+**Chat de grup (cauză probabilă susținută de cod):**
+- `lib/chat/group_chat_page.dart::_markChatOpened` scrie `users/{uid}.lastGroupChatSeenAt = FieldValue.serverTimestamp()` **o singură dată la `initState`**, cu `catch (_) {}` care ascunde orice eșec.
+- `lib/home/home_page.dart::_recomputeGroupUnread` compară `groupChatMessages.createdAt` cu `lastGroupChatSeenAt` și folosește ultimele **20** mesaje; `_openGroupChat().then(...)` setează **numai local** contorul grupului la zero când revine din chat. Dacă scrierea markerului eșuează sau în chat vin alte mesaje după deschidere, contorul poate reapărea la următoarea sincronizare/reîncărcare. `GroupChatPage` afișează ultimele **50** mesaje, dar listenerul badge calculează din numai 20: valori de badge pot fi limitate/inexacte. `GroupChatPage._send` scrie `createdAt:Timestamp.now()` (ceas client), comparat cu marker generat pe server, deci decalajul ceasurilor poate crea erori de „necitiți”.
+- `_startCoreSync` citeste `lastGroupChatSeenAt` pentru contul actual și apoi reface numărul; o simplă setare locală la zero fără confirmare persistată nu este corectarea problemei.
+
+**Chat privat:** `lib/chat/private_chat_page.dart::_markRead` scrie `read=true` în batch pentru mesajele primite și este declanșat în fluxul de afișare; identificăm și testăm repetarea scrierilor, offline, erori, schimbarea conversației, mesaj nou cât pagina este deschisă. Contorul folosește `chatMessages.read`. Nu declarăm că defecțiunea raportată pentru Chat live este în mod automat și în chatul privat.
+
+**Alerta recurentă:** `lib/home/home_page.dart` inițializează la primul snapshot `notifications` și creează popup pentru orice `ownUnread`; separat primul snapshot `chatMessages` afișează popup pentru necitite, iar grupul poate genera alerte pentru mesaje nou apărute în stream. **IMPORTANT:** în listenerul de `notifications`, `read=true` este exclus din `ownUnread`: o notificare sistem deja marcată citită în Firestore **nu ar trebui** să declanșeze acest popup pe acel traseu. Dacă utilizatorul vede totuși popup, cauza poate fi alt listener (chat), o scriere „citit” nereușită, un eveniment diferit ori o notificare nou creată; se verifică sursa exactă, nu se afirmă automat că aceeași înregistrare deja citită este relivrată.
+
+**Undo defectiv ca UX:** `lib/dashboard/dashboard_page.dart::_finishLocation` după STOP salvat adaugă în `SnackBar` `SnackBarAction(label:'ANULEAZĂ')`; callbackul face `widget.saveRecord(source)` unde `source` are status anterior `running`, deci **redeschide intenționat lucrarea**. Nu este simplă anulare de popup. **Conform noii cerințe, această acțiune Undo din confirmarea verde trebuie eliminată**, dar corecțiile autentice ale unei lucrări finalizate trebuie să aibă flux separat, autorizat și auditat; nu putem șterge o intervenție reală prin apăsarea unui buton ambigu.
+
+**Fațadă și STOP:** `dashboard_page.dart::_finishLocation` întreabă în prezent «Fațada a fost realizată?» **necondiționat**, chiar dacă `source.facadePlanned` nu este true, contrar regulii deja aprobate că întrebarea DA/NU este obligatorie **doar când fațada a fost planificată**. La implementarea noului feedback, păstrăm întrebarea obligatorie **integrată în salvarea STOP numai pentru fațade planificate**, ca element al formularului/acțiunii de salvare, **nu** ca un popup suplimentar după succes. Pentru fațade neplanificate nu inventăm «NU» ori DA automat dacă există o corecție reală ulterioară.
+
+**GPS/automatizare:** `HomePage._handleArrivalDetected` afișează `AlertDialog` cu «Ai ajuns la locație — NU ÎNCĂ / SUNT ÎN AȘTEPTARE / ÎNCEP LUCRUL», declanșat automat după un timp de proximitate. Proprietarul nu dorește pop-up-uri intruzive de decizie în afara salvărilor. Înlocuim dialogurile generate doar de proximitate cu **mesaj galben informativ + acțiune opțională** care DESCHIDE ecranul START/Așteptare; GPS-ul **nu pornește și nu încheie** lucrarea singur. Evităm repetarea acestor remindere la fiecare refresh/proximitate.
+
+**Clopoțel:** `_openNotificationsSheet` marchează acum citit numai la `onTap` pe fiecare înregistrare; `SettingsPage` la fel. Noua cerință de **marcare automată la deschiderea clopoțelului** înlocuiește nevoia de a confirma manual citirea fiecărei informări. `firestore.rules` permite titularului să actualizeze `read/updatedAt` pe propria notificare. Modelul `AppNotification` are în esență `read` boolean, dar **nu** stare independentă de «acțiune necesară / acțiune îndeplinită»: pentru persistență corectă trebuie proiectată o clasificare server-side sigură.
+
+**Identitate Admin/Sistem:** `functions/index.js::notificationCategory` și `HomePage._allowPersonalAlert` pot considera obligatoriu mesajul doar dacă `title` conține «admin» ori egal «sistem». `firestore.rules` permite membrilor activi anumite creanțe în `notifications`; astfel identificarea mesajului oficial **după titlul liber nu este sigură**. Doar notificările provenite din acțiuni admin autentificate/server-side pot primi aspectul Premium/Sistem, nivel obligatoriu și semn de încredere. `senderName='Sistem'` de chat pentru admin ascuns este situație separată, care tot trebuie validată la sursă.
+
+### 9.3 Comportament țintă — FĂRĂ suprapuneri între citit, afișat și rezolvat
+
+**Trei dimensiuni diferite:** `delivered/displayed` (informare prezentată deja), `seen/read` (utilizatorul a deschis clopoțelul ori chatul corespunzător), `requiresAction` + `resolvedAt` (un lucru necesită efectiv decizie sau salvare). **Citit nu înseamnă rezolvat**.
+
+- **Informare obișnuită**: toast/banner discret, temporar, auto-dispărut; nu deschide dialog de confirmare, nu păstrează popup la pornire, nu reafișează același `eventId` după refresh, poate rămâne numai în istoric conform retenției. Până la deschiderea clopoțelului poate apărea un indicator discret de „nou”, dar nu un popup persistent.
+- **Notificare cu acțiune**: creată numai pentru o condiție reală, actuală și acționabilă, cu destinatar, `entityId`, `requiredAction`, `state=pending|resolved|expired|cancelled`, deduplicare pe cheie de eveniment; rămâne evidențiată până la rezolvarea/refuzul legitim/anularea ori expirarea justificată a obligației. **Deschiderea clopoțelului marchează citit, dar NU rezolvă acțiunea**. Validarea la apăsarea acțiunii se face pe starea actuală server-side: nu redeschide o sală Finalizată, nu dublează Start, nu șterge lucrări.
+- **Chat live / privat:** contorul reprezintă mesaje noi încă neparcurse, nu „notificări persistente” după citire. În grup, se salvează un **cursor de citire monoton și durabil pe server** (de preferat poziție stabilă/ordine bazată pe eveniment autorizat, nu pe `Timestamp.now()` client neverificat); la intrarea în chat și cât chatul este activ și mesajele sunt efectiv afișate, cursorul se avansează fără regresie. La părăsire/reîncărcare, calculele din aceeași sursă arată **0** pentru ce a fost parcurs. La mesaj cu adevărat nou, contorul crește numai pentru ce nu a fost văzut, o singură dată; propria trimitere nu îl crește. În chatul privat, citirea mesajelor se confirmă în Firestore, cu retry sigur, stare UI corespunzătoare și fără re-scrieri la fiecare `build`.
+- **Clopoțel:** la deschidere se pot marca **automat ca citite toate informările vizibile ale utilizatorului care nu cer acțiune**, într-o actualizare permisă, idempotentă și verificabilă. Pentru notificările cu acțiune, citirea se poate consemna separat, dar **starea pending rămâne** și badge-ul de sarcini neîndeplinite nu dispare doar prin vizitare. Nu se marchează citit înainte ca notificările să fie efectiv disponibile pe ecran; dacă scrierea eșuează offline, se sincronizează ori se avertizează fără a falsifica succesul serverului.
+- **Push OS / popup aplicație / badge intern** sunt canale de prezentare distincte ale aceluiași eveniment; se deduplică folosind `eventId`, `deviceId` autorizat și stare server. Un push venit la foreground nu trebuie să producă dublu popup cu listenerul Firestore. La repornirea aplicației, evenimentele vechi doar sunt vizibile în istoric ori, dacă încă au acțiune pending, în zona dedicată, **fără fereastră intruzivă relansată**.
+
+### 9.4 Paletă și dialoguri — DECIZII ALE PROPRIETARULUI
+
+| Tip | Aspect | Text/context | Durată/persistență |
+| --- | --- | --- | --- |
+| **Succes / salvare** | **VERDE**, icon check | «Sala a fost declarată începută», «Sala a fost declarată finalizată», «Salvarea a reușit» | Toast ~3–5 sec. **FĂRĂ «ANULEAZĂ» care face Undo** |
+| **Așteptare/avertizare operațională** | **GALBEN/AMBRĂ**, icon ceas/atenționare | «Se așteaptă accesul în sală», «Actualizează starea locației când ai acces» | Toast discret; dacă este necesară o acțiune, **cardul de acțiune** persistă în locul unui popup |
+| **Eroare/conflict** | **ROȘU**, icon eroare | «Finalizarea sălii nu a putut fi salvată», «Conflict detectat», «Datele nu se pot sincroniza» | Toast citibil; problema rămâne acționabilă/diagnosticată dacă e încă nerezolvată, fără reafișarea compulsivă a ferestrei |
+| **Admin/Sistem autenticat** | **PREMIUM distinct**, propunere: bleumarin închis, accent auriu discret, icon sigiliu/verified | Titlu «Mesaj de la Admin» / «Mesaj de sistem» **doar după validarea sursei** | Banner elegant; informativ => temporar, cu acțiune reală => card pending până la rezolvare, fără spam la fiecare login |
+
+**Principiu:** **NU mai folosim dialoguri modale de confirmare inutile în afara salvărilor/acțiunilor explicite**. Confirmarea salvării este un mesaj colorat **după** confirmarea persistenței, nu întrebarea repetată «Ești sigur că ai salvat?» și nici o invitație la undo. Dialogul poate rămâne **numai când este necesară introducerea unor date/decizii obligatorii pentru efectuarea salvării** (ex.: DA/NU fațadă PLANIFICATĂ la STOP, motiv de refuz/nerealizare, alegerea graficului ori confirmarea explicită a unei operații ireversibile sau cu impact major); se integrează într-un singur flux coerent, nu succesiuni de pop-up-uri după salvare. Dacă proprietarul cere ulterior ZERO dialoguri chiar la astfel de operații sensibile, propuneți alternative inline, fără a pierde date obligatorii ori riscurile de autorizare. GPS nu impune modal automat.
+
+**Notă despre galben:** o salvare reușită a statusului «Așteptare acces» poate arăta **confirmare galbenă**, nu verde generic; este un rezultat de stare intermediară și semnalizează nevoia ulterioară de acces, conform clasificării cerute.
+
+### 9.5 Matrice minimă de acceptare și scenarii de test (doar PROIECTATE)
+
+1. Mesaje de grup deja citite => contor zero și la F5 / reconectare / login pe al doilea dispozitiv; mesaj nou primit în timp ce chatul este deschis și vizibil nu crește contorul; mesaj nou după ieșire îl crește o singură dată.
+2. Mesaje private citite => badge zero după revenire/offline retry; fără loop de scrieri; neautorizatul nu poate marca mesajele altei persoane citite.
+3. Deschiderea clopoțelului => informările vizibile devin citite automat; acțiunea pending rămâne și este marcată rezolvată **doar de operația reală**, indiferent de citirea din clopoțel; notificările deja citite nu reapar pop-up.
+4. Salvare START/STOP confirmată => toast verde, fără buton Undo; butonul de abandon al unui **formular înainte de salvare** nu are efect asupra intervenției. Fișă finalizată nu poate fi redeschisă printr-un snackbar.
+5. La STOP cu fațadă **planificată** se cere DA/NU, fără execuții parțiale ori minute pe om; la STOP fără fațadă planificată nu se pune întrebarea. Cerința se aplică Dashboard, widget și orice alt flux.
+6. Așteptare acces => galben, accesul se confirmă prin acțiune de utilizator; nu se pornește/închide sala din cauza GPS-ului.
+7. Eroare de salvare/race între două dispozitive => toast roșu și stare reală păstrată, fără verde fals și fără status «Finalizată» dacă Firestore a eșuat.
+8. Notificare «Admin/Sistem» creată prin titlu de un utilizator normal => **nici premium, nici bypass** al filtrelor; numai actorul autorizat și evenimentul verificat pot primi încrederea de sistem.
+9. Notificare nouă = o alertă (fără dublare din FCM + stream); după repornire doar acțiunile nerezolvate persistă, informările vechi în istoric fără toast repetat; pushul din fostul cont nu ajunge după schimbarea conturilor.
+10. Teste Flutter widget/integration, emulator Firestore+Cloud Functions, scenarii Android/web real, offline, versiune instalată/publicată și acces la API. Nu confundați simularea aritmetică cu verificări ale aplicației.
+
+**Verificări de model**: 15/15 aserțiuni JS fictive (citit vs pending, contor monoton de grup, cont vechi/dubluri, clasificare autentică admin, culori, fără Undo, STOP fațadă doar planificată). **NU** au fost rulate teste Flutter, Firestore, Functions, CI ori teste reale pe telefon/web.
+
+### 9.6 Următorul pas
+
+Actualizați documentele canonice `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` și `ChatGpt`. Apoi decideți împreună UI-ul complet și istoricul echipelor conform mandatului; implementarea și testarea finală rămân la sfârșit conform ordinii stabilite a proiectului. **Fără modificări de cod, Firestore, Firebase live ori deploy prin această notă**.
