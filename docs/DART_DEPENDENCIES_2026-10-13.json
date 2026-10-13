@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 148,
+  "dart_files": 149,
   "lib_dart_files": 122,
-  "test_dart_files": 25,
+  "test_dart_files": 26,
   "script_dart_files": 1,
-  "parts": 71,
-  "libraries": 77,
+  "parts": 70,
+  "libraries": 79,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -67,6 +67,7 @@
       "lib/learning/duration_estimates.dart",
       "lib/map/graph_road_distance.dart",
       "lib/map/graph_route_calculations.dart",
+      "lib/map/verified_location_fix.dart",
       "lib/mapbox_services.dart",
       "lib/models/app_data_models.dart",
       "lib/models/app_enums_permissions.dart",
@@ -99,6 +100,9 @@
     ],
     "lib/map/graph_route_points.dart": [
       "lib/models/app_data_models.dart"
+    ],
+    "lib/map/verified_location_fix.dart": [
+      "lib/models/app_enums.dart"
     ],
     "lib/mapbox_services.dart": [],
     "lib/models/app_data_models.dart": [
@@ -252,6 +256,10 @@
     ],
     "test/stat_card_library_test.dart": [
       "lib/ui/stat_card.dart"
+    ],
+    "test/verified_location_fix_library_test.dart": [
+      "lib/map/verified_location_fix.dart",
+      "lib/models/app_enums.dart"
     ],
     "test/widget_test.dart": [
       "lib/main.dart"
@@ -2090,8 +2098,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 22081,
-      "sha256": "8ae440b09ea865f786f41be0cbdad5d161287cd6397d7edfcdcc6bd6afe5da43",
+      "bytes": 22384,
+      "sha256": "f022413c10a435e41fa6ae58c5dd25c90aa628341b8ca19fc8a26ac563296598",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2675,6 +2683,16 @@
           ]
         },
         {
+          "kind": "import",
+          "text": "import 'map/verified_location_fix.dart' as verified_fix;",
+          "uris": [
+            "map/verified_location_fix.dart"
+          ],
+          "local_targets": [
+            "lib/map/verified_location_fix.dart"
+          ]
+        },
+        {
           "kind": "export",
           "text": "export 'ui/icon_badge_catalog.dart';",
           "uris": [
@@ -2742,16 +2760,6 @@
           ],
           "local_targets": [
             "lib/bootstrap/firebase_initialization.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'map/verified_location_fix.dart';",
-          "uris": [
-            "map/verified_location_fix.dart"
-          ],
-          "local_targets": [
-            "lib/map/verified_location_fix.dart"
           ]
         },
         {
@@ -3440,6 +3448,10 @@
         },
         {
           "kind": "class",
+          "name": "_VerifiedLocationFix"
+        },
+        {
+          "kind": "class",
           "name": "_InstallAppButtons"
         },
         {
@@ -3716,25 +3728,25 @@
     },
     {
       "path": "lib/map/verified_location_fix.dart",
-      "bytes": 563,
-      "sha256": "6f7270c03e9051c32348fa531f0209523d791a9eafa3c2a019b694459d88636f",
-      "owner": "lib/main.dart",
+      "bytes": 572,
+      "sha256": "f8dc63e697c69d15366a6b7ccdaef1b0ce2fbabf95a0eed996d475d3698c50ba",
+      "owner": "lib/map/verified_location_fix.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import '../models/app_enums.dart';",
           "uris": [
-            "../main.dart"
+            "../models/app_enums.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_enums.dart"
           ]
         }
       ],
       "declarations": [
         {
           "kind": "class",
-          "name": "_VerifiedLocationFix"
+          "name": "VerifiedLocationFix"
         }
       ],
       "top_level_functions": []
@@ -6348,6 +6360,46 @@
           ],
           "local_targets": [
             "lib/ui/stat_card.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/verified_location_fix_library_test.dart",
+      "bytes": 1036,
+      "sha256": "ff6b6459c7637169e3bca3160893c625005878aac06fdecdbadc25fcbadf43b1",
+      "owner": "test/verified_location_fix_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/map/verified_location_fix.dart';",
+          "uris": [
+            "package:andi_carpeta/map/verified_location_fix.dart"
+          ],
+          "local_targets": [
+            "lib/map/verified_location_fix.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_enums.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_enums.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums.dart"
           ]
         }
       ],

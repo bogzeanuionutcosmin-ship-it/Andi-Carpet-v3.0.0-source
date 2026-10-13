@@ -826,7 +826,7 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("class FirebaseErrorView extends StatelessWidget", views)
         self.assertIn("final Widget logo;", views)
         self.assertIn("final VoidCallback onSignOut;", views)
-        parts = {"map/verified_location_fix.dart": ("_VerifiedLocationFix",)}
+        parts = {}
         for relative, classes in parts.items():
             with self.subTest(module=relative):
                 source = (ROOT / "lib" / relative).read_text(encoding="utf-8")
@@ -835,6 +835,33 @@ class RepositoryHygieneTests(unittest.TestCase):
                 for name in classes:
                     self.assertEqual(main.count("class " + name + " "), 0)
                     self.assertEqual(source.count("class " + name + " "), 1)
+
+    def test_verified_location_fix_library_preserves_magic_million_data(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/map/verified_location_fix.dart").read_text(encoding="utf-8")
+        self.assertNotIn("part 'map/verified_location_fix.dart';", main)
+        self.assertIn("import 'map/verified_location_fix.dart' as verified_fix;", main)
+        self.assertIn(
+            "class _VerifiedLocationFix extends verified_fix.VerifiedLocationFix",
+            main,
+        )
+        self.assertIn("required super.verifiedAddress", main)
+        self.assertIn("super.confidence = 'ridicată'", main)
+        self.assertIn("import '../models/app_enums.dart';", module)
+        self.assertNotIn("part of", module)
+        self.assertEqual(module.count("class VerifiedLocationFix {"), 1)
+        self.assertIn("final String source = 'Google Maps / verificare web';", module)
+        self.assertIn("bool get hasGps => latitude != null && longitude != null;", module)
+        data_start = main.index(
+            "const List<_VerifiedLocationFix> _verifiedLocationFixes = "
+            "<_VerifiedLocationFix>["
+        )
+        data_end = main.index("\n];", data_start) + 3
+        data_block = main[data_start:data_end]
+        self.assertEqual(
+            hashlib.sha256(data_block.encode("utf-8")).hexdigest(),
+            "0d00e992bc52e500a87b307f601ec6486dbb5d6f6dd0e6db93f0cacec267a812",
+        )
 
     def test_graph_route_calculations_extracted_and_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

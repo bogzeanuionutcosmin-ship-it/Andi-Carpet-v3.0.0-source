@@ -61,6 +61,7 @@ import 'ui/install_app_buttons_view.dart' as install_buttons;
 import 'ui/interactive_badge_preview.dart' as badge_preview;
 import 'ui/auth_status_views.dart' as auth_status;
 import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;
+import 'map/verified_location_fix.dart' as verified_fix;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
@@ -69,7 +70,6 @@ part 'auth/quick_accounts.dart';
 part 'ui/branding_theme_helpers.dart';
 part 'ui/install_app_buttons.dart';
 part 'bootstrap/firebase_initialization.dart';
-part 'map/verified_location_fix.dart';
 part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
@@ -285,6 +285,18 @@ class _FirebaseBootstrapErrorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       bootstrap_error.FirebaseBootstrapErrorView(message: message);
+}
+
+class _VerifiedLocationFix extends verified_fix.VerifiedLocationFix {
+  const _VerifiedLocationFix({
+    required super.id,
+    super.latitude,
+    super.longitude,
+    super.status,
+    required super.verifiedAddress,
+    super.confidence = 'ridicată',
+    super.note = '',
+  });
 }
 
 class _InstallAppButtons extends StatelessWidget {

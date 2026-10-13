@@ -466,3 +466,10 @@ PR #29 și logica de autentificare/permisiuni nu sunt modificate. CI pentru lot 
 Lotul `firebase_bootstrap_error_app.dart` a fost convertit la bibliotecă Material independentă și validat pe commitul cod `3b21f31e37b29c61a0d749109c98ef65f69fdc94`, workflow run `38463643897`: **5/5 SUCCESS**. Widget test, verificarea pură, build web și toate joburile de Node/Python/Functions/Firestore au trecut. Wrapperul privat păstrează apelul `runApp` și mesajul primit; initialization/excepția rămân neschimbate.
 
 Inventar: 148 fișiere Dart, 71 parts, 77 biblioteci; zero missing/orphan/duplicate/cicluri. Următorul audit read-only: modelul `_VerifiedLocationFix`, cu atenție la păstrarea exactă a catalogului Magic/Million și a callsite-urilor de import. Nu se editează datele sau algoritmii din map. Modularizarea integrală nu este finalizată.
+
+
+## MOD-VERIFIED-LOCATION-FIX-LIBRARY-20261013
+
+Bază: `490ce02a068d642a409cd9c6de384fa08d6dc4bc`. Modelul de date `_VerifiedLocationFix` a devenit `VerifiedLocationFix` într-o bibliotecă Dart independentă cu import explicit pentru `LocationStatus`. Wrapperul privat extinde modelul și păstrează numele, constructorul/defaulturile și callsite-urile din main/map. Catalogul Magic/Million și algoritmul de import nu au fost rescrise. Testul structural fixează SHA-256 al întregului bloc `_verifiedLocationFixes`: `0d00e992bc52e500a87b307f601ec6486dbb5d6f6dd0e6db93f0cacec267a812` (8.192 bytes); testul Dart verifică defaulturi și semantica hasGps.
+
+Inventar: 149 Dart, 70 parts, 79 biblioteci; fără missing/orphan/duplicate/cicluri. Teste Python structurale 85 PASS, parserul inventory și Node syntax PASS; Flutter/Dart indisponibil local. CI lot în așteptare. PR #20 PDF Magic/Million, PR #29 și regulile/datele financiare rămân neatinse.
