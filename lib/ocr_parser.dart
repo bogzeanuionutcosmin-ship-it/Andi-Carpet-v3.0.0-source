@@ -102,8 +102,8 @@ FiscalOcrData parseFiscalOcr(String text) {
 
   double? amount;
   final totalPatterns = <RegExp>[
-    RegExp(r'(?:TOTAL\s+(?:DE\s+PLAT[ĂA]|PLAT[ĂA])?|TOTAL|SUMA\s+DE\s+PLAT[ĂA]|DE\s+PLAT[ĂA])[^0-9]{0,20}([0-9]{1,7}(?:[.,][0-9]{2})?)', caseSensitive: false),
-    RegExp(r'([0-9]{1,7}(?:[.,][0-9]{2})?)\s*(?:RON|LEI)\b', caseSensitive: false),
+    RegExp(r'(?:TOTAL\s+(?:DE\s+PLAT[ĂA]|PLAT[ĂA])?|TOTAL|SUMA\s+DE\s+PLAT[ĂA]|DE\s+PLAT[ĂA])[^0-9]{0,20}([0-9]{1,3}(?:[., ][0-9]{3})+[.,][0-9]{2}|[0-9]{1,7}(?:[.,][0-9]{2})?)', caseSensitive: false),
+    RegExp(r'([0-9]{1,3}(?:[., ][0-9]{3})+[.,][0-9]{2}|[0-9]{1,7}(?:[.,][0-9]{2})?)\s*(?:RON|LEI)\b', caseSensitive: false),
   ];
   for (final re in totalPatterns) {
     final matches = re.allMatches(raw).toList();

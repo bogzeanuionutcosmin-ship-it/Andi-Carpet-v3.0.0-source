@@ -19,6 +19,18 @@ before(async () => {
     for (const uid of ['payer', 'receiver', 'stranger']) {
       await setDoc(doc(ctx.firestore(), 'users', uid), { active: true, role: 'worker' });
     }
+    await setDoc(doc(ctx.firestore(), 'users', 'expense-ocr-admin'), {
+      active: true, role: 'admin',
+    });
+    await setDoc(doc(ctx.firestore(), 'users', 'expense-ocr-member'), {
+      active: true, role: 'member', effectivePermissions: ['viewOwnDecont'],
+    });
+    await setDoc(doc(ctx.firestore(), 'users', 'expense-ocr-outsider'), {
+      active: true, role: 'member', effectivePermissions: ['viewOwnDecont'],
+    });
+    await setDoc(doc(ctx.firestore(), 'teams', 'expense-ocr-team'), {
+      members: ['expense-ocr-member'],
+    });
   });
 });
 after(async () => { if (env) await env.cleanup(); });
@@ -132,4 +144,46 @@ test('legacy perDiems: characterize currently allowed over-declared receipt', as
   await assertSucceeds(updateDoc(doc(db('receiver'), 'perDiems/legacy-overdeclared'), {
     status: 'confirmed', received: true, actualReceivedAmount: 75,
   }));
+});
+
+
+// Contractul ACTUAL al regulilor pentru cheltuieli OCR, nu remedierea lui:
+// payloadul real _expenseMap nu include distributedBy, deși create non-admin îl cere.
+// Modificarea contractului financiar necesită PR separat și aprobare explicită.
+function expenseOcrPayload() {
+  return {
+    teamId: 'expense-ocr-team', settlementId: null,
+    category: 'Combustibil', description: 'Test OCR sintetic',
+    amount: 1234.56, date: serverTimestamp(),
+    documentType: 'fiscalReceipt', documentNumber: 'TEST-EXP-123',
+    supplier: 'TEST SRL', liters: null, pricePerLiter: null,
+    documentImageBase64: '', imageFingerprint: 'synthetic-fingerprint',
+    ocrRawText: '', ocrConfidence: 0.9, confirmed: false,
+    updatedAt: serverTimestamp(),
+  };
+}
+
+test('expenses OCR: admin poate salva payloadul curent fără distributedBy', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(doc(db('expense-ocr-admin'), 'expenses/expense-ocr-admin-save'),
+    expenseOcrPayload(), { merge: true }));
+});
+
+test('expenses OCR: un membru cu viewOwnDecont primește deny pentru payloadul curent', async () => {
+  const { setDoc } = require('firebase/firestore');
+  // Reproducere controlată a incompatibilității cunoscute, nu rezultat dorit.
+  await assertFails(setDoc(doc(db('expense-ocr-member'), 'expenses/expense-ocr-current'),
+    expenseOcrPayload(), { merge: true }));
+});
+
+test('expenses OCR: distributedBy == uid trece condiția prezentă; câmpul nu există în DTO', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(doc(db('expense-ocr-member'), 'expenses/expense-ocr-probe'),
+    { ...expenseOcrPayload(), distributedBy: 'expense-ocr-member' }, { merge: true }));
+});
+
+test('expenses OCR: membru din altă echipă nu poate salva prin distributedBy fals', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertFails(setDoc(doc(db('expense-ocr-outsider'), 'expenses/expense-ocr-forgery'),
+    { ...expenseOcrPayload(), distributedBy: 'expense-ocr-outsider' }, { merge: true }));
 });
