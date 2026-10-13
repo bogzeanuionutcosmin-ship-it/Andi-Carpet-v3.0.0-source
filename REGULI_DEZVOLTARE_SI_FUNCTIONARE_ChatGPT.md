@@ -1059,3 +1059,16 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 5. La implementare se testează: activare/dezactivare manuală, expirare, ore recurente și tură de noapte, restart/relogin, două dispozitive, schimbare fus orar, offline/reconectare, mesaj privat/Chat live/Learning, alerte autentice Admin/Sistem, badge-uri și deduplicare FCM/Firestore.
 
 **Status:** regula este CONFIRMATĂ și documentată, nu implementată sau testată în produs; fără schimbări de cod, Firestore, Functions, date de producție, APK sau deploy.
+
+## 59. Notificări — propunerea 8 CONFIRMATĂ: reamintiri pentru acțiuni în așteptare (2026-10-13)
+
+**Aprobare expresă:** «Confirm propunerea 8 pentru AndiCarpet, inclusiv intervalele recomandate.»
+
+1. Doar notificările asociate unor **acțiuni încă necesare** pot genera reamintiri (de exemplu aprobare Learning sau intervenție necesară după o eroare). Informările simple, mesajele deja citite fără acțiune și operațiile deja rezolvate nu sunt reamintite.
+2. Pentru aceeași acțiune încă activă: **prima reamintire după 30 de minute**, **a doua după 2 ore**, ulterior **cel mult o reamintire la fiecare 24 de ore**. Intervalele se raportează la momentul inițial al acțiunii; dacă sincronizarea întârzie, nu se declanșează un val de notificări recuperate.
+3. Reamintirile se **opresc imediat** după rezolvare, respingere sau expirarea relevanței; pentru **Amână** sunt suspendate până la termenul ales, apoi se reia evaluarea stării actuale fără notificări pentru acțiuni deja închise. Simpla citire a notificării NU înseamnă rezolvare.
+4. Reamintirile **respectă Nu deranja** (propunerea 7) și preferințele personale (propunerea 6), fără forțarea sunetului, vibrației sau popupurilor. Acțiunile critice autentificate rămân vizibile în aplicație, conform regulilor precedente.
+5. Implementarea va utiliza un ID stabil de acțiune, verificare server-side a stării și destinatarului autorizat înainte de orice livrare, deduplicare între sesiuni/FCM/Firestore și rate limiting. Se evită buclele, notificarile învechite, scurgerile între conturi și costurile de joburi inutile.
+6. **Teste viitoare:** 30 min, 2 ore, repetare la 24 h, rezolvare înaintea pragului, amânare și expirare, refuz, critic vs informativ, offline și reconectare, mai multe dispozitive, mutarea acțiunii către alt responsabil, fusuri orare, Nu deranja, tokenuri push duplicate și revenire după întreruperi.
+
+**Status:** regulă aprobată/documentată, fără implementare, migrare de date, modificări Firebase sau deploy. Următoarea propunere se discută individual.
