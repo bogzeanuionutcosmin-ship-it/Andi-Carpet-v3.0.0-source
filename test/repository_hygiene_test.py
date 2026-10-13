@@ -835,11 +835,11 @@ class RepositoryHygieneTests(unittest.TestCase):
                                 "_startOwnProfileSync", "_startOperationsSync",
                                 "_startNotificationSync", "_startChatSync", "_startSettingsSync"])
         self.assertNotIn(".snapshots()", core)
-        sync = home.split("  void _startAuditSync(", 1)[1].split("  Future<void> _writeLearningEvent(", 1)[0]
+        catalog = (ROOT / "lib/home/home_catalog_sync.dart").read_text(encoding="utf-8")
         listeners = (ROOT / "lib/home/home_sync_listeners.dart").read_text(encoding="utf-8")
-        self.assertEqual(sync.count("_coreSubscriptions.add("), 5)
+        self.assertEqual(catalog.count("_coreSubscriptions.add("), 5)
         self.assertEqual(listeners.count("_coreSubscriptions.add("), 10)
-        self.assertEqual(sync.count("_coreSubscriptions.add(") + listeners.count("_coreSubscriptions.add("), 15)
+        self.assertEqual(catalog.count("_coreSubscriptions.add(") + listeners.count("_coreSubscriptions.add("), 15)
         self.assertIn("for (final sub in _coreSubscriptions) { sub.cancel(); }", home)
         self.assertIn("if (isAdmin) {\n      _startAuditSync(db);", core)
         self.assertIn("_startFinancialSync();", core)
@@ -862,9 +862,11 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_home_directory_sync_isolated(self):
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
-        self.assertIn("void _startDirectorySync(FirebaseFirestore db)", home)
+        catalog = (ROOT / "lib/home/home_catalog_sync.dart").read_text(encoding="utf-8")
+        self.assertIn("void _startDirectorySync(FirebaseFirestore db)", catalog)
+        self.assertNotIn("void _startDirectorySync(FirebaseFirestore db)", home)
         self.assertIn("_startDirectorySync(db);", home)
-        directory = home.split("void _startDirectorySync(FirebaseFirestore db)", 1)[1].split("void _startCoreSync()", 1)[0]
+        directory = catalog.split("void _startDirectorySync(FirebaseFirestore db)", 1)[1]
         self.assertIn("db.collection('users') : db.collection('memberDirectory')", directory)
         self.assertIn("_applyTeamMembership()", directory)
         self.assertIn("_startFinancialSync()", directory)
@@ -872,9 +874,11 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_home_definitions_sync_isolated(self):
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
-        self.assertIn("void _startDefinitionsSync(FirebaseFirestore db)", home)
+        catalog = (ROOT / "lib/home/home_catalog_sync.dart").read_text(encoding="utf-8")
+        self.assertIn("void _startDefinitionsSync(FirebaseFirestore db)", catalog)
+        self.assertNotIn("void _startDefinitionsSync(FirebaseFirestore db)", home)
         self.assertIn("_startDefinitionsSync(db);", home)
-        definitions = home.split("void _startDefinitionsSync(FirebaseFirestore db)", 1)[1].split("void _startCoreSync()", 1)[0]
+        definitions = catalog.split("void _startDefinitionsSync(FirebaseFirestore db)", 1)[1].split("void _startDirectorySync(", 1)[0]
         for collection in ("locationCategories", "backgrounds", "functions"):
             self.assertIn("db.collection('" + collection + "')", definitions)
         self.assertIn("_syncUserPermissionSnapshots()", definitions)
@@ -882,9 +886,11 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_home_audit_sync_isolated_from_core_sync(self):
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
-        self.assertIn("void _startAuditSync(FirebaseFirestore db)", home)
+        catalog = (ROOT / "lib/home/home_catalog_sync.dart").read_text(encoding="utf-8")
+        self.assertIn("void _startAuditSync(FirebaseFirestore db)", catalog)
+        self.assertNotIn("void _startAuditSync(FirebaseFirestore db)", home)
         self.assertIn("_startAuditSync(db);", home)
-        audit = home.split("void _startAuditSync(FirebaseFirestore db)", 1)[1].split("void _startCoreSync()", 1)[0]
+        audit = catalog.split("void _startAuditSync(FirebaseFirestore db)", 1)[1].split("void _startDefinitionsSync(", 1)[0]
         self.assertIn("if (!isAdmin) return;", audit)
         self.assertIn("db.collection('audit').orderBy('at', descending: true).limit(500)", audit)
         self.assertIn("_coreSubscriptions.add(", audit)

@@ -36,11 +36,8 @@ class HomeSyncListenersContracts(unittest.TestCase):
         listeners = (ROOT / "lib/home/home_sync_listeners.dart").read_text(encoding="utf-8")
         self.assertEqual(listeners.count("_coreSubscriptions.add("), 10)
         self.assertEqual(listeners.count(".snapshots().listen("), 10)
-        # These were the original 15 managed core subscriptions; the other
-        # five remain in the HomePage audit/definitions/directory listeners.
-        managed = home.split("  void _startAuditSync(", 1)[1].split(
-            "  Future<void> _writeLearningEvent(", 1
-        )[0]
+        # The other 5 core subscriptions live in the catalog/directory/audit part.
+        managed = (ROOT / "lib/home/home_catalog_sync.dart").read_text(encoding="utf-8")
         self.assertEqual(managed.count("_coreSubscriptions.add("), 5)
         order = [name for name in GROUP_NAMES if (
             f"  void {name}(FirebaseFirestore db) {{" in listeners
