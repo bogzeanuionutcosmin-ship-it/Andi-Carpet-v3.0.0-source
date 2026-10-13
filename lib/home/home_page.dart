@@ -8,7 +8,7 @@ class HomePage extends StatefulWidget {
   @override State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomePermissionMaintenance {
+class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomePermissionMaintenance, _HomeDocumentCodecs, _HomeLocationSeed {
   int tab = 0;
   late final String currentUserId;
   AppSettings get settings => widget.settings;
@@ -718,116 +718,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     }
   }
 
-  List<Location> _seedLocations() {
-    return [
-      // MAGIC — toate cele 36 de locații din ANEXA MAGIC FEBR.
-      Location(id:'magic01',name:'MAGIC Alexandria',address:'Jud. Teleorman, Mun. Alexandria, Str. București, Bl. G103, parter',type:LocationType.magic,notes:'Anexa indică aproximativ 45–50 mp; tipul suprafeței nu este precizat explicit.'),
-      Location(id:'magic02',name:'MAGIC Brăila',address:'Jud. Brăila, Mun. Brăila, Str. Școlilor, nr. 52, bl. 15, parter',type:LocationType.magic,surfaceM2:133,facadeM2:264),
-      Location(id:'magic03',name:'MAGIC Brăila 2',address:'Jud. Brăila, Mun. Brăila, Calea Călărașilor, nr. 55, bl. 11, parter',type:LocationType.magic,surfaceM2:212,facadeM2:168),
-      Location(id:'magic04',name:'MAGIC Brăila 3',address:'Jud. Brăila, Mun. Brăila, Dorobanților, parter',type:LocationType.magic,surfaceM2:92,facadeM2:112),
-      Location(id:'magic05',name:'MAGIC Buzău',address:'Jud. Buzău, Mun. Buzău, Bd. Unirii, bl. 18D',type:LocationType.magic,surfaceM2:168,facadeM2:15),
-      Location(id:'magic06',name:'MAGIC Buzău 2',address:'Buzău, Str. 1 Decembrie 1918',type:LocationType.magic,facadeM2:5),
-      Location(id:'magic07',name:'MAGIC Sălăjan',address:'București, Bd. N. Grigorescu nr. 51A, clădirea C1, Sector 3',type:LocationType.magic,surfaceM2:200,facadeM2:75),
-      Location(id:'magic08',name:'MAGIC Octavian Goga',address:'București, Sector 3, Bd. Octavian Goga nr. 22, Tronson I, Magazin 1, parter',type:LocationType.magic,surfaceM2:107,facadeM2:140),
-      Location(id:'magic09',name:'MAGIC Herăstrău',address:'București, Sector 1, Str. Nicolae G. Caramfil nr. 4',type:LocationType.magic,facadeM2:250),
-      Location(id:'magic10',name:'MAGIC Theodor Pallady',address:'București, Str. Victor Brauner nr. 29 (Theodor Pallady)',type:LocationType.magic,facadeM2:150),
-      Location(id:'magic11',name:'MAGIC Giurgiului',address:'București, Sector 4, Șos. Giurgiului nr. 121, bl. 5, parter',type:LocationType.magic,facadeM2:60),
-      Location(id:'magic12',name:'MAGIC Popești-Leordeni',address:'Popești-Leordeni, Str. Amurgului nr. 34',type:LocationType.magic,surfaceM2:58),
-      Location(id:'magic13',name:'MAGIC Bragadiru',address:'Jud. Ilfov, Bragadiru, Str. Cristalului nr. 1',type:LocationType.magic,facadeM2:50),
-      Location(id:'magic14',name:'MAGIC Otopeni',address:'Jud. Ilfov, Otopeni, Str. 23 August nr. 204',type:LocationType.magic,facadeM2:60),
-      Location(id:'magic15',name:'MAGIC Colentina',address:'București, Str. Colentina nr. 76',type:LocationType.magic,facadeM2:60),
-      Location(id:'magic16',name:'MAGIC Prosper',address:'București, 13 Septembrie nr. 221 (Prosper)',type:LocationType.magic,facadeM2:60),
-      Location(id:'magic17',name:'MAGIC Andronache',address:'București, Colentina nr. 261 (Andronache)',type:LocationType.magic,facadeM2:95),
-      Location(id:'magic18',name:'MAGIC Constanța',address:'Jud. Constanța, Mun. Constanța, Bd. 1 Decembrie 1918 nr. 43, bl. L24',type:LocationType.magic,facadeM2:150),
-      Location(id:'magic19',name:'MAGIC Reșița',address:'Jud. Caraș-Severin, Mun. Reșița, Bd. Republicii nr. 24',type:LocationType.magic,surfaceM2:101,facadeM2:15),
-      Location(id:'magic20',name:'MAGIC Reșița 2',address:'Jud. Caraș-Severin, Mun. Reșița, Bd. Republicii nr. 13',type:LocationType.magic,surfaceM2:79,facadeM2:20),
-      Location(id:'magic21',name:'MAGIC Reșița 3',address:'Jud. Caraș-Severin, Mun. Reșița, Str. Ion Luca Caragiale nr. 1',type:LocationType.magic,facadeM2:20),
-      Location(id:'magic22',name:'MAGIC Drobeta Turnu Severin',address:'Jud. Mehedinți, Drobeta Turnu Severin, Bd. Tudor Vladimirescu nr. 130, bl. IS3A, parter',type:LocationType.magic,surfaceM2:109,facadeM2:10),
-      Location(id:'magic23',name:'MAGIC Focșani',address:'Jud. Vrancea, Mun. Focșani, Bd. Brăilei nr. 102, unitatea GF08',type:LocationType.magic,facadeM2:20),
-      Location(id:'magic24',name:'MAGIC Galați',address:'Jud. Galați, Mun. Galați, Bd. George Coșbuc nr. 2, parter hotel',type:LocationType.magic,facadeM2:544),
-      Location(id:'magic25',name:'MAGIC Hunedoara',address:'Jud. Hunedoara, Mun. Hunedoara, Bd. Dacia nr. 6 Bis',type:LocationType.magic,facadeM2:10),
-      Location(id:'magic26',name:'MAGIC Lugoj',address:'Jud. Timiș, Mun. Lugoj, Str. Bucegi nr. 28',type:LocationType.magic,facadeM2:30),
-      Location(id:'magic27',name:'MAGIC Lugoj 2',address:'Jud. Timiș, Mun. Lugoj, Str. Huniade nr. 5',type:LocationType.magic,surfaceM2:40,facadeM2:25),
-      Location(id:'magic28',name:'MAGIC Ploiești',address:'Ploiești, Șoseaua Nordului nr. 1',type:LocationType.magic,surfaceM2:200),
-      Location(id:'magic29',name:'MAGIC Slobozia 2',address:'Jud. Ialomița, Mun. Slobozia, Bd. Matei Basarab, bl. 35, sc. A',type:LocationType.magic,surfaceM2:240,facadeM2:130),
-      Location(id:'magic30',name:'MAGIC Sfântu Gheorghe',address:'Jud. Covasna, Mun. Sfântu Gheorghe, Str. Nicolae Iorga nr. 61, bl. 10, sc. E/A',type:LocationType.magic,facadeM2:38),
-      Location(id:'magic31',name:'MAGIC Sibiu Gara',address:'Sibiu, Piața 1 Decembrie 1918 (în gară)',type:LocationType.magic),
-      Location(id:'magic32',name:'MAGIC Târgu Jiu',address:'Jud. Gorj, Mun. Târgu Jiu, Str. Victoriei, bl. 35, sc. 1, parter',type:LocationType.magic,facadeM2:55),
-      Location(id:'magic33',name:'MAGIC Sediu București',address:'București, Calea Floreasca nr. 55',type:LocationType.magic,surfaceM2:334),
-      Location(id:'magic34',name:'MAGIC Slatina',address:'Slatina, Bd. Alexandru Ioan Cuza nr. 9',type:LocationType.magic,facadeM2:100),
-      Location(id:'magic35',name:'MAGIC Constanța Mamaia',address:'Constanța, Bd. Mamaia nr. 264',type:LocationType.magic,surfaceM2:350,notes:'Anexa indică 350 mp fără separare mochetă/fațadă'),
-      Location(id:'magic36',name:'MAGIC Constanța Traian',address:'Constanța, Str. Traian nr. 62',type:LocationType.magic,surfaceM2:425,notes:'Anexa indică 425 mp fără separare mochetă/fațadă'),
-      // MILLION — toate cele 67 de locații din ANEXE LUNARE- MILION.pdf
-      Location(id:'million01',name:'Ard:Revolutiei_83',address:'Ard:Revolutiei_83',type:LocationType.million,surfaceM2:127,notes:'Anexa: 301 mp total, 127 mp parțial.',contacts:[LocationContact(name:'KARINA RACZ',phone:'0755831706')]),
-      Location(id:'million02',name:'Bac:CaleaRepublicii_181',address:'Bac:CaleaRepublicii_181',type:LocationType.million,contacts:[LocationContact(name:'ALEXANDRU ANDRIAN',phone:'0733330524')]),
-      Location(id:'million03',name:'Bac:MihaiViteazu_2-4',address:'Bac:MihaiViteazu_2-4',type:LocationType.million,surfaceM2:161,contacts:[LocationContact(name:'MUTU IULIANA',phone:'0730076826')]),
-      Location(id:'million04',name:'Bam:Republicii_14A',address:'Bam:Republicii_14A',type:LocationType.million,surfaceM2:163,contacts:[LocationContact(name:'DIANA CIMPAN',phone:'0732650525')]),
-      Location(id:'million05',name:'Bam:Unirii 12',address:'Bam:Unirii 12',type:LocationType.million,surfaceM2:102,contacts:[LocationContact(name:'DIANA DURIJAN',phone:'0730899364')]),
-      Location(id:'million06',name:'Bra:NicolaeBalcescu 68',address:'Bra:NicolaeBalcescu 68',type:LocationType.million,surfaceM2:89,contacts:[LocationContact(name:'MARIA HERMECZI',phone:'0748685308')]),
-      Location(id:'million07',name:'Brl:Calea_Calarasilor_66',address:'Brl:Calea_Calarasilor_66',type:LocationType.million,contacts:[LocationContact(name:'COSMINA NEDELCU',phone:'0755365479')]),
-      Location(id:'million08',name:'Brl:Eminescu_59',address:'Brl:Eminescu_59',type:LocationType.million,contacts:[LocationContact(name:'ADRIAN GRIGORE',phone:'0723629259')]),
-      Location(id:'million09',name:'Braila 3',address:'Braila 3',type:LocationType.million,facadeM2:250,notes:'Anexa menționează fațadă 250 m².'),
-      Location(id:'million10',name:'Buz:Unirii 232',address:'Buz:Unirii 232',type:LocationType.million,surfaceM2:475),
-      Location(id:'million11',name:'Car:MihaiViteazul',address:'Car:MihaiViteazul',type:LocationType.million,surfaceM2:151,contacts:[LocationContact(name:'NICOLAE ARMAS',phone:'0790052585'),LocationContact(name:'CRISTINA COVACIU',phone:'0731014101')]),
-      Location(id:'million12',name:'Crv:Calea_Bucuresti_80',address:'Crv:Calea_Bucuresti_80',type:LocationType.million,surfaceM2:439,notes:'Anexa menționează separat terasă 49,6 m².',contacts:[LocationContact(name:'LOREDANA ZANFIRACHE',phone:'0765177503')]),
-      Location(id:'million13',name:'Crv:CaleaBucuresti_18',address:'Crv:CaleaBucuresti_18',type:LocationType.million,surfaceM2:199,contacts:[LocationContact(name:'TOMINA CALIN',phone:'0732650506')]),
-      Location(id:'million14',name:'Crv:IonMaiorescu_nr.3',address:'Crv:IonMaiorescu_nr.3',type:LocationType.million,contacts:[LocationContact(name:'ALEXANDRA DRAGHICI',phone:'0760188002')]),
-      Location(id:'million15',name:'Crv:PiataGarii - Daciei',address:'Crv:PiataGarii - Daciei',type:LocationType.million,surfaceM2:159,contacts:[LocationContact(name:'EMILIA PUNCIOIU',phone:'0763014497')]),
-      Location(id:'million16',name:'Craiova - George Enescu 76',address:'Craiova - George Enescu 76',type:LocationType.million,contacts:[LocationContact(name:'SIMONA BURDANGIU',phone:'0766905285')]),
-      Location(id:'million17',name:'Craiova - Bd Oltenia nr 50',address:'Craiova - Bd Oltenia nr 50',type:LocationType.million,surfaceM2:72,contacts:[LocationContact(name:'CRISTINA NICU',phone:'0726736680')]),
-      Location(id:'million18',name:'Craiova, bld Sarari /Henri Coanda',address:'Craiova, bld Sarari /Henri Coanda',type:LocationType.million,contacts:[LocationContact(name:'ANDREEA NICA',phone:'0769393550')]),
-      Location(id:'million19',name:'Craiova General Averescu',address:'Craiova General Averescu',type:LocationType.million,surfaceM2:90,contacts:[LocationContact(name:'ELENA OPREA',phone:'0763653557')]),
-      Location(id:'million20',name:'Craiova, str Brazda Novac -Lamaitei',address:'Craiova, str Brazda Novac -Lamaitei',type:LocationType.million,contacts:[LocationContact(name:'EMILIAN STRECHE',phone:'0760870784')]),
-      Location(id:'million21',name:'Craiova, 1 mai',address:'Craiova, 1 mai',type:LocationType.million,surfaceM2:106,contacts:[LocationContact(name:'ANDREEA BICU',phone:'0760712372')]),
-      Location(id:'million22',name:'Craiova - George Enescu nr 100',address:'Craiova - George Enescu nr 100',type:LocationType.million,contacts:[LocationContact(name:'ALEXANDRA DRAGHICI',phone:'0760188002')]),
-      Location(id:'million23',name:'Ctn:1Decembrie_1918',address:'Ctn:1Decembrie_1918',type:LocationType.million,surfaceM2:135,contacts:[LocationContact(name:'IULIA NASTASE',phone:'0737587406')]),
-      Location(id:'million24',name:'Ctn:Soveja',address:'Ctn:Soveja',type:LocationType.million,surfaceM2:140,notes:'Anexa: locația s-a mărit cu magazinul de încălțăminte.',contacts:[LocationContact(name:'ELENA CHIVU',phone:'0731610509')]),
-      Location(id:'million25',name:'Ctn:Tomis 391',address:'Ctn:Tomis 391',type:LocationType.million,surfaceM2:205,contacts:[LocationContact(name:'OANA FODULU',phone:'0724970734')]),
-      Location(id:'million26',name:'Ctn: Dezrobirii, nr 143',address:'Ctn: Dezrobirii, nr 143',type:LocationType.million,surfaceM2:115,contacts:[LocationContact(name:'CRISTINA BOTOSENCU',phone:'0747925278')]),
-      Location(id:'million27',name:'Cta Navodari',address:'Cta Navodari',type:LocationType.million,surfaceM2:74,contacts:[LocationContact(name:'FLORENTINA PANDELE',phone:'0784292802')]),
-      Location(id:'million28',name:'Foc:CaleaMoldovei_32',address:'Foc:CaleaMoldovei_32',type:LocationType.million,surfaceM2:107,contacts:[LocationContact(name:'BOGDAN CHIRIAC',phone:'0730025129')]),
-      Location(id:'million29',name:'Foc:Brailei_102',address:'Foc:Brailei_102',type:LocationType.million,contacts:[LocationContact(name:'NISAN PERINDAG',phone:'0732650523')]),
-      Location(id:'million30',name:'Foc:Unirii_14',address:'Foc:Unirii_14',type:LocationType.million,contacts:[LocationContact(name:'ALEXANDRA IOSIF',phone:'0731036859')]),
-      Location(id:'million31',name:'Foc:Unirii_65',address:'Foc:Unirii_65',type:LocationType.million,contacts:[LocationContact(name:'OVIDIU VATASOIU',phone:'0728977321'),LocationContact(name:'NICOLETA URZICA',phone:'0728398423')]),
-      Location(id:'million32',name:'Ias:Anastasie_Panu_31',address:'Ias:Anastasie_Panu_31',type:LocationType.million,contacts:[LocationContact(name:'LAURA LEFTER',phone:'0725795603')]),
-      Location(id:'million33',name:'Ias:TudorVladimirescu',address:'Ias:TudorVladimirescu',type:LocationType.million,surfaceM2:457,contacts:[LocationContact(name:'ANDREEA CALIMAN',phone:'0734010791'),LocationContact(name:'ELENA GRASU',phone:'0738099719'),LocationContact(name:'ANDREEA SULUGIUC',phone:'0739935667'),LocationContact(name:'LAVINIA GRADINARIU',phone:'0735784696'),LocationContact(name:'ROXANA HUJA',phone:'0725054453')]),
-      Location(id:'million34',name:'Oradea , str Transilvaniei nr 24',address:'Oradea , str Transilvaniei nr 24',type:LocationType.million,contacts:[LocationContact(name:'ALEXANDRA SANDOR',phone:'0758044994')]),
-      Location(id:'million35',name:'Pit:MaiorSantu_D2',address:'Pit:MaiorSantu_D2',type:LocationType.million,surfaceM2:139,contacts:[LocationContact(name:'SANDRA STANCESCU',phone:'0741438284')]),
-      Location(id:'million36',name:'Plo:Republicii_17-25-1',address:'Plo:Republicii_17-25-1',type:LocationType.million,surfaceM2:154,contacts:[LocationContact(name:'STEFAN BAILESCU',phone:'0769398966')]),
-      Location(id:'million37',name:'Plo:Nordului_1A',address:'Plo:Nordului_1A',type:LocationType.million,surfaceM2:294,contacts:[LocationContact(name:'TUDOR GAVRILOIU',phone:'0724107970'),LocationContact(name:'GEORGIANA CISMARU',phone:'0721356133')]),
-      Location(id:'million38',name:'Rmv:ReginaMaria_4',address:'Rmv:ReginaMaria_4',type:LocationType.million,surfaceM2:351,contacts:[LocationContact(name:'GEORGE NICOLAE',phone:'0724220687'),LocationContact(name:'DIANA DUMITRA',phone:'0766643255')]),
-      Location(id:'million39',name:'Rmv:MateiBasarab_1',address:'Rmv:MateiBasarab_1',type:LocationType.million,contacts:[LocationContact(name:'ANDREEA DRAGOMIR',phone:'0765058278')]),
-      Location(id:'million40',name:'Rmv:Tineretului',address:'Rmv:Tineretului',type:LocationType.million,contacts:[LocationContact(name:'ANDREEA MIJA',phone:'0756623935')]),
-      Location(id:'million41',name:'Rmv:Rapsodiei_19',address:'Rmv:Rapsodiei_19',type:LocationType.million,contacts:[LocationContact(name:'ANA MARIA CIOCHINA',phone:'0742898106')]),
-      Location(id:'million42',name:'Sgm:1Decembrie1918',address:'Sgm:1Decembrie1918',type:LocationType.million,surfaceM2:93,contacts:[LocationContact(name:'ANAMARIA AILOAIE',phone:'0733330490')]),
-      Location(id:'million43',name:'Sgm:Cuza Voda',address:'Sgm:Cuza Voda',type:LocationType.million,surfaceM2:75,contacts:[LocationContact(name:'STEFANIA ILES',phone:'0734703667')]),
-      Location(id:'million44',name:'Slo:MateiBasarab_K1',address:'Slo:MateiBasarab_K1',type:LocationType.million,contacts:[LocationContact(name:'MADALINA PRELIPCEAN',phone:'0735787761')]),
-      Location(id:'million45',name:'Sib:Shopping_City',address:'Sib:Shopping_City / Selimbar',type:LocationType.million,surfaceM2:150,contacts:[LocationContact(name:'VIOLETA TUDOR',phone:'0752549262')]),
-      Location(id:'million46',name:'Sib:Promenada',address:'Sib:Promenada',type:LocationType.million,contacts:[LocationContact(name:'LAVINIA VATAU',phone:'0768999793')]),
-      Location(id:'million47',name:'Stm:AlexandruIoanCuza 2',address:'Stm:AlexandruIoanCuza 2',type:LocationType.million,contacts:[LocationContact(name:'ANDREEA TULIAN',phone:'0750824911')]),
-      Location(id:'million48',name:'Stm:Careiului 17',address:'Stm:Careiului 17',type:LocationType.million,contacts:[LocationContact(name:'ONDINA PRINTI',phone:'0752661435'),LocationContact(name:'ALEXANDRA SZARAZ',phone:'0771041469'),LocationContact(name:'VANESSA POP',phone:'0745345380')]),
-      Location(id:'million49',name:'Stm:Independentei 53',address:'Stm:Independentei 53',type:LocationType.million,surfaceM2:51,contacts:[LocationContact(name:'HENRIETTA BARTHA',phone:'0751243463')]),
-      Location(id:'million50',name:'Sf Gheorghe, str Lunca Oltului nr 46',address:'Sf Gheorghe, str Lunca Oltului nr 46',type:LocationType.million,contacts:[LocationContact(name:'ANA MARIA TREFAN',phone:'0733560824')]),
-      Location(id:'million51',name:'Tgj:Eroilor_nr.6',address:'Tgj:Eroilor_nr.6',type:LocationType.million,surfaceM2:300,contacts:[LocationContact(name:'IRINEL MALAESCU',phone:'0732650510'),LocationContact(name:'PREDOI IONELA',phone:'0764286861')]),
-      Location(id:'million52',name:'Tgj:9Mai',address:'Tgj:9Mai',type:LocationType.million,contacts:[LocationContact(name:'RALUCA CALINA',phone:'0742891086')]),
-      Location(id:'million53',name:'Tgv:ConstantinBrancoveanu_58',address:'Tgv:ConstantinBrancoveanu_58',type:LocationType.million,surfaceM2:90,contacts:[LocationContact(name:'NICOLETA MIHALCIOIU',phone:'0766644272')]),
-      Location(id:'million54',name:'Tgv:Independentei_O2 (Nicolae Radian)',address:'Tgv:Independentei_O2 (Nicolae Radian)',type:LocationType.million,surfaceM2:148,contacts:[LocationContact(name:'MARIUS RADU',phone:'0730015087'),LocationContact(name:'GABRIELA NICOLAE',phone:'0724641567')]),
-      Location(id:'million55',name:'Tgv:Dambovita_Mall',address:'Tgv:Dambovita_Mall',type:LocationType.million,surfaceM2:279,contacts:[LocationContact(name:'ALEXANDRU ANGHEL',phone:'0732890921')]),
-      Location(id:'million56',name:'Targoviste 4 (unirii nr 60 )',address:'Targoviste 4 (unirii nr 60 )',type:LocationType.million,contacts:[LocationContact(name:'GINA PANAIT',phone:'0731810865')]),
-      Location(id:'million57',name:'Tim:PiataMarasti_nr.1-2',address:'Tim:PiataMarasti_nr.1-2',type:LocationType.million,contacts:[LocationContact(name:'GIORGIANA STANCIU',phone:'0747568526')]),
-      Location(id:'million58',name:'Bucuresti- Octavian Goga',address:'Bucuresti- Octavian Goga',type:LocationType.million,contacts:[LocationContact(name:'CLAUDIA PARASCHIV',phone:'0730233505')]),
-      Location(id:'million59',name:'Bucuresti- Decebal',address:'Bucuresti- Decebal',type:LocationType.million,surfaceM2:200,contacts:[LocationContact(name:'IONELA CIMPOERU',phone:'0720058965')]),
-      Location(id:'million60',name:'Bucuresti- Crangasi',address:'Bucuresti- Crangasi',type:LocationType.million,contacts:[LocationContact(name:'ANAMARIA NANCY',phone:'0734200358')]),
-      Location(id:'million61',name:'Bucuresti - Ctin Brancoveanu',address:'Bucuresti - Ctin Brancoveanu',type:LocationType.million,surfaceM2:70,contacts:[LocationContact(name:'RADU LUMINITA',phone:'0730531020')]),
-      Location(id:'million62',name:'Bucuresti - 13 septembrie',address:'Bucuresti - 13 septembrie',type:LocationType.million,surfaceM2:80,contacts:[LocationContact(name:'ISABELA TUDORA',phone:'0766748597')]),
-      Location(id:'million63',name:'Slatina',address:'Slatina',type:LocationType.million,contacts:[LocationContact(name:'ALECSANDRA BOGHEANU',phone:'0757176083')]),
-      Location(id:'million64',name:'Bucuresti bld Drumul Taberei',address:'Bucuresti bld Drumul Taberei',type:LocationType.million,contacts:[LocationContact(name:'IONUT ALEXANDRU',phone:'0733330487')]),
-      Location(id:'million65',name:'Sibiu Str Lunga',address:'Sibiu Str Lunga',type:LocationType.million,contacts:[LocationContact(name:'MARIA MALAI',phone:'0743354536')]),
-      Location(id:'million66',name:'Ploiesti Veronica Micle',address:'Ploiesti Veronica Micle',type:LocationType.million,contacts:[LocationContact(name:'ANDREI CISMARU',phone:'0739935665')]),
-      Location(id:'million67',name:'Piata Victoriei Ploiesti',address:'Piata Victoriei Ploiesti',type:LocationType.million,contacts:[LocationContact(name:'MIHAELA STOICA',phone:'0799923020')]),
-    ];
-  }
-
   final List<StreamSubscription<dynamic>> _coreSubscriptions = [];
   final List<StreamSubscription<dynamic>> _financialSubscriptions = [];
   String? _financialTeamScope;
@@ -843,542 +733,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   final Map<String, String> _financeCache = {};
   final Map<String, String?> _userTeamCache = {};
   String? coreSyncError;
-
-  Map<String, dynamic> _locationMap(Location l) => {
-    'name': l.name,
-    'address': l.address,
-    'type': l.type.name,
-    'categoryId': l.categoryId,
-    'status': l.status.name,
-    'latitude': l.latitude,
-    'longitude': l.longitude,
-    'phone': l.phone,
-    'contacts': l.contacts.map((c) => {'name': c.name, 'phone': c.phone, 'role': c.role, 'smsEnabled': c.smsEnabled}).toList(),
-    'surfaceM2': l.surfaceM2,
-    'facadeM2': l.facadeM2,
-    'notes': l.notes,
-    'active': l.active,
-  };
-
-  Location _locationFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    LocationType type = LocationType.million;
-    final typeText = (d['type'] ?? 'million').toString();
-    for (final item in LocationType.values) {
-      if (item.name == typeText) type = item;
-    }
-    final rawContacts = d['contacts'];
-    final contacts = <LocationContact>[];
-    if (rawContacts is List) {
-      for (final item in rawContacts) {
-        if (item is Map) {
-          contacts.add(LocationContact(
-            name: (item['name'] ?? '').toString(),
-            phone: (item['phone'] ?? '').toString(),
-            role: (item['role'] ?? 'Manager').toString(),
-            smsEnabled: item['smsEnabled'] != false,
-          ));
-        }
-      }
-    }
-    double? numberOrNull(dynamic value) {
-      if (value == null) return null;
-      if (value is num) return value.toDouble();
-      return double.tryParse(value.toString());
-    }
-    var status = LocationStatus.open;
-    final statusText = (d['status'] ?? (d['active'] == false ? 'permanentlyClosed' : 'open')).toString();
-    for (final value in LocationStatus.values) {
-      if (value.name == statusText) status = value;
-    }
-    final categoryId = (d['categoryId'] ?? defaultCategoryIdForType(type)).toString();
-    return Location(
-      id: doc.id,
-      name: (d['name'] ?? doc.id).toString(),
-      address: (d['address'] ?? '').toString(),
-      type: type,
-      categoryId: categoryId,
-      status: status,
-      latitude: numberOrNull(d['latitude']),
-      longitude: numberOrNull(d['longitude']),
-      phone: d['phone']?.toString(),
-      contacts: contacts,
-      surfaceM2: numberOrNull(d['surfaceM2']) ?? 0,
-      facadeM2: numberOrNull(d['facadeM2']) ?? 0,
-      notes: (d['notes'] ?? '').toString(),
-      active: d['active'] != false,
-    );
-  }
-
-  Map<String, dynamic> _categoryMap(LocationCategory c) => {
-    'name': c.name,
-    'colorValue': c.colorValue,
-    'active': c.active,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  LocationCategory _categoryFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    return LocationCategory(
-      id: doc.id,
-      name: (d['name'] ?? doc.id).toString(),
-      colorValue: d['colorValue'] is num ? (d['colorValue'] as num).toInt() : int.tryParse('${d['colorValue']}') ?? Colors.blueGrey.value,
-      active: d['active'] != false,
-    );
-  }
-
-  Map<String, dynamic> _functionMap(FunctionDefinition f) => {
-    'name': f.name,
-    'iconKey': f.iconKey,
-    'badgeKeys': f.badgeKeys,
-    'colorValue': f.colorValue,
-    'permissions': f.permissions.toList()..sort(),
-    'active': f.active,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  FunctionDefinition _functionFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    final raw = d['permissions'];
-    final rawIconKey = (d['iconKey'] ?? 'badge_driver').toString();
-    final iconKey = rawIconKey == 'badge_coordinator' || rawIconKey == 'badge_machine' ? 'badge_worker' : rawIconKey;
-    final badgeKeys = (d['badgeKeys'] is List
-        ? (d['badgeKeys'] as List).map((e) => e.toString())
-        : <String>[iconKey])
-      .where((e) => e.isNotEmpty && e != 'badge_coordinator')
-      .map((e) => e == 'badge_machine' ? 'badge_worker' : e)
-      .toSet()
-      .take(3)
-      .toList();
-    if (badgeKeys.isEmpty) badgeKeys.add(iconKey);
-    return FunctionDefinition(
-      id: doc.id,
-      name: (d['name'] ?? doc.id).toString(),
-      iconKey: iconKey,
-      badgeKeys: badgeKeys,
-      colorValue: d['colorValue'] is num ? (d['colorValue'] as num).toInt() : int.tryParse('${d['colorValue']}') ?? Colors.blueGrey.value,
-      permissions: raw is List ? raw.map((e) => e.toString()).toSet() : <String>{},
-      active: d['active'] != false,
-    );
-  }
-
-  Map<String, dynamic> _teamMap(Team t) => {
-    'name': t.name,
-    'members': t.members,
-    'carId': t.carId,
-    'financialManagerId': t.financialManagerId,
-    'active': t.active,
-  };
-
-  Team _teamFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    final raw = d['members'];
-    return Team(
-      id: doc.id,
-      name: (d['name'] ?? doc.id).toString(),
-      members: raw is List ? raw.map((e) => e.toString()).toList() : <String>[],
-      carId: d['carId']?.toString(),
-      financialManagerId: d['financialManagerId']?.toString(),
-      active: d['active'] != false,
-    );
-  }
-
-  String? _dateString(DateTime? d) => d?.toIso8601String();
-
-  DateTime? _dateFrom(dynamic value) {
-    if (value == null) return null;
-    if (value is Timestamp) return value.toDate();
-    return DateTime.tryParse(value.toString());
-  }
-
-  Map<String, dynamic> _carMap(Car c) => {
-    'plate': c.plate,
-    'makeModel': c.makeModel,
-    'active': c.active,
-    'rcaUntil': _dateString(c.rcaUntil),
-    'itpUntil': _dateString(c.itpUntil),
-    'rovinietaUntil': _dateString(c.rovinietaUntil),
-    'averageConsumption': c.averageConsumption,
-    'fuelPricePerLiter': c.fuelPricePerLiter,
-    'fuelType': c.fuelType,
-  };
-
-  Car _carFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    return Car(
-      id: doc.id,
-      plate: (d['plate'] ?? '').toString(),
-      makeModel: (d['makeModel'] ?? '').toString(),
-      active: d['active'] != false,
-      rcaUntil: _dateFrom(d['rcaUntil']),
-      itpUntil: _dateFrom(d['itpUntil']),
-      rovinietaUntil: _dateFrom(d['rovinietaUntil']),
-      averageConsumption: (d['averageConsumption'] is num) ? (d['averageConsumption'] as num).toDouble() : 0,
-      fuelPricePerLiter: (d['fuelPricePerLiter'] is num) ? (d['fuelPricePerLiter'] as num).toDouble() : 0,
-      fuelType: (d['fuelType'] ?? 'Motorină').toString(),
-    );
-  }
-
-  Map<String, dynamic> _scheduleMap(WorkSchedule s) => {
-    'teamId': s.teamId,
-    'graphId': s.graphId,
-    'graphName': s.graphName,
-    'date': Timestamp.fromDate(s.date),
-    'active': s.active,
-    'closed': s.closed,
-    'started': s.started,
-    'paused': s.paused,
-    'postponed': s.postponed,
-    'autoProposed': s.autoProposed,
-    'planAlertAt': s.planAlertAt == null ? null : Timestamp.fromDate(s.planAlertAt!),
-    'planAlertReason': s.planAlertReason,
-    'lastRecalculatedAt': s.lastRecalculatedAt == null ? null : Timestamp.fromDate(s.lastRecalculatedAt!),
-    'recalculationCount': s.recalculationCount,
-    'learningExplanation': s.learningExplanation,
-    'learningConfidence': s.learningConfidence,
-    'learningSamples': s.learningSamples,
-    'departureName': s.departureName,
-    'departureLatitude': s.departureLatitude,
-    'departureLongitude': s.departureLongitude,
-    'returnName': s.returnName,
-    'returnLatitude': s.returnLatitude,
-    'returnLongitude': s.returnLongitude,
-    'items': s.items.map((i) => {
-      'locationId': i.locationId,
-      'locationNameSnapshot': i.locationNameSnapshot,
-      'addressSnapshot': i.addressSnapshot,
-      'typeSnapshot': i.typeSnapshot.name,
-      'categoryIdSnapshot': i.categoryIdSnapshot,
-      'order': i.order,
-      'transferred': i.transferred,
-      'facadePlanned': i.facadePlanned,
-    }).toList(),
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  WorkSchedule _scheduleFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    final rawItems = d['items'];
-    final items = <ScheduleItem>[];
-    if (rawItems is List) {
-      for (final raw in rawItems) {
-        if (raw is! Map) continue;
-        var type = LocationType.million;
-        final typeText = (raw['typeSnapshot'] ?? 'million').toString();
-        for (final value in LocationType.values) {
-          if (value.name == typeText) type = value;
-        }
-        items.add(ScheduleItem(
-          locationId: (raw['locationId'] ?? '').toString(),
-          locationNameSnapshot: (raw['locationNameSnapshot'] ?? '').toString(),
-          addressSnapshot: (raw['addressSnapshot'] ?? '').toString(),
-          typeSnapshot: type,
-          categoryIdSnapshot: (raw['categoryIdSnapshot'] ?? defaultCategoryIdForType(type)).toString(),
-          order: raw['order'] is num ? (raw['order'] as num).toInt() : int.tryParse('${raw['order']}') ?? 0,
-          transferred: raw['transferred'] == true,
-          facadePlanned: raw['facadePlanned'] == true,
-        ));
-      }
-    }
-    items.sort((a, b) => a.order.compareTo(b.order));
-    return WorkSchedule(
-      id: doc.id,
-      teamId: (d['teamId'] ?? '').toString(),
-      graphId: (d['graphId'] ?? '').toString().trim().isNotEmpty
-          ? (d['graphId'] ?? '').toString()
-          : 'legacy_${(d['teamId'] ?? '').toString()}_${(_dateFrom(d['date']) ?? DateTime.now()).year}_${(_dateFrom(d['date']) ?? DateTime.now()).month.toString().padLeft(2, '0')}',
-      graphName: (d['graphName'] ?? '').toString().trim().isNotEmpty
-          ? (d['graphName'] ?? '').toString()
-          : graphDefaultName(_dateFrom(d['date']) ?? DateTime.now()),
-      date: _dateFrom(d['date']) ?? DateTime.now(),
-      items: items,
-      active: d['active'] != false,
-      closed: d['closed'] == true,
-      started: d['started'] == true,
-      paused: d['paused'] == true,
-      postponed: d['postponed'] == true,
-      autoProposed: d['autoProposed'] == true,
-      planAlertAt: _dateFrom(d['planAlertAt']),
-      planAlertReason: (d['planAlertReason'] ?? '').toString(),
-      lastRecalculatedAt: _dateFrom(d['lastRecalculatedAt']),
-      recalculationCount: d['recalculationCount'] is num ? (d['recalculationCount'] as num).toInt() : int.tryParse('${d['recalculationCount']}') ?? 0,
-      learningExplanation: (d['learningExplanation'] ?? '').toString(),
-      learningConfidence: d['learningConfidence'] is num ? (d['learningConfidence'] as num).toDouble() : 0,
-      learningSamples: d['learningSamples'] is num ? (d['learningSamples'] as num).toInt() : 0,
-      departureName: (d['departureName'] ?? '').toString(),
-      departureLatitude: d['departureLatitude'] is num ? (d['departureLatitude'] as num).toDouble() : null,
-      departureLongitude: d['departureLongitude'] is num ? (d['departureLongitude'] as num).toDouble() : null,
-      returnName: (d['returnName'] ?? '').toString(),
-      returnLatitude: d['returnLatitude'] is num ? (d['returnLatitude'] as num).toDouble() : null,
-      returnLongitude: d['returnLongitude'] is num ? (d['returnLongitude'] as num).toDouble() : null,
-    );
-  }
-
-  Map<String, dynamic> _recordMap(CentralizerRecord r) => {
-    'teamId': r.teamId,
-    'locationId': r.locationId,
-    'type': r.type.name,
-    'locationNameSnapshot': r.locationNameSnapshot,
-    'addressSnapshot': r.addressSnapshot,
-    'waitingStartedAt': r.waitingStartedAt == null ? null : Timestamp.fromDate(r.waitingStartedAt!),
-    'waitingEndedAt': r.waitingEndedAt == null ? null : Timestamp.fromDate(r.waitingEndedAt!),
-    'startedAt': r.startedAt == null ? null : Timestamp.fromDate(r.startedAt!),
-    'finishedAt': r.finishedAt == null ? null : Timestamp.fromDate(r.finishedAt!),
-    'status': r.status.name,
-    'refusalReason': r.refusalReason,
-    'keptForLearning': r.keptForLearning,
-    'facadePlanned': r.facadePlanned,
-    'facadeDone': r.facadeDone,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  CentralizerRecord _recordFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    var type = LocationType.million;
-    for (final value in LocationType.values) {
-      if (value.name == (d['type'] ?? 'million').toString()) type = value;
-    }
-    var status = WorkAttemptStatus.waitingAccess;
-    for (final value in WorkAttemptStatus.values) {
-      if (value.name == (d['status'] ?? 'waitingAccess').toString()) status = value;
-    }
-    return CentralizerRecord(
-      id: doc.id,
-      teamId: (d['teamId'] ?? '').toString(),
-      locationId: (d['locationId'] ?? '').toString(),
-      type: type,
-      locationNameSnapshot: (d['locationNameSnapshot'] ?? '').toString(),
-      addressSnapshot: (d['addressSnapshot'] ?? '').toString(),
-      waitingStartedAt: _dateFrom(d['waitingStartedAt']),
-      waitingEndedAt: _dateFrom(d['waitingEndedAt']),
-      startedAt: _dateFrom(d['startedAt']),
-      finishedAt: _dateFrom(d['finishedAt']),
-      status: status,
-      refusalReason: d['refusalReason']?.toString(),
-      keptForLearning: d['keptForLearning'] != false,
-      facadePlanned: d['facadePlanned'] == true,
-      facadeDone: d['facadeDone'] == true,
-    );
-  }
-
-  Map<String, dynamic> _notificationMap(AppNotification n) => {
-    'userId': n.userId,
-    'title': n.title,
-    'message': n.message,
-    'createdAt': Timestamp.fromDate(n.createdAt),
-    'read': n.read,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  AppNotification _notificationFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    return AppNotification(
-      id: doc.id,
-      userId: (d['userId'] ?? '').toString(),
-      title: (d['title'] ?? '').toString(),
-      message: (d['message'] ?? '').toString(),
-      createdAt: _dateFrom(d['createdAt']) ?? DateTime.now(),
-      read: d['read'] == true,
-    );
-  }
-
-  double _doubleFrom(dynamic value, [double fallback = 0]) {
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? fallback;
-  }
-
-  Map<String, dynamic> _expenseMap(Expense e) => {
-    'teamId': e.teamId,
-    'settlementId': e.settlementId,
-    'category': e.category,
-    'description': e.description,
-    'amount': e.amount,
-    'date': Timestamp.fromDate(e.date),
-    'documentType': e.documentType.name,
-    'documentNumber': e.documentNumber,
-    'supplier': e.supplier,
-    'liters': e.liters,
-    'pricePerLiter': e.pricePerLiter,
-    'documentImageBase64': e.documentImageBase64,
-    'imageFingerprint': e.imageFingerprint,
-    'ocrRawText': e.ocrRawText,
-    'ocrConfidence': e.ocrConfidence,
-    'confirmed': e.confirmed,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  Expense _expenseFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    var docType = ExpenseDocumentType.fiscalReceipt;
-    for (final value in ExpenseDocumentType.values) {
-      if (value.name == (d['documentType'] ?? '').toString()) docType = value;
-    }
-    return Expense(
-      id: doc.id,
-      teamId: (d['teamId'] ?? '').toString(),
-      settlementId: d['settlementId']?.toString(),
-      category: (d['category'] ?? 'Alte cheltuieli').toString(),
-      description: (d['description'] ?? '').toString(),
-      amount: _doubleFrom(d['amount']),
-      date: _dateFrom(d['date']) ?? DateTime.now(),
-      documentType: docType,
-      documentNumber: (d['documentNumber'] ?? '').toString(),
-      supplier: (d['supplier'] ?? '').toString(),
-      liters: d['liters'] == null ? null : _doubleFrom(d['liters']),
-      pricePerLiter: d['pricePerLiter'] == null ? null : _doubleFrom(d['pricePerLiter']),
-      documentImageBase64: (d['documentImageBase64'] ?? '').toString(),
-      imageFingerprint: (d['imageFingerprint'] ?? '').toString(),
-      ocrRawText: (d['ocrRawText'] ?? '').toString(),
-      ocrConfidence: _doubleFrom(d['ocrConfidence']),
-      confirmed: d['confirmed'] != false,
-    );
-  }
-
-  Map<String, dynamic> _perDiemMap(PerDiemEntry d) => {
-    'teamId': d.teamId,
-    'settlementId': d.settlementId,
-    'memberId': d.memberId,
-    'date': Timestamp.fromDate(d.date),
-    'amount': d.amount,
-    'status': d.status.name,
-    'method': d.method?.name,
-    'distributedBy': d.distributedBy,
-    'distributedAt': d.distributedAt == null ? null : Timestamp.fromDate(d.distributedAt!),
-    'confirmedAt': d.confirmedAt == null ? null : Timestamp.fromDate(d.confirmedAt!),
-    'received': d.received,
-    'actualReceivedAmount': d.actualReceivedAmount,
-    'supplementaryFor': d.supplementaryFor,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  PerDiemEntry _perDiemFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    var status = PerDiemStatus.notGranted;
-    for (final value in PerDiemStatus.values) {
-      if (value.name == (d['status'] ?? '').toString()) status = value;
-    }
-    PerDiemPaymentMethod? method;
-    for (final value in PerDiemPaymentMethod.values) {
-      if (value.name == (d['method'] ?? '').toString()) method = value;
-    }
-    return PerDiemEntry(
-      id: doc.id,
-      teamId: (d['teamId'] ?? '').toString(),
-      settlementId: d['settlementId']?.toString(),
-      memberId: (d['memberId'] ?? '').toString(),
-      date: _dateFrom(d['date']) ?? DateTime.now(),
-      amount: _doubleFrom(d['amount']),
-      status: status,
-      method: method,
-      distributedBy: d['distributedBy']?.toString(),
-      distributedAt: _dateFrom(d['distributedAt']),
-      confirmedAt: _dateFrom(d['confirmedAt']),
-      received: d['received'] is bool ? d['received'] as bool : null,
-      actualReceivedAmount: d['actualReceivedAmount'] == null ? null : _doubleFrom(d['actualReceivedAmount']),
-      supplementaryFor: d['supplementaryFor']?.toString(),
-    );
-  }
-
-  Map<String, dynamic> _settlementMap(TravelSettlement s) => {
-    'teamId': s.teamId,
-    'name': s.name,
-    'startDate': Timestamp.fromDate(s.startDate),
-    'endDate': s.endDate == null ? null : Timestamp.fromDate(s.endDate!),
-    'managerId': s.managerId,
-    'receivedDeparture': s.departureTotal,
-    'receivedDuring': s.duringTotal,
-    'receivedEntries': s.receivedEntries.map((e)=>{
-      'id': e.id, 'kind': e.kind, 'amount': e.amount, 'method': e.method, 'fromName': e.fromName, 'date': Timestamp.fromDate(e.date),
-    }).toList(),
-    'perDiemRate': s.perDiemRate,
-    'closed': s.closed,
-    'createdAt': Timestamp.fromDate(s.createdAt),
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  TravelSettlement _settlementFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    final receivedEntries=<ReceivedMoneyEntry>[];
-    final rawReceived=d['receivedEntries'];
-    if(rawReceived is List){
-      for(final raw in rawReceived){
-        if(raw is! Map)continue;
-        receivedEntries.add(ReceivedMoneyEntry(
-          id:(raw['id']??idNow()).toString(),
-          kind:(raw['kind']??'during').toString(),
-          amount:_doubleFrom(raw['amount']),
-          method:(raw['method']??'Cash').toString(),
-          fromName:(raw['fromName']??'').toString(),
-          date:_dateFrom(raw['date'])??DateTime.now(),
-        ));
-      }
-    }
-    return TravelSettlement(
-      id: doc.id,
-      teamId: (d['teamId'] ?? '').toString(),
-      name: (d['name'] ?? 'Deplasare').toString(),
-      startDate: _dateFrom(d['startDate']) ?? DateTime.now(),
-      endDate: _dateFrom(d['endDate']),
-      managerId: d['managerId']?.toString(),
-      receivedDeparture: _doubleFrom(d['receivedDeparture']),
-      receivedDuring: _doubleFrom(d['receivedDuring']),
-      receivedEntries: receivedEntries,
-      perDiemRate: _doubleFrom(d['perDiemRate'], settings.defaultPerDiem),
-      closed: d['closed'] == true,
-      createdAt: _dateFrom(d['createdAt']),
-    );
-  }
-
-  Map<String, dynamic> _financeMap(TeamFinance f) => {
-    'teamId': f.teamId,
-    'managerId': f.managerId,
-    'receivedDeparture': f.departureTotal,
-    'receivedDuring': f.duringTotal,
-    'receivedEntries': f.receivedEntries.map((e)=>{
-      'id': e.id, 'kind': e.kind, 'amount': e.amount, 'method': e.method, 'fromName': e.fromName, 'date': Timestamp.fromDate(e.date),
-    }).toList(),
-    'perDiemRate': f.perDiemRate,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  TeamFinance _financeFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    final receivedEntries=<ReceivedMoneyEntry>[];
-    final rawReceived=d['receivedEntries'];
-    if(rawReceived is List){
-      for(final raw in rawReceived){
-        if(raw is! Map)continue;
-        receivedEntries.add(ReceivedMoneyEntry(
-          id:(raw['id']??idNow()).toString(),
-          kind:(raw['kind']??'during').toString(),
-          amount:_doubleFrom(raw['amount']),
-          method:(raw['method']??'Cash').toString(),
-          fromName:(raw['fromName']??'').toString(),
-          date:_dateFrom(raw['date'])??DateTime.now(),
-        ));
-      }
-    }
-    return TeamFinance(
-      teamId: doc.id,
-      managerId: d['managerId']?.toString(),
-      receivedDeparture: _doubleFrom(d['receivedDeparture']),
-      receivedDuring: _doubleFrom(d['receivedDuring']),
-      receivedEntries: receivedEntries,
-      perDiemRate: _doubleFrom(d['perDiemRate'], settings.defaultPerDiem),
-    );
-  }
-
-  String _encoded(Map<String, dynamic> value) => jsonEncode(value.map((key, value) {
-    if (value is FieldValue) return MapEntry(key, '<serverTimestamp>');
-    if (value is Timestamp) return MapEntry(key, value.toDate().toIso8601String());
-    if (value is List) {
-      return MapEntry(key, value.map((e) {
-        if (e is Map) return e.map((k, v) => MapEntry(k.toString(), v is Timestamp ? v.toDate().toIso8601String() : v));
-        return e;
-      }).toList());
-    }
-    return MapEntry(key, value);
-  }));
 
   void _applyTeamMembership() {
     for (final u in users) {
@@ -1617,13 +971,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
   }
 
-  void _startCoreSync() {
-    final db = FirebaseFirestore.instance;
-
-    _startDefinitionsSync(db);
-
-    _startDirectorySync(db);
-
+  void _startOwnProfileSync(FirebaseFirestore db) {
     // Datele private ale contului propriu nu sunt in directorul public.
     if (!isAdmin) _coreSubscriptions.add(
       db.collection('users').doc(currentUserId).snapshots().listen((snap) {
@@ -1653,6 +1001,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Profil propriu: $e'); }),
     );
 
+  }
+
+  void _startOperationsSync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       db.collection('teams').snapshots().listen((snap) {
         final list = snap.docs.map(_teamFromDoc).toList()..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
@@ -1753,6 +1104,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     );
 
 
+  }
+
+  void _startNotificationSync(FirebaseFirestore db) {
     final Query<Map<String, dynamic>> notificationQuery = isAdmin
         ? db.collection('notifications')
         : db.collection('notifications').where('userId', isEqualTo: currentUserId);
@@ -1797,6 +1151,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       }),
     );
 
+  }
+
+  void _startChatSync(FirebaseFirestore db) {
     String visibleSenderName(Map<String, dynamic> data) {
       final senderId = (data['senderId'] ?? '').toString();
       if (!isAdmin && _hiddenUserIds.contains(senderId)) return 'Sistem';
@@ -1881,6 +1238,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       }),
     );
 
+  }
+
+  void _startSettingsSync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       db.collection('meta').doc('uiSettings').snapshots().listen((snap) {
         final d = snap.data();
@@ -1928,6 +1288,21 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         if (mounted && isAdmin) setState(() => coreSyncError = 'Setări UI: $e');
       }),
     );
+
+  }
+
+  void _startCoreSync() {
+    final db = FirebaseFirestore.instance;
+
+    _startDefinitionsSync(db);
+
+    _startDirectorySync(db);
+
+    _startOwnProfileSync(db);
+    _startOperationsSync(db);
+    _startNotificationSync(db);
+    _startChatSync(db);
+    _startSettingsSync(db);
 
     if (isAdmin) {
       _startAuditSync(db);
