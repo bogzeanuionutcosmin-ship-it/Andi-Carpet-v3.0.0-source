@@ -189,6 +189,8 @@ Bază: InfoCard 834c58350910fa9f290c5fcb489f1d87188927ef, CI run 38392826791 5/5
 
 Corpul independent păstrează lățimea 230, raza 18, gradientul, paddingul 18, spațierile și stilurile. Test Flutter direct verifică aspectul și leading; test structural confirmă injectarea și adapterul. După extragerea InfoCard, summary_cards.dart conținea doar această clasă și directiva part of; analiza directă a fișierului a confirmat că nu există alte declarații sau efecte. Clasa este mutată, iar fișierul gol și directiva sa sunt eliminate ca rezultat demonstrat al conversiei, nu pe baza căutării lexicale a referințelor.
 
-Inventar: 141 Dart (120 lib, 20 teste, 1 script), 74 parts, 67 biblioteci (46 lib, 20 test, 1 script), zero lipsuri/orfani/duplicate/cicluri. Local 152 Python, 1 Node, 4 verificări PDF/rutare și 117 hashuri protejate PASS; CI pentru codul acestui lot urmează și trebuie să treacă toate cele 5 joburi.
+Inventar: 141 Dart (120 lib, 20 teste, 1 script), 74 parts, 67 biblioteci (46 lib, 20 test, 1 script), zero lipsuri/orfani/duplicate/cicluri. Local 152 Python, 1 Node, 4 verificări PDF/rutare și 117 hashuri protejate PASS; CI run `38393426208` pe `d77ee12d84778d7e0e8c3882f1515c4fc1db1d6c`: **5/5 SUCCESS**, inclusiv testul widget StatCard și web build.
 
 PR #20 PDF/PV Magic/Million/download/web/Android și PR #29 OCR/financial/diurne rămân neatinse. Modularizarea integrală nu este finalizată. Următoarea analiză după CI: componente UI mici cu dependențe clare, apoi auth/sync numai prin adaptere explicite.
+
+Următorul pas exact după acest checkpoint: audit read-only al dependențelor din AppBackdrop și PageShell, în special decodarea setărilor de background și branding-ul global. Nu există încă un adapter sigur fără contracte explicite pentru settings/logo; auth, sync și PDF download/share rămân amânate până se pot păstra anularea, starea și singletonurile fără modificări funcționale.
