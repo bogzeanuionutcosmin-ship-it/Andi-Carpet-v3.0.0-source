@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 134,
+  "dart_files": 135,
   "lib_dart_files": 118,
-  "test_dart_files": 15,
+  "test_dart_files": 16,
   "script_dart_files": 1,
-  "parts": 77,
-  "libraries": 57,
+  "parts": 76,
+  "libraries": 59,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -75,6 +75,7 @@
       "lib/ocr_parser.dart",
       "lib/ocr_service.dart",
       "lib/reports/pdf_report_format.dart",
+      "lib/ui/icon_badge_catalog.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
     ],
@@ -127,6 +128,7 @@
     "lib/ocr_service_stub.dart": [],
     "lib/ocr_service_web.dart": [],
     "lib/reports/pdf_report_format.dart": [],
+    "lib/ui/icon_badge_catalog.dart": [],
     "lib/utils/graph_names.dart": [],
     "lib/utils/operational_dates.dart": [
       "lib/models/app_data_models.dart"
@@ -160,6 +162,10 @@
     "test/home_location_seed_test.dart": [
       "lib/home/seed_operational_locations.dart",
       "lib/models/app_enums.dart"
+    ],
+    "test/icon_badge_catalog_library_test.dart": [
+      "lib/main.dart",
+      "lib/ui/icon_badge_catalog.dart"
     ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
@@ -2041,8 +2047,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 17296,
-      "sha256": "fd504bcdfae2a398ef9d76f0f54e47f23998372ee037058139ad48168f51dde6",
+      "bytes": 17335,
+      "sha256": "a2250ca6fa7f3b23c7538f427997e2571ace049e99cfbb24030011703ac91089",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2526,6 +2532,26 @@
           ]
         },
         {
+          "kind": "import",
+          "text": "import 'ui/icon_badge_catalog.dart';",
+          "uris": [
+            "ui/icon_badge_catalog.dart"
+          ],
+          "local_targets": [
+            "lib/ui/icon_badge_catalog.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'ui/icon_badge_catalog.dart';",
+          "uris": [
+            "ui/icon_badge_catalog.dart"
+          ],
+          "local_targets": [
+            "lib/ui/icon_badge_catalog.dart"
+          ]
+        },
+        {
           "kind": "export",
           "text": "export 'models/permission_status_labels.dart';",
           "uris": [
@@ -2673,16 +2699,6 @@
           ],
           "local_targets": [
             "lib/ui/app_backdrop.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'ui/icon_badge_catalog.dart';",
-          "uris": [
-            "ui/icon_badge_catalog.dart"
-          ],
-          "local_targets": [
-            "lib/ui/icon_badge_catalog.dart"
           ]
         },
         {
@@ -4734,19 +4750,17 @@
     },
     {
       "path": "lib/ui/icon_badge_catalog.dart",
-      "bytes": 5786,
-      "sha256": "e009eda2711fdc534167c9cd1214ea0513a8de14d0ed160fef30a5970c691d7a",
-      "owner": "lib/main.dart",
+      "bytes": 5802,
+      "sha256": "8150be509714a4fb16e3c8a9ada2ca4c939eda5e8b2d5a4734f37c0123a88950",
+      "owner": "lib/ui/icon_badge_catalog.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
           ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
+          "local_targets": []
         }
       ],
       "declarations": [],
@@ -5281,6 +5295,54 @@
           ],
           "local_targets": [
             "lib/models/app_enums.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/icon_badge_catalog_library_test.dart",
+      "bytes": 2119,
+      "sha256": "f2bb82fd2cb8abe537ebedd519dd11ea18ee25ef973a17e7beae857ff11b625f",
+      "owner": "test/icon_badge_catalog_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart' as app;",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/icon_badge_catalog.dart' as catalog;",
+          "uris": [
+            "package:andi_carpeta/ui/icon_badge_catalog.dart"
+          ],
+          "local_targets": [
+            "lib/ui/icon_badge_catalog.dart"
           ]
         }
       ],

@@ -239,6 +239,10 @@ Continuare structurală: `admin/admin_navigation_catalog.dart` devine bibliotec�
 
 PR #20 rămâne separat. Download anulabil (`Future<bool>`) și share nu se aplatizează la contractul PDF #28 (`Future<void>`); rapoartele și PV-urile rămân protejate. PR #29 și regulile/datele sale nu se modifică.
 
+CI pentru commitul documentar de după Admin: run `38389244180`, 5/5 SUCCESS. `ui/icon_badge_catalog.dart` a fost apoi desprins ca bibliotecă independentă Material; main importă și reexportă același API public. Corpul sursă, fără directiva part, este SHA-256 identic cu baza: `06a837cfd5d39a547e65d8a69a0f2a7097515d41c371da10513b8b53f81fcefd`. Teste Dart directe verifică icon/badge/asset mappings și compatibilitatea reexportului; testul Python fixează hashul corpului.
+
+Inventar curent: 135 fișiere Dart / 76 parts / 59 biblioteci, fără lipsuri/orfani/duplicate/cicluri. Local 151 Python PASS, 1 Node PASS, syntax Functions, toate cele 116 hashuri protejate și diff-check PASS. CI-ul lotului curent urmează.
+
 ## MOD-SCREEN-ACTIONS-CI-FIX-20261013
 
 CI run 38372790209 pe `23d88a4cad17eb21ae9e3af34e4023641a796928`: 4 joburi SUCCESS, Flutter FAILURE la compilarea widget_test, înainte de build web. Cauză exactă: în extensia Decont, `const DropdownMenuItem(value: _legacySettlementKey, ...)` nu poate rezolva implicit constanta statică a State în context const. Corecție strictă: `value: _ExpensePageState._legacySettlementKey`; aceeași valoare/instanță const/comportament, fără schimbare business. Nu eliminăm const și nu schimbăm identificatorul legacy.

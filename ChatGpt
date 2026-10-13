@@ -1484,3 +1484,11 @@ Commitul documentar după lotul seed `2ebb77ca8c09a9511995fa51aa6203e67cb91c69` 
 Inventar regenerat: 134 fișiere Dart, **77 parts**, 57 biblioteci totale (41 lib, 15 teste, 1 script), fără missing/orphan/duplicate/cicluri. Local 151 Python PASS, 1 Node PASS, Functions syntax, dependency audit și diff-check PASS. Flutter SDK nu este disponibil local. CI run `38388935786` pe `ffb35c16b2c1d41e9fce42b1e9255159609b58c4`: 5/5 SUCCESS, inclusiv testele Flutter noi și web release.
 
 Blocajul PDF rămâne: contractele download PR #28 (`Future<void>`) și PR #20 anulabil (`Future<bool>`) diferă; generatorii depind de helpers private, rutare și helperul partajat cu JPEG. Nu s-au schimbat rapoartele, fluxurile Android/web, assetul Magic ori nimic din #20/#29. Următorul candidat după CI este auditul Home/sync pentru componente fără stare privată; nu se forțează fișierele de sincronizare/auth cu state/callbacks complexe.
+
+## Continuare — bibliotecă shared icons/badges
+
+CI-ul commitului documentar admin `cb3946f5dd1d734f56bbf6bb0a37dc1acedd837b`: run `38389244180`, 5/5 SUCCESS. Lotul următor: `ui/icon_badge_catalog.dart` a devenit bibliotecă separată cu import Material; main face import + export pentru API-urile publice existente, iar simbolul privat `_badgeGraphic` rămâne intern. Corpul modulului este SHA-256 identic față de bază după eliminarea directivei part: `06a837cfd5d39a547e65d8a69a0f2a7097515d41c371da10513b8b53f81fcefd`.
+
+Teste noi Dart verifică iconuri, badge aliases, labels/assets, fallbackuri necunoscute și exportul prin main. Python fixează hashul sursei/contractul import-export. Inventar: 135 Dart, **76 parts**, 59 biblioteci totale (42 lib, 16 test, 1 script); fără missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, 116 hashuri protejate, dependency audit și diff-check PASS. CI pe commitul curent trebuie confirmat 5/5 înaintea altui lot.
+
+PDF, Documents, download/share, Android/web, Mapbox și PR #29 rămân neatinse. Modularizarea completă nu este declarată. Următoarea analiză: UI/Home cu dependențe private limitate; auth/permissions/sync se separă doar cu contracte complete de stare și callbacks.

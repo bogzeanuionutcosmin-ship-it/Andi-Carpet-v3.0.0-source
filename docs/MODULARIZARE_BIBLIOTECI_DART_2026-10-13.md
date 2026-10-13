@@ -136,3 +136,13 @@ Validarea lotului precedent: CI run `38388145518` pe `f6fe0370dd66a6694c172a0ad8
 Inventar curent: 134 Dart (118 lib, 15 teste, 1 script), **77 parts**, **57 biblioteci totale** (41 lib, 15 test, 1 script). Snapshot fără ținte lipsă, orphan parts, duplicate în aceeași bibliotecă sau cicluri. Local: 151 Python PASS, 1 Node PASS, Functions syntax, snapshot și diff-check PASS; Flutter nu este instalat local. CI run `38388935786` pe `ffb35c16b2c1d41e9fce42b1e9255159609b58c4`: **5/5 SUCCESS**, inclusiv toate testele Flutter și web build.
 
 PDF și PR #29 rămân neatinse. Riscul/limitarea PDF download/share documentată mai sus rămâne; următorul candidat este analiza Home/sync cu dependențe private, fără a forța conversia. Modularizarea integrală NU este finalizată.
+
+## MOD-ICON-BADGE-CATALOG-20261013 — asseturi și etichete UI partajate
+
+CI-ul lotului Admin: run `38388935786` pe `ffb35c16b2c1d41e9fce42b1e9255159609b58c4`, 5/5 SUCCESS. Actualizarea documentației: run `38389244180` pe `cb3946f5dd1d734f56bbf6bb0a37dc1acedd837b`, 5/5 SUCCESS.
+
+`ui/icon_badge_catalog.dart` a devenit bibliotecă Material autonomă față de main/Firebase. Corpul funcțiilor, constantelor și widgeturilor este identic cu sursa de bază după înlocuirea strictă a `part of` cu import Material: SHA-256 `06a837cfd5d39a547e65d8a69a0f2a7097515d41c371da10513b8b53f81fcefd`. Main importă și reexportă biblioteca, astfel că parts și clienții care importă main păstrează API-ul existent. `_badgeGraphic` rămâne privat intern bibliotecii.
+
+Teste noi importă direct biblioteca și main pentru regresia exporturilor, verifică iconuri/etichete/alias `badge_machine`, valorile necunoscute și ramurile existente de etichete asset. Testul structural protejează SHA-256-ul corpului și dependența Material explicită. Inventar: 135 Dart (118 lib, 16 teste, 1 script), **76 parts**, 59 biblioteci totale (42 lib, 16 test, 1 script), zero missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, manifestul PDF cu toate cele 116 hashuri, inventar și diff-check PASS; Dart/Flutter lipsesc local. CI pe commitul acestui lot urmează înainte de următoarea etapă.
+
+Nicio schimbare în Documents/download/share/PDF/assets sau PR #29. Următorul candidat după CI: evaluarea componentelor Home/UI cu stare privată minimă; auth, permisiuni, sync și PDF nu se forțează fără interfețe explicite și contracte compatibile.

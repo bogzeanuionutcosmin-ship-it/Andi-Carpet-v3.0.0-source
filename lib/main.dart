@@ -51,6 +51,8 @@ export 'models/location_category_helpers.dart';
 import 'models/permission_status_labels.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
+import 'ui/icon_badge_catalog.dart';
+export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
 part 'ui/dashboard_map_components.dart';
@@ -67,7 +69,6 @@ part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
 part 'ui/section_visual_helpers.dart';
 part 'ui/app_backdrop.dart';
-part 'ui/icon_badge_catalog.dart';
 part 'ui/interactive_member_badges.dart';
 part 'ui/app_root_theme.dart';
 part 'ui/app_information_page.dart';

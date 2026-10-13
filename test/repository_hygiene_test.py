@@ -535,8 +535,15 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_icon_badge_catalog_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/icon_badge_catalog.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'ui/icon_badge_catalog.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("part 'ui/icon_badge_catalog.dart';", main)
+        self.assertIn("import 'ui/icon_badge_catalog.dart';", main)
+        self.assertIn("export 'ui/icon_badge_catalog.dart';", main)
+        self.assertIn("import 'package:flutter/material.dart';", module)
+        self.assertNotIn("part of", module)
+        self.assertEqual(
+            hashlib.sha256(module.split("\n\n", 1)[1].encode("utf-8")).hexdigest(),
+            "06a837cfd5d39a547e65d8a69a0f2a7097515d41c371da10513b8b53f81fcefd",
+        )
         for symbol in ("const Map<String, IconData> appIconChoices",
                        "const Map<String, String> badgeAssetChoices",
                        "const List<String> availableBadgeKeys",

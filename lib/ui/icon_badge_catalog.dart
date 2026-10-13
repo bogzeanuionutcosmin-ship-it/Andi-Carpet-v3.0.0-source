@@ -1,4 +1,4 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
 
 const Map<String, IconData> appIconChoices = {
   'car': Icons.directions_car,
