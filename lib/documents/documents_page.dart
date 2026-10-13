@@ -418,16 +418,30 @@ class _DocumentsPageState extends State<DocumentsPage> {
           stream: FirebaseFirestore.instance.collection('documents')
               .orderBy('date', descending: true).snapshots(),
           builder: (context, snap) {
-            if (snap.hasError) return _InfoCard(
-              icon: Icons.error_outline,
-              title: 'Documente',
-              text: 'Eroare: ' + snap.error.toString(),
+            // PDF-ul Magic este asset local: trebuie să poată fi descărcat
+            // și fără acces Firestore (de exemplu, prima pornire offline).
+            if (snap.hasError) return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _magicCard(visible: true),
+                _InfoCard(
+                  icon: Icons.error_outline,
+                  title: 'Documente sincronizate indisponibile',
+                  text: 'Biblioteca online nu a putut fi citită. '
+                      'Vizibilitatea actuală a cardului Magic nu poate '
+                      'fi confirmată în modul offline.',
+                ),
+              ],
             );
-            if (!snap.hasData) return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(),
-              ),
+            if (!snap.hasData) return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _magicCard(visible: true),
+                const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
             );
             final all = snap.data!.docs;
             var magicVisible = true;
