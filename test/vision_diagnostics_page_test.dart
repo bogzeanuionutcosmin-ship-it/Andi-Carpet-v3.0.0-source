@@ -16,6 +16,8 @@ void main() {
     expect(find.text('ocr / save_failed'), findsOneWidget);
     expect(find.text('×2'), findsOneWidget);
     expect(find.textContaining('Nu trimitem'), findsOneWidget);
+    // Injected read-only logs must not expose the test-error action.
+    expect(find.byTooltip('Test local · salvare jurnal'), findsNothing);
   });
 
   testWidgets('Vision explains that an empty log is not a health guarantee',
