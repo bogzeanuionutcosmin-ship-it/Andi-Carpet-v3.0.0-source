@@ -127,7 +127,8 @@ class ScheduleCardFull extends StatelessWidget {
                   ),
                 );
               },
-              onReorder: canEdit && !schedule.closed ? onReorder : null,
+              buildDefaultDragHandles: canEdit && !schedule.closed,
+              onReorder: onReorder,
             ),
           ],
         ),

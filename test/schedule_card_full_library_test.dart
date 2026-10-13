@@ -110,9 +110,10 @@ void main() {
 
     expect(find.text('Adaugă locații'), findsNothing);
     expect(find.byIcon(Icons.delete_outline), findsNothing);
-    expect(
-      tester.widget<ReorderableListView>(find.byType(ReorderableListView)).onReorder,
-      isNull,
+    final reorderList = tester.widget<ReorderableListView>(
+      find.byType(ReorderableListView),
     );
+    expect(reorderList.buildDefaultDragHandles, isFalse);
+    expect(reorderList.onReorder, isNotNull);
   });
 }
