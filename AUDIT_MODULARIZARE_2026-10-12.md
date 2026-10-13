@@ -233,7 +233,7 @@ PR #28 continuat de la HEAD `a01e8c98e48b023e325012deabb3735290563895`. `home/ho
 
 Nu s-a forțat izolarea `pdf_reports.dart`: PR #28 are download PDF `Future<void>`, PR #20 are `Future<bool>` anulabil pe nativ și share separat. Aplatizarea contractului ar pierde anularea; grafica depinde încă de helpers private din main, inclusiv unul comun cu JPEG. Generatorii, fișierele PV Magic/Million, Documents și fluxurile de download/share rămân neatinse. Hash Magic verificat cu manifestul protejat: `eaf7be7d1ff77aafaa328c1ffd08c8e3c668f689104be432436cf5fb40eaaa6b`; Million există doar în PR #20, hash `3bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23`.
 
-Inventar regenerat: 133 fișiere Dart, 78 parts și 55 biblioteci; fără missing/orphan/duplicate/cicluri import-export. 151 teste Python, 1 Node, syntax Functions și diff-check PASS local. Cele două teste Flutter noi așteaptă CI pe lot. SHA/run CI se adaugă după verificarea celor cinci joburi. Modularizarea completă rămâne nefinalizată.
+Inventar regenerat: 133 fișiere Dart, 78 parts și 55 biblioteci; fără missing/orphan/duplicate/cicluri import-export. 151 teste Python, 1 Node, syntax Functions și diff-check PASS local. CI run `38388145518` pe `f6fe0370dd66a6694c172a0ad854939a4b8e57d8`: 5/5 SUCCESS, incluzând cele două teste Flutter noi și web build. Modularizarea completă rămâne nefinalizată.
 
 ## MOD-SCREEN-ACTIONS-CI-FIX-20261013
 
