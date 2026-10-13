@@ -12,11 +12,13 @@
 - Motorul acceptă limite până la 500 elemente / 1 MiB, configurabile; **instanța conectată la aplicație are inițial o limită mai conservatoare de 150 rezumate / 48 KiB / 7 zile**, întrucât folosește stocare securizată existentă și nu trebuie transformată în bază de loguri grea. Cota este **o limită superioară, nu o rezervare de memorie**.
 - `lib/vision/vision_error_telemetry.dart`: citire/salvare rezumate în `flutter_secure_storage` deja inclus în proiect, cu scrieri serializate/coalescente la 3 secunde și încercare imediată pentru incidente critice. Dacă stocarea platformei lipsește/eșuează, aplicația pornește și rămâne funcțională, iar logurile rămân doar în memoria sesiunii.
 - `lib/main.dart` instalează interceptoare pentru `FlutterError.onError` și `PlatformDispatcher.instance.onError`, **păstrând comportamentul handlerelor anterioare**. Captăm și tipul erorii inițializării Firebase. Nu ascundem crashurile și nu trimitem nimic la Firebase.
+- `lib/vision/vision_diagnostics_page.dart`: ecran **read-only al erorilor locale de pe dispozitiv**, accesat din diagnosticul Push deja existent. Nu interoghează alte dispozitive și nu trimite date la server.
+- `test/vision_diagnostics_page_test.dart`: teste widget pentru afișarea sumarului și cazul fără erori.
 - `test/vision_error_log_test.dart`: teste logice pentru deduplicare masivă, severitate/rezolvare/redeschidere, limitare elemente/bytes, expirare, cache invalid/vechi și neacceptarea datelor sensibile.
 
 ## Limite cunoscute / ce NU trebuie afirmat că există deja
 
-1. **Nu există încă panou Vision/Error Log** accesibil membrilor autorizați. Captura este pregătită ca bază tehnică, dar pentru inspecție operativă trebuie creată interfața cu control de acces corect.
+1. **Există doar panou local, read-only, al acestui dispozitiv** din pagina Diagnostic Push; nu există încă o consolă Vision centralizată pentru mai multe dispozitive, cu permisiuni administrative server-side. Codurile vizibile nu conțin identități sau date de la alți utilizatori.
 2. **Nu se raportează toate erorile operaționale:** GPS, OCR, diurne, Mapbox, FCM și Functions vor necesita adaptoare explicit apelate din fluxurile relevante. Erorile prinse și ignorate de codul existent nu sunt automat observabile de interceptorii generali.
 3. **Nu există upload/server/alertare automată**, nici funcții Cloud, TTL server, Crashlytics, API AI plătit, acces ChatGPT permanent ori stocare de loguri în Firebase. Pentru utilizare pe mai multe dispozitive va trebui stabilită o politică separată de minimizare și autorizare.
 4. O terminare bruscă a procesului sau o restricție a sistemului de operare poate împiedica persistarea ultimelor evenimente. Nu garantăm observabilitate 24/7 când aplicația nu rulează.
@@ -28,5 +30,5 @@
 
 - GitHub CI: Flutter web build, teste Flutter/Dart, Python, Node și emulator Firestore, după crearea PR. **Nu se pretinde SUCCESS înainte de verificarea run-ului exact.**
 - La validare: unit tests noi, cold start după eroare Firebase, Firefox/Chrome/Android secure storage, comportamentul la error callback recursiv, offline, stres, limite/7 zile.
-- Apoi: panou read-only pentru utilizatorul propriu și consolă administrativă doar cu autorizare validată, integrare adaptori GPS/OCR și teste instrumentate.
+- Apoi: consolă administrativă centralizată doar cu autorizare server-side, integrare adaptori GPS/OCR și teste instrumentate. Ecranul actual arată exclusiv erorile locale ale dispozitivului.
 - **Fără deploy, merge, APK, schimbări Firebase Rules, date reale ori activare facturare** prin prezentul PR.
