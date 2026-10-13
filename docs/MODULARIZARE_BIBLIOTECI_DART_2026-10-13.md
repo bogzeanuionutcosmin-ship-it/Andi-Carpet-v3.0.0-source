@@ -321,3 +321,14 @@ Inventar: 149 Dart, 70 parts, 79 biblioteci; fără missing/orphan/duplicate/cic
 Lotul `verified_location_fix.dart` este validat pe commitul cod `926f77b1d04342a696331cf9a7f967a1299c3f79`, workflow run `38464464699`: **5/5 SUCCESS**, inclusiv Flutter/widget, web build, emulator Firestore, Node, Functions și Python/security. Blocul de date `_verifiedLocationFixes` a rămas hash-identic (`0d00e992bc52e500a87b307f601ec6486dbb5d6f6dd0e6db93f0cacec267a812`, 8.192 bytes); wrapperul păstrează semantica/defaulturile și import actions.
 
 Inventar: 149 Dart, 70 parts, 79 biblioteci; fără missing/orphan/duplicate/cicluri. Următorul pas exact: audit read-only al `ui/dashboard_map_components.dart` și al altor widgeturi de dashboard pentru callbackuri/stare implicite; nu extrage UI dependent de starea MapPage până nu există un adapter clar. Modularizarea completă nu este finalizată.
+
+
+## MOD-DASHBOARD-MAP-COMPONENTS-LIBRARY-20261013
+
+Bază: `d3906ef90466b3a3e32e71933301ec6f1c0524fb`. Auditul read-only a confirmat că `_StatMini` și `_MapStatusLegend` sunt widgeturi vizuale fără stare de aplicație, callbackuri sau acces la Firebase/Mapbox. `lib/ui/dashboard_map_components.dart` a devenit bibliotecă Material independentă; wrapper-ele private din `main.dart` păstrează constructorii și callsite-urile din ProgramPage/MapPage. Structura, paddingul, culorile, dimensiunile, iconul și etichetele au rămas aceleași. Nu s-au schimbat algoritmii rutării sau codul de hartă.
+
+Au fost adăugate teste Flutter directe pentru conținutul/dimensiunea lui StatMini și culoarea/eticheta legendei, plus verificarea structurală a importului, absenței directivei part și wrapperelor. Snapshotul Dart actualizat include 150 fișiere (122 lib, 27 teste, 1 script), **69 parts** și **81 biblioteci**; zero ținte lipsă, parts orfane, duplicate în aceeași bibliotecă sau cicluri import/export. Local: 85 teste Python PASS, JSON valid, `node --check functions/index.js` și `git diff --check` PASS. SDK Flutter/Dart nu este disponibil local.
+
+CI pentru commitul de cod `d3906ef90466b3a3e32e71933301ec6f1c0524fb`, workflow run [38465871229](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38465871229): **5/5 SUCCESS** (Python/security, Node, Functions, emulator Firestore, Flutter tests + web build). PDF-urile Magic/Million, PDF generators/helpers, PR #20, Mapbox singleton/rutare, PR #29, OCR, datele/regulile financiare, diurnele și permisiunile nu au fost modificate. PR #28 rămâne Draft/Open, fără merge/deploy.
+
+Următorul pas exact: audit read-only al widgeturilor rămase din Home/Dashboard pentru dependențe de branding global și stare privată; extrag numai când adapterul păstrează callsite-urile și API-urile. PageShell/branding global, serviciile auth/sync și contractul PDF de anulare/download/share rămân blocate până la interfețe compatibile. Modularizarea integrală nu este finalizată.
