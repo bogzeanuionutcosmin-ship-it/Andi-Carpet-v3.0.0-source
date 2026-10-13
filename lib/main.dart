@@ -62,10 +62,10 @@ import 'ui/interactive_badge_preview.dart' as badge_preview;
 import 'ui/auth_status_views.dart' as auth_status;
 import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;
 import 'map/verified_location_fix.dart' as verified_fix;
+import 'ui/dashboard_map_components.dart' as dashboard_components;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
-part 'ui/dashboard_map_components.dart';
 part 'auth/quick_accounts.dart';
 part 'ui/branding_theme_helpers.dart';
 part 'ui/install_app_buttons.dart';
@@ -297,6 +297,32 @@ class _VerifiedLocationFix extends verified_fix.VerifiedLocationFix {
     super.confidence = 'ridicată',
     super.note = '',
   });
+}
+
+
+class _StatMini extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _StatMini({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) =>
+      dashboard_components.StatMini(label: label, value: value, icon: icon);
+}
+
+class _MapStatusLegend extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _MapStatusLegend({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) =>
+      dashboard_components.MapStatusLegend(color: color, label: label);
 }
 
 class _InstallAppButtons extends StatelessWidget {

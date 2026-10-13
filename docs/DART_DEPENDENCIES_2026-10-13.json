@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 149,
+  "dart_files": 150,
   "lib_dart_files": 122,
-  "test_dart_files": 26,
+  "test_dart_files": 27,
   "script_dart_files": 1,
-  "parts": 70,
-  "libraries": 79,
+  "parts": 69,
+  "libraries": 81,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -80,6 +80,7 @@
       "lib/reports/pdf_report_format.dart",
       "lib/ui/app_backdrop.dart",
       "lib/ui/auth_status_views.dart",
+      "lib/ui/dashboard_map_components.dart",
       "lib/ui/empty_state.dart",
       "lib/ui/icon_badge_catalog.dart",
       "lib/ui/info_card.dart",
@@ -144,6 +145,7 @@
     "lib/reports/pdf_report_format.dart": [],
     "lib/ui/app_backdrop.dart": [],
     "lib/ui/auth_status_views.dart": [],
+    "lib/ui/dashboard_map_components.dart": [],
     "lib/ui/empty_state.dart": [],
     "lib/ui/icon_badge_catalog.dart": [],
     "lib/ui/info_card.dart": [],
@@ -179,6 +181,9 @@
       "lib/models/app_enums_permissions.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
+    ],
+    "test/dashboard_map_components_library_test.dart": [
+      "lib/ui/dashboard_map_components.dart"
     ],
     "test/empty_state_library_test.dart": [
       "lib/ui/empty_state.dart"
@@ -2098,8 +2103,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 22384,
-      "sha256": "f022413c10a435e41fa6ae58c5dd25c90aa628341b8ca19fc8a26ac563296598",
+      "bytes": 23042,
+      "sha256": "17baf4399e9ef740d0f320d750adad04befeed71b0f6750a8b61a2e3bf39dec1",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2693,6 +2698,16 @@
           ]
         },
         {
+          "kind": "import",
+          "text": "import 'ui/dashboard_map_components.dart' as dashboard_components;",
+          "uris": [
+            "ui/dashboard_map_components.dart"
+          ],
+          "local_targets": [
+            "lib/ui/dashboard_map_components.dart"
+          ]
+        },
+        {
           "kind": "export",
           "text": "export 'ui/icon_badge_catalog.dart';",
           "uris": [
@@ -2710,16 +2725,6 @@
           ],
           "local_targets": [
             "lib/models/permission_status_labels.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'ui/dashboard_map_components.dart';",
-          "uris": [
-            "ui/dashboard_map_components.dart"
-          ],
-          "local_targets": [
-            "lib/ui/dashboard_map_components.dart"
           ]
         },
         {
@@ -3449,6 +3454,14 @@
         {
           "kind": "class",
           "name": "_VerifiedLocationFix"
+        },
+        {
+          "kind": "class",
+          "name": "_StatMini"
+        },
+        {
+          "kind": "class",
+          "name": "_MapStatusLegend"
         },
         {
           "kind": "class",
@@ -4844,29 +4857,27 @@
     },
     {
       "path": "lib/ui/dashboard_map_components.dart",
-      "bytes": 1523,
-      "sha256": "2fbe4e703f9b95aadf354375c5a818c7a72bbe7768538a37b11364096474ba37",
-      "owner": "lib/main.dart",
+      "bytes": 1933,
+      "sha256": "81a0cb8acdad26bd36b1997e8d6ecf309ad341c956afe59e6af14e6072586fb7",
+      "owner": "lib/ui/dashboard_map_components.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
           ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
+          "local_targets": []
         }
       ],
       "declarations": [
         {
           "kind": "class",
-          "name": "_StatMini"
+          "name": "StatMini"
         },
         {
           "kind": "class",
-          "name": "_MapStatusLegend"
+          "name": "MapStatusLegend"
         }
       ],
       "top_level_functions": []
@@ -5459,6 +5470,44 @@
       "declarations": [],
       "top_level_functions": [
         "completedRecord",
+        "main"
+      ]
+    },
+    {
+      "path": "test/dashboard_map_components_library_test.dart",
+      "bytes": 1673,
+      "sha256": "2a562386e8c113309103b1fbd62936e4a74022d556c9e0dcccbc01a0a032e502",
+      "owner": "test/dashboard_map_components_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/dashboard_map_components.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/dashboard_map_components.dart"
+          ],
+          "local_targets": [
+            "lib/ui/dashboard_map_components.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
         "main"
       ]
     },

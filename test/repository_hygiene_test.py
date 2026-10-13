@@ -74,12 +74,22 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_extracted_dashboard_map_widgets_are_linked_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         component = (ROOT / "lib/ui/dashboard_map_components.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'ui/dashboard_map_components.dart';", main)
-        self.assertIn("part of '../main.dart';", component)
-        for widget in ("_StatMini", "_MapStatusLegend"):
-            self.assertEqual(main.count("class " + widget + " "), 0)
-            self.assertEqual(component.count("class " + widget + " "), 1)
-
+        self.assertNotIn("part 'ui/dashboard_map_components.dart';", main)
+        self.assertIn(
+            "import 'ui/dashboard_map_components.dart' as dashboard_components;",
+            main,
+        )
+        self.assertEqual(main.count("class _StatMini extends StatelessWidget"), 1)
+        self.assertEqual(main.count("class _MapStatusLegend extends StatelessWidget"), 1)
+        self.assertIn("dashboard_components.StatMini(", main)
+        self.assertIn("dashboard_components.MapStatusLegend(", main)
+        self.assertIn("import 'package:flutter/material.dart';", component)
+        self.assertNotIn("part of", component)
+        self.assertNotIn("../main.dart", component)
+        self.assertEqual(component.count("class StatMini extends StatelessWidget"), 1)
+        self.assertEqual(
+            component.count("class MapStatusLegend extends StatelessWidget"), 1
+        )
     def test_quick_accounts_auth_module_extracted_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/auth/quick_accounts.dart").read_text(encoding="utf-8")
