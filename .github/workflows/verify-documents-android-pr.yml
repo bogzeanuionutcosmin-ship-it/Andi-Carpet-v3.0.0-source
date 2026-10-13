@@ -10,6 +10,10 @@ on:
       - 'lib/main.dart'
       - 'test/document_categories_test.dart'
       - 'test/documents_download_contract_test.py'
+      - 'test/pv_million_asset_test.dart'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
 
 permissions:
   contents: read
@@ -40,11 +44,24 @@ jobs:
       - name: Test PV classification and structural contracts
         run: |
           flutter test test/document_categories_test.dart
+          flutter test test/pv_million_asset_test.dart
           python3 -m unittest discover -s test -p 'documents_download_contract_test.py'
       - name: Compile Android (debug APK only, no deployment)
         env:
           MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
         run: flutter build apk --debug --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN"
+      - name: Verify original Million PDF bytes inside Android APK
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import zipfile
+          with zipfile.ZipFile('build/app/outputs/flutter-apk/app-debug.apk') as apk:
+              pdf = apk.read('assets/flutter_assets/assets/pv_million.pdf')
+          expected = '3bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23'
+          actual = hashlib.sha256(pdf).hexdigest()
+          assert actual == expected, f'Packaged Million PDF mismatch: {actual}'
+          print(f'Android packaged Million PDF: {len(pdf)} bytes, SHA-256 {actual}')
+          PY
       - name: Retain short-lived test artifact
         uses: actions/upload-artifact@v4
         with:

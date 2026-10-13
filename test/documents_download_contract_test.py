@@ -1,5 +1,6 @@
 """Document library regressions: Android PDF download must NOT be share-only."""
 from pathlib import Path
+import hashlib
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,6 +10,13 @@ WEB = (ROOT / 'lib/download_file_web.dart').read_text(encoding='utf-8')
 CATEGORIES = (ROOT / 'lib/documents/document_categories.dart').read_text(encoding='utf-8')
 
 class DocumentsDownloadContract(unittest.TestCase):
+    def test_million_original_is_embedded_without_changes(self):
+        pdf = (ROOT / 'assets/pv_million.pdf').read_bytes()
+        self.assertEqual(len(pdf), 1399921)
+        self.assertEqual(hashlib.sha256(pdf).hexdigest(),
+                         '3bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23')
+        self.assertTrue(pdf.startswith(b'%PDF-'))
+
     def test_real_file_save_and_separate_sharing(self):
         self.assertIn("FilePicker.saveFile(", NATIVE)
         self.assertIn("bytes: bytes", NATIVE)
