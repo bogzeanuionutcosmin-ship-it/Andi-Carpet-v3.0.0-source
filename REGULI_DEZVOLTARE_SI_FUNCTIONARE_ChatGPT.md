@@ -1086,3 +1086,16 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 6. **Teste viitoare:** 50 de informări + 3 acțiuni rămase proeminente, rezolvare din alt dispozitiv, amânare și expirarea termenului, revocare rol, diurnă confirmată, sugestie Learning respinsă, eroare deja remediată, offline/reconectare și Nu deranja fără notificări OS.
 
 **Status:** aprobarea este exclusiv documentară; fără cod, Firebase, date, teste live sau deploy. Următoarele decizii se discută pe rând.
+
+## 61. Notificări — propunerea 10 CONFIRMATĂ: rezumat discret la revenirea în aplicație (2026-10-13)
+
+**Confirmare expresă a proprietarului:** «Confirm propunerea 10 pentru AndiCarpet.»
+
+1. La revenirea în **AndiCarpet deschisă**, dacă au apărut evenimente relevante cât utilizatorul nu interacționa cu aplicația, se prezintă **un singur rezumat discret**, neintruziv, intitulat de exemplu «Cât ai fost plecat».
+2. Rezumatul grupează informațiile utile, inclusiv **mesaje necitite**, **sugestii Learning** și **probleme/acțiuni care necesită intervenție**, cu numere calculate din starea curentă autorizată, fără estimări inventate. Acțiunile reale au acces direct la centrul «Acțiuni în așteptare» din propunerea 9; cele informative pot deschide lista relevantă.
+3. **Nu există notificare a sistemului telefonului, banner OS, lock screen ori notificare browser** pentru acest rezumat. Cu **Nu deranja activ**, toate evenimentele continuă să fie vizibile **doar în interiorul aplicației la deschidere**, conform clarificării stricte a propunerii 7.
+4. Rezumatul **nu marchează automat mesajele ca citite**, nu aprobă Learning, nu reîncepe intervenții, nu marchează acțiuni ca rezolvate și nu afișează popupuri repetitive la fiecare rebuild/revenire nesemnificativă. Citirea reală în conversație și deschiderea intenționată a clopoțelului păstrează regulile de citire aprobate anterior.
+5. Când nu există nimic nou, nu afișăm rezumat inutil. Pentru două dispozitive, refresh, schimbare cont, reluare după offline și notificări duplicate, numerele trebuie reconciliate cu starea server; informațiile private sunt filtrate conform drepturilor.
+6. **Teste viitoare obligatorii:** rezumat cu 12 mesaje/2 Learning/1 eroare, zero evenimente, repetarea deschiderii fără spam, corectitudinea badge-urilor și a citirii, acces la resursa exactă, Nu deranja activ fără notificări OS, offline/reconectare, schimbarea contului, două dispozitive, notificări deja rezolvate.
+
+**Status:** aprobare de regulă, NU implementare ori teste live. Fără schimbări de cod, Firebase, reguli, date reale, APK sau deploy.
