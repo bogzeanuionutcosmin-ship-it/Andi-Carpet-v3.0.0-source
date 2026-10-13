@@ -411,10 +411,29 @@ PR #29/OCR/diurne/finanțe, PR #20 PDF/PV Magic/Million/download/share, Mapbox s
 
 Bază validată înaintea lotului: PR #28 HEAD 9020b2ef9d25ef07e9c717b13b1a7a9161cfb915, CI run 38478795300 **5/5 SUCCESS**. Paginile PendingApprovalPage și MissingProfilePage păstrează constructorii folosiți de AuthGate; conținutul Material este extras în lib/auth/account_access_views.dart, cu logo, decorul de fundal și callbackul sign-out injectate. Adaptoarele din part-ul existent continuă să folosească aceleași AppSettings, FirebaseUserProfile și FirebaseAuth.instance.signOut(). Rutarea AuthGate, citirea profilului, permisiunile, textele și configurația Firebase nu se schimbă.
 
-Testele Flutter directe verifică ambele ecrane, backdrop/logo/email și forwardarea sign-out. Snapshotul inventarului este regenerat: **158 fișiere Dart (123 lib, 34 test, 1 script), 63 parts, 95 biblioteci**, fără ținte lipsă, parts orfane, declarații duplicate în aceeași bibliotecă sau cicluri import/export. CI pentru lotul curent este în așteptare; Flutter/Dart nu sunt disponibile local. Nu s-au atins PR #20/#29, OCR/diurne, PDF/PV, Mapbox, date/reguli Firebase, billing sau producția; fără merge, deploy ori APK publicat.
+Testele Flutter directe verifică ambele ecrane, backdrop/logo/email și forwardarea sign-out. Snapshotul inventarului este regenerat: **158 fișiere Dart (123 lib, 34 test, 1 script), 63 parts, 95 biblioteci**, fără ținte lipsă, parts orfane, declarații duplicate în aceeași bibliotecă sau cicluri import/export. CI run 38480354362 pentru commitul b73994b60f3ba5898e44d512f98139905ee55bda este **5/5 SUCCESS**; SDK Flutter/Dart nu este disponibil local. Nu s-au atins PR #20/#29, OCR/diurne, PDF/PV, Mapbox, date/reguli Firebase, billing sau producția; fără merge, deploy ori APK publicat.
 
 **Următorul pas după 5/5:** audit read-only al componentelor rămase; auth streams, FirebaseUserProfile/QuickAccounts, bootstrap, PageShell și URL launchers nu se mută fără contracte specifice și teste de compatibilitate. Modularizarea completă rămâne deschisă.
 
 ## LATEST CHECKPOINT — continuare după checkpointul inițial e37552a5
 
 Checkpointul inițial cu HEAD 703639a0f6df02449f2615cb25d00517fbda570f a fost urmat de loturile documentate mai sus și de HEAD-ul de documentație 9020b2ef9d25ef07e9c717b13b1a7a9161cfb915 (CI run 38478795300, 5/5). Lotul AccountAccessViews de mai sus este noul lot curent și CI-ul lui urmează după commit. Se păstrează protecția tuturor celorlalte PR-uri și a producției.
+
+
+
+## MOD-ACCOUNT-ACCESS-VIEWS-CI-GREEN-20261014
+
+Lotul AccountAccessViews a fost validat pe commitul b73994b60f3ba5898e44d512f98139905ee55bda, workflow run [38480354362](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38480354362): **5/5 SUCCESS**. Testele widget, verificarea bibliotecilor fără motor Flutter, buildul web, Python/security, Node, Functions și emulatorul Firestore au trecut.
+
+
+## MOD-APP-CAPABILITIES-VIEW-LIBRARY-20261014 — tabul Capacități standalone
+
+Bază validată: AccountAccessViews pe commitul b73994b60f3ba5898e44d512f98139905ee55bda, CI run 38480354362 **5/5 SUCCESS**. Helperul vizual și lista statică din tabul Capacități sunt mutate textual în lib/ui/app_capabilities_view.dart. AppInformationPage păstrează setările/brandingul, pagina cu taburi, istoricul static, streamul updateHistory, formularul și scrierile admin în Firestore. Taburile, textele, pictogramele, stilurile și ordinea secțiunilor nu se schimbă.
+
+Testul Flutter direct verifică secțiunea zilnică, textul ei și secțiunea Web după scroll. Snapshotul inventarului: **160 fișiere Dart (124 lib, 35 test, 1 script), 63 parts, 97 biblioteci**; fără ținte lipsă, parts orfane, duplicate sau cicluri. CI-ul lotului este în așteptare.
+
+Nu se schimbă istoricul, rolurile, permisiunile, datele/rules Firebase sau textele de produs. PR #20/#29, PDF/PV, OCR/diurne, Mapbox, billing și producția rămân neatinse. Fără merge, deploy ori APK publicat.
+
+## LATEST CHECKPOINT — 2026-10-14
+
+HEAD de cod anterior: b73994b60f3ba5898e44d512f98139905ee55bda, run CI 38480354362 **5/5 SUCCESS**. Lotul curent este AppCapabilitiesView și este comis în continuare pe PR #28; CI pentru el urmează. Ultimul inventar complet înaintea acestui lot: 158 fișiere, 63 parts, 95 biblioteci; inventarul lotului curent este 160/63/97.

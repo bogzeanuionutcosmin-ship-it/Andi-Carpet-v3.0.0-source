@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 158,
-  "lib_dart_files": 123,
-  "test_dart_files": 34,
+  "dart_files": 160,
+  "lib_dart_files": 124,
+  "test_dart_files": 35,
   "script_dart_files": 1,
   "parts": 63,
-  "libraries": 95,
+  "libraries": 97,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -85,6 +85,7 @@
       "lib/schedule/schedule_card_full.dart",
       "lib/teams/team_selector.dart",
       "lib/ui/app_backdrop.dart",
+      "lib/ui/app_capabilities_view.dart",
       "lib/ui/auth_status_views.dart",
       "lib/ui/branding_theme_helpers.dart",
       "lib/ui/dashboard_map_components.dart",
@@ -164,6 +165,7 @@
       "lib/models/app_data_models.dart"
     ],
     "lib/ui/app_backdrop.dart": [],
+    "lib/ui/app_capabilities_view.dart": [],
     "lib/ui/auth_status_views.dart": [],
     "lib/ui/branding_theme_helpers.dart": [
       "lib/models/app_data_models.dart"
@@ -206,6 +208,9 @@
     ],
     "test/app_backdrop_library_test.dart": [
       "lib/ui/app_backdrop.dart"
+    ],
+    "test/app_capabilities_view_test.dart": [
+      "lib/ui/app_capabilities_view.dart"
     ],
     "test/auth_status_views_test.dart": [
       "lib/ui/auth_status_views.dart"
@@ -2192,8 +2197,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 26102,
-      "sha256": "049b8ef5ac0f708cd7f963e6793744140b739ad42717d0811880beaace3709c3",
+      "bytes": 26162,
+      "sha256": "843ac8cb60f14882a4a77152c772a11f5e7e40712a361e71afcf1445c8f6ea21",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2874,6 +2879,16 @@
           ],
           "local_targets": [
             "lib/auth/account_access_views.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'ui/app_capabilities_view.dart' as app_capabilities;",
+          "uris": [
+            "ui/app_capabilities_view.dart"
+          ],
+          "local_targets": [
+            "lib/ui/app_capabilities_view.dart"
           ]
         },
         {
@@ -4948,9 +4963,32 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/ui/app_capabilities_view.dart",
+      "bytes": 4672,
+      "sha256": "6eb56565408879f035f2c9a2b991df6c5dd0d9d9ca2240791c4cf10e88b1bf4a",
+      "owner": "lib/ui/app_capabilities_view.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "AppCapabilitiesView"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/ui/app_information_page.dart",
-      "bytes": 14148,
-      "sha256": "4aeb04e97f5091785f9998b099a080d8d572e79eba37acabbb0c08797298f648",
+      "bytes": 9633,
+      "sha256": "d6ba3c5127cad02eb7ba8214c1404e0cbf8e246245fe2bbfe754e5ca2d5dd2e0",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -5659,6 +5697,44 @@
           ],
           "local_targets": [
             "lib/ui/app_backdrop.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/app_capabilities_view_test.dart",
+      "bytes": 935,
+      "sha256": "40d4ba4b876d9d7012cef10bf98c2dca2a180d034432fa2be3421a0606968854",
+      "owner": "test/app_capabilities_view_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/app_capabilities_view.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/app_capabilities_view.dart"
+          ],
+          "local_targets": [
+            "lib/ui/app_capabilities_view.dart"
           ]
         }
       ],
