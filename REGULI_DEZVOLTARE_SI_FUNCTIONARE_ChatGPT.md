@@ -1022,3 +1022,16 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 6. La implementare se testează pe Android/web: mesaje multiple în 30 de secunde, chat-uri diferite, actualizări fără sunet dublu, conversație vizibilă, conversație derulată, schimbare cont/dispozitiv, offline, push+listener, F5, click pe card și corectitudinea citirii.
 
 **Audit tehnic:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md`, secțiunea 15. **Numai documentație:** nu s-a modificat codul, Firebase, regulile, datele, CI, APK sau deploy. Următoarea propunere despre notificări se discută individual.
+
+## 56. Notificări — propunerea 5 CONFIRMATĂ: deschiderea contextului corect, fără schimbări ascunse (2026-10-13)
+
+**Aprobare expresă a proprietarului:** «Confirm propunerea» la propunerea 5.
+
+1. Atingerea unei notificări despre o **recomandare/sugestie** deschide **recomandarea concretă**, cu explicația și acțiunile permise de fluxul său (de exemplu Aplică, Respinge, Amână în cazul unei propuneri Learning). Simpla deschidere **nu echivalează cu aprobarea**, nu modifică automat grafice sau date și nu marchează drept rezolvată o acțiune încă în așteptare.
+2. Atingerea unei notificări despre o **problemă la finalizarea unei săli** deschide **sala și intervenția exactă** (grafic/zi/intervenție/ID din notificare), împreună cu motivul eșecului și, dacă problema persistă, opțiunea autorizată de corectare/reîncercare. Nu navighează aproximativ spre altă sală cu același nume și nu execută automat STOP/START sau restaurări.
+3. Dacă, înainte ca destinatarul să atingă notificarea, **problema a fost deja rezolvată**, aplicația prezintă **discret și explicit starea actuală de rezolvare**. Nu redeschide sala, nu modifică din nou operațiunea și nu forțează reluarea unui pas deja confirmat; poate arăta detaliile în mod informativ.
+4. Starea actuală și drepturile sunt **reverificate în backend** în momentul deschiderii, nu se deduc numai din payloadul vechi FCM ori din cache. Pentru resursă ștearsă/mutată, acces revocat, sesiune schimbată sau lipsă de internet se afișează un mesaj corect și o navigare sigură; nu există confirmări fictive. Identificatorii evenimentelor/notificărilor previn deschideri/dublări de acțiuni.
+5. **Regulile anterioare rămân valabile:** clopoțelul marchează citită o informare, dar nu rezolvă o aprobare; notificările Learning sunt importante, gruparea și deduplicarea chatului rămân distincte, erorile persistente nu dispar până când sunt realmente rezolvate.
+6. **Teste viitoare obligatorii:** tap din clopoțel și push Android/web, sugestie cu acțiune în așteptare, eroare de finalizare încă activă, eroare rezolvată între timp, notificare veche/dublată, alt cont ori rol, acces revocat, offline/reconectare, mai multe intervenții la aceeași sală, lipsa ID-ului și deep-link nevalid.
+
+**Status:** regula funcțională este CONFIRMATĂ, **nu** considerată implementată sau verificată pe telefon. Audit/planificare și documentație numai; fără schimbări în cod, Firebase/Firestore Rules, date reale, configurare, APK, CI sau deploy. Următoarea decizie, **propunerea 6**, rămâne de discutat separat, câte una odată.
