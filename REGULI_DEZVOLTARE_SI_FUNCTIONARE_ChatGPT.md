@@ -1241,3 +1241,16 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 7. **Nu se pretinde implementare/testare finalizată:** în această etapă sunt doar documentare/planificare, nu schimbări Flutter/Firebase/FCM/date live/APK/deploy. La implementare se fac teste reale/CI și stagiu separat.
 
 **Prevalență:** această secțiune clarifică explicit pasul 3 din secțiunea 1: prima implementare funcțională nouă după modularizare și reguli este **Vision unificat / Diagnostics & Self-Healing**, nu un Learning GPS independent.
+
+## 72. Vision — funcționare independentă de AI cloud, conectare online opțională (2026-10-13)
+
+**Confirmare expresă în conversație:** după explicația diferenței dintre Vision local și un model AI online, inclusiv recomandarea de a construi un Vision autonom fără AI plătit și a-l pregăti pentru o conectare online ulterioară, proprietarul a răspuns: «Ok, de acord».
+
+1. **Vision local/offline-first este baza obligatorie**, nu o demonstrație temporară: monitorizarea evenimentelor disponibile, reguli operaționale, detectarea anomaliilor, diagnostic explicabil, Learning statistic și fluxuri autorizate trebuie să funcționeze fără un API de model lingvistic. Internetul poate fi necesar pentru sincronizarea datelor de business, dar nu pentru orice decizie locală.
+2. **Conectarea la un model AI online rămâne doar o capacitate tehnică opțională pentru viitor**, cu un contract abstract de integrare și fallback sigur: serviciul extern nu trebuie să fie o dependență obligatorie la pornirea aplicației, la lucrul în sală, OCR, GPS, diurnă, chat ori activități financiare.
+3. **Nu activăm niciun model online, API plătit, plan cu facturare sau cheie în aplicație fără acord nou și explicit**. Un abonament ChatGPT Plus nu trebuie interpretat drept buget API inclus; nu se promit conversații GPT nelimitate 24/7 la cost zero, nici prezența autonomă a acestei conversații în dispozitiv.
+4. Dacă, ulterior, se autorizează integrarea online, accesul se realizează printr-un backend securizat cu permisiuni, control al datelor/secretelor, limită de buget, jurnal minim, posibilitate de oprire și explicație asupra datelor folosite. Nicio ieșire a modelului nu poate modifica date critice sau lansa deploy fără permisiunile și confirmările obligatorii.
+5. **Țintă economică: 0 lei costuri suplimentare.** Se proiectează pentru resurse deja disponibile, măsurând și limitând consumul Firebase/Mapbox; această țintă nu echivalează cu garanția facturii zero dacă se depășesc cote existente.
+6. Aceasta este o **aprobare de arhitectură și prioritate**, nu autorizare de implementare, migrări ori publicare. Fuziunea Vision rămâne de realizat după modularizare și aprobarea contractelor, cu teste separate și CI.
+
+**Referință tehnică:** `ARHITECTURA_VISION_ULTRON_JARVIS_ZERO_COST.md`, secțiunile 3–7 și completarea 10.
