@@ -1082,3 +1082,36 @@ Workflow separat **`.github/workflows/test-firestore-diurna.yml`** pentru reguli
 - **Păstrăm regulile anterioare:** fiecare dintre cei doi membri real participanți primește **întreaga suprafață de mochetă** a lucrării finalizate în totalul propriu; firma numără lucrarea o singură dată. Parteneriatele reluate își continuă randamentul General și m² fără reset; cele două procente sunt ale perechii, nu procent personal.
 - **Documentație GitHub actualizată:** `docs/PROIECTARE_RANDAMENT_ADAPTIV.md` secțiunea **25** commit `dd8e21df803d85d609c08259f91c8dc18ab83d5f` și `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` secțiunea **47** commit `2ba127e5262071ea44bb5434c07c4089ad634012`; această notă 127 este rezumatul pentru continuitate.
 - **NUMAI documentație**: nu s-a modificat codul Dart/Flutter, Firebase, Cloud Functions, reguli de securitate, date de producție, APK ori deploy. Pasul următor: inventarierea completă a câmpurilor și a drepturilor operaționale ce trebuie păstrate pentru funcționarea aplicației, apoi schema/PR cu teste la etapa autorizată. **Nu mai cere reconfirmarea pictogramei ochi.**
+
+## 128. Mandat: punctele 1/4/5 delegate, 2/3 împreună și audit notificări/iconuri/interfață (2026-10-13)
+
+**Mesaj nou al proprietarului:** 
+- «**1 decizi tu după logică analizând foarte atent fiecare aspect; 2 decidem împreună; 3 decidem împreună; 4 decizi cum este logic analizând atent fiecare ipoteză; 5 aici nu mă bag, nu ține de competența mea, fă-le după cum este normal; 6 la final**».
+- Înainte de implementarea/testarea finală trebuie **verificate problemele sistemului actual de notificări**, **pictogramele lipsă** și **redescoperite cerințele vechi de interfață** (proprietarul nu știa dacă au rămas salvate).
+
+**Lucruri confirmate ca DOCUMENTATE anterior, regăsite chiar în acest fișier `ChatGpt`, secțiunea 6:**
+- Web: **meniul cu categorii care glisează din DREAPTA**.
+- Android: **taburile de jos cerute pe DOUĂ rânduri**, nu un rând.
+- **Chat glisant din dreapta, popup și X**, profil redesenat, antet superior cu **poză profil + nume**, temă vizuală **verde** după eliminarea temei maro, icon diferit pentru Setări, butoane mari doar icon Google Maps/Waze, stickere/emoji care apar vizual.
+- **Notificări:** buton explicit **«Marchează ca citit»**, indicator/icon doar la notificări relevante, plus diagnostic push/permisiuni/token.
+- Toate acestea sunt **cerințe istorice de revalidat ÎMPREUNĂ la punctul 2**, NU dovezi că sunt implementate și NU trebuie șterse/înlocuite tacit.
+
+**Audit read-only al codului actual a evidențiat:**
+1. `lib/home/home_page.dart` include efectiv `endDrawer` pe WEB și deschiderea `openEndDrawer` a listei «Categorii», dar asta nu demonstrează deployul. Pe mobil există un `NavigationBar` **pe un rând**. Mesageria deschide `GroupChatPage`/`PrivateChatPage` prin `Navigator.push`, nu panoul glisant din dreapta cu X. Antetul este încă aglomerat cu logo, Despre, notificări, profil, meniu și membri/chat. `web/manifest.json` are încă `theme_color:#B97A2B` maro, contrar temei verzi dorite.
+2. `lib/home/home_page.dart::_openNotificationsSheet` marchează o notificare citită la atingerea cardului, **NU are «Marchează ca citit»** explicit. Mută `read=true` înainte de confirmarea Firestore și sheetul poate rămâne vizual vechi din cauza listei locale. La pornire pot reapărea popups pentru notificări vechi necitite. `notifyUser` condiționează însăși crearea în Firestore de `settings.pushNotifications`, deci poate pierde istoricul aplicației când pushul e dezactivat.
+3. `functions/index.js` clasifică unele notificări ca obligatorii doar dacă titlul e «sistem» ori conține «admin»; `firestore.rules` permite crearea de notificări pentru alt membru de către conturi active. **Risc de notificări false care par mesaje de Admin și ocolirea preferințelor**, nu dovadă că s-a întâmplat.
+4. `_savePushToken` păstrează token în contul curent; `SettingsPage._switchQuickAccount` și logout-ul nu arată curățarea lui. `functions/index.js::sendToUser` folosește toate tokenurile înregistrate. **Risc P0 de push pentru cont vechi pe același dispozitiv** după comutarea rapidă; necesită confirmare practică și tratare prioritară.
+5. `_initPushNotifications` are rutare la tap doar pentru push `type='chat'`; `type='notification'` trebuie navigat separat cu autorizare. Categorii inferate din text și cheie VAPID web pot genera comportament instabil. Există diagnostic de push în Setări, worker FCM web și icon PWA în sursă, fără dovada livrării reale.
+6. Au fost **verificate prin GitHub că există** principalele imagini pentru 7 taburi de navigare, 4 categorii, 10 badge-uri, plus iconurile PWA. Lipsa vizuală raportată nu e dovedită remediată; ar putea fi o cale de afișare, asset loading, build/deploy, cache, contrast sau icon generic în ecran (de ex. rețele sociale încă generice în profil).
+7. `pubspec.yaml` în sursă arată `version:3.0.1+33`, dar aceasta **NU** este dovada versiunii instalate sau publicate. Pentru UI trebuie inspectat commitul/SHA-ul real de deploy sau testată interfața web/telefon.
+
+**DECIZII TEHNICE DOCUMENTATE ÎN LIMITELE DELEGĂRII (1/4/5):**
+- 1: ascunderea unei informații **în profil** nu elimină numele/rolul de lucru minim necesar, autorizat pentru grafice/echipe/chat/audit. Nu publicăm automat toate datele personale; fotografia poate fi înlocuită cu avatar generic; telefon/email și diurne respectă reguli stricte de citire. Explicați utilizatorului domeniul de aplicare al pictogramei ochi.
+- 4: m² integrali celor doi membri pe execuție comună verificată (o singură dată la firmă), perechea reformată continuă istoricul, date lipsă/invalide nu devin 0%, 100% ori m² inventați. Modele mixte numai din intervenții mixte comparabile; fațada ulterioară nu schimbă istoricul vechi. Schema exactă de participare/versiune de suprafață se decide **împreună** la punctul 3.
+- 5: minim de privilegii, server-side filtered `memberDirectory`, `users` privat, diurne numai titular/admin în profil, evitare acces neautorizat la `records`, retry idempotent/offline, revocare de vizibilitate în cache, separarea tokenurilor push între conturi, «Admin obligatoriu» validat numai pe bază de autor autorizat și notificări fără informații sensibile inutile pe lockscreen. **Nu modificăm reguli Firebase în producție fără aprobări separate**.
+
+**Documentație nouă de audit:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md`, commit `83413c2f164bb386a60b748031157a352ee25734`, cu matrice de riscuri și detaliile UI/notificări/iconuri; `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` secțiunea **48**, commit `e52b3529ddc74524279f29958c4b163dc752b025`; această notă **128** este rezumatul de continuitate.
+
+**STARE:** numai documentație și analiză de sursă; nu a fost verificat Firebase live ori SHA-ul real al web publicat, nu s-au rulat teste Flutter/CI sau pe dispozitive și nu s-a modificat cod, date, reguli, Cloud Functions, APK sau deploy.
+
+**URMĂTORUL PAS:** întrebați proprietarul **CE probleme concrete observă la notificări și pe ce dispozitiv** (lipsă/întârziere/duble/alertă repetată/sunet/buton citit). Prioritizați apoi auditul/testele de securitate, verificați interfața publicată și decideți **ÎMPREUNĂ** punctele 2 și 3. Implementarea finală la punctul 6 rămâne ultima etapă conform ordinii proiectului.
