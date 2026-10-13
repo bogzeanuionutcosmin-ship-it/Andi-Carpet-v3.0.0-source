@@ -74,6 +74,7 @@ import 'map/verified_location_fix.dart' as verified_fix;
 import 'ui/dashboard_map_components.dart' as dashboard_components;
 import 'auth/account_access_views.dart' as account_access_views;
 import 'auth/quick_accounts.dart' as quick_accounts;
+import 'auth/login_alias_resolver.dart';
 import 'auth/auth_gate_sources.dart';
 export 'auth/auth_gate_sources.dart';
 import 'auth/firebase_user_profile.dart';

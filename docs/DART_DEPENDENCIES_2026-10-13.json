@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 165,
-  "lib_dart_files": 125,
-  "test_dart_files": 39,
+  "dart_files": 167,
+  "lib_dart_files": 126,
+  "test_dart_files": 40,
   "script_dart_files": 1,
   "parts": 60,
-  "libraries": 105,
+  "libraries": 107,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -18,6 +18,7 @@
     "lib/auth/firebase_user_profile.dart": [
       "lib/models/app_enums.dart"
     ],
+    "lib/auth/login_alias_resolver.dart": [],
     "lib/auth/quick_accounts.dart": [],
     "lib/bootstrap/firebase_bootstrap_error_app.dart": [],
     "lib/bootstrap/firebase_initialization.dart": [],
@@ -72,6 +73,7 @@
       "lib/auth/account_access_views.dart",
       "lib/auth/auth_gate_sources.dart",
       "lib/auth/firebase_user_profile.dart",
+      "lib/auth/login_alias_resolver.dart",
       "lib/auth/quick_accounts.dart",
       "lib/bootstrap/firebase_bootstrap_error_app.dart",
       "lib/bootstrap/firebase_initialization.dart",
@@ -286,6 +288,9 @@
     "test/interactive_member_badges_library_test.dart": [
       "lib/models/location_status_and_functions.dart",
       "lib/ui/interactive_member_badges.dart"
+    ],
+    "test/login_alias_resolver_test.dart": [
+      "lib/auth/login_alias_resolver.dart"
     ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
@@ -919,9 +924,48 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/auth/login_alias_resolver.dart",
+      "bytes": 1287,
+      "sha256": "6a0923688869ec4b8249c4315d4e36b4d5621a79abcf10cf23e2e1bfda160185",
+      "owner": "lib/auth/login_alias_resolver.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:convert';",
+          "uris": [
+            "dart:convert"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "uris": [
+            "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:http/http.dart' as http;",
+          "uris": [
+            "package:http/http.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "LoginAliasResolver"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/auth/login_registration_page.dart",
-      "bytes": 10067,
-      "sha256": "1c9b5f678672787bf7ebc8e505b4de7bdb5b0c982aef7aab78585e1b5cec3317",
+      "bytes": 9290,
+      "sha256": "927457a1f69761b38799edbe200b184d7dbd927fc73b12fd3ed5dbbde4abb025",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2265,8 +2309,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 28561,
-      "sha256": "525597b8f529ed43b860629cec1816355348151878e4e53bc04d93b905e46b67",
+      "bytes": 28602,
+      "sha256": "ea91078c15b58e7e9e05ea496914735bcef5e715849c6b7005e1331fa1546e7b",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2967,6 +3011,16 @@
           ],
           "local_targets": [
             "lib/auth/quick_accounts.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'auth/login_alias_resolver.dart';",
+          "uris": [
+            "auth/login_alias_resolver.dart"
+          ],
+          "local_targets": [
+            "lib/auth/login_alias_resolver.dart"
           ]
         },
         {
@@ -6713,6 +6767,68 @@
           "local_targets": [
             "lib/ui/interactive_member_badges.dart"
           ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/login_alias_resolver_test.dart",
+      "bytes": 3139,
+      "sha256": "3cd432018969f2155542e22592e4e1a238a2d4362c60909684d180c8f064b77e",
+      "owner": "test/login_alias_resolver_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'dart:convert';",
+          "uris": [
+            "dart:convert"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/auth/login_alias_resolver.dart';",
+          "uris": [
+            "package:andi_carpeta/auth/login_alias_resolver.dart"
+          ],
+          "local_targets": [
+            "lib/auth/login_alias_resolver.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "uris": [
+            "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:http/http.dart' as http;",
+          "uris": [
+            "package:http/http.dart"
+          ],
+          "local_targets": []
         }
       ],
       "declarations": [],
