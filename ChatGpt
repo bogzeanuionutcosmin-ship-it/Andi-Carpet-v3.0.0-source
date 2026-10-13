@@ -1199,3 +1199,13 @@ Continuați cu **o singură propunere** nouă despre notificări pentru confirma
 **Nu echivala simpla deschidere cu citirea** când utilizatorul este derulat la mesaje vechi, aplicația e minimizată ori chatul nu e vizibil. Marker/cursor de citire persistent pe server, monoton, inclusiv pentru mesajele noi în timp ce chatul este activ; mesaje proprii excluse, badge corect după F5/relogin/două dispozitive. Deduplicare Firestore/FCM și comportament separat foreground/background. Testare reală Flutter/Firestore/FCM rămâne pentru etapa finală autorizată.
 
 **Documente:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md` secțiunea 14 și `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` secțiunea 54. Nu a fost modificat codul aplicației, regulile, datele ori produsul publicat. **Continuați cu propunerea 4 despre notificări, una singură, pentru răspuns Da/Nu/altă variantă.**
+
+## 135. Notificări: propunerea 4 CONFIRMATĂ — grupare mesaje pe conversație (2026-10-13)
+
+**Proprietarul a răspuns «Confirm» la propunerea 4.** La primirea mai multor mesaje succesive în **aceeași conversație** în aproximativ **30 secunde**, aplicația arată **un singur card de notificare** (exemplu «Daniel — 5 mesaje noi») și emite **maximum un sunet** dacă este permis. La noi mesaje în interval actualizează cardul/contorul, fără alte popup-uri ori sunete. Chat live și fiecare chat privat rămân grupări separate.
+
+**La citire efectivă**, starea se persistă pe server, iar notificarea grupată dispare din lista de necitite fără să reapară la reload/relogin. Propunerea 3 se respectă: pentru chatul deschis și mesajul realmente vizibil nu se creează alertă ori badge; pentru alte conversații sau mesaje încă nevăzute se păstrează notificarea. Mesajele proprii nu intră la necitite.
+
+**Implementare viitoare:** cheia de grupare per cont/conversație; ID-uri stabile; deduplicare Firestore/FCM/OS, sunet o singură dată pe grup per dispozitiv, tratarea mesajelor concurente/offline/multidispozitiv și a citirii în timpul ferestrei. Urgențele Admin/Sistem și sugestiile Learning care cer aprobare nu se absorb în carduri chat obișnuite.
+
+**Documentație:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md` secțiunea 15, `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` secțiunea 55. **Nicio modificare Flutter/Firebase/CI/producție, fără teste live**. Continuăm cu propunerea 5, una singură, așteptând Da/Nu/altă variantă.
