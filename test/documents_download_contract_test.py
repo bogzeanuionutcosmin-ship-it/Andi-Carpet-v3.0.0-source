@@ -25,7 +25,7 @@ class DocumentsDownloadContract(unittest.TestCase):
         self.assertIn("Fișă informativă — PDF neatașat", DOCUMENTS)
         self.assertIn("Această funcție NU încarcă un fișier PDF", DOCUMENTS)
         self.assertIn("isProtocolDocument(", DOCUMENTS)
-        self.assertIn("Proces verbal", CATEGORIES)
+        self.assertIn("c == 'proces verbal'", CATEGORIES)
         self.assertNotIn("FirebaseStorage", DOCUMENTS)
         self.assertNotIn("documentImageBase64", DOCUMENTS)
 
