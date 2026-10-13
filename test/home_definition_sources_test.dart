@@ -38,7 +38,7 @@ class _DefinitionFirestore extends Fake implements FirebaseFirestore {
 void main() {
   test('adapter is lazy and preserves exact collections and snapshot defaults', () async {
     final controllers = List.generate(3,
-        (_) => StreamController<QuerySnapshot<Map<String, dynamic>>>());
+        (_) => StreamController<QuerySnapshot<Map<String, dynamic>>>.broadcast());
     final collections = <String, _DefinitionCollection>{
       'locationCategories': _DefinitionCollection(controllers[0].stream),
       'backgrounds': _DefinitionCollection(controllers[1].stream),
