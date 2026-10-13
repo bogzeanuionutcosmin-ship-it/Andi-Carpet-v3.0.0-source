@@ -6614,8 +6614,8 @@
     },
     {
       "path": "test/home_definition_sources_test.dart",
-      "bytes": 4630,
-      "sha256": "92ea9ada8097b522011de01d5db299267b15bd40023c2a2eab4d8922133c38e9",
+      "bytes": 4674,
+      "sha256": "16c95bc69499c65730202182a2985e11527cfbc840f8130aa783e5a6df2d4c8b",
       "owner": "test/home_definition_sources_test.dart",
       "directives": [
         {

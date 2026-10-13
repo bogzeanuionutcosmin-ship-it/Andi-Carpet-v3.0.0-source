@@ -47,9 +47,9 @@ void main() {
     final db = _DefinitionFirestore(collections);
     final sources = HomeDefinitionSources.fromFirestore(db);
     expect(db.requests, isEmpty);
-    expect(identical(sources.categories(), controllers[0].stream), isTrue);
-    expect(identical(sources.backgrounds(), controllers[1].stream), isTrue);
-    expect(identical(sources.functions(), controllers[2].stream), isTrue);
+    expect(identical(sources.categories(), collections['locationCategories']!.stream), isTrue);
+    expect(identical(sources.backgrounds(), collections['backgrounds']!.stream), isTrue);
+    expect(identical(sources.functions(), collections['functions']!.stream), isTrue);
     expect(db.requests, ['locationCategories', 'backgrounds', 'functions']);
     expect(collections.values.map((c) => c.snapshotCalls), [1, 1, 1]);
     for (final controller in controllers) { await controller.close(); }
