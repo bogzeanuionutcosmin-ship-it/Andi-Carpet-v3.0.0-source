@@ -46,6 +46,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     final darkBackgrounds = tester.widgetList<ColoredBox>(
       find.descendant(
