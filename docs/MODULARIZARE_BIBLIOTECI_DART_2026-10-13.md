@@ -282,3 +282,12 @@ Bază: `8798481c5b7eb5fc6e5c00ad72d85c9878bf1b36`. UI-ul de stare Firebase a fos
 Testele Dart verifică mesajul/logo/progresul și forwardarea callbackului de sign-out. Inventar: 147 Dart, 72 parts, 75 biblioteci; fără missing/orphan/duplicate/cicluri. Testele structurale locale (84), inventarul JSON, node --check și diff-check PASS; Flutter/Dart indisponibil local.
 
 PR #29, OCR, regulile/datele financiare și diurnele rămân neatinse. CI pentru lotul curent în așteptare; următorul pas după 5/5 este audit read-only al componentei next cu dependențe private mici. Modularizarea completă nu este finalizată.
+
+
+## MOD-AUTH-STATUS-VIEWS-CI-GREEN-20261013
+
+Lotul `auth_status_views.dart` este validat pe commitul cod `cd161c2d9b361e81dd5b2014f3ab08dc55db829f`, workflow run `38462847310`: **5/5 joburi SUCCESS**. Python/security, Node, Firestore emulator, Functions, Flutter/unit/widget, biblioteci independente și web build au trecut.
+
+Inventar: 147 Dart, 72 parts, 75 biblioteci; fără missing/orphan/duplicate/cicluri. Doar UI de încărcare/eroare a devenit standalone; callsite-urile AuthGate și Firebase Auth rămân în adapters main.
+
+Următorul lot read-only: verificarea `bootstrap/firebase_bootstrap_error_app.dart` pentru extragere ca ecran Material cu mesaj injectat. Nu se modifică inițializarea Firebase sau recuperarea erorilor. Modularizarea integrală nu este finalizată.
