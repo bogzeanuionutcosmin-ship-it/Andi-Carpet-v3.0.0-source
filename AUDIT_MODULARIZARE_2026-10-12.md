@@ -491,3 +491,12 @@ Au fost adăugate teste Flutter directe pentru conținutul/dimensiunea lui StatM
 CI pentru commitul de cod `d3906ef90466b3a3e32e71933301ec6f1c0524fb`, workflow run [38465871229](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38465871229): **5/5 SUCCESS** (Python/security, Node, Functions, emulator Firestore, Flutter tests + web build). PDF-urile Magic/Million, PDF generators/helpers, PR #20, Mapbox singleton/rutare, PR #29, OCR, datele/regulile financiare, diurnele și permisiunile nu au fost modificate. PR #28 rămâne Draft/Open, fără merge/deploy.
 
 Următorul pas exact: audit read-only al widgeturilor rămase din Home/Dashboard pentru dependențe de branding global și stare privată; extrag numai când adapterul păstrează callsite-urile și API-urile. PageShell/branding global, serviciile auth/sync și contractul PDF de anulare/download/share rămân blocate până la interfețe compatibile. Modularizarea integrală nu este finalizată.
+
+
+## MOD-SECTION-VISUAL-HELPERS-LIBRARY-20261014
+
+Bază: HEAD PR #28 `e37552a5b90d4f967e5db8cdf77c61120998e2d7` (CI 5/5 success, run `38466275696`). `section_visual_helpers.dart` este convertit din part în bibliotecă Material independentă; dependența `AppSettings` este explicită. Main importă/re-exportă API-urile publice și păstrează `_plainBackgroundColor` ca wrapper privat pentru callerii din părți. Corpul funcțiilor este identic după redenumirea `_plainBackgroundColor` → `plainBackgroundColor`; mapările, mesajele, durata și culorile rămân neschimbate.
+
+Testele directe acoperă accent/fallback, setările de fundal/light-dark și SnackBar succes/eroare. Python: 154 teste PASS; Node: 3/3 PASS; scriptul de audit Dart: 151 fișiere, 68 parts, 83 biblioteci, fără targeturi lipsă/orfani/duplicate/cicluri; integritatea blocului Mapbox și fișierele protejate trec. `git diff --check` PASS. Flutter/Dart lipsesc local; CI trebuie confirmat pe commitul lotului.
+
+Nicio modificare în state/branding global, PDF/download/share, Mapbox, OCR, PR #29, diurne/finanțe, reguli sau date Firebase. Următorul pas numai după CI verde: audit read-only al următorului widget/helper UI cu dependențe explicite; PageShell și tema rădăcină rămân blocate de brandingul global mutabil.

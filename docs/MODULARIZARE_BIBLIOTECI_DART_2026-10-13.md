@@ -332,3 +332,12 @@ Au fost adăugate teste Flutter directe pentru conținutul/dimensiunea lui StatM
 CI pentru commitul de cod `d3906ef90466b3a3e32e71933301ec6f1c0524fb`, workflow run [38465871229](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38465871229): **5/5 SUCCESS** (Python/security, Node, Functions, emulator Firestore, Flutter tests + web build). PDF-urile Magic/Million, PDF generators/helpers, PR #20, Mapbox singleton/rutare, PR #29, OCR, datele/regulile financiare, diurnele și permisiunile nu au fost modificate. PR #28 rămâne Draft/Open, fără merge/deploy.
 
 Următorul pas exact: audit read-only al widgeturilor rămase din Home/Dashboard pentru dependențe de branding global și stare privată; extrag numai când adapterul păstrează callsite-urile și API-urile. PageShell/branding global, serviciile auth/sync și contractul PDF de anulare/download/share rămân blocate până la interfețe compatibile. Modularizarea integrală nu este finalizată.
+
+
+## MOD-SECTION-VISUAL-HELPERS-LIBRARY-20261014
+
+Bază PR #28 `e37552a5b90d4f967e5db8cdf77c61120998e2d7`, CI-ul bazei run `38466275696` 5/5 SUCCESS. `lib/ui/section_visual_helpers.dart` devine bibliotecă Material independentă cu import explicit pentru `AppSettings`. Main păstrează fațada de import/export și adaptorul privat `_plainBackgroundColor`; toate părțile și callsite-urile publice rămân compatibile. Codul helperilor este identic după redenumirea singurei funcții private necesare exportului.
+
+Testul Flutter nou verifică mappingurile sectionAccent, toate fundalurile light/dark și conținutul/culorile SnackBar. Local: 154 teste Python PASS, 3 teste Node PASS, auditul inventarului Dart PASS (151 fișiere, 68 parts, 83 biblioteci; fără ținte lipsă, orfani, duplicate sau cicluri), protecțiile PDF/Mapbox PASS și `git diff --check` PASS. SDK Flutter/Dart indisponibil local; CI-ul nou este necesar pentru confirmare pe SHA-ul lotului.
+
+Nu s-au atins PDF-urile și fluxurile PR #20, PR #29/OCR, rutarea/Mapbox, auth/sync, date/reguli Firebase sau billing. Fără merge/deploy/APK. Modularizarea completă rămâne deschisă. Următorul pas: auditarea read-only a următorului helper vizual independent, fără extragerea PageShell/temei globale.

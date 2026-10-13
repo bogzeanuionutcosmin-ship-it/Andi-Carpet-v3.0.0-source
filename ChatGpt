@@ -1670,3 +1670,14 @@ Au fost adăugate teste Flutter directe pentru conținutul/dimensiunea lui StatM
 CI pentru commitul de cod `d3906ef90466b3a3e32e71933301ec6f1c0524fb`, workflow run [38465871229](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38465871229): **5/5 SUCCESS** (Python/security, Node, Functions, emulator Firestore, Flutter tests + web build). PDF-urile Magic/Million, PDF generators/helpers, PR #20, Mapbox singleton/rutare, PR #29, OCR, datele/regulile financiare, diurnele și permisiunile nu au fost modificate. PR #28 rămâne Draft/Open, fără merge/deploy.
 
 Următorul pas exact: audit read-only al widgeturilor rămase din Home/Dashboard pentru dependențe de branding global și stare privată; extrag numai când adapterul păstrează callsite-urile și API-urile. PageShell/branding global, serviciile auth/sync și contractul PDF de anulare/download/share rămân blocate până la interfețe compatibile. Modularizarea integrală nu este finalizată.
+
+
+## MOD-SECTION-VISUAL-HELPERS-LIBRARY-20261014 — helperi vizuali independenți în PR #28
+
+Bază verificată: HEAD PR #28 `e37552a5b90d4f967e5db8cdf77c61120998e2d7`, CI run `38466275696` 5/5 SUCCESS. Loturile anterioare UI (carduri, fundal, badge preview, starea auth, modelul GPS și widgeturile hărții) sunt deja pe această bază și nu au fost repetate.
+
+`lib/ui/section_visual_helpers.dart` devine bibliotecă Material independentă, cu import explicit pentru `AppSettings`. `main.dart` o importă și re-exportă ca fațadă pentru callerii existenți din parts. `_plainBackgroundColor` rămâne wrapper privat în main și delegă la `plainBackgroundColor`; maparea accentelor și mesajele SnackBar păstrează numele și implementarea existentă. Compararea corpului după normalizarea numelui public confirmă mutarea textuală exactă. Nicio schimbare la brandingul global, PageShell, auth, sync, Firebase, PDF, rutare sau reguli de business.
+
+Test direct nou: culori pe secțiuni și fallback, toate variantele de fundal plus dark mode, text/culori pentru SnackBar succes și eroare. Testele structurale Python, verificarea dependențelor Dart și Node au trecut local; Flutter/Dart nu sunt disponibile în acest mediu. Inventarul regenerat: 151 fișiere Dart, 68 parts și 83 biblioteci totale; zero missing targets, parts orfane, duplicate în aceeași bibliotecă sau cicluri import/export. CI pe commitul lotului trebuie să confirme testele Flutter și buildul web.
+
+Checkpoint de protecție: PR #20 PDF/PV Magic/Million/download/share, PR #29 OCR/diurne, Mapbox singleton și blocurile financiare nu au fost modificați. Fără merge, deploy, APK publicat sau modificări Firebase producție/rules/config/billing. Modularizarea integrală rămâne neterminată.

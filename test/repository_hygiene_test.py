@@ -576,15 +576,20 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_section_visual_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/section_visual_helpers.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'ui/section_visual_helpers.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("part 'ui/section_visual_helpers.dart';", main)
+        self.assertIn("import 'ui/section_visual_helpers.dart';", main)
+        self.assertIn("export 'ui/section_visual_helpers.dart';", main)
+        self.assertNotIn("part of", module)
+        self.assertIn("import '../models/app_data_models.dart';", module)
         for symbol in ("Color sectionAccent(String label)",
                        "void showSuccessMessage(BuildContext context, String message)",
                        "void showErrorMessage(BuildContext context, String message)",
-                       "Color _plainBackgroundColor(AppSettings settings, Brightness brightness)"):
+                       "Color plainBackgroundColor(AppSettings settings, Brightness brightness)"):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("Colors.white", module)
+        self.assertIn("Color _plainBackgroundColor(AppSettings settings, Brightness brightness)", main)
+        self.assertIn("plainBackgroundColor(settings, brightness)", main)
 
     def test_app_backdrop_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

@@ -52,6 +52,8 @@ import 'models/permission_status_labels.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';
+import 'ui/section_visual_helpers.dart';
+export 'ui/section_visual_helpers.dart';
 import 'ui/empty_state.dart' as empty_state;
 import 'ui/money_card.dart' as money_card;
 import 'ui/info_card.dart' as info_card;
@@ -74,7 +76,6 @@ part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
-part 'ui/section_visual_helpers.dart';
 part 'ui/interactive_member_badges.dart';
 part 'ui/app_root_theme.dart';
 part 'ui/app_information_page.dart';
@@ -160,6 +161,10 @@ Future<double?> estimateGraphRoadDistanceKm(
     get: (uri) => http.get(uri),
   );
 }
+
+// Keep the existing private adapter name for callers in main.dart parts.
+Color _plainBackgroundColor(AppSettings settings, Brightness brightness) =>
+    plainBackgroundColor(settings, brightness);
 
 IconData _adminSectionIcon(int index) => admin_navigation.adminSectionIcon(index);
 String _adminSectionGroup(int index) => admin_navigation.adminSectionGroup(index);
