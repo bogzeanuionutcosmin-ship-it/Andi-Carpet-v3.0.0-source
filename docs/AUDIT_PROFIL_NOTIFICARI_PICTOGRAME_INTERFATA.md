@@ -338,3 +338,17 @@ Răspunsul la întrebarea «fundal comun sau personal în chatul privat?» este 
 - **Scenarii de test viitoare:** 2 mesaje cât conversația e vizibilă; derulare la mesaje vechi; mesaj într-un alt chat; chat minimizat; aplicație în background; două dispozitive; reconectare; mesaj de la sine; scriere eșuată; duplicate FCM+Firestore; revocare permisiuni; ceasuri diferite.
 
 **Statut:** propunerea 3 APROBATĂ doar ca regulă de produs; NU implementată ori testată live. Fără schimbări Flutter, Cloud Functions, Firebase Rules, date sau deploy.
+
+## 15. Notificări — propunerea 4 CONFIRMATĂ: mesaje grupate per conversație (2026-10-13)
+
+Proprietarul a răspuns **«Confirm»** la propunerea 4: mesajele sosite succesiv în aceeași conversație într-o fereastră de aproximativ **30 de secunde** se reunesc într-o **singură notificare compactă**, actualizată cu numărul real de mesaje necitite. Se emite **maximum un sunet per grup**, numai când sunetul este permis. Conversațiile diferite au carduri separate. La atingere se deschide conversația corespunzătoare.
+
+**Contract și verificări pentru implementare:**
+- Cheia de grupare folosește identitatea contului și a conversației: Chat live distinct de fiecare chat privat; fiecare mesaj se deduplică prin ID stabil.
+- Actualizarea numărului de necitite în timpul ferestrei nu creează încă un popup ori sunet. După citirea efectivă și confirmarea stării pe server, notificarea agregată dispare din necitite și nu revine după F5/reconectare.
+- Propunerea 3 rămâne în vigoare: mesaj văzut într-un chat activ și vizibil nu declanșează nici popup, nici sunet, nici unread. Mesajele primite în alt chat sau încă nevăzute pot crea notificarea grupată. Mesajele proprii nu se numără.
+- Folosim deduplicare Firestore/FCM și notificări OS, cu atenție la telefoane multiple, offline, citire în timpul ferestrei și permisiunea pentru sunet; nu promitem că un sunet este sincronizat între dispozitive fără mecanism dedicat.
+- Mesajele Admin/Sistem autentificate, problemele urgente și aprobările Learning nu se absorb automat într-un card obișnuit de chat; păstrează prioritatea și acțiunile lor.
+- La testare: 5 mesaje din același chat în 30 secunde = un card și cel mult un sunet; alt chat = alt card; card actualizat la mesaj nou; citirea îl elimină; aplicație în fundal/foreground; F5; două dispozitive; mesaje concurente și duplicate.
+
+**Statut:** regula de produs este aprobată și documentată, dar nu este implementată; nu s-au schimbat Flutter, Firebase, reguli, APK sau deploy.
