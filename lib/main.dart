@@ -49,6 +49,7 @@ export 'models/default_categories_functions.dart';
 import 'models/location_category_helpers.dart';
 export 'models/location_category_helpers.dart';
 import 'models/permission_status_labels.dart';
+import 'home/seed_operational_locations.dart' as operational_location_seed;
 export 'models/permission_status_labels.dart';
 
 part 'ui/dashboard_map_components.dart';
@@ -129,7 +130,6 @@ part 'home/home_financial_write_actions.dart';
 part 'home/home_operational_write_actions.dart';
 part 'home/home_audit_persistence.dart';
 part 'home/home_document_codecs.dart';
-part 'home/home_location_seed.dart';
 
 // Application adapter: retain the singleton and lazy initialization in main.
 /// Distanța rutieră în kilometri, pe drumuri practicabile cu automobilul.

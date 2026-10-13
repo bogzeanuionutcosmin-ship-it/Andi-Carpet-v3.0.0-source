@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 132,
+  "dart_files": 133,
   "lib_dart_files": 118,
-  "test_dart_files": 13,
+  "test_dart_files": 14,
   "script_dart_files": 1,
-  "parts": 79,
-  "libraries": 53,
+  "parts": 78,
+  "libraries": 55,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -47,6 +47,10 @@
       "lib/finance/per_diem_ledger.dart"
     ],
     "lib/firebase_options.dart": [],
+    "lib/home/seed_operational_locations.dart": [
+      "lib/models/app_data_models.dart",
+      "lib/models/app_enums.dart"
+    ],
     "lib/learning/duration_estimates.dart": [
       "lib/models/app_data_models.dart",
       "lib/models/app_enums.dart",
@@ -55,6 +59,7 @@
     "lib/main.dart": [
       "lib/download_file.dart",
       "lib/firebase_options.dart",
+      "lib/home/seed_operational_locations.dart",
       "lib/learning/duration_estimates.dart",
       "lib/map/graph_road_distance.dart",
       "lib/map/graph_route_calculations.dart",
@@ -145,6 +150,10 @@
       "lib/map/graph_road_distance.dart",
       "lib/map/graph_route_calculations.dart",
       "lib/models/app_data_models.dart",
+      "lib/models/app_enums.dart"
+    ],
+    "test/home_location_seed_test.dart": [
+      "lib/home/seed_operational_locations.dart",
       "lib/models/app_enums.dart"
     ],
     "test/model_library_boundaries_test.dart": [
@@ -1769,31 +1778,6 @@
       "top_level_functions": []
     },
     {
-      "path": "lib/home/home_location_seed.dart",
-      "bytes": 19945,
-      "sha256": "37a045afedbcd6d618b3a6a797e225fc97076192cb4dfd7bf2f5032559cb2f23",
-      "owner": "lib/main.dart",
-      "directives": [
-        {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
-          "uris": [
-            "../main.dart"
-          ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
-        }
-      ],
-      "declarations": [
-        {
-          "kind": "mixin",
-          "name": "_HomeLocationSeed"
-        }
-      ],
-      "top_level_functions": []
-    },
-    {
       "path": "lib/home/home_navigation.dart",
       "bytes": 4690,
       "sha256": "a9e999e898dba6849a084cd9d951e12110c2b1632d8804226ed6096db13764b6",
@@ -1845,8 +1829,8 @@
     },
     {
       "path": "lib/home/home_page.dart",
-      "bytes": 22403,
-      "sha256": "54c8f5d0d7bd6c915eca5829a3c3718a2f0ba81295f6784e8232f7e3cf426014",
+      "bytes": 22482,
+      "sha256": "6e2d67870f062216e233636f5b1bdb6b9cd3ce7e8dcd65f809a0cb18032945cf",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -1973,6 +1957,38 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/home/seed_operational_locations.dart",
+      "bytes": 20112,
+      "sha256": "f736d3bf0484a81c1fe036a784053b43e73101633c267945127c4c78f70e54e4",
+      "owner": "lib/home/seed_operational_locations.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_enums.dart';",
+          "uris": [
+            "../models/app_enums.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "seedOperationalLocations"
+      ]
+    },
+    {
       "path": "lib/learning/duration_estimates.dart",
       "bytes": 3570,
       "sha256": "389cb8437e99ed1b4338d3b7b197605f9141d7b5a1984bc20e5d992af3f8ae7e",
@@ -2022,8 +2038,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 16984,
-      "sha256": "1334044995b95c827b510c9880b0bca64df9c21cdfe63d39686558beba937637",
+      "bytes": 17023,
+      "sha256": "afd2daeb0e25b4172f50bf7aa498de6f6971b1c0466b8a4302d0c592f88cbf5d",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2484,6 +2500,16 @@
           ],
           "local_targets": [
             "lib/models/permission_status_labels.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'home/seed_operational_locations.dart' as operational_location_seed;",
+          "uris": [
+            "home/seed_operational_locations.dart"
+          ],
+          "local_targets": [
+            "lib/home/seed_operational_locations.dart"
           ]
         },
         {
@@ -3274,16 +3300,6 @@
           ],
           "local_targets": [
             "lib/home/home_document_codecs.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'home/home_location_seed.dart';",
-          "uris": [
-            "home/home_location_seed.dart"
-          ],
-          "local_targets": [
-            "lib/home/home_location_seed.dart"
           ]
         }
       ],
@@ -5186,6 +5202,46 @@
         "location",
         "noMapbox",
         "noHttp",
+        "main"
+      ]
+    },
+    {
+      "path": "test/home_location_seed_test.dart",
+      "bytes": 1297,
+      "sha256": "21d9258fc0a478f457c261e1ea439dc5457c9b8eb92ce609c271bb3bf078b3c0",
+      "owner": "test/home_location_seed_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/home/seed_operational_locations.dart';",
+          "uris": [
+            "package:andi_carpeta/home/seed_operational_locations.dart"
+          ],
+          "local_targets": [
+            "lib/home/seed_operational_locations.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_enums.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_enums.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
         "main"
       ]
     },

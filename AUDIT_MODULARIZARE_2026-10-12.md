@@ -227,6 +227,14 @@ Total mutat în acest lot: **145.053 caractere**; cumulativ în sesiune: **180.0
 
 PR #28 Draft/Open; PR #15/#19/#20/#21 neatinse. Fără merge, deploy, date/rules/config Firebase producție, migrare, billing, versiune ori APK publicat.
 
+## Addendum 2026-10-13 — extragere catalog Home
+
+PR #28 continuat de la HEAD `a01e8c98e48b023e325012deabb3735290563895`. `home/home_location_seed.dart` a fost înlocuit de `home/seed_operational_locations.dart`, bibliotecă independentă care importă numai modelele și enumurile. Wrapperul `_seedLocations()` și ordinea de inițializare au rămas. SHA-256-ul literalului catalogului Magic/Million este neschimbat: `82611ffb8f0f605a17e196f0196765dff3f0c923117997cdf34dc9048dbc9eb1`.
+
+Nu s-a forțat izolarea `pdf_reports.dart`: PR #28 are download PDF `Future<void>`, PR #20 are `Future<bool>` anulabil pe nativ și share separat. Aplatizarea contractului ar pierde anularea; grafica depinde încă de helpers private din main, inclusiv unul comun cu JPEG. Generatorii, fișierele PV Magic/Million, Documents și fluxurile de download/share rămân neatinse. Hash Magic verificat cu manifestul protejat: `eaf7be7d1ff77aafaa328c1ffd08c8e3c668f689104be432436cf5fb40eaaa6b`; Million există doar în PR #20, hash `3bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23`.
+
+Inventar regenerat: 133 fișiere Dart, 78 parts și 55 biblioteci; fără missing/orphan/duplicate/cicluri import-export. 151 teste Python, 1 Node, syntax Functions și diff-check PASS local. Cele două teste Flutter noi așteaptă CI pe lot. SHA/run CI se adaugă după verificarea celor cinci joburi. Modularizarea completă rămâne nefinalizată.
+
 ## MOD-SCREEN-ACTIONS-CI-FIX-20261013
 
 CI run 38372790209 pe `23d88a4cad17eb21ae9e3af34e4023641a796928`: 4 joburi SUCCESS, Flutter FAILURE la compilarea widget_test, înainte de build web. Cauză exactă: în extensia Decont, `const DropdownMenuItem(value: _legacySettlementKey, ...)` nu poate rezolva implicit constanta statică a State în context const. Corecție strictă: `value: _ExpensePageState._legacySettlementKey`; aceeași valoare/instanță const/comportament, fără schimbare business. Nu eliminăm const și nu schimbăm identificatorul legacy.

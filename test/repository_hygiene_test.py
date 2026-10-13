@@ -3,6 +3,7 @@
 Runs with Python stdlib only; deliberately does not delete unreferenced assets.
 """
 from pathlib import Path
+import hashlib
 import json
 import re
 import unittest
@@ -846,11 +847,24 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_home_seed_catalog_is_unique_and_local(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
-        seed = (ROOT / "lib/home/home_location_seed.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'home/home_location_seed.dart';", main)
-        self.assertIn("_HomeLocationSeed", home)
-        self.assertNotIn("List<Location> _seedLocations() {", home)
-        self.assertEqual(seed.count("List<Location> _seedLocations() {"), 1)
+        seed_path = ROOT / "lib/home/seed_operational_locations.dart"
+        seed = seed_path.read_text(encoding="utf-8")
+        self.assertNotIn("part 'home/home_location_seed.dart';", main)
+        self.assertIn("import 'home/seed_operational_locations.dart' as operational_location_seed;", main)
+        self.assertNotIn("_HomeLocationSeed", home)
+        self.assertIn("List<Location> _seedLocations() =>", home)
+        self.assertIn("operational_location_seed.seedOperationalLocations();", home)
+        self.assertEqual(seed.count("List<Location> seedOperationalLocations() {"), 1)
+        self.assertIn("import '../models/app_data_models.dart';", seed)
+        self.assertIn("import '../models/app_enums.dart';", seed)
+        self.assertNotIn("part of", seed)
+        for forbidden in ("package:flutter/", "package:firebase_", "FirebaseFirestore", "main.dart"):
+            self.assertNotIn(forbidden, seed)
+        literal_start = seed.index("    return [")
+        literal_end = seed.index("\n    ];", literal_start) + len("\n    ];")
+        literal = seed[literal_start:literal_end]
+        self.assertEqual(hashlib.sha256(literal.encode("utf-8")).hexdigest(),
+                         "82611ffb8f0f605a17e196f0196765dff3f0c923117997cdf34dc9048dbc9eb1")
         ids = re.findall(r"Location\(id:'([^']+)'", seed)
         self.assertEqual(len(ids), 103)
         self.assertEqual(len(ids), len(set(ids)))

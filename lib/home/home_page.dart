@@ -8,7 +8,7 @@ class HomePage extends StatefulWidget {
   @override State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomePermissionMaintenance, _HomeDocumentCodecs, _HomeLocationSeed {
+class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomePermissionMaintenance, _HomeDocumentCodecs {
   int tab = 0;
   late final String currentUserId;
   AppSettings get settings => widget.settings;
@@ -16,6 +16,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   late final List<Team> teams;
   late final List<Car> cars;
   late final List<Location> locations;
+
+  List<Location> _seedLocations() =>
+      operational_location_seed.seedOperationalLocations();
   final categories = <LocationCategory>[];
   final functionDefinitions = <FunctionDefinition>[];
   final schedules = <WorkSchedule>[];
