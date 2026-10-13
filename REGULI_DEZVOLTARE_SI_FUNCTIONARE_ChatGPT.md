@@ -1099,3 +1099,16 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 6. **Teste viitoare obligatorii:** rezumat cu 12 mesaje/2 Learning/1 eroare, zero evenimente, repetarea deschiderii fără spam, corectitudinea badge-urilor și a citirii, acces la resursa exactă, Nu deranja activ fără notificări OS, offline/reconectare, schimbarea contului, două dispozitive, notificări deja rezolvate.
 
 **Status:** aprobare de regulă, NU implementare ori teste live. Fără schimbări de cod, Firebase, reguli, date reale, APK sau deploy.
+
+## 62. Notificări — propunerea 11 CONFIRMATĂ: sincronizare multidispozitiv (2026-10-13)
+
+**Confirmare expresă a proprietarului:** «Confirm propunerea 11 pentru AndiCarpet.»
+
+1. Notificările, citirea și acțiunile sunt sincronizate între **Android, web și celelalte platforme autorizate**, printr-o stare canonică a contului pe server. O notificare citită pe un dispozitiv apare citită peste tot; nu se resetează la refresh/relogin.
+2. O acțiune efectiv **rezolvată** (de exemplu confirmarea diurnei ori soluționarea unei erori) dispare din lista **Acțiuni în așteptare** de pe toate dispozitivele, dar rămâne în istoric; citit nu înseamnă rezolvat. Dacă starea nu este încă sincronizată, se semnalează corect, fără confirmare falsă.
+3. Evenimentele cu **identificator stabil**, marcaje monotone și scrieri idempotente nu produc notificări duplicate după reconectare, reîncercări, Firestore/FCM sau deschiderea concomitentă a mai multor sesiuni. Pentru operații conflictuale se verifică starea și autorizarea actuală pe server.
+4. În modul offline, aplicația păstrează operațiile în așteptarea sincronizării, fără să le prezinte ca validate înainte de confirmare; revine la starea canonică la reconectare, fără pierderea citirilor/acțiunilor admise.
+5. **Modul Nu deranja** și programul său se sincronizează între dispozitivele aceluiași cont. Clarificarea strictă din secțiunea 58 prevalează: cât este activ, **nicio notificare AndiCarpet nu apare în bara telefonului, în notification shade, pe lock screen, ca popup OS sau în notificările browserului**, inclusiv cele critice. Toate sunt vizibile numai la deschiderea aplicației. În cazul schimbării stării între dispozitive și întârzierilor de rețea, se proiectează mecanisme backend/FCM și politici conservative pentru a evita notificările afișabile.
+6. **Teste viitoare obligatorii:** Android+web și două Androiduri, citire pe A observată pe B, confirmare diurnă pe B reflectată pe A, duplicat FCM/Firestore, logout/relogin și schimbare cont, restart, offline/online, sincronizarea Nu deranja și activarea la distanță, schimbare de oră/fus, acces revocat și tranziții concurente.
+
+**Status:** regulă CONFIRMATĂ și documentată, nu implementată sau testată în dispozitive reale. Fără schimbări Dart/Firebase/rules/production/deploy. Următoarea propunere se discută individual.
