@@ -75,6 +75,8 @@ import 'ui/dashboard_map_components.dart' as dashboard_components;
 import 'auth/account_access_views.dart' as account_access_views;
 import 'auth/quick_accounts.dart' as quick_accounts;
 import 'auth/login_alias_resolver.dart';
+import 'auth/login_actions.dart';
+export 'auth/login_actions.dart';
 import 'auth/auth_gate_sources.dart';
 export 'auth/auth_gate_sources.dart';
 import 'auth/firebase_user_profile.dart';
@@ -167,6 +169,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 
 // Read-only application adapter. SDK/query access stays lazy and ordered by AuthGate.
+LoginActions _firebaseLoginActions() => LoginActions(
+  resolveIdentifier: (identifier, password) =>
+      LoginAliasResolver(post: http.post).resolve(identifier, password),
+  createUser: ({required email, required password}) => FirebaseAuth.instance
+      .createUserWithEmailAndPassword(email: email, password: password),
+  signIn: ({required email, required password}) => FirebaseAuth.instance
+      .signInWithEmailAndPassword(email: email, password: password),
+  resetPassword: ({required email}) => FirebaseAuth.instance
+      .sendPasswordResetEmail(email: email),
+  writeProfile: (uid, data) => FirebaseFirestore.instance
+      .collection('users').doc(uid).set(data),
+);
+
 AuthGateSources _firebaseAuthGateSources() => AuthGateSources(
   currentUser: () => FirebaseAuth.instance.currentUser,
   authStateChanges: () => FirebaseAuth.instance.authStateChanges(),

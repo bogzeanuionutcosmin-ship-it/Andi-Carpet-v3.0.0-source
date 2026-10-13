@@ -839,8 +839,16 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
         for feature in ("TextEditingController()", "confirmPassword",
-                        "createMode", "FirebaseAuth.instance"):
+                        "createMode", "widget.actions ?? _firebaseLoginActions()",
+                        "_actions.createUser(", "_actions.signIn(",
+                        "_actions.writeProfile(user.uid, {", "_actions.resetPassword("):
             self.assertIn(feature, module)
+        adapter = main.split("LoginActions _firebaseLoginActions()", 1)[1].split(
+            "AuthGateSources _firebaseAuthGateSources()", 1)[0]
+        for feature in ("FirebaseAuth.instance", "createUserWithEmailAndPassword",
+                        "signInWithEmailAndPassword", "sendPasswordResetEmail",
+                        ".collection('users').doc(uid).set(data)"):
+            self.assertIn(feature, adapter)
 
     def test_account_access_status_pages_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

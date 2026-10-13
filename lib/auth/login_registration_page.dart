@@ -2,11 +2,20 @@ part of '../main.dart';
 
 class LoginPage extends StatefulWidget {
   final AppSettings settings;
-  const LoginPage({super.key, required this.settings});
+  final LoginActions? actions;
+  const LoginPage({super.key, required this.settings, this.actions});
   @override State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
+  late final LoginActions _actions;
+
+  @override
+  void initState() {
+    super.initState();
+    _actions = widget.actions ?? _firebaseLoginActions();
+  }
+
   final email = TextEditingController();
   final password = TextEditingController();
   final confirmPassword = TextEditingController();
@@ -40,7 +49,7 @@ class _LoginPageState extends State<LoginPage> {
   String _normalizePhone(String value) => value.replaceAll(RegExp(r'[^0-9]'), '');
 
   Future<String> _resolveLoginIdentifier(String identifier, String pass) =>
-      LoginAliasResolver(post: http.post).resolve(identifier, pass);
+      _actions.resolveIdentifier(identifier, pass);
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
@@ -68,10 +77,10 @@ class _LoginPageState extends State<LoginPage> {
     try {
       if (createMode) {
         final mail = identifier;
-        final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: mail, password: pass);
+        final credential = await _actions.createUser(email: mail, password: pass);
         final user = credential.user!;
         await user.updateDisplayName(name.text.trim());
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        await _actions.writeProfile(user.uid, {
           'name': name.text.trim(),
           'email': mail,
           'username': requestedUsername,
@@ -88,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
         });
       } else {
         final resolvedEmail = await _resolveLoginIdentifier(identifier, pass);
-        await FirebaseAuth.instance.signInWithEmailAndPassword(email: resolvedEmail, password: pass);
+        await _actions.signIn(email: resolvedEmail, password: pass);
         TextInput.finishAutofillContext(shouldSave: true);
       }
     } catch (e) {
@@ -102,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
     final mail = email.text.trim();
     if (mail.isEmpty || !mail.contains('@')) { setState(() => error = 'Pentru resetarea parolei scrie adresa de email a contului.'); return; }
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: mail);
+      await _actions.resetPassword(email: mail);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Emailul pentru resetarea parolei a fost trimis.')));
     } catch (e) { if (mounted) setState(() => error = _friendly(e)); }
   }

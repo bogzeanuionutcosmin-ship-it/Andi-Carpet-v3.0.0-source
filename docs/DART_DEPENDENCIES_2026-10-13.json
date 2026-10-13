@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 167,
-  "lib_dart_files": 126,
-  "test_dart_files": 40,
+  "dart_files": 169,
+  "lib_dart_files": 127,
+  "test_dart_files": 41,
   "script_dart_files": 1,
   "parts": 60,
-  "libraries": 107,
+  "libraries": 109,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -18,6 +18,7 @@
     "lib/auth/firebase_user_profile.dart": [
       "lib/models/app_enums.dart"
     ],
+    "lib/auth/login_actions.dart": [],
     "lib/auth/login_alias_resolver.dart": [],
     "lib/auth/quick_accounts.dart": [],
     "lib/bootstrap/firebase_bootstrap_error_app.dart": [],
@@ -73,6 +74,7 @@
       "lib/auth/account_access_views.dart",
       "lib/auth/auth_gate_sources.dart",
       "lib/auth/firebase_user_profile.dart",
+      "lib/auth/login_actions.dart",
       "lib/auth/login_alias_resolver.dart",
       "lib/auth/quick_accounts.dart",
       "lib/bootstrap/firebase_bootstrap_error_app.dart",
@@ -288,6 +290,9 @@
     "test/interactive_member_badges_library_test.dart": [
       "lib/models/location_status_and_functions.dart",
       "lib/ui/interactive_member_badges.dart"
+    ],
+    "test/login_actions_widget_test.dart": [
+      "lib/main.dart"
     ],
     "test/login_alias_resolver_test.dart": [
       "lib/auth/login_alias_resolver.dart"
@@ -924,6 +929,29 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/auth/login_actions.dart",
+      "bytes": 787,
+      "sha256": "cfadd489a531eab22520030b1914d8e98b46cedf5c8ac9880b415c9bf2ac8877",
+      "owner": "lib/auth/login_actions.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "uris": [
+            "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "LoginActions"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/auth/login_alias_resolver.dart",
       "bytes": 1287,
       "sha256": "6a0923688869ec4b8249c4315d4e36b4d5621a79abcf10cf23e2e1bfda160185",
@@ -964,8 +992,8 @@
     },
     {
       "path": "lib/auth/login_registration_page.dart",
-      "bytes": 9290,
-      "sha256": "927457a1f69761b38799edbe200b184d7dbd927fc73b12fd3ed5dbbde4abb025",
+      "bytes": 9353,
+      "sha256": "6bb64daa9eea3ce6573b03e464e5f25c5d5036d06eaba934c6da996c1a9473f6",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2309,8 +2337,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 28602,
-      "sha256": "ea91078c15b58e7e9e05ea496914735bcef5e715849c6b7005e1331fa1546e7b",
+      "bytes": 29351,
+      "sha256": "bcaa1680a1aa4d167ecd85c68d3c8baef3eaa5421eda7483202e2fac8e0b42e2",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -3021,6 +3049,26 @@
           ],
           "local_targets": [
             "lib/auth/login_alias_resolver.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'auth/login_actions.dart';",
+          "uris": [
+            "auth/login_actions.dart"
+          ],
+          "local_targets": [
+            "lib/auth/login_actions.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'auth/login_actions.dart';",
+          "uris": [
+            "auth/login_actions.dart"
+          ],
+          "local_targets": [
+            "lib/auth/login_actions.dart"
           ]
         },
         {
@@ -3759,6 +3807,7 @@
       "top_level_functions": [
         "_initializeFirebaseForPlatform",
         "_firebaseMessagingBackgroundHandler",
+        "_firebaseLoginActions",
         "_firebaseAuthGateSources",
         "_loadQuickAccounts",
         "_saveQuickAccounts",
@@ -6771,6 +6820,84 @@
       ],
       "declarations": [],
       "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/login_actions_widget_test.dart",
+      "bytes": 6600,
+      "sha256": "ed38d04127e19f4c7b881285735b338e0368e0acf33da335105314d19798af54",
+      "owner": "test/login_actions_widget_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "uris": [
+            "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "_LoginUser"
+        },
+        {
+          "kind": "class",
+          "name": "_LoginCredential"
+        },
+        {
+          "kind": "class",
+          "name": "_LoginHarness"
+        }
+      ],
+      "top_level_functions": [
+        "_mount",
+        "_tap",
+        "_fillSignup",
         "main"
       ]
     },
