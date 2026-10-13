@@ -1,17 +1,18 @@
 {
   "format_version": 1,
-  "dart_files": 147,
+  "dart_files": 148,
   "lib_dart_files": 122,
-  "test_dart_files": 24,
+  "test_dart_files": 25,
   "script_dart_files": 1,
-  "parts": 72,
-  "libraries": 75,
+  "parts": 71,
+  "libraries": 77,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
   "duplicate_declarations_in_library": [],
   "library_edges": {
     "lib/admin/admin_navigation_catalog.dart": [],
+    "lib/bootstrap/firebase_bootstrap_error_app.dart": [],
     "lib/download_file.dart": [
       "lib/download_file_stub.dart",
       "lib/download_file_web.dart"
@@ -59,6 +60,7 @@
     ],
     "lib/main.dart": [
       "lib/admin/admin_navigation_catalog.dart",
+      "lib/bootstrap/firebase_bootstrap_error_app.dart",
       "lib/download_file.dart",
       "lib/firebase_options.dart",
       "lib/home/seed_operational_locations.dart",
@@ -176,6 +178,9 @@
     ],
     "test/empty_state_library_test.dart": [
       "lib/ui/empty_state.dart"
+    ],
+    "test/firebase_bootstrap_error_view_test.dart": [
+      "lib/bootstrap/firebase_bootstrap_error_app.dart"
     ],
     "test/graph_routing_libraries_test.dart": [
       "lib/main.dart",
@@ -787,25 +792,23 @@
     },
     {
       "path": "lib/bootstrap/firebase_bootstrap_error_app.dart",
-      "bytes": 1353,
-      "sha256": "d586a02c888b5ee783f598e15a20fdf5c701344b515dac7af65fbc65ea1b4e26",
-      "owner": "lib/main.dart",
+      "bytes": 1369,
+      "sha256": "52e967ed871c086c09b55159996d9ee03ea05e50cba6537b4768cef96cbbf0a0",
+      "owner": "lib/bootstrap/firebase_bootstrap_error_app.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
           ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
+          "local_targets": []
         }
       ],
       "declarations": [
         {
           "kind": "class",
-          "name": "_FirebaseBootstrapErrorApp"
+          "name": "FirebaseBootstrapErrorView"
         }
       ],
       "top_level_functions": []
@@ -2087,8 +2090,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 21792,
-      "sha256": "cd58882b2025510b75758fe29525aeb0d7f97dae5eefbac0bdc4a1b9f93b4bea",
+      "bytes": 22081,
+      "sha256": "8ae440b09ea865f786f41be0cbdad5d161287cd6397d7edfcdcc6bd6afe5da43",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2662,6 +2665,16 @@
           ]
         },
         {
+          "kind": "import",
+          "text": "import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;",
+          "uris": [
+            "bootstrap/firebase_bootstrap_error_app.dart"
+          ],
+          "local_targets": [
+            "lib/bootstrap/firebase_bootstrap_error_app.dart"
+          ]
+        },
+        {
           "kind": "export",
           "text": "export 'ui/icon_badge_catalog.dart';",
           "uris": [
@@ -2729,16 +2742,6 @@
           ],
           "local_targets": [
             "lib/bootstrap/firebase_initialization.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'bootstrap/firebase_bootstrap_error_app.dart';",
-          "uris": [
-            "bootstrap/firebase_bootstrap_error_app.dart"
-          ],
-          "local_targets": [
-            "lib/bootstrap/firebase_bootstrap_error_app.dart"
           ]
         },
         {
@@ -3430,6 +3433,10 @@
         {
           "kind": "class",
           "name": "_FirebaseError"
+        },
+        {
+          "kind": "class",
+          "name": "_FirebaseBootstrapErrorApp"
         },
         {
           "kind": "class",
@@ -5473,6 +5480,44 @@
           ],
           "local_targets": [
             "lib/ui/empty_state.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/firebase_bootstrap_error_view_test.dart",
+      "bytes": 815,
+      "sha256": "b26fee57fc548e2542956bf32260034db7ae80f4531d232cb11cb96fc47b6e37",
+      "owner": "test/firebase_bootstrap_error_view_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/bootstrap/firebase_bootstrap_error_app.dart';",
+          "uris": [
+            "package:andi_carpeta/bootstrap/firebase_bootstrap_error_app.dart"
+          ],
+          "local_targets": [
+            "lib/bootstrap/firebase_bootstrap_error_app.dart"
           ]
         }
       ],

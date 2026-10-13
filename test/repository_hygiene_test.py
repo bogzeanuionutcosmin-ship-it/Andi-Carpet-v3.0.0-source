@@ -149,13 +149,15 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_firebase_bootstrap_error_screen_extracted_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/bootstrap/firebase_bootstrap_error_app.dart").read_text(encoding="utf-8")
-        self.assertEqual(main.count("part 'bootstrap/firebase_bootstrap_error_app.dart';"), 1)
-        self.assertIn("part of '../main.dart';", module)
-        self.assertNotIn("class _FirebaseBootstrapErrorApp extends StatelessWidget", main)
-        self.assertEqual(module.count("class _FirebaseBootstrapErrorApp extends StatelessWidget"), 1)
-        self.assertIn("runApp(_FirebaseBootstrapErrorApp(message: e.toString()));", main)
+        self.assertNotIn("part 'bootstrap/firebase_bootstrap_error_app.dart';", main)
+        self.assertIn("import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;", main)
+        self.assertEqual(main.count("class _FirebaseBootstrapErrorApp extends StatelessWidget"), 1)
+        self.assertNotIn("part of", module)
+        self.assertEqual(module.count("class FirebaseBootstrapErrorView extends StatelessWidget"), 1)
+        self.assertIn("import 'package:flutter/material.dart';", module)
         self.assertIn("Firebase nu este configurat pentru această platformă", module)
         self.assertIn("SelectableText(message", module)
+        self.assertIn("runApp(_FirebaseBootstrapErrorApp(message: e.toString()));", main)
 
     def test_location_adjust_screen_is_extracted_without_behavior_change(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

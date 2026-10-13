@@ -291,3 +291,12 @@ Lotul `auth_status_views.dart` este validat pe commitul cod `cd161c2d9b361e81dd5
 Inventar: 147 Dart, 72 parts, 75 biblioteci; fără missing/orphan/duplicate/cicluri. Doar UI de încărcare/eroare a devenit standalone; callsite-urile AuthGate și Firebase Auth rămân în adapters main.
 
 Următorul lot read-only: verificarea `bootstrap/firebase_bootstrap_error_app.dart` pentru extragere ca ecran Material cu mesaj injectat. Nu se modifică inițializarea Firebase sau recuperarea erorilor. Modularizarea integrală nu este finalizată.
+
+
+## MOD-FIREBASE-BOOTSTRAP-ERROR-VIEW-20261013
+
+Bază: `a9a520992454222a03761b4b4c3728d290a65d8e`. Ecranul de eroare Firebase a devenit bibliotecă Material independentă în `lib/bootstrap/firebase_bootstrap_error_app.dart`; widgetul public primește doar mesajul. Wrapperul privat din main păstrează callsite-ul `runApp(_FirebaseBootstrapErrorApp(message: e.toString()))`. Inițializarea Firebase, tratarea excepției și textul/capabilitatea de copiere selectivă rămân aceleași.
+
+Test Flutter direct verifică instrucțiunile iOS/web/Android și mesajul SelectableText. Inventar: 148 Dart, 71 parts, 77 biblioteci, fără lipsuri/orfani/duplicate/cicluri. Testele structurale locale (84), parserul de inventar, Node syntax și diff-check PASS; Flutter/Dart indisponibil local.
+
+PR #29 și logica de autentificare/permisiuni nu sunt modificate. CI pentru lot în așteptare; următorul pas după 5/5 este audit read-only pentru un widget UI rămas cu contract mic. Modularizarea completă nu este finalizată.

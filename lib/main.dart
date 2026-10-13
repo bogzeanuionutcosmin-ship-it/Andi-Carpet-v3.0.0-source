@@ -60,6 +60,7 @@ import 'ui/app_backdrop.dart' as app_backdrop;
 import 'ui/install_app_buttons_view.dart' as install_buttons;
 import 'ui/interactive_badge_preview.dart' as badge_preview;
 import 'ui/auth_status_views.dart' as auth_status;
+import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
@@ -68,7 +69,6 @@ part 'auth/quick_accounts.dart';
 part 'ui/branding_theme_helpers.dart';
 part 'ui/install_app_buttons.dart';
 part 'bootstrap/firebase_initialization.dart';
-part 'bootstrap/firebase_bootstrap_error_app.dart';
 part 'map/verified_location_fix.dart';
 part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
@@ -276,6 +276,15 @@ class _FirebaseError extends StatelessWidget {
         message: message,
         onSignOut: () => FirebaseAuth.instance.signOut(),
       );
+}
+
+class _FirebaseBootstrapErrorApp extends StatelessWidget {
+  final String message;
+  const _FirebaseBootstrapErrorApp({required this.message});
+
+  @override
+  Widget build(BuildContext context) =>
+      bootstrap_error.FirebaseBootstrapErrorView(message: message);
 }
 
 class _InstallAppButtons extends StatelessWidget {
