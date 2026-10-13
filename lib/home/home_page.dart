@@ -248,7 +248,10 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         _pushListenersAttached = true;
         _coreSubscriptions.add(messaging.onTokenRefresh.listen(
           (value) => unawaited(_savePushToken(value)),
-          onError: (Object error) => debugPrint('[push] onTokenRefresh: $error'),
+          onError: (Object error) {
+            VisionErrorTelemetry.report(area: 'fcm', code: 'token_refresh_failed');
+            debugPrint('[push] onTokenRefresh: $error');
+          },
         ));
         _coreSubscriptions.add(FirebaseMessaging.onMessageOpenedApp.listen((message) {
           final type = (message.data['type'] ?? '').toString();
@@ -267,6 +270,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         }
       }
     } catch (e, st) {
+      VisionErrorTelemetry.report(area: 'fcm', code: 'initialization_failed');
       debugPrint('[push] Inițializarea FCM a eșuat: $e');
       debugPrintStack(stackTrace: st);
       // Butonul din Profil rămâne doar ca diagnostic/fallback. Înregistrarea
@@ -333,9 +337,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       }
       _backgroundLocationSubscription = Geolocator.getPositionStream(locationSettings: settings).listen(
         (position) => unawaited(_shareLiveLocationIfAllowed(position)),
-        onError: (Object e) => debugPrint('[location] Background stream: $e'),
+        onError: (Object e) {
+          VisionErrorTelemetry.report(area: 'gps', code: 'background_stream_failed');
+          debugPrint('[location] Background stream: $e');
+        },
       );
     } catch (e) {
+      VisionErrorTelemetry.report(area: 'gps', code: 'background_start_failed');
       debugPrint('[location] Nu am putut porni tracking-ul nativ în background: $e');
     }
   }
@@ -475,6 +483,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       _lastSharedAt = now;
       await _applyWorkAutomationFromPosition(p, now, workDate);
     } catch (e) {
+      VisionErrorTelemetry.report(area: 'gps', code: 'location_update_failed');
       debugPrint('[location] Actualizarea locației a eșuat: $e');
     }
   }
@@ -771,7 +780,10 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     _financialSubscriptions.add(perDiemQuery.snapshots().listen((snap){
       final list=snap.docs.map(_perDiemFromDoc).toList()..sort((a,b)=>a.date.compareTo(b.date));
       if(!mounted)return;setState((){perDiems..clear()..addAll(list);});
-    },onError:(Object e){if(mounted)setState(()=>coreSyncError='Diurne: $e');}));
+    },onError:(Object e){
+      VisionErrorTelemetry.report(area: 'per_diem', code: 'sync_failed');
+      if(mounted)setState(()=>coreSyncError='Diurne: $e');
+    }));
     _financialSubscriptions.add(financeQuery.snapshots().listen((snap){
       final list=snap.docs.map(_financeFromDoc).toList();
       if(!mounted)return;setState((){finances..clear()..addAll(list);});

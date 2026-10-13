@@ -1,0 +1,2 @@
+# Preserve the supplied PDF bytes (no text diffs or line-ending conversion).
+assets/pv_million.pdf binary

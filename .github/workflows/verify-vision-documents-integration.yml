@@ -1,0 +1,66 @@
+name: Integration Vision plus Documents - Android
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-vision-documents-integration.yml'
+      - 'lib/**'
+      - 'assets/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vision-docs-integration-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  combined-android-debug:
+    if: github.head_ref == 'integration/vision-documents-20261013'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Run all Flutter OCR Vision and document tests
+        run: flutter test test/
+      - name: Run source contracts and asset safety checks
+        run: python3 -m unittest discover -s test -p '*test.py'
+      - name: Build isolated test APK - no deploy
+        env:
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
+        run: flutter build apk --debug --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN"
+      - name: Verify Million original packaged unchanged
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import zipfile
+          with zipfile.ZipFile('build/app/outputs/flutter-apk/app-debug.apk') as apk:
+              pdf = apk.read('assets/flutter_assets/assets/pv_million.pdf')
+          expected = '3bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23'
+          actual = hashlib.sha256(pdf).hexdigest()
+          assert actual == expected, f'Million PDF hash changed: {actual}'
+          print(f'PV Million A4 bundled: {len(pdf)} bytes; SHA-256 {actual}')
+          PY
+      - name: Retain integration debug APK (short term only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndiCarpet-PR21-Vision-Documents-debug-TEST
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 2
