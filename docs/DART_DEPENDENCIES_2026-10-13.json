@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 152,
+  "dart_files": 153,
   "lib_dart_files": 122,
-  "test_dart_files": 29,
+  "test_dart_files": 30,
   "script_dart_files": 1,
-  "parts": 67,
-  "libraries": 85,
+  "parts": 66,
+  "libraries": 87,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -78,6 +78,7 @@
       "lib/ocr_parser.dart",
       "lib/ocr_service.dart",
       "lib/reports/pdf_report_format.dart",
+      "lib/teams/team_selector.dart",
       "lib/ui/app_backdrop.dart",
       "lib/ui/auth_status_views.dart",
       "lib/ui/branding_theme_helpers.dart",
@@ -145,6 +146,9 @@
     "lib/ocr_service_stub.dart": [],
     "lib/ocr_service_web.dart": [],
     "lib/reports/pdf_report_format.dart": [],
+    "lib/teams/team_selector.dart": [
+      "lib/models/app_data_models.dart"
+    ],
     "lib/ui/app_backdrop.dart": [],
     "lib/ui/auth_status_views.dart": [],
     "lib/ui/branding_theme_helpers.dart": [
@@ -277,6 +281,10 @@
     ],
     "test/stat_card_library_test.dart": [
       "lib/ui/stat_card.dart"
+    ],
+    "test/team_selector_library_test.dart": [
+      "lib/models/app_data_models.dart",
+      "lib/teams/team_selector.dart"
     ],
     "test/verified_location_fix_library_test.dart": [
       "lib/map/verified_location_fix.dart",
@@ -2119,8 +2127,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 24246,
-      "sha256": "c82bb3fa8032a8129ea687a2d53b2837ae9b494b8adf07dfd3433734bef0352a",
+      "bytes": 24705,
+      "sha256": "4b4a1ad0e329b3eff53693ab40e3334264dc0d0d8dcb3b38c86bd6fbf0c2bbd3",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2615,6 +2623,16 @@
         },
         {
           "kind": "import",
+          "text": "import 'teams/team_selector.dart' as team_selector;",
+          "uris": [
+            "teams/team_selector.dart"
+          ],
+          "local_targets": [
+            "lib/teams/team_selector.dart"
+          ]
+        },
+        {
+          "kind": "import",
           "text": "import 'ui/branding_theme_helpers.dart' as branding_helpers;",
           "uris": [
             "ui/branding_theme_helpers.dart"
@@ -2961,16 +2979,6 @@
           ],
           "local_targets": [
             "lib/schedule/schedule_card_full.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'teams/team_selector.dart';",
-          "uris": [
-            "teams/team_selector.dart"
-          ],
-          "local_targets": [
-            "lib/teams/team_selector.dart"
           ]
         },
         {
@@ -3455,6 +3463,10 @@
         }
       ],
       "declarations": [
+        {
+          "kind": "class",
+          "name": "_TeamSelector"
+        },
         {
           "kind": "class",
           "name": "_MoneyCard"
@@ -4728,25 +4740,33 @@
     },
     {
       "path": "lib/teams/team_selector.dart",
-      "bytes": 827,
-      "sha256": "8f2643bf29c93d06c5ae63dd3ca807f5359be18f60cf245e7bdcbb777f7ba12b",
-      "owner": "lib/main.dart",
+      "bytes": 884,
+      "sha256": "bbdcb1ffcf62fc2782b6865601314eb63c0d0e39799e9b3bef6f4cbbaaed263d",
+      "owner": "lib/teams/team_selector.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_data_models.dart"
           ]
         }
       ],
       "declarations": [
         {
           "kind": "class",
-          "name": "_TeamSelector"
+          "name": "TeamSelector"
         }
       ],
       "top_level_functions": []
@@ -6578,6 +6598,54 @@
           ],
           "local_targets": [
             "lib/ui/stat_card.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/team_selector_library_test.dart",
+      "bytes": 1162,
+      "sha256": "c347099cd7617cfe5a46d89a2e61944b04fc984e916c5c093cc80a30d6433f08",
+      "owner": "test/team_selector_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_data_models.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/teams/team_selector.dart';",
+          "uris": [
+            "package:andi_carpeta/teams/team_selector.dart"
+          ],
+          "local_targets": [
+            "lib/teams/team_selector.dart"
           ]
         }
       ],

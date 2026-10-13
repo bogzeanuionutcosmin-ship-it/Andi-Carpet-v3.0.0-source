@@ -52,6 +52,7 @@ import 'models/permission_status_labels.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';
+import 'teams/team_selector.dart' as team_selector;
 import 'ui/branding_theme_helpers.dart' as branding_helpers;
 export 'ui/branding_theme_helpers.dart' show appBrandLogo;
 import 'ui/section_visual_helpers.dart';
@@ -89,7 +90,6 @@ part 'members/member_profile_page.dart';
 part 'members/members_directory_page.dart';
 part 'feedback/feedback_page.dart';
 part 'schedule/schedule_card_full.dart';
-part 'teams/team_selector.dart';
 part 'ui/page_shell.dart';
 part 'settings/settings_page.dart';
 part 'profile/profile_page.dart';
@@ -184,6 +184,21 @@ String _activeLogoAsset(AppSettings settings) =>
     branding_helpers.activeLogoAsset(settings);
 Widget appBrandLogo(AppSettings settings, {double width = 520, double height = 130}) =>
     branding_helpers.appBrandLogo(settings, width: width, height: height);
+
+class _TeamSelector extends StatelessWidget {
+  final List<Team> teams;
+  final int selected;
+  final ValueChanged<int> onChanged;
+  const _TeamSelector({required this.teams, required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) => team_selector.TeamSelector(
+        teams: teams,
+        selected: selected,
+        onChanged: onChanged,
+        accent: sectionAccent('Echipe'),
+      );
+}
 
 IconData _adminSectionIcon(int index) => admin_navigation.adminSectionIcon(index);
 String _adminSectionGroup(int index) => admin_navigation.adminSectionGroup(index);

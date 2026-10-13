@@ -509,3 +509,14 @@ Bază: PR #28 `ced7d8d9cf4dbb8d75e77345c3b43518c5d0e38a`, după CI 5/5 pe lotul 
 Test Dart direct adăugat pentru aliasuri font, familii dependente de platformă, catalog și fallback logo, dimensiunile widgetului. Inventar regenerat: 152 fișiere Dart, 67 parts, 85 biblioteci totale; zero ținte lipsă, parts orfane, declarații duplicate în aceeași bibliotecă ori cicluri import/export. Local: 154 teste Python PASS, 3 Node PASS, audit repository PASS, `git diff --check` PASS; Flutter/Dart indisponibile local, CI nou necesar.
 
 PDF/PV/download/share PR #20, PR #29/OCR/diurne, Mapbox, auth/sync, date/rules Firebase și billing nu sunt modificate. Fără merge, deploy sau APK publicat. După CI: audit read-only pentru următorul helper UI independent; tema globală și PageShell rămân limitate de contractul de branding.
+
+
+## MOD-TEAM-SELECTOR-LIBRARY-20261014 — selector de echipă standalone
+
+**Bază validată pentru lotul anterior:** branding/font helpers pe commit `a9bca2494a547e07b0b4a1ae4369207737cdbbe7`, CI run [38475744399](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38475744399) **5/5 SUCCESS**.
+
+`lib/teams/team_selector.dart` devine bibliotecă Material independentă, cu import explicit pentru modelele `Team`; accentul secțiunii este injectat. Wrapperul `_TeamSelector` din `main.dart` păstrează constructorul/callsite-urile și transmite același `sectionAccent('Echipe')`. Dropdown-ul, `selected.clamp`, etichetele, constrângerile și forwardarea callbackului rămân neschimbate.
+
+Test Flutter direct nou verifică echipa inițial selectată, culoarea pictogramei și selectarea celei de-a doua echipe prin callback. Inventarul regenerat: 153 fișiere Dart, 66 parts, 87 biblioteci totale; zero ținte lipsă, parts orfane, duplicate în aceeași bibliotecă și cicluri. Local: 154 teste Python PASS, 3 Node PASS, `audit_repository.py` și `git diff --check` PASS; SDK Flutter/Dart indisponibil local. CI pe commitul lotului trebuie să confirme testul widget și web build.
+
+Nu sunt schimbate programele, permisiunile, echipele stocate, datele/rules Firebase, finanțele, OCR, PDF/PV, Mapbox ori PR #29. Fără merge/deploy/APK. Următorul pas numai după 5/5: audit read-only al următorului widget cu adapter simplu.

@@ -353,12 +353,17 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_team_selector_extracted_preserving_selection_callback(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/teams/team_selector.dart").read_text(encoding="utf-8")
-        self.assertEqual(main.count("part 'teams/team_selector.dart';"), 1)
-        self.assertIn("part of '../main.dart';", module)
-        self.assertNotIn("class _TeamSelector extends StatelessWidget", main)
-        self.assertEqual(module.count("class _TeamSelector extends StatelessWidget"), 1)
+        self.assertNotIn("part 'teams/team_selector.dart';", main)
+        self.assertIn("import 'teams/team_selector.dart' as team_selector;", main)
+        self.assertNotIn("part of", module)
+        self.assertEqual(module.count("class TeamSelector extends StatelessWidget"), 1)
+        self.assertEqual(main.count("class _TeamSelector extends StatelessWidget"), 1)
+        self.assertIn("team_selector.TeamSelector(", main)
+        self.assertIn("accent: sectionAccent('Echipe')", main)
+        self.assertIn("import '../models/app_data_models.dart';", module)
         for contract in ("List<Team> teams", "ValueChanged<int> onChanged",
-                         "required this.selected", "onChanged(v)"):
+                         "required this.selected", "onChanged(v)",
+                         "required this.accent", "selected.clamp(0,teams.length-1)"):
             self.assertIn(contract, module)
 
     def test_responsive_page_shell_extracted_preserving_branding(self):
