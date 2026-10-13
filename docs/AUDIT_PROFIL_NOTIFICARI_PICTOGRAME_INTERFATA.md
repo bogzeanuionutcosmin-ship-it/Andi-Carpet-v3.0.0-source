@@ -217,3 +217,13 @@ Actualizați documentele canonice `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` 
 Proprietarul dorește o discuție **câte o singură propunere despre notificări**, la care să răspundă cu **«Da» / «Nu» / propria variantă**, nu un pachet mare de reguli de aprobat simultan. **Prima propunere:** sugestiile Learning care solicită o alegere explicită să rămână evidențiate cu simbol distinct până la rezolvare, iar analizele Learning informative să rămână prioritizate vizual dar să fie marcate citite la deschiderea clopoțelului. Formularea și culoarea exactă se discută cu proprietarul.
 
 **Statut:** documentare și audit static, fără creare/salvare efectivă a keystore-ului, fără modificări de cod Flutter/Android, Firebase, Rules, CI sau deploy.
+
+## 11. Confirmare Learning — notificări violet-indigo, cu acțiuni explicite (2026-10-13)
+
+**APROBAT EXPRES:** proprietarul a spus «Confirm propunerea 1 pentru notificările Learning. Trecem la următoarea.»
+
+- Notificările Learning au identitate vizuală **violet-indigo**, cu pictogramă specifică Learning (creier/scânteie) și prioritate ridicată în clopoțel.
+- Recomandarea Learning care solicită aprobare este **acționabilă și persistentă** până la alegerea **Aplică** sau **Respinge**. **Amână** trebuie să respecte data/momentul stabilit pentru revenire, fără reafișări la fiecare refresh.
+- Recomandarea doar informativă rămâne în istoric, se marchează citită la deschiderea clopoțelului și nu creează popup recurent.
+- «Citit» este independent de «rezolvat»; simpla deschidere a clopoțelului nu aprobă sugestii. Learning **nu aplică unilateral modificări care cer aprobare**. Validare server-side, jurnal al deciziei, verificări de drepturi și deduplicare la implementare.
+- Această regulă este **definitiv aprobată** ca parte din propunerea 1. Detaliile tehnice se testează în staging; nu există implementare în această sesiune.
