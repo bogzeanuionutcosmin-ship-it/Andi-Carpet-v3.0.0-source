@@ -71,6 +71,7 @@ import 'ui/auth_status_views.dart' as auth_status;
 import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;
 import 'map/verified_location_fix.dart' as verified_fix;
 import 'ui/dashboard_map_components.dart' as dashboard_components;
+import 'auth/account_access_views.dart' as account_access_views;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 

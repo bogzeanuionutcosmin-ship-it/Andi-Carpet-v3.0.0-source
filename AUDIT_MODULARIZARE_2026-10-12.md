@@ -557,10 +557,23 @@ Nu se schimbă definițiile sau drepturile funcțiilor, conturile, membrii, perm
 
 ## RELAUNCH-CHECKPOINT-20261014 — reluare după `e37552a5`, oprire la limita sigură
 
-HEAD GitHub PR #28: `703639a0f6df02449f2615cb25d00517fbda570f`, CI run [38478479946](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38478479946) **5/5 SUCCESS**; PR #28 rămâne Open/Draft, baza `main` neschimbată. Reluarea de la SHA validat `e37552a5b90d4f967e5db8cdf77c61120998e2d7` a continuat cu helperii vizuali/branding, TeamSelector, codec-ul backup, ScheduleCardFull și badge helperii. Loturile deja validate nu au fost repetate.
+Checkpoint istoric la `703639a0f6df02449f2615cb25d00517fbda570f` (CI run [38478479946](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38478479946) **5/5 SUCCESS**; PR #28 rămâne Open/Draft, baza `main` neschimbată. Reluarea de la SHA validat `e37552a5b90d4f967e5db8cdf77c61120998e2d7` a continuat cu helperii vizuali/branding, TeamSelector, codec-ul backup, ScheduleCardFull și badge helperii. Loturile deja validate nu au fost repetate.
 
 Inventar curent: **156 fișiere Dart, 63 parts, 93 biblioteci totale**, zero ținte lipsă, părți orfane, duplicate în aceeași bibliotecă sau cicluri detectate. Snapshot: `docs/DART_DEPENDENCIES_2026-10-13.json`. Testele noi Flutter au fost validate în CI; local au trecut 86 teste Python, 3 teste Node, auditul repository și `git diff --check`. CI #804 a scos la iveală aserțiunea Flutter pentru lista de reorder la programe închise; callbackul rămâne legat, dar drag handles sunt dezactivate, apoi CI #805 a trecut 5/5. CI #806 a identificat exclusiv fixture-uri noi trunchiate de constructorul `FunctionDefinition`; fixture-urile au fost corectate și run #807 a trecut 5/5.
 
 În acest punct, componentele mici rămase auditate sunt legate de auth, Firestore/stare privată, branding global sau lansarea URL-urilor externe. Nu există un lot structural mai mic cu adaptere explicite și contracte deja acoperite care să poată fi făcut fără extinderea schimbării către acele funcționalități. **Modularizarea completă rămâne deschisă** pentru o etapă cu adaptere/teste dedicate; nu se declară terminată.
 
 PR #29/OCR/diurne/finanțe, PR #20 PDF/PV Magic/Million/download/share, Mapbox singleton, reguli/config/date Firebase, billing și producția rămân protejate. Fără merge în main, deploy, publicare APK sau modificări de producție.
+
+
+## MOD-ACCOUNT-ACCESS-VIEWS-LIBRARY-20261014 — paginile de acces separate de auth
+
+Bază validată înaintea lotului: PR #28 HEAD 9020b2ef9d25ef07e9c717b13b1a7a9161cfb915, CI run 38478795300 **5/5 SUCCESS**. Paginile PendingApprovalPage și MissingProfilePage păstrează constructorii folosiți de AuthGate; conținutul Material este extras în lib/auth/account_access_views.dart, cu logo, decorul de fundal și callbackul sign-out injectate. Adaptoarele din part-ul existent continuă să folosească aceleași AppSettings, FirebaseUserProfile și FirebaseAuth.instance.signOut(). Rutarea AuthGate, citirea profilului, permisiunile, textele și configurația Firebase nu se schimbă.
+
+Testele Flutter directe verifică ambele ecrane, backdrop/logo/email și forwardarea sign-out. Snapshotul inventarului este regenerat: **158 fișiere Dart (123 lib, 34 test, 1 script), 63 parts, 95 biblioteci**, fără ținte lipsă, parts orfane, declarații duplicate în aceeași bibliotecă sau cicluri import/export. CI pentru lotul curent este în așteptare; Flutter/Dart nu sunt disponibile local. Nu s-au atins PR #20/#29, OCR/diurne, PDF/PV, Mapbox, date/reguli Firebase, billing sau producția; fără merge, deploy ori APK publicat.
+
+**Următorul pas după 5/5:** audit read-only al componentelor rămase; auth streams, FirebaseUserProfile/QuickAccounts, bootstrap, PageShell și URL launchers nu se mută fără contracte specifice și teste de compatibilitate. Modularizarea completă rămâne deschisă.
+
+## LATEST CHECKPOINT — continuare după checkpointul inițial e37552a5
+
+Checkpointul inițial cu HEAD 703639a0f6df02449f2615cb25d00517fbda570f a fost urmat de loturile documentate mai sus și de HEAD-ul de documentație 9020b2ef9d25ef07e9c717b13b1a7a9161cfb915 (CI run 38478795300, 5/5). Lotul AccountAccessViews de mai sus este noul lot curent și CI-ul lui urmează după commit. Se păstrează protecția tuturor celorlalte PR-uri și a producției.

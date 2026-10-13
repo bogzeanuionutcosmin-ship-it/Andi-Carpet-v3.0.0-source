@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 156,
-  "lib_dart_files": 122,
-  "test_dart_files": 33,
+  "dart_files": 158,
+  "lib_dart_files": 123,
+  "test_dart_files": 34,
   "script_dart_files": 1,
   "parts": 63,
-  "libraries": 93,
+  "libraries": 95,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -13,13 +13,14 @@
   "library_edges": {
     "lib/admin/admin_navigation_catalog.dart": [],
     "lib/admin/backup_codec.dart": [],
+    "lib/auth/account_access_views.dart": [],
     "lib/bootstrap/firebase_bootstrap_error_app.dart": [],
+    "lib/download_file_stub.dart": [],
+    "lib/download_file_web.dart": [],
     "lib/download_file.dart": [
       "lib/download_file_stub.dart",
       "lib/download_file_web.dart"
     ],
-    "lib/download_file_stub.dart": [],
-    "lib/download_file_web.dart": [],
     "lib/finance/per_diem_balance_card.dart": [
       "lib/finance/per_diem_money.dart",
       "lib/finance/per_diem_reconciliation.dart"
@@ -62,6 +63,7 @@
     "lib/main.dart": [
       "lib/admin/admin_navigation_catalog.dart",
       "lib/admin/backup_codec.dart",
+      "lib/auth/account_access_views.dart",
       "lib/bootstrap/firebase_bootstrap_error_app.dart",
       "lib/download_file.dart",
       "lib/firebase_options.dart",
@@ -117,10 +119,10 @@
       "lib/models/location_type_mapping.dart",
       "lib/utils/graph_names.dart"
     ],
-    "lib/models/app_enums.dart": [],
     "lib/models/app_enums_permissions.dart": [
       "lib/models/app_enums.dart"
     ],
+    "lib/models/app_enums.dart": [],
     "lib/models/default_categories_functions.dart": [
       "lib/models/app_enums.dart",
       "lib/models/location_status_and_functions.dart"
@@ -140,14 +142,14 @@
       "lib/models/app_enums.dart"
     ],
     "lib/ocr_parser.dart": [],
+    "lib/ocr_service_mobile.dart": [],
+    "lib/ocr_service_stub.dart": [],
+    "lib/ocr_service_web.dart": [],
     "lib/ocr_service.dart": [
       "lib/ocr_service_mobile.dart",
       "lib/ocr_service_stub.dart",
       "lib/ocr_service_web.dart"
     ],
-    "lib/ocr_service_mobile.dart": [],
-    "lib/ocr_service_stub.dart": [],
-    "lib/ocr_service_web.dart": [],
     "lib/reports/pdf_report_format.dart": [],
     "lib/schedule/schedule_card_full.dart": [
       "lib/models/app_data_models.dart",
@@ -195,6 +197,9 @@
       "lib/models/location_type_mapping.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
+    ],
+    "test/account_access_views_test.dart": [
+      "lib/auth/account_access_views.dart"
     ],
     "test/admin_navigation_catalog_test.dart": [
       "lib/admin/admin_navigation_catalog.dart"
@@ -718,8 +723,8 @@
     },
     {
       "path": "lib/auth/account_access_pages.dart",
-      "bytes": 2852,
-      "sha256": "07690e534d1350a63470459e7ac8eab259f160b1e1e7f5df8f865c0f1923adb8",
+      "bytes": 984,
+      "sha256": "6f5ccf89650982ba88f81ec4a87f5fc21c879c68a144896cb6475475b9580867",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -741,6 +746,37 @@
         {
           "kind": "class",
           "name": "MissingProfilePage"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
+      "path": "lib/auth/account_access_views.dart",
+      "bytes": 3408,
+      "sha256": "fc135abed28fab893e90cf79b566be0aa5cf803ca9941a8dc4500875ed4940e0",
+      "owner": "lib/auth/account_access_views.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "typedef",
+          "name": "AccountAccessBackdropBuilder"
+        },
+        {
+          "kind": "class",
+          "name": "PendingApprovalView"
+        },
+        {
+          "kind": "class",
+          "name": "MissingProfileView"
         }
       ],
       "top_level_functions": []
@@ -1106,28 +1142,6 @@
       "top_level_functions": []
     },
     {
-      "path": "lib/download_file.dart",
-      "bytes": 86,
-      "sha256": "8c7ce47316ada93fc7d718390f6ac20e8588e28bec902c128a8fd324dc776334",
-      "owner": "lib/download_file.dart",
-      "directives": [
-        {
-          "kind": "export",
-          "text": "export 'download_file_stub.dart'\n    if (dart.library.html) 'download_file_web.dart';",
-          "uris": [
-            "download_file_stub.dart",
-            "download_file_web.dart"
-          ],
-          "local_targets": [
-            "lib/download_file_stub.dart",
-            "lib/download_file_web.dart"
-          ]
-        }
-      ],
-      "declarations": [],
-      "top_level_functions": []
-    },
-    {
       "path": "lib/download_file_stub.dart",
       "bytes": 414,
       "sha256": "f111d780e239b1431a35dfd5efba699be77c2264f6f2d027bc9e2913768f9d1e",
@@ -1190,6 +1204,28 @@
       "top_level_functions": [
         "downloadFile"
       ]
+    },
+    {
+      "path": "lib/download_file.dart",
+      "bytes": 86,
+      "sha256": "8c7ce47316ada93fc7d718390f6ac20e8588e28bec902c128a8fd324dc776334",
+      "owner": "lib/download_file.dart",
+      "directives": [
+        {
+          "kind": "export",
+          "text": "export 'download_file_stub.dart'\n    if (dart.library.html) 'download_file_web.dart';",
+          "uris": [
+            "download_file_stub.dart",
+            "download_file_web.dart"
+          ],
+          "local_targets": [
+            "lib/download_file_stub.dart",
+            "lib/download_file_web.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": []
     },
     {
       "path": "lib/expenses/expense_document_actions.dart",
@@ -2156,8 +2192,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 26037,
-      "sha256": "9f176ad3ec03dec3a502978d256275bdde8be0e626fa96ab1134da5de345e439",
+      "bytes": 26102,
+      "sha256": "049b8ef5ac0f708cd7f963e6793744140b739ad42717d0811880beaace3709c3",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2828,6 +2864,16 @@
           ],
           "local_targets": [
             "lib/ui/dashboard_map_components.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'auth/account_access_views.dart' as account_access_views;",
+          "uris": [
+            "auth/account_access_views.dart"
+          ],
+          "local_targets": [
+            "lib/auth/account_access_views.dart"
           ]
         },
         {
@@ -4041,60 +4087,6 @@
       ]
     },
     {
-      "path": "lib/models/app_enums.dart",
-      "bytes": 1287,
-      "sha256": "867753b798cc997a8de2b988a900ef6aafe0933d8e2878f6238706139a0607bc",
-      "owner": "lib/models/app_enums.dart",
-      "directives": [],
-      "declarations": [
-        {
-          "kind": "enum",
-          "name": "LocationType"
-        },
-        {
-          "kind": "enum",
-          "name": "LocationStatus"
-        },
-        {
-          "kind": "enum",
-          "name": "UserRole"
-        },
-        {
-          "kind": "enum",
-          "name": "UserFunction"
-        },
-        {
-          "kind": "enum",
-          "name": "FunctionPermission"
-        },
-        {
-          "kind": "enum",
-          "name": "PerDiemStatus"
-        },
-        {
-          "kind": "enum",
-          "name": "PerDiemPaymentMethod"
-        },
-        {
-          "kind": "enum",
-          "name": "ExpenseDocumentType"
-        },
-        {
-          "kind": "enum",
-          "name": "WorkAttemptStatus"
-        },
-        {
-          "kind": "enum",
-          "name": "LearningMode"
-        },
-        {
-          "kind": "enum",
-          "name": "AppThemeChoice"
-        }
-      ],
-      "top_level_functions": []
-    },
-    {
       "path": "lib/models/app_enums_permissions.dart",
       "bytes": 4236,
       "sha256": "2bbdbdee75fb2f3a2f3be4e3a379c5f9c09605cd51728cba44062b64565484f1",
@@ -4145,6 +4137,60 @@
         {
           "kind": "extension",
           "name": "FunctionPermissionX"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
+      "path": "lib/models/app_enums.dart",
+      "bytes": 1287,
+      "sha256": "867753b798cc997a8de2b988a900ef6aafe0933d8e2878f6238706139a0607bc",
+      "owner": "lib/models/app_enums.dart",
+      "directives": [],
+      "declarations": [
+        {
+          "kind": "enum",
+          "name": "LocationType"
+        },
+        {
+          "kind": "enum",
+          "name": "LocationStatus"
+        },
+        {
+          "kind": "enum",
+          "name": "UserRole"
+        },
+        {
+          "kind": "enum",
+          "name": "UserFunction"
+        },
+        {
+          "kind": "enum",
+          "name": "FunctionPermission"
+        },
+        {
+          "kind": "enum",
+          "name": "PerDiemStatus"
+        },
+        {
+          "kind": "enum",
+          "name": "PerDiemPaymentMethod"
+        },
+        {
+          "kind": "enum",
+          "name": "ExpenseDocumentType"
+        },
+        {
+          "kind": "enum",
+          "name": "WorkAttemptStatus"
+        },
+        {
+          "kind": "enum",
+          "name": "LearningMode"
+        },
+        {
+          "kind": "enum",
+          "name": "AppThemeChoice"
         }
       ],
       "top_level_functions": []
@@ -4436,30 +4482,6 @@
       ]
     },
     {
-      "path": "lib/ocr_service.dart",
-      "bytes": 133,
-      "sha256": "d440c0df9a9a6b27eeac0031612bc2c1e6e3504fa9bbed862d4f7cfa25fda6b4",
-      "owner": "lib/ocr_service.dart",
-      "directives": [
-        {
-          "kind": "export",
-          "text": "export 'ocr_service_stub.dart'\n    if (dart.library.io) 'ocr_service_mobile.dart'\n    if (dart.library.html) 'ocr_service_web.dart';",
-          "uris": [
-            "ocr_service_stub.dart",
-            "ocr_service_mobile.dart",
-            "ocr_service_web.dart"
-          ],
-          "local_targets": [
-            "lib/ocr_service_stub.dart",
-            "lib/ocr_service_mobile.dart",
-            "lib/ocr_service_web.dart"
-          ]
-        }
-      ],
-      "declarations": [],
-      "top_level_functions": []
-    },
-    {
       "path": "lib/ocr_service_mobile.dart",
       "bytes": 731,
       "sha256": "e1960ba120f5264b5bb4f81ecd56f7362e4829427242b38ea3b6d5a301f3c606",
@@ -4550,6 +4572,30 @@
       "top_level_functions": [
         "recognizeTextFromImage"
       ]
+    },
+    {
+      "path": "lib/ocr_service.dart",
+      "bytes": 133,
+      "sha256": "d440c0df9a9a6b27eeac0031612bc2c1e6e3504fa9bbed862d4f7cfa25fda6b4",
+      "owner": "lib/ocr_service.dart",
+      "directives": [
+        {
+          "kind": "export",
+          "text": "export 'ocr_service_stub.dart'\n    if (dart.library.io) 'ocr_service_mobile.dart'\n    if (dart.library.html) 'ocr_service_web.dart';",
+          "uris": [
+            "ocr_service_stub.dart",
+            "ocr_service_mobile.dart",
+            "ocr_service_web.dart"
+          ],
+          "local_targets": [
+            "lib/ocr_service_stub.dart",
+            "lib/ocr_service_mobile.dart",
+            "lib/ocr_service_web.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": []
     },
     {
       "path": "lib/profile/profile_page.dart",
@@ -5124,29 +5170,6 @@
       "top_level_functions": []
     },
     {
-      "path": "lib/ui/install_app_buttons.dart",
-      "bytes": 2260,
-      "sha256": "4b1eda0c21de1575d4001ebd3b2326f7d2e4951b466c51ab347953ce71f14ff7",
-      "owner": "lib/main.dart",
-      "directives": [
-        {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
-          "uris": [
-            "../main.dart"
-          ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
-        }
-      ],
-      "declarations": [],
-      "top_level_functions": [
-        "_showAndroidInstallFlow",
-        "_showAppleInstallFlow"
-      ]
-    },
-    {
       "path": "lib/ui/install_app_buttons_view.dart",
       "bytes": 994,
       "sha256": "5781603f819bf616c9bd03bae9c8437a1781167f55754fe1b3d771965270e81b",
@@ -5168,6 +5191,29 @@
         }
       ],
       "top_level_functions": []
+    },
+    {
+      "path": "lib/ui/install_app_buttons.dart",
+      "bytes": 2260,
+      "sha256": "4b1eda0c21de1575d4001ebd3b2326f7d2e4951b466c51ab347953ce71f14ff7",
+      "owner": "lib/main.dart",
+      "directives": [
+        {
+          "kind": "part of",
+          "text": "part of '../main.dart';",
+          "uris": [
+            "../main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "_showAndroidInstallFlow",
+        "_showAppleInstallFlow"
+      ]
     },
     {
       "path": "lib/ui/interactive_badge_preview.dart",
@@ -5504,6 +5550,44 @@
       "declarations": [],
       "top_level_functions": [
         "check",
+        "main"
+      ]
+    },
+    {
+      "path": "test/account_access_views_test.dart",
+      "bytes": 1684,
+      "sha256": "8ae9dae3707362fa2a88917294c58b7aa49c4ef7e06a32e190a31affdcf1dbb3",
+      "owner": "test/account_access_views_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/auth/account_access_views.dart';",
+          "uris": [
+            "package:andi_carpeta/auth/account_access_views.dart"
+          ],
+          "local_targets": [
+            "lib/auth/account_access_views.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
         "main"
       ]
     },
