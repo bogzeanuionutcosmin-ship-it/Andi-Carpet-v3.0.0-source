@@ -52,3 +52,18 @@ class HomeFinancialSyncContracts(unittest.TestCase):
         self.assertEqual(finance.count("_coreSubscriptions.add("), 0)
         self.assertEqual(finance.count("_financialSubscriptions.add("), 4)
         self.assertIn("final List<StreamSubscription<dynamic>> _financialSubscriptions = [];", home)
+
+    def test_financial_converter_and_query_order_coverage_from_alternate_pr(self):
+        finance = (ROOT / "lib/home/home_financial_sync.dart").read_text(encoding="utf-8")
+        collections = ("expenses", "perDiems", "finance", "settlements")
+        indices = []
+        for name in collections:
+            with self.subTest(collection=name):
+                needle = "db.collection('" + name + "')"
+                self.assertEqual(finance.count(needle), 2)
+                indices.append(finance.index(needle))
+        self.assertEqual(indices, sorted(indices))
+        for converter in ("_expenseFromDoc", "_perDiemFromDoc",
+                          "_financeFromDoc", "_settlementFromDoc"):
+            with self.subTest(converter=converter):
+                self.assertIn(converter, finance)

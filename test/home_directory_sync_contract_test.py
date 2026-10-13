@@ -32,3 +32,16 @@ class HomeDirectorySyncContracts(unittest.TestCase):
                          "_startFinancialSync()", "coreSyncError = 'Audit: $e'",
                          "coreSyncError = 'Conturi: $e'"):
             with self.subTest(fragment=fragment): self.assertIn(fragment,module)
+
+    def test_directory_visibility_and_seed_side_effects_survive_alternate_pr(self):
+        module = (ROOT / "lib/home/home_directory_definitions_audit_sync.dart").read_text(encoding="utf-8")
+        audit = module.split("  void _startAuditSync(", 1)[1].split("  void _startDefinitionsSync(", 1)[0]
+        definitions = module.split("  void _startDefinitionsSync(", 1)[1].split("  void _startDirectorySync(", 1)[0]
+        directory = module.split("  void _startDirectorySync(", 1)[1]
+        self.assertIn("if (!isAdmin) return;", audit)
+        self.assertIn("_seedDefinitionsIfNeeded()", definitions)
+        self.assertIn("isAdmin ? db.collection('users') : db.collection('memberDirectory')", directory)
+        for symbol in ("hiddenFromMembers", "_hiddenUserIds", "_userTeamCache",
+                       "_personalNotificationPreferences", "_lastGroupChatSeenAt"):
+            with self.subTest(symbol=symbol):
+                self.assertIn(symbol, directory)

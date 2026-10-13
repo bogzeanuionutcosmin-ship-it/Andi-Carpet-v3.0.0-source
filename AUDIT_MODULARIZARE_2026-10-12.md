@@ -151,3 +151,18 @@ Bază: PR #23 commit `2e4a7312a526908ede4965a87bcb25bd8edcc9ee` (nu `main`), pen
 **CI:** pentru HEAD final sunt obligatorii Flutter unit/widget + web build, Python suite/audit, Node, Functions și emulator Firestore. Rezultatul se consemnează numai după rulare. `part of main.dart` rămâne arhitectură intermediară; modularizarea completă nu este declarată gata.
 
 **Restricții:** fără merge în main, deploy, modificări date/rules/config Firebase producție, migrare, APK release, schimbare versiune sau billing. PR Draft separat.
+
+## CONSOLIDARE-PR-20261013 — inventar, alternative duplicate și consolidare în PR #28
+
+**Verificare GitHub pe 13.10.2026:** `main` SHA `377f1fd5e73ae78a0df5cab58b09770c873cd167`. PR #17/#18 sunt merged, însă PR #15, #19–#28 (cu excepția #17/#18) rămân separate și open/Draft, fiecare cu propriul rol. Nu se confundă buildul web verde cu versiunea live.
+
+**Lanțuri suprapuse** (toate au verificări CI pe HEAD-urile proprii):
+- PR #23 → **#24 → #25**: directoare, definiții, audit, apoi 4 abonări financiare;
+- PR #23 → **#26 → #27 → #28**: aceleași directoare, definiții și audit, apoi 4 abonări financiare, PLUS cele 4 operațiuni de scriere financiară din #28.
+- Comparație textuală între corpurile metodelor (fără învelișul extensiei): cele trei metode din #24 versus #26 au **7.644 caractere identice**; `_startFinancialSync` din #25 versus #27 are **2.470 caractere identice**. Nu se combină ambele `part`-uri, fiindcă ar dubla exact semnăturile private, ar crea erori Dart și ar adăuga/confunda abonări.
+- Calea canonică aleasă: **PR #28**, cumulativ cu #23/#26/#27. Verificările suplimentare utile din #24/#25 pentru vizibilitatea membrilor, seed, convertoarele financiare și ordinea colecțiilor sunt integrate **în testele existente** pe #28, fără duplicarea claselor de teste sau a modulelor alternate. Nu se creează fișierele `home_catalog_sync.dart` din varianta paralelă.
+- **PR #22**: cele cinci teste `lib/finance/per_diem_ledger_test.dart` nu erau descoperite de `flutter test test/`; testele sale mutate identic în `test/per_diem_ledger_edge_cases_test.dart` și gardul `test/ledger_test_discovery_test.py` sunt aduse în PR #28, cu ștergerea **exclusiv a copiei vechi a fișierului de TEST**, nu a codului `lib/finance/per_diem_ledger.dart`.
+
+**Reguli:** acest checkpoint nu modifică logica aplicației, datele Firebase, plăți sau rules/config/chei/deploy; schimbări de cod doar în testele adăugate/întărite și eliminarea fișierului Dart de test mutat. CI standard pe commit nou este obligatoriu înainte de concluzie. Nu facem merge ori deploy prin această consolidare. PR #15 (diurnă manager) necesită audit separat și nu este automat considerat redundant; #19 (Vision), #20 (PDF), #21 (integrare) rămân independente, fără activare în producție. PR-urile #22/#24/#25/#23/#26/#27 rămân **istoric verificabil**; evitați integrarea lor separată după consolidare, iar închiderea lor se documentează explicit când PR canonic este verificat.
+
+**Rămâne:** majoritatea `lib/home/home_page.dart` este încă în `part`, nu într-o bibliotecă independentă; ExpensePage, ProgramPage, MapPage, DashboardPage sunt mari; `badge_v2`, restore, OCR sume, GPS/background și DND sunt riscuri nerezolvate de această mutare. 12 grupuri de asseturi/config identice cunoscute nu sunt șterse automat.
