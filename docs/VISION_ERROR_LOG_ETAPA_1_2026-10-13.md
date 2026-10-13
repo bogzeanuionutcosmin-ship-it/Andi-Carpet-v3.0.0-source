@@ -32,3 +32,17 @@
 - La validare: unit tests noi, cold start după eroare Firebase, Firefox/Chrome/Android secure storage, comportamentul la error callback recursiv, offline, stres, limite/7 zile.
 - Apoi: consolă administrativă centralizată doar cu autorizare server-side, integrare adaptori GPS/OCR și teste instrumentate. Ecranul actual arată exclusiv erorile locale ale dispozitivului.
 - **Fără deploy, merge, APK, schimbări Firebase Rules, date reale ori activare facturare** prin prezentul PR.
+
+## Continuarea etapei 1 — adaptori GPS, OCR, diurne și FCM (2026-10-13)
+
+Au fost conectate *doar operații de observare locală* în codul existent, fără schimbarea deciziilor operaționale, a securității Firestore sau a salvării datelor:
+
+- `lib/home/home_page.dart`: erori de început al streamului GPS, evenimente de eroare ale streamului, eșecuri la actualizarea locației, eșecuri FCM la inițializare/reînnoire token, respectiv eroarea abonamentului la sincronizarea diurnelor. Păstrăm mesajele și callbackurile deja existente. **GPS refuzat de utilizator nu este raportat ca excepție**, pentru a nu induce concluzii false.
+- `lib/expenses/expense_page.dart`: erori efective de recunoaștere OCR manuală/automată, eșec la salvarea bonului/facturii, la salvarea sumelor primite, la distribuirea diurnei, la confirmarea primirii și la o plată suplimentară. Nicio confirmare financiară ori metodă de salvare nu este modificată.
+- Coduri constante: `gps/background_start_failed`, `gps/background_stream_failed`, `gps/location_update_failed`; `ocr/automatic_recognition_failed`, `ocr/recognition_failed`, `ocr/document_save_failed`; `per_diem/sync_failed`, `per_diem/acknowledge_failed`, `per_diem/distribution_save_failed`, `per_diem/supplementary_save_failed`; `finance/received_amount_save_failed`; `fcm/initialization_failed`, `fcm/token_refresh_failed`.
+- **Date transmise jurnalului:** numai categoriile/codurile de mai sus, platforma, severitate, timestamp și contor local. Niciun `$e`, `e.toString()`, sumă, nume, locație, fotografie, mesaj privat sau imagine/text OCR nu ajunge în noul jurnal.
+- `test/vision_operational_diagnostics_contract_test.py`: verifică plasarea acestor apeluri, codurile fixe, păstrarea mesajelor și existența traseului original de salvare. Testele structurale nu înlocuiesc simulările de eșec Firebase sau testul OCR fizic.
+
+**Important:** Telemetria urmărește doar punctele de eroare conectate. Nu diagnostichează automat *sume recunoscute OCR dar interpretate/salvate greșit fără excepție*; acestea cer teste de parser/validator și verificare completă înainte de noul release. Nu modificăm acum schema de diurnă, cuantumul plăților sau politicile de permisiune.
+
+**Validare la data scrierii:** urmărim CI pe SHA final al PR #19. Nicio declarație de «testat pe telefon» fără probă efectivă, niciun merge/deploy.
