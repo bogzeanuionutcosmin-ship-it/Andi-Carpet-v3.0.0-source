@@ -30,6 +30,7 @@ import 'ocr_parser.dart';
 import 'mapbox_services.dart';
 import 'vision/vision_error_telemetry.dart';
 import 'vision/vision_error_log.dart';
+import 'vision/vision_diagnostics_page.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
