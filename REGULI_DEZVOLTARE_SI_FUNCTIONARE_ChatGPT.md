@@ -1035,3 +1035,15 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 6. **Teste viitoare obligatorii:** tap din clopoțel și push Android/web, sugestie cu acțiune în așteptare, eroare de finalizare încă activă, eroare rezolvată între timp, notificare veche/dublată, alt cont ori rol, acces revocat, offline/reconectare, mai multe intervenții la aceeași sală, lipsa ID-ului și deep-link nevalid.
 
 **Status:** regula funcțională este CONFIRMATĂ, **nu** considerată implementată sau verificată pe telefon. Audit/planificare și documentație numai; fără schimbări în cod, Firebase/Firestore Rules, date reale, configurare, APK, CI sau deploy. Următoarea decizie, **propunerea 6**, rămâne de discutat separat, câte una odată.
+
+## 57. Notificări — propunerea 6 CONFIRMATĂ: preferințe individuale pentru alerte (2026-10-13)
+
+**Confirmare expresă:** «Confirm propunerea 6 pentru AndiCarpet.»
+
+1. În **Setări → Notificări**, fiecare utilizator poate configura separat **sunetul, vibrația și afișarea alertelor vizuale** pentru: **Chat live**, **mesajele private**, **Learning** și **informările obișnuite**. Se pot opri sunetele fără a suprima mesajele, istoricul sau contoarele de necitite.
+2. Se permite **dezactivarea sunetului pentru o conversație privată individuală**, fără afectarea altor conversații; chatul de grup are propriile opțiuni. Preferințele sunt personale, nu schimbă setările celorlalți participanți.
+3. **Erorile critice și mesajele autentificate Admin/Sistem ce cer intervenție rămân vizibile în aplicație** și în lista de acțiuni, chiar dacă sunetele sau bannerele obișnuite sunt oprite; fără pop-upuri și sunete repetate inutile. Identitatea și urgența mesajelor obligatorii sunt verificate pe server, nu deduse din textul liber introdus de expeditor. Nu se pretinde ocolirea setărilor OS sau a permisiunii de notificări.
+4. Preferințele persistă după restart/reautentificare, sunt legate de cont și respectă drepturile/permisiunile Android/web. Dezactivarea bannerelor/sunetelor NU marchează mesajele citite, NU rezolvă cereri și NU împiedică afișarea lor în aplicație. Se păstrează deduplicarea, gruparea din propunerea 4 și comportamentul pentru conversația deja vizibilă din propunerea 3.
+5. **Teste de implementare:** fiecare combinație categorie/sunet/vibrație/banner, chat privat pus pe silențios fără alte conversații afectate, persistență restart/relogin, schimbare cont, două dispozitive, Android/web și permisiune OS refuzată, mesaj critic autentic vs mesaj obișnuit cu titlu înșelător, mesaje necitite fără sunet, FCM + Firestore fără alertă dublă, offline/reconectare.
+
+**Status:** numai regulă aprobată și documentată; fără cod, reguli Firebase, date de producție, build sau deploy. Următoarea propunere se discută separat cu proprietarul.
