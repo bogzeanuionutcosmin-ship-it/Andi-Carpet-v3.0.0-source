@@ -341,3 +341,12 @@ Bază PR #28 `e37552a5b90d4f967e5db8cdf77c61120998e2d7`, CI-ul bazei run `384662
 Testul Flutter nou verifică mappingurile sectionAccent, toate fundalurile light/dark și conținutul/culorile SnackBar. Local: 154 teste Python PASS, 3 teste Node PASS, auditul inventarului Dart PASS (151 fișiere, 68 parts, 83 biblioteci; fără ținte lipsă, orfani, duplicate sau cicluri), protecțiile PDF/Mapbox PASS și `git diff --check` PASS. SDK Flutter/Dart indisponibil local; CI run [38474876381](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38474876381), commit `c992eb8e35561e47c585cc8d40e093d0b3dd6c19`: **5/5 SUCCESS**, inclusiv Flutter/widget și build web.
 
 Nu s-au atins PDF-urile și fluxurile PR #20, PR #29/OCR, rutarea/Mapbox, auth/sync, date/reguli Firebase sau billing. Fără merge/deploy/APK. Modularizarea completă rămâne deschisă. Următorul pas: auditarea read-only a următorului helper vizual independent, fără extragerea PageShell/temei globale.
+
+
+## MOD-BRANDING-THEME-HELPERS-LIBRARY-20261014
+
+Bază: PR #28 `ced7d8d9cf4dbb8d75e77345c3b43518c5d0e38a`, după CI 5/5 pe lotul anterior. `lib/ui/branding_theme_helpers.dart` devine bibliotecă Material independentă, cu importuri explicite Flutter foundation/material și `AppSettings`. Main păstrează adaptoarele private pentru fonturi, catalogul const al fundalurilor/logo-urilor și alegerea assetului; `appBrandLogo` rămâne aceeași fațadă publică. Corpurile helperilor/cataloagelor sunt identice după normalizarea numelor publice necesară separării. `app_root_theme.dart`, PageShell, brandingul global mutabil și callsite-urile rămân nemodificate.
+
+Test Dart direct adăugat pentru aliasuri font, familii dependente de platformă, catalog și fallback logo, dimensiunile widgetului. Inventar regenerat: 152 fișiere Dart, 67 parts, 85 biblioteci totale; zero ținte lipsă, parts orfane, declarații duplicate în aceeași bibliotecă ori cicluri import/export. Local: 154 teste Python PASS, 3 Node PASS, audit repository PASS, `git diff --check` PASS; Flutter/Dart indisponibile local, CI nou necesar.
+
+PDF/PV/download/share PR #20, PR #29/OCR/diurne, Mapbox, auth/sync, date/rules Firebase și billing nu sunt modificate. Fără merge, deploy sau APK publicat. După CI: audit read-only pentru următorul helper UI independent; tema globală și PageShell rămân limitate de contractul de branding.

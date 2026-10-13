@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 150,
+  "dart_files": 152,
   "lib_dart_files": 122,
-  "test_dart_files": 27,
+  "test_dart_files": 29,
   "script_dart_files": 1,
-  "parts": 69,
-  "libraries": 81,
+  "parts": 67,
+  "libraries": 85,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -80,6 +80,7 @@
       "lib/reports/pdf_report_format.dart",
       "lib/ui/app_backdrop.dart",
       "lib/ui/auth_status_views.dart",
+      "lib/ui/branding_theme_helpers.dart",
       "lib/ui/dashboard_map_components.dart",
       "lib/ui/empty_state.dart",
       "lib/ui/icon_badge_catalog.dart",
@@ -87,6 +88,7 @@
       "lib/ui/install_app_buttons_view.dart",
       "lib/ui/interactive_badge_preview.dart",
       "lib/ui/money_card.dart",
+      "lib/ui/section_visual_helpers.dart",
       "lib/ui/stat_card.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
@@ -145,6 +147,9 @@
     "lib/reports/pdf_report_format.dart": [],
     "lib/ui/app_backdrop.dart": [],
     "lib/ui/auth_status_views.dart": [],
+    "lib/ui/branding_theme_helpers.dart": [
+      "lib/models/app_data_models.dart"
+    ],
     "lib/ui/dashboard_map_components.dart": [],
     "lib/ui/empty_state.dart": [],
     "lib/ui/icon_badge_catalog.dart": [],
@@ -152,6 +157,9 @@
     "lib/ui/install_app_buttons_view.dart": [],
     "lib/ui/interactive_badge_preview.dart": [],
     "lib/ui/money_card.dart": [],
+    "lib/ui/section_visual_helpers.dart": [
+      "lib/models/app_data_models.dart"
+    ],
     "lib/ui/stat_card.dart": [],
     "lib/utils/graph_names.dart": [],
     "lib/utils/operational_dates.dart": [
@@ -173,6 +181,10 @@
     ],
     "test/auth_status_views_test.dart": [
       "lib/ui/auth_status_views.dart"
+    ],
+    "test/branding_theme_helpers_library_test.dart": [
+      "lib/models/app_data_models.dart",
+      "lib/ui/branding_theme_helpers.dart"
     ],
     "test/core_model_libraries_test.dart": [
       "lib/learning/duration_estimates.dart",
@@ -258,6 +270,10 @@
     ],
     "test/per_diem_settlement_test.dart": [
       "lib/finance/per_diem_settlement.dart"
+    ],
+    "test/section_visual_helpers_library_test.dart": [
+      "lib/models/app_data_models.dart",
+      "lib/ui/section_visual_helpers.dart"
     ],
     "test/stat_card_library_test.dart": [
       "lib/ui/stat_card.dart"
@@ -2103,8 +2119,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 23042,
-      "sha256": "17baf4399e9ef740d0f320d750adad04befeed71b0f6750a8b61a2e3bf39dec1",
+      "bytes": 24246,
+      "sha256": "c82bb3fa8032a8129ea687a2d53b2837ae9b494b8adf07dfd3433734bef0352a",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2599,6 +2615,46 @@
         },
         {
           "kind": "import",
+          "text": "import 'ui/branding_theme_helpers.dart' as branding_helpers;",
+          "uris": [
+            "ui/branding_theme_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/ui/branding_theme_helpers.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'ui/branding_theme_helpers.dart' show appBrandLogo;",
+          "uris": [
+            "ui/branding_theme_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/ui/branding_theme_helpers.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'ui/section_visual_helpers.dart';",
+          "uris": [
+            "ui/section_visual_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/ui/section_visual_helpers.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'ui/section_visual_helpers.dart'\n    show sectionAccent, showSuccessMessage, showErrorMessage;",
+          "uris": [
+            "ui/section_visual_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/ui/section_visual_helpers.dart"
+          ]
+        },
+        {
+          "kind": "import",
           "text": "import 'ui/empty_state.dart' as empty_state;",
           "uris": [
             "ui/empty_state.dart"
@@ -2739,16 +2795,6 @@
         },
         {
           "kind": "part",
-          "text": "part 'ui/branding_theme_helpers.dart';",
-          "uris": [
-            "ui/branding_theme_helpers.dart"
-          ],
-          "local_targets": [
-            "lib/ui/branding_theme_helpers.dart"
-          ]
-        },
-        {
-          "kind": "part",
           "text": "part 'ui/install_app_buttons.dart';",
           "uris": [
             "ui/install_app_buttons.dart"
@@ -2805,16 +2851,6 @@
           ],
           "local_targets": [
             "lib/contacts/location_contacts_page.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'ui/section_visual_helpers.dart';",
-          "uris": [
-            "ui/section_visual_helpers.dart"
-          ],
-          "local_targets": [
-            "lib/ui/section_visual_helpers.dart"
           ]
         },
         {
@@ -3478,6 +3514,11 @@
       ],
       "top_level_functions": [
         "estimateGraphRoadDistanceKm",
+        "_plainBackgroundColor",
+        "_normalizeFontChoice",
+        "_resolvedFontFamily",
+        "_activeLogoAsset",
+        "appBrandLogo",
         "_adminSectionIcon",
         "_adminSectionGroup",
         "_adminSectionAsset",
@@ -4832,26 +4873,42 @@
     },
     {
       "path": "lib/ui/branding_theme_helpers.dart",
-      "bytes": 2390,
-      "sha256": "a4f9eed2b0d36c85ba65a186b4a13b30c21c58891eb17ec741dc81c9a31c55f4",
-      "owner": "lib/main.dart",
+      "bytes": 2491,
+      "sha256": "9c4f2ec2e9417f15391a0cc225a310905f3c4d96909e1feefe388e70be33dcb7",
+      "owner": "lib/ui/branding_theme_helpers.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/foundation.dart' show kIsWeb;",
           "uris": [
-            "../main.dart"
+            "package:flutter/foundation.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_data_models.dart"
           ]
         }
       ],
       "declarations": [],
       "top_level_functions": [
-        "_normalizeFontChoice",
-        "_resolvedFontFamily",
-        "_activeLogoAsset",
+        "normalizeFontChoice",
+        "resolvedFontFamily",
+        "activeLogoAsset",
         "appBrandLogo"
       ]
     },
@@ -4957,8 +5014,8 @@
     },
     {
       "path": "lib/ui/install_app_buttons.dart",
-      "bytes": 2261,
-      "sha256": "c3b273a1e39d4e5b9e53dd098dde085cfec7b6d1041f1fb1c3979817cc07324f",
+      "bytes": 2260,
+      "sha256": "4b1eda0c21de1575d4001ebd3b2326f7d2e4951b466c51ab347953ce71f14ff7",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -5115,18 +5172,26 @@
     },
     {
       "path": "lib/ui/section_visual_helpers.dart",
-      "bytes": 2879,
-      "sha256": "d746539d37036bc839e52a9af25681d6fe1177a630da6d683272ad6bc635485c",
-      "owner": "lib/main.dart",
+      "bytes": 2936,
+      "sha256": "fdbf8d7c13ba4c1069d6be9ca52b79a876c679dd50b7f2329815cf86ab3381b9",
+      "owner": "lib/ui/section_visual_helpers.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_data_models.dart"
           ]
         }
       ],
@@ -5135,7 +5200,7 @@
         "sectionAccent",
         "showSuccessMessage",
         "showErrorMessage",
-        "_plainBackgroundColor"
+        "plainBackgroundColor"
       ]
     },
     {
@@ -5318,8 +5383,8 @@
     },
     {
       "path": "test/app_backdrop_library_test.dart",
-      "bytes": 1554,
-      "sha256": "9e290a566e8f3ff085a9cb8c04b5943749a88c51cf65c6be6d2ab44a8f1eef52",
+      "bytes": 1778,
+      "sha256": "837876fdd07468a601ad2dbd8ad0ec77d81058b072579bdb55f609e9f95ccc51",
       "owner": "test/app_backdrop_library_test.dart",
       "directives": [
         {
@@ -5384,6 +5449,62 @@
           ],
           "local_targets": [
             "lib/ui/auth_status_views.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/branding_theme_helpers_library_test.dart",
+      "bytes": 1955,
+      "sha256": "3d84a61ea7ce60c5f4b4dd7ae59b8285efbae0fa31ae2fa3d578008498310e55",
+      "owner": "test/branding_theme_helpers_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/foundation.dart' show kIsWeb;",
+          "uris": [
+            "package:flutter/foundation.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_data_models.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/branding_theme_helpers.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/branding_theme_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/ui/branding_theme_helpers.dart"
           ]
         }
       ],
@@ -6371,6 +6492,54 @@
           ],
           "local_targets": [
             "lib/finance/per_diem_settlement.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/section_visual_helpers_library_test.dart",
+      "bytes": 2459,
+      "sha256": "dac8006e2ed216729a151c30366db23193e7c4d2f2792db0083b92173ae7cff6",
+      "owner": "test/section_visual_helpers_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_data_models.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/section_visual_helpers.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/section_visual_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/ui/section_visual_helpers.dart"
           ]
         }
       ],

@@ -52,8 +52,11 @@ import 'models/permission_status_labels.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';
+import 'ui/branding_theme_helpers.dart' as branding_helpers;
+export 'ui/branding_theme_helpers.dart' show appBrandLogo;
 import 'ui/section_visual_helpers.dart';
-export 'ui/section_visual_helpers.dart';
+export 'ui/section_visual_helpers.dart'
+    show sectionAccent, showSuccessMessage, showErrorMessage;
 import 'ui/empty_state.dart' as empty_state;
 import 'ui/money_card.dart' as money_card;
 import 'ui/info_card.dart' as info_card;
@@ -69,7 +72,6 @@ export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
 part 'auth/quick_accounts.dart';
-part 'ui/branding_theme_helpers.dart';
 part 'ui/install_app_buttons.dart';
 part 'bootstrap/firebase_initialization.dart';
 part 'map/location_adjust_page.dart';
@@ -165,6 +167,23 @@ Future<double?> estimateGraphRoadDistanceKm(
 // Keep the existing private adapter name for callers in main.dart parts.
 Color _plainBackgroundColor(AppSettings settings, Brightness brightness) =>
     plainBackgroundColor(settings, brightness);
+
+String _normalizeFontChoice(String? raw) =>
+    branding_helpers.normalizeFontChoice(raw);
+String? _resolvedFontFamily(String choice) =>
+    branding_helpers.resolvedFontFamily(choice);
+const Map<String, String> _bundledBackgroundAssets =
+    branding_helpers.bundledBackgroundAssets;
+const Map<String, String> _bundledBackgroundLabels =
+    branding_helpers.bundledBackgroundLabels;
+const Map<String, String> _bundledLogoAssets =
+    branding_helpers.bundledLogoAssets;
+const Map<String, String> _bundledLogoLabels =
+    branding_helpers.bundledLogoLabels;
+String _activeLogoAsset(AppSettings settings) =>
+    branding_helpers.activeLogoAsset(settings);
+Widget appBrandLogo(AppSettings settings, {double width = 520, double height = 130}) =>
+    branding_helpers.appBrandLogo(settings, width: width, height: height);
 
 IconData _adminSectionIcon(int index) => admin_navigation.adminSectionIcon(index);
 String _adminSectionGroup(int index) => admin_navigation.adminSectionGroup(index);

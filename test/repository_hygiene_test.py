@@ -106,17 +106,30 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_branding_and_font_helpers_are_extracted_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/branding_theme_helpers.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'ui/branding_theme_helpers.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
-        for symbol in ("String _normalizeFontChoice(", "String? _resolvedFontFamily(",
-                       "String _activeLogoAsset(", "Widget appBrandLogo("):
-            self.assertNotIn(symbol, main)
-            self.assertIn(symbol, module)
-        for symbol in ("_bundledBackgroundAssets", "_bundledBackgroundLabels",
-                       "_bundledLogoAssets", "_bundledLogoLabels"):
-            self.assertIn("const Map<String, String> " + symbol + " =", module)
-            self.assertNotIn("const Map<String, String> " + symbol + " =", main)
-        self.assertIn("Image.asset(_activeLogoAsset(settings)", module)
+        self.assertNotIn("part 'ui/branding_theme_helpers.dart';", main)
+        self.assertIn("import 'ui/branding_theme_helpers.dart' as branding_helpers;", main)
+        self.assertIn("export 'ui/branding_theme_helpers.dart' show appBrandLogo;", main)
+        self.assertNotIn("part of", module)
+        for import_line in ("import 'package:flutter/foundation.dart' show kIsWeb;",
+                            "import 'package:flutter/material.dart';",
+                            "import '../models/app_data_models.dart';"):
+            self.assertIn(import_line, module)
+        self.assertIn("String normalizeFontChoice(", module)
+        self.assertIn("String? resolvedFontFamily(", module)
+        self.assertIn("String activeLogoAsset(", module)
+        self.assertIn("Widget appBrandLogo(", module)
+        for adapter in ("String _normalizeFontChoice(", "String? _resolvedFontFamily(",
+                        "String _activeLogoAsset(", "Widget appBrandLogo("):
+            self.assertIn(adapter, main)
+        for module_name, adapter_name in (
+            ("bundledBackgroundAssets", "_bundledBackgroundAssets"),
+            ("bundledBackgroundLabels", "_bundledBackgroundLabels"),
+            ("bundledLogoAssets", "_bundledLogoAssets"),
+            ("bundledLogoLabels", "_bundledLogoLabels"),
+        ):
+            self.assertIn("const Map<String, String> " + module_name + " =", module)
+            self.assertIn("const Map<String, String> " + adapter_name + " =", main)
+        self.assertIn("Image.asset(activeLogoAsset(settings)", module)
 
     def test_install_buttons_are_extracted_without_behavior_loss(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
@@ -578,7 +591,8 @@ class RepositoryHygieneTests(unittest.TestCase):
         module = (ROOT / "lib/ui/section_visual_helpers.dart").read_text(encoding="utf-8")
         self.assertNotIn("part 'ui/section_visual_helpers.dart';", main)
         self.assertIn("import 'ui/section_visual_helpers.dart';", main)
-        self.assertIn("export 'ui/section_visual_helpers.dart';", main)
+        self.assertIn("export 'ui/section_visual_helpers.dart'", main)
+        self.assertIn("show sectionAccent, showSuccessMessage, showErrorMessage;", main)
         self.assertNotIn("part of", module)
         self.assertIn("import '../models/app_data_models.dart';", module)
         for symbol in ("Color sectionAccent(String label)",
