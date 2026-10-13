@@ -92,3 +92,42 @@ După explicația directă «AI local vs AI online», proprietarul a răspuns **
 **Criteriu de acceptare distinct:** o instalare fără nicio cheie AI și fără conectare la un model lingvistic trebuie să poată folosi funcțiile de bază AndiCarpet și componentele locale Vision prevăzute; simularea indisponibilității AI cloud nu poate bloca operațiunile. Se vor testa funcțiile efectiv implementate înainte de a pretinde disponibilitatea lor.
 
 **Status:** decizie documentată; fără implementare, integrare API, contract de plată ori deploy.
+
+## 11. Audit aprofundat read-only pe PR #17 — componente reale, riscuri și traseu Vision (2026-10-13)
+
+**Sursă inspectată:** `refactor/home-codecs-sync-20261012`, commit `29f394478ea5fd86822efd3a138766067c3f9694`; PR #17 **OPEN**, fără merge/deploy. Arbore GitHub: **476 intrări** (fișiere + directoare; nu 476 module). `lib/main.dart` are ~13.958 octeți și ~198 linii, iar `lib/home/home_page.dart` are ~95,6 KB, `lib/map/map_page.dart` ~55,5 KB, `lib/schedule/program_page.dart` ~66,9 KB. Modularizarea a avansat semnificativ, dar ecranele mari păstrează încă logică și stări puternic cuplate prin `part of '../main.dart'`.
+
+**CI verificat pentru commitul exact:** run [38220879828](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38220879828), `completed/success`, **5/5 joburi**: Node projection, Firestore emulator authorization, Functions syntax/dependencies, Flutter web build, Python source/security contracts. Acesta NU este un test pe telefon sau o garanție a fluxurilor GPS reale.
+
+### Inventarul de integrare confirmat prin citirea sursei
+
+| Domeniu Vision | Cod real găsit | Ce se poate reutiliza și ce NU este confirmat |
+|---|---|---|
+| GPS în fundal + mod adaptiv | `lib/home/home_page.dart`: `_startAdaptiveLiveLocation`, `_startNativeBackgroundLocationStream`, `_updateNativeLocationProximityBoost` | Geolocator streams, mod `economic/live/offline`, precizie adaptivă, indicator Android foreground; nu s-au validat încă pe dispozitiv restricțiile OS/fiabilitatea în background |
+| Sosire / plecare / activitate | `_applyWorkAutomationFromPosition`, `_handleArrivalDetected`, `_saveArrivalStart`, `_maybeAutoCloseResolvedSchedules` | Filtre precizie <=80m, poziție proaspătă <=2 min, viteză <=8m/s, proximitate și dwell; **START la sosire cere ÎNTOTDEAUNA confirmare**, nu e încă START automat bazat pe Learning; STOP de intervenție e propus, nu executat |
+| Learning durată / trasee | `lib/learning/duration_estimates.dart`, `lib/schedule/program_page.dart`, `lib/admin/admin_learning_actions.dart` | Durata din >=3 execuții valide, scor explicabil și preferințe Learning; analiza rutelor și confirmări, dar NU un model GPS antrenat din corectările de sosire/plecare |
+| Push, diagnostic | `lib/notifications/push_diagnostics_page.dart`, `lib/home/home_page.dart`, `functions/index.js` | FCM token, permisiuni, salvare, notificări de chat/sistem; regulile noi DND strict/acțiuni în așteptare și sincronizarea lor NU sunt încă implementate |
+| Hartă + rutare + consum Mapbox | `lib/map/map_page.dart`, `lib/mapbox_services.dart` | `MapboxServices` are contor local pentru Directions/Optimization/Map Matching și cache de **10 minute numai pentru distanțele identice**; contorul nu este oficial sau persistent și NU include requesturile Static Tiles încărcate în altă parte |
+| OCR | `lib/ocr_parser.dart`, `lib/ocr_service_mobile.dart` + web/stub | ML Kit local pe mobil + parser pentru sume și date; problema istorică la salvarea sumelor necesită un test cap-coadă separat; nu presupunem că parserul garantează salvarea |
+| Date/stare/drepturi | `lib/models/app_data_models.dart`, `lib/home/home_page.dart`, `functions/index.js` | `AppSettings.learning`, `AppNotification`, `CentralizerRecord`; înainte de Vision sunt necesare un API intern de evenimente și tranziții atomice fără duplicare |
+
+### Riscuri constatate sau plauzibile — prioritate înainte de automatizare nouă
+
+1. **P0 — cursă START manual/automat și două dispozitive:** `_saveArrivalStart` verifică `_homeLatestRecord` din lista locală, apoi `_saveRecordDirect` face `records.doc(record.id).set(...merge:true)`; nu s-a identificat în acest traseu o tranzacție server-side care să garanteze un singur START la două cereri concurente. Posibilă duplicare când ambele dispozitive creează ID-uri diferite din cache-uri depășite. În Vision cerem **identitate stabilă a intervenției + verificare/commit atomic + test de concurență**. Nu afirmăm fără test că în producție s-au produs duplicate.
+2. **P0 — săli vecine:** lista de candidate este sortată după distanță și alege prima sală; nu se observă un filtru separat pentru egalitate/ambiguitate între două săli valide simultan. Regulile aprobate cer confirmare fără alegere automată atunci când mai multe săli sunt apropiate.
+3. **P0 — DND nu este aplicat server-side:** `functions/index.js` -> `sendToUser` expediază mesaje FCM cu `notification` afișabilă și sunet implicit; `userNotificationAllowed` tratează `mandatory` cu bypass și permisive `return true` la erori. Acest cod NU poate asigura «zero push afișabile» în Nu deranja; este o cerință nouă de implementat ulterior, **fără a ascunde notificarea tehnică foreground GPS cerută de Android**.
+4. **P1 — detecția depinde de o scriere Firestore reușită:** `_shareLiveLocationIfAllowed` salvează mai întâi `liveLocations` prin `await ...set` și **abia apoi** cheamă `_applyWorkAutomationFromPosition`; dacă scrierea eșuează sau conexiunea e offline, traseul local de detecție nu este executat. Vision trebuie să separe **detecția locală** de **sincronizarea către cloud**, să tamponeze evenimentele minim și să verifice autorizarea/starea la orice commit operațional.
+5. **P1 — cost + minimizarea datelor:** la fiecare heartbeat GPS, `liveLocations/{uid}` primește inclusiv `photoBase64`, nume și echipă, plus coordonate și timestamp; posibilă mărire nejustificată a payloadului, scrierilor și traficului de la ascultători. Evaluăm păstrarea profilului separat (ID de referință), limitarea heartbeatului, agregări, fără a compromite precizia. Nu ștergem date existente fără audit de acces.
+6. **P1 — stări GPS efemere:** `_autoInsideSince`, `_autoOutsideSince`, `_arrivalPromptCounts` și `_automationNotified` stau doar în memoria widgetului și se resetează la restart/relogin; pot exista re-prompturi, cursă între două dispozitive și lipsa probelor după offline. Vision definește tranziții și chei stabile, cu retenție economică.
+7. **P1 — indicator de fundal / permisiuni:** `AndroidSettings.foregroundNotificationConfig` există deja. Se testează pe versiuni Android și dispozitive reale, fără promisiuni că notificarea tehnică permanentă poate fi ascunsă dacă OS o impune. Nu dezactivăm Nu deranja manual pentru mesajele normale.
+8. **P2 — testare insuficient specifică Vision:** `test/grafic_learning_notifications_contract_test.py` și multe teste de igienă verifică existența unor fragmente/simboluri, nu scenariile GPS reale ori concurența. Extindem ulterior teste unitare de tranziție, Firestore emulator/permisiuni, FCM DND și scenarii fizice de sală vecină/ecran blocat.
+
+### Ordinea recomandată a integrării, după modularizare
+
+**V0:** extragerea unei interfețe pure `VisionEvent` + `VisionObservation` + `VisionDecision` fără mutații de business; adapter peste `HomePage` pentru GPS/FCM/Learning existent; teste deterministe.  
+**V1:** motor local de detecție și explicații, permisiuni/minimizare, jurnal în cache limitat, fără AI plătit sau servicii noi.  
+**V2:** contract server-side pentru tranzacțiile START/STOP și idempotentă multi-dispozitiv; fără activare START automat până la aprobarea și testarea acestui strat.  
+**V3:** notificări compatibile DND, Learning GPS pe corectări, întărirea OCR/Mapbox și dashboard Vision, fiecare cu teste și analiză de cost.  
+**V4:** staging + teste reale Android/background/offline/concurență și măsurarea consumului înainte de orice rollout.
+
+**Acest audit a fost numai citire de fișiere GitHub și verificare CI; niciun test nou executat, niciun cod de producție schimbat, fără merge sau deploy.**
