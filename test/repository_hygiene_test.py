@@ -811,10 +811,20 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        parts = {
-            "ui/auth_status_components.dart": ("_FirebaseLoading", "_FirebaseError"),
-            "map/verified_location_fix.dart": ("_VerifiedLocationFix",),
-        }
+        self.assertNotIn("part 'ui/auth_status_components.dart';", main)
+        self.assertIn("import 'ui/auth_status_views.dart' as auth_status;", main)
+        self.assertIn("class _FirebaseLoading extends StatelessWidget", main)
+        self.assertIn("class _FirebaseError extends StatelessWidget", main)
+        self.assertIn("logo: appBrandLogo(settings, width: 520, height: 130)", main)
+        self.assertIn("onSignOut: () => FirebaseAuth.instance.signOut()", main)
+        views = (ROOT / "lib/ui/auth_status_views.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'package:flutter/material.dart';", views)
+        self.assertNotIn("FirebaseAuth", views)
+        self.assertIn("class FirebaseLoadingView extends StatelessWidget", views)
+        self.assertIn("class FirebaseErrorView extends StatelessWidget", views)
+        self.assertIn("final Widget logo;", views)
+        self.assertIn("final VoidCallback onSignOut;", views)
+        parts = {"map/verified_location_fix.dart": ("_VerifiedLocationFix",)}
         for relative, classes in parts.items():
             with self.subTest(module=relative):
                 source = (ROOT / "lib" / relative).read_text(encoding="utf-8")

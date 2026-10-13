@@ -1611,3 +1611,12 @@ Runul `38461449964`: tap/pin/toggle a trecut, iar celelalte patru joburi au trec
 Lotul `interactive_badge_preview.dart` este validat pe commitul cod `c393e891546fc997a0811a70d9cbf4d77e49f389`, workflow run `38461684523`: **5/5 joburi SUCCESS** (Python/security, Node, Firestore emulator, Functions, Flutter/widget + web build). Testele directe verifică pin/toggle, preview la hover și închiderea/cleanup la pointer exit. Inventar: 146 Dart (122 lib, 23 tests, 1 script), 73 parts, 73 biblioteci, fără missing/orphan/duplicate/cicluri.
 
 Audit read-only: `app_root_theme.dart` citește setări mutable și scrie `_activeAppSettingsForBranding`; nu are încă un contract independent sigur. Următorul lot exact: extragerea UI-ului `auth_status_components.dart` într-o bibliotecă Material cu `logo` și `onSignOut` injectate; wrapperele existente păstrează constructors/callsites și apelul Firebase Auth. Nu schimbă fluxul de autentificare/permisiuni.
+
+
+## MOD-AUTH-STATUS-VIEWS-LIBRARY-20261013
+
+Bază: `8798481c5b7eb5fc6e5c00ad72d85c9878bf1b36`. UI-ul de stare Firebase a fost desprins în `lib/ui/auth_status_views.dart` ca bibliotecă Material independentă. `FirebaseLoadingView` primește logo-ul construit de adapterul main; `FirebaseErrorView` primește callbackul de sign-out. Wrapperele private păstrează constructorii folosiți de AuthGate, iar apelul `FirebaseAuth.instance.signOut()` rămâne în main. Doar un part UI a fost convertit; fluxul de autentificare, permisiunile și serviciile nu se schimbă.
+
+Testele Dart verifică mesajul/logo/progresul și forwardarea callbackului de sign-out. Inventar: 147 Dart, 72 parts, 75 biblioteci; fără missing/orphan/duplicate/cicluri. Testele structurale locale (84), inventarul JSON, node --check și diff-check PASS; Flutter/Dart indisponibil local.
+
+PR #29, OCR, regulile/datele financiare și diurnele rămân neatinse. CI pentru lotul curent în așteptare; următorul pas după 5/5 este audit read-only al componentei next cu dependențe private mici. Modularizarea completă nu este finalizată.

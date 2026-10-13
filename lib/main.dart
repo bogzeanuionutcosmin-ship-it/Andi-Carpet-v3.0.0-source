@@ -59,11 +59,11 @@ import 'ui/stat_card.dart' as stat_card;
 import 'ui/app_backdrop.dart' as app_backdrop;
 import 'ui/install_app_buttons_view.dart' as install_buttons;
 import 'ui/interactive_badge_preview.dart' as badge_preview;
+import 'ui/auth_status_views.dart' as auth_status;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
 part 'ui/dashboard_map_components.dart';
-part 'ui/auth_status_components.dart';
 part 'auth/quick_accounts.dart';
 part 'ui/branding_theme_helpers.dart';
 part 'ui/install_app_buttons.dart';
@@ -252,6 +252,29 @@ class _InteractiveBadgeIcon extends StatelessWidget {
         size: size,
         color: color,
         badgeGraphic: _badgeGraphic,
+      );
+}
+
+class _FirebaseLoading extends StatelessWidget {
+  final String text;
+  final AppSettings settings;
+  const _FirebaseLoading({required this.text, required this.settings});
+
+  @override
+  Widget build(BuildContext context) => auth_status.FirebaseLoadingView(
+        text: text,
+        logo: appBrandLogo(settings, width: 520, height: 130),
+      );
+}
+
+class _FirebaseError extends StatelessWidget {
+  final String message;
+  const _FirebaseError({required this.message});
+
+  @override
+  Widget build(BuildContext context) => auth_status.FirebaseErrorView(
+        message: message,
+        onSignOut: () => FirebaseAuth.instance.signOut(),
       );
 }
 

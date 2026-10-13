@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 146,
+  "dart_files": 147,
   "lib_dart_files": 122,
-  "test_dart_files": 23,
+  "test_dart_files": 24,
   "script_dart_files": 1,
-  "parts": 73,
-  "libraries": 73,
+  "parts": 72,
+  "libraries": 75,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -76,6 +76,7 @@
       "lib/ocr_service.dart",
       "lib/reports/pdf_report_format.dart",
       "lib/ui/app_backdrop.dart",
+      "lib/ui/auth_status_views.dart",
       "lib/ui/empty_state.dart",
       "lib/ui/icon_badge_catalog.dart",
       "lib/ui/info_card.dart",
@@ -136,6 +137,7 @@
     "lib/ocr_service_web.dart": [],
     "lib/reports/pdf_report_format.dart": [],
     "lib/ui/app_backdrop.dart": [],
+    "lib/ui/auth_status_views.dart": [],
     "lib/ui/empty_state.dart": [],
     "lib/ui/icon_badge_catalog.dart": [],
     "lib/ui/info_card.dart": [],
@@ -160,6 +162,9 @@
     ],
     "test/app_backdrop_library_test.dart": [
       "lib/ui/app_backdrop.dart"
+    ],
+    "test/auth_status_views_test.dart": [
+      "lib/ui/auth_status_views.dart"
     ],
     "test/core_model_libraries_test.dart": [
       "lib/learning/duration_estimates.dart",
@@ -2082,8 +2087,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 21127,
-      "sha256": "95122e77a953d9705beb373c7fe00dfe98d7de14c0371b5c99cb14052b7dca95",
+      "bytes": 21792,
+      "sha256": "cd58882b2025510b75758fe29525aeb0d7f97dae5eefbac0bdc4a1b9f93b4bea",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2647,6 +2652,16 @@
           ]
         },
         {
+          "kind": "import",
+          "text": "import 'ui/auth_status_views.dart' as auth_status;",
+          "uris": [
+            "ui/auth_status_views.dart"
+          ],
+          "local_targets": [
+            "lib/ui/auth_status_views.dart"
+          ]
+        },
+        {
           "kind": "export",
           "text": "export 'ui/icon_badge_catalog.dart';",
           "uris": [
@@ -2674,16 +2689,6 @@
           ],
           "local_targets": [
             "lib/ui/dashboard_map_components.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'ui/auth_status_components.dart';",
-          "uris": [
-            "ui/auth_status_components.dart"
-          ],
-          "local_targets": [
-            "lib/ui/auth_status_components.dart"
           ]
         },
         {
@@ -3417,6 +3422,14 @@
         {
           "kind": "class",
           "name": "_InteractiveBadgeIcon"
+        },
+        {
+          "kind": "class",
+          "name": "_FirebaseLoading"
+        },
+        {
+          "kind": "class",
+          "name": "_FirebaseError"
         },
         {
           "kind": "class",
@@ -4759,30 +4772,28 @@
       "top_level_functions": []
     },
     {
-      "path": "lib/ui/auth_status_components.dart",
-      "bytes": 1090,
-      "sha256": "7aadd7c526ecf904c1d1419273ecaef15aae79f1ea24441b9ba62ff82f9c7a66",
-      "owner": "lib/main.dart",
+      "path": "lib/ui/auth_status_views.dart",
+      "bytes": 1487,
+      "sha256": "0a9947b46825d200113be7c2a795bc2af756e4797b016ed04a1050b66a55fa52",
+      "owner": "lib/ui/auth_status_views.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
           ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
+          "local_targets": []
         }
       ],
       "declarations": [
         {
           "kind": "class",
-          "name": "_FirebaseLoading"
+          "name": "FirebaseLoadingView"
         },
         {
           "kind": "class",
-          "name": "_FirebaseError"
+          "name": "FirebaseErrorView"
         }
       ],
       "top_level_functions": []
@@ -5314,6 +5325,44 @@
       ]
     },
     {
+      "path": "test/auth_status_views_test.dart",
+      "bytes": 1185,
+      "sha256": "0ad683f4612bef310d84086e17bc739de3ee2a66a48225d2713bd4e7b357c7f5",
+      "owner": "test/auth_status_views_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/auth_status_views.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/auth_status_views.dart"
+          ],
+          "local_targets": [
+            "lib/ui/auth_status_views.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
       "path": "test/core_model_libraries_test.dart",
       "bytes": 6633,
       "sha256": "ce637c7057891131be38ea616eccf91379487411243026f638aa0e7417c280a4",
@@ -5705,10 +5754,18 @@
     },
     {
       "path": "test/interactive_badge_preview_test.dart",
-      "bytes": 1602,
-      "sha256": "d839efd095151ee79f430cd702d8012cb83f2c144502e27feac35f3e5f61f7fa",
+      "bytes": 1759,
+      "sha256": "d1f51dc1566ee2a7925e1431e948bbdf668e684a03ad2c54876adf5384c41aaa",
       "owner": "test/interactive_badge_preview_test.dart",
       "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:ui' show PointerDeviceKind;",
+          "uris": [
+            "dart:ui"
+          ],
+          "local_targets": []
+        },
         {
           "kind": "import",
           "text": "import 'package:flutter/material.dart';",
