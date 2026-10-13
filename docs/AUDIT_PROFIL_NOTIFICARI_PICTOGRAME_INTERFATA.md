@@ -176,3 +176,44 @@ Acestea sunt **decizii funcționale explicite** și simptome reale raportate, da
 ### 9.6 Următorul pas
 
 Actualizați documentele canonice `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` și `ChatGpt`. Apoi decideți împreună UI-ul complet și istoricul echipelor conform mandatului; implementarea și testarea finală rămân la sfârșit conform ordinii stabilite a proiectului. **Fără modificări de cod, Firestore, Firebase live ori deploy prin această notă**.
+
+## 10. Prioritatea notificărilor Learning, semnalizarea în clopoțel și cheia Android (2026-10-13)
+
+### 10.1 Cerințe noi exprimate direct de proprietar
+
+- **Clopoțel:** fiecare notificare poate avea **simbol și culoare reprezentând importanța**, pe lângă separarea `read` și `requiresAction`; iconografia și codarea trebuie să fie accesibile și prin text, nu numai culoare.
+- **Learning:** **notificările și sugestiile sale sunt IMPORTANTE**, deci nu trebuie tratate ca simple informări neinteresante ori îngropate în listă. **Atenție la regula deja aprobată:** numai mesajele cu acțiune/răspuns real pot fi persistente; o recomandare informativă importantă nu se transformă automat în popup recurent.
+- **Cheia aplicației Android:** proprietarul cere să se **păstreze cheia permanentă pentru actualizările versiunilor viitoare**, evitând instalarea peste existentă cu semnătură incompatibilă. Cerința de **continuitate a cheii de semnare** este aprobată ca obiectiv; **NU se presupune că cheia este deja salvată**.
+
+### 10.2 Propunere de clasificare pentru clopoțel — neconfirmată în toate detaliile
+
+- **Roșu, `circle-alert` / triunghi de atenționare:** blocaj sau eroare serioasă care cere intervenție. Card `pending` dacă nu a fost rezolvat; simple erori istorice deja încheiate nu persistă.
+- **Galben/ambra, clepsidră:** acces în așteptare ori schimbare operațională necesară, cu termen/scop real. Dacă necesită acțiune, rămâne card pending.
+- **Learning: violet sau albastru-indigo, icon creier/scânteie/carte:** recomandare/analiză de valoare, **prioritate mare în clopoțel** și categorie distinctă. Sugestia care cere aprobare/alegere utilizatorului e candidat la persistență **doar până la aplicare, respingere, amânare explicită ori expirare bine definită**; observația pur informativă se marchează automat citită la deschiderea clopoțelului. **Culoarea exactă și acțiunile trebuie confirmate cu proprietarul pe rând.**
+- **Verde cu bifă:** operație salvată, informare scurtă, fără Undo din mesaj.
+- **Admin/Sistem autentic:** stil premium bleumarin + accent auriu/sigiliu numai pentru sursă validată criptografic și autorizată server-side; importanța/severitatea se evaluează separat, nu implică automat `pending`.
+- **Gri neutru:** informare obișnuită, neacționabilă, istoric fără popup repetitiv.
+- Lista poate prioritiza **acțiuni reale nerezolvate**, apoi Learning acționabil, apoi restul după recență; ordinea exactă și aspectul se decid în discuții separate, nu se impun ca regulă finală acum.
+- Pentru toate: texte și iconuri explicite, contrast accesibil, stare `read` distinctă de `resolved`, fără schimbarea drepturilor sau a regulii privind popupurile persistente.
+
+### 10.3 Audit read-only al semnării Android — ATENȚIE, risc de actualizare
+
+**Dovada din sursa GitHub actuală**:
+- `android/app/build.gradle.kts` în blocul `buildTypes.release` are comentariul `Signing with the debug keys for now` și `signingConfig = signingConfigs.getByName("debug")`.
+- `.github/workflows/build-android.yml` folosește `flutter build apk --release` și NU configurează explicit o cheie permanentă de semnare în acel workflow.
+- `pubspec.yaml` arată acum `version: 3.0.1+33`, **dar acesta nu certifică versiunea instalată**, semnătura APK-ului de pe telefon ori configurația unui alt build.
+
+**Concluzie justificată:** **Nu există dovadă că APK-ul actual de release al repo-ului este semnat cu o cheie PERMANENTĂ de release**. Configurația sursei îl semnează cu debug; pe runnerul CI cheia debug poate fi proprie mediului și poate diferi între builduri. O versiune numerică mai mare nu corectează o semnătură diferită. **Nu promitem compatibilitate până nu comparăm certificatele.**
+
+**Plan tehnic obligatoriu înaintea primei lansări APK noi** (nu încă executat):
+1. Identifică în condiții autorizate **certificatul/fingerprintul SHA-256 și pachetul** APK-ului instalat pe telefon și ale fiecărui artefact APK candidat. Nu cere utilizatorului parole ori cheia privată în chat.
+2. Verifică dacă **keystore-ul privat corespunzător semnăturii instalate mai există**, cine îl controlează și dacă poate fi păstrat în siguranță. Certificatul/fingerprintul public **NU** este cheia privată și nu permite semnarea singur. Nu putem recupera cheia privată din APK-ul semnat.
+3. Pentru viitor: **o singură identitate de semnare oficială**, keystore securizat în vault/manager de secrete, backup securizat separat, parole în secret manager, acces limitat, audit și procedură de restaurare. **NICIODATĂ cheia privată, parole sau exporturi de keystore în GitHub public/documentație/artefacte neprotejate**.
+4. CI folosește secretul protejat temporar pentru semnarea release; se verifică înainte de publicare certificatul SHA-256, `applicationId`, `versionCode` crescător și faptul că release APK chiar este semnat cu cheia aprobată. Nu folosi cheia debug pentru release oficial. Se previne publicarea dacă identitatea semnării nu corespunde.
+5. Dacă semnătura APK-ului instalat nu poate fi reprodusă (cheia originală nu există) și platforma de distribuție nu furnizează mecanism de continuitate permis, **actualizarea directă peste acel APK nu este posibilă**. Va fi necesar un plan autorizat pentru o tranziție/reinstalare unică, fără ștergerea datelor de pe dispozitiv înaintea salvării operațiilor nesincronizate, după evaluarea consecințelor. **Nu faceți acum reinstalare, generare de chei, upload de secrete ori lansare.**
+
+### 10.4 Pasul următor de produs
+
+Proprietarul dorește o discuție **câte o singură propunere despre notificări**, la care să răspundă cu **«Da» / «Nu» / propria variantă**, nu un pachet mare de reguli de aprobat simultan. **Prima propunere:** sugestiile Learning care solicită o alegere explicită să rămână evidențiate cu simbol distinct până la rezolvare, iar analizele Learning informative să rămână prioritizate vizual dar să fie marcate citite la deschiderea clopoțelului. Formularea și culoarea exactă se discută cu proprietarul.
+
+**Statut:** documentare și audit static, fără creare/salvare efectivă a keystore-ului, fără modificări de cod Flutter/Android, Firebase, Rules, CI sau deploy.
