@@ -21,6 +21,19 @@ class DocumentsDownloadContract(unittest.TestCase):
         self.assertIn("if (!mounted || !saved) return;", DOCUMENTS)
         self.assertIn("anchor.click()", WEB)
 
+    def test_million_is_not_claimed_downloadable_without_embedded_pdf(self):
+        self.assertIn("assets/pv_million.pdf", DOCUMENTS)
+        self.assertIn("PV_MILLION.pdf", DOCUMENTS)
+        self.assertIn("FutureBuilder<bool>", DOCUMENTS)
+        self.assertIn("snapshot.data != true", DOCUMENTS)
+        self.assertIn("PDF Million în curs de integrare", DOCUMENTS)
+        self.assertIn("Descarcă PV Million", DOCUMENTS)
+        self.assertIn("Partajează PV Million", DOCUMENTS)
+        self.assertIn("Printing.sharePdf(", DOCUMENTS)
+        self.assertIn("await downloadFile(", DOCUMENTS)
+        # User-supplied PDF goes in assets/; no migration or new cloud writes.
+        self.assertNotIn("FirebaseStorage", DOCUMENTS)
+
     def test_pv_metadata_is_not_fake_attachment(self):
         self.assertIn("Fișă informativă — PDF neatașat", DOCUMENTS)
         self.assertIn("Această funcție NU încarcă un fișier PDF", DOCUMENTS)
