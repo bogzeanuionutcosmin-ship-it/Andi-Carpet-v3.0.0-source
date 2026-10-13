@@ -686,9 +686,12 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertEqual(module.count(symbol), 1)
         for feature in ("_startAdaptiveLiveLocation(",
                         "_initPushNotifications(", "_startCoreSync(",
-                        "_savePerDiemDirect(", "_openAdmin(",
+                        "_openAdmin(",
                         "NavigationBar("):
             self.assertIn(feature, module)
+        finance_write = (ROOT / "lib/home/home_financial_write_actions.dart").read_text(encoding="utf-8")
+        self.assertIn("_savePerDiemDirect(", finance_write)
+        self.assertNotIn("  Future<void> _savePerDiemDirect(", module)
 
     def test_auth_status_and_verified_location_modules_are_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

@@ -141,3 +141,13 @@ Bază: PR #23 commit `2e4a7312a526908ede4965a87bcb25bd8edcc9ee` (nu `main`), pen
 **Teste:** `test/home_financial_sync_contract_test.py` (unicitate, filtre, anulare, număr abonări și contracte). CI standard pentru Flutter, web, Python, Node, Functions și emulator trebuie verificat pe commitul final. Nu pretindem testare autenticată live; acesta rămâne un modul `part of main.dart`, nu o bibliotecă independentă.
 
 **Interdicții:** fără merge în main, Firebase de producție, rules/config, deploy, APK publicat sau billing; Draft PR separat.
+
+## MOD-HOME-FINANCIAL-WRITES-20261013 — separare exclusiv textuală a celor patru scrieri financiare
+
+**Bază:** PR #27 HEAD `ef31e2e1f86ca87468184e81571342e9714d0f74` (cumulativ peste PR #23/#26). Blocul `_saveExpenseDirect`, `_savePerDiemDirect`, `_saveSettlementDirect`, `_saveFinanceDirect` — **6845 caractere** — a fost mutat textual, fără schimbarea niciunei instrucțiuni din metode, din `lib/home/home_page.dart` în `lib/home/home_financial_write_actions.dart`, extensie privată în aceeași bibliotecă Dart. HomePage: 70385 → 63540 caractere; față de `main` inițial: 95.321 → 63540 caractere. **Reconstituirea blocului în poziția inițială reproduce exact sursa din PR #27**.
+
+**Sensibilitate financiară:** `_savePerDiemDirect` conține tranzacția de confirmare/refuz și jurnalul `receiptAudit`. **Nu am schimbat** verificarea Firebase Auth, identitatea beneficiarului/distribuitorului, identificatorii, tratamentul sumelor `parsePerDiemBani`, interdicția confirmării duble, documentul de tranzacție, respingerea datelor invalide sau permisiunile `canEditTeam`/`viewOwnDecont`. Testul nou `test/home_financial_write_actions_contract_test.py` verifică prezența unică a metodelor și contractele de securitate/tranzacție/colecții; testul de igienă vechi este adaptat să caute metoda mutată. Acestea sunt contracte structurale, NU teste de tranzacții pe producție.
+
+**CI:** pentru HEAD final sunt obligatorii Flutter unit/widget + web build, Python suite/audit, Node, Functions și emulator Firestore. Rezultatul se consemnează numai după rulare. `part of main.dart` rămâne arhitectură intermediară; modularizarea completă nu este declarată gata.
+
+**Restricții:** fără merge în main, deploy, modificări date/rules/config Firebase producție, migrare, APK release, schimbare versiune sau billing. PR Draft separat.
