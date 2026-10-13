@@ -278,3 +278,49 @@ Proprietarul a spus explicit de două ori «Confirm» / «Da, confirm propunerea
 **Decizie de discutat împreună cu proprietarul, o singură întrebare după audit:** în chatul privat, fundalul încărcat de un participant trebuie să se schimbe **pentru amândoi** sau **doar pentru persoana care îl alege**?
 
 **Status:** numai documentație; fără modificări Flutter/Dart, Firebase, cloud storage, Firestore rules, CI, APK sau deploy.
+
+## 13. Chat: wallpaper privat SIMULTAN, Online/Ultima activitate și ore corecte (confirmare 2026-10-13)
+
+### 13.1 Deciziile explicite ale proprietarului
+
+Răspunsul la întrebarea «fundal comun sau personal în chatul privat?» este **«Simultană, când schimbă unul se schimbă și la celălalt și viceversa»**. Totodată solicită: «indicator de stare online, ultima activitate, și fiecare mesaj să aibă ora la care a fost trimis și în chat [live] și pe mesaje private».
+
+**CONTRACT DE PRODUS APROBAT:**
+1. **Conversație privată = UN SINGUR fundal comun, sincronizat bidirecțional** pentru cei doi participanți, indiferent de cine l-a încărcat. Ambii pot încărca/selecta/schimba fundalul; după **salvarea confirmată**, noul fundal devine vizibil ambilor, inclusiv la refresh, pe alte dispozitive autorizate și după relogare. **Nu există două fundaluri divergente pe utilizatori** pentru aceeași conversație.
+2. **Chat live = fundal separat, administrat exclusiv de Admin**, conform cerinței existente. Fundalul global de Branding nu trebuie confundat cu fundalul Chat live; opacitatea Chat live până la **85%** este cerință veche de păstrat în proiectare.
+3. **Prezență reală:** indicator **Online** verde și **Ultima activitate** cu dată/oră când colegul este offline, în interfețele de mesagerie, inclusiv conversațiile private și identitatea membrilor din Chat live/lista de participanți unde este relevant. O persoană nu este declarată online doar pentru că a fost activă cândva sau aplicația există pe telefon. Precizia și publicul exact al «ultimei activități» trebuie să respecte drepturile interne; nu se publică în resurse accesibile anonim.
+4. **Ora fiecărui mesaj:** fiecare bulă din Chat live **și** conversațiile private afișează ora reală a trimiterii, consecventă cu fusul orar al dispozitivului, fără a folosi ora curentă ca înlocuitor pentru istoricul neatribuit.
+
+### 13.2 Situație reală din cod, verificată read-only
+
+- `lib/chat/group_chat_page.dart` la afișarea mesajului are deja `Text('${two(when.hour)}:${two(when.minute)}')` în fiecare bulă, inclusiv propriile mesaje.
+- `lib/chat/private_chat_page.dart::_conversation` face același lucru și are simbol separat pentru `read` la expeditor. **Deci ora este deja afișată în cod**, nu promitem o funcție complet absentă.
+- **DEFECT DE ACURATEȚE:** la `_send` în grup și privat, `createdAt: Timestamp.now()` este generat de **ceasul client**. Un dispozitiv cu oră greșită poate induce o oră afișată incorect și ordine eronată; ambele ecrane folosesc `DateTime.now()` la afișare dacă `createdAt` lipsește, inventând aparent ora de trimitere pentru datele legacy. La implementare se cere `serverTimestamp` confirmat (cu stare `Se trimite...` până la confirmare și tratare a ordonării tranzitorii). Pentru mesaje istorice fără timestamp verificabil se arată discret `Ora indisponibilă` sau nu se afișează ora, nu se inventează `DateTime.now()`. Ora locală este derivată doar pentru PREZENTARE din momentul UTC autorizat.
+- `lib/chat/group_chat_page.dart` și `lib/chat/private_chat_page.dart` NU au azi încărcare/sincronizare wallpaper în conversație și nici sursă/indicator de prezență Online/Ultima activitate. `lib/models/app_data_models.dart` nu are prezență de sesiune, iar `firestore.rules::users` whitelist nu permite spontan câmpuri `online`/ `lastActivity`; orice implementare cere schemă autorizată separată.
+- `lib/home/home_page.dart::_savePushToken` scrie `users/{uid}/pushTokens/{deviceToken}.lastSeenAt`, însă **acesta nu reprezintă ultima activitate a utilizatorului** și NU dovedește prezența online. Nu îl reutilizați pentru indicator.
+- În `firestore.rules`, `chatMessages` este citibil doar celor doi participanți, iar `groupChatMessages` este citibil membrilor activi. Noua colecție/doc de wallpaper privat trebuie să respecte controlul de acces per **pereche reală**, nu un path ușor de ghicit sau o regulă `isActive()` universală.
+
+### 13.3 Contract tehnic viitor: sincronizare wallpaper comun și cache
+
+- Cheia conversației private este **ID-ul canonic de pereche** `privateChatId(uidA,uidB)`, independent de ordinea utilizatorilor. **Un document de configurație pentru pereche**, cu `wallpaperAssetId`, `version`, `updatedAt` server și `updatedBy`, validat doar dacă solicitantul este unul dintre participanții eligibili.
+- Poate modifica wallpaperul **oricare dintre cei doi**, nu un coleg terț și nu un utilizator care nu mai este autorizat. Operația salvată definitiv o înlocuiește pe cea veche pentru AMBII. La schimbări simultane se folosește **ordonarea serverului și ultima salvare confirmată**; nu se arată succes înainte de confirmarea metadata+asset. Dacă încărcarea eşuează, se păstrează wallpaperul anterior și apare mesaj roșu, fără a crea inconsistență între telefoane.
+- Fișierul comun trebuie să rămână disponibil pentru reinstalare/dispozitive noi. **Serverul păstrează o singură copie logică a imaginii autorizate** (storage pentru media/binare, referință mică din Firestore); fiecare client ține o copie **în cache persistent local**, cu `hash/version` pentru invalidare când unul schimbă fundalul. Cacheul reduce traficul repetat, dar nu poate elimina complet sursa partajată.
+- Evităm Base64 în toate snapshoturile Firestore și încărcarea tuturor fundalurilor active în memoria fiecărui client. Comprimare optimizată, dimensiuni maxime, verificare tip MIME și validare bytes, protecția imaginilor private prin reguli de stocare, limite/curățarea media orfane, **cache plafonat** pe Android/Web. Vechiul fișier poate fi șters numai după ce noul wallpaper este confirmat/activ, cu respectarea retentionului.
+- Păstrăm separat politica de wallpaper Chat live (numai Admin editează) și wallpaper privat (oricare participant), iar «Șterge conversația pentru mine» nu modifică wallpaperul partajat și nu şterge mesaje ale celuilalt.
+
+### 13.4 Contract tehnic viitor: prezență online robustă și ultima activitate
+
+- **Prezență per sesiune/dispozitiv** pentru fiecare UID, cu agregare autorizată: utilizatorul apare **Online** dacă există **cel puțin o sesiune activă** confirmată (Android/web); logout dintr-un dispozitiv nu-l face offline dacă este conectat activ pe altul.
+- **Offline** doar după deconectare confirmată, închiderea sesiunii ori expirarea unui heartbeat scurt pe server; când conexiunea pică brusc se folosește un grace period/TTL și o stare `Actualizare...` ori `Stare necunoscută` în locul unui Online fals permanent. **Ultima activitate** vine din timestamp server al ultimei activități/sesiuni verificate, nu din fiecare mișcare de GPS, mesaj scris sau din tokenul FCM. Preferăm prezența printr-un mecanism cu `onDisconnect` dacă este configurat/acceptat serviciul compatibil; alternativ heartbeat centralizat cu TTL/cleanup și cost controlat. Nu se presupune că Realtime Database este activat acum.
+- Nu stocăm GPS, poziție, conținutul chatului sau date sensibile ca parte din prezență. Limita de vizibilitate a ultimei activități pentru toți membrii vs participanții la chat poate fi stabilită separat în interfață; momentan se proiectează pentru **mesagerie internă autorizată**, nu pentru acces public extern.
+- Format `Online` (indicator verde), `Ultima activitate: astăzi 14:35`, `ieri 21:10` sau dată completă pentru mai vechi; fus orar local, ora pe server. Starea de prezență nu este dovadă că mesajul a fost citit.
+
+### 13.5 Teste obligatorii pentru etapa de implementare
+
+1. A schimbă wallpaperul privat => B primește imaginea fără F5, A o vede; B o schimbă => A o primește, inclusiv după relogare; două modificări simultane => aceeași versiune definitivă pentru ambii; o eroare la upload nu distruge fundalul anterior; accesul unei persoane neparticipante este respins la metadata și media.
+2. Wallpaper Chat live editabil numai Admin; membrii îl citesc și îl văd identic, schimbarea este invalidată în cache. Contează spațiul Android, browserul web și reinstalarea.
+3. A se conectează Android+web => Online; închide doar web => rămâne Online; închide și Android => Offline/Ultima activitate; întrerupe brutal internetul => nu rămâne Online pe termen nedefinit; cont deconectat nu transmite heartbeat.
+4. Ore pentru fiecare mesaj în ambele chaturi la HH:mm, mesaje în jurul miezului nopții, fus orar, ceas client intenționat greșit, serverTimestamp întârziat, duplicate, eroare/offline, mesaj vechi fără `createdAt` => fără oră inventată.
+5. Toate operațiile sunt de implementat cu teste Flutter/Rules/Storage/emulator și pe Android/web reale, **nu au fost implementate ori executate în această sesiune**.
+
+**Stare:** deciziile privind sincronizarea comună a wallpaperului și prezența/orarul mesajelor sunt APROBATE funcțional. Detaliile de schemă și mecanism sunt recomandări tehnice, nu schimbări live. Niciun Dart/Flutter/Firestore/Cloud Functions/Storage, build ori deploy nu a fost modificat.
