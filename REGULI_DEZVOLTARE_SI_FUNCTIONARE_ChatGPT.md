@@ -1282,3 +1282,13 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 ## 75. Evidență rezolvare conflicte PR #17 — 2026-10-13
 
 Se păstrează integral deciziile PR #18 și main, fără schimbare de reguli funcționale. Evidența lotului de modularizare este în secțiunea 74 (fosta secțiune 9 a ramurii PR #17), iar continuitatea în `ChatGpt` 155–156. Codul existent rămâne neschimbat față de PR #17. Teste locale: 107 Python și 3 Node PASS, syntax Functions PASS. CI final pe SHA nou este verificat și raportat în descrierea PR; înaintea verdictului nu se presupune verde. Raportul de conflicte/limitări este anexat în `AUDIT_MODULARIZARE_2026-10-12.md`. PR #17 poate fi integrat numai după CI complet și aprobarea proprietarului; nicio autorizare de merge, deploy, APK, producție ori billing prin această notă. Vision și Error Log rămân următoarea integrare nouă după modularizare și contractele aprobate.
+
+## 76. Documente PDF Android — salvare separată de partajare și fișiere reale (2026-10-13)
+
+**Regulă obligatorie:** `Descarcă/Exportă PDF` trebuie să deschidă salvarea unui fișier pe dispozitiv (Android: selector sistem de salvare/SAF); `Partajează PDF` este operație distinctă. Anularea dialogului nu se raportează ca salvare reușită; butoanele de report/export utilizează semantică de descărcare. Pe web rămâne descărcarea browserului.
+
+**Bibliotecă permanentă:** `PV Magic` este asset fix inclus în APK; acesta nu poate fi «șters» ca document Firestore. Adminul poate solicita explicit **ascunderea/reafișarea globală** prin configurare Firestore în colecția `documents`, cu confirmare și posibilitate de revenire. Ștergerea fișelor simple Firestore este admin-only și trebuie confirmată. **Nu ștergeți istoricul/fișierele altor utilizatori automat.**
+
+**PV Million:** vechiul formular `Adaugă document` salva doar titlu/categorie/data/note, **nu PDF-ul**. Fișa poate fi regrupată vizual în «Procese verbale» după categoria explicită sau titlu evident PV, fără mutarea datelor. Fără buton de descărcare inventat pentru un fișier inexistent. Încărcarea reală necesită fișierul original și o strategie aprobată (asset în APK sau stocare autorizată cu costuri/permisiuni verificate). Nu activați Firebase Storage/servicii plătite fără acord.
+
+Implementare propusă exclusiv în PR separat `fix/documents-pv-download-20261013` cu teste `test/document_categories_test.dart` și `test/documents_download_contract_test.py`, CI Flutter web/Android debug + Firestore emulator. Raport `docs/REPARATII_PV_MAGIC_MILLION_ANDROID_2026-10-13.md`. Fără merge, deploy ori modificarea bazei de producție înainte de testare și aprobare.
