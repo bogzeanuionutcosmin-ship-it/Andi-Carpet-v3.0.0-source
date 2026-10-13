@@ -1152,3 +1152,17 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 5. Optimizările pur tehnice fără schimbare de comportament pot fi pregătite ulterior cu teste și PR; optimizările cu impact asupra modului de lucru sau automatizării necesită aprobarea expresă a proprietarului. **Nu se modifică datele de producție, regulile sau aplicația live fără autorizare.**
 
 **Status:** aprobare de principiu documentată, NU implementare și NU activare a pornirii automate.
+
+## 66. Learning GPS — propunerea 15 CONFIRMATĂ: START automat la încredere suficientă, varianta A (2026-10-13)
+
+**Confirmare expresă:** «Confirm varianta A pentru propunerea 15 AndiCarpet: START automat numai la încredere suficientă, confirmare în cazuri incerte.»
+
+1. Se aprobă **ca funcționalitate viitoare** START-ul automat al activității unei săli atunci când datele disponibile indică o încredere suficientă că echipa a sosit și a început efectiv intervenția. Evaluarea combină graficul și ziua operațională corecte, locația exactă, semnale GPS/geofence cu precizia cunoscută, istoricul Learning și eventuale indicii operaționale verificate. **Simpla proximitate GPS nu dovedește începerea curățării.**
+2. **La incertitudine** (GPS imprecis, săli apropiate, lipsa confirmării echipei, grafic ambiguu, conflict cu operație activă, lipsa datelor Learning) sistemul **nu pornește automat** și cere confirmarea unui utilizator autorizat. Dacă nu are date suficiente sau nu poate autoriza, păstrează fluxul manual sigur.
+3. Când toate verificările aprobate la implementare sunt satisfăcute, START-ul este salvat o singură dată, cu **ora reală**, asociere exactă la grafic/zi/intervenție/sală, cine/ce l-a inițiat, motivul și indicatorii de încredere necesari auditului; fără timestamp fictiv, fără porniri duble, fără a presupune efectuarea fațadelor ori finalizarea lucrării.
+4. **Learning adaptiv** trebuie să evolueze din confirmările corecte de sosire și plecare și să poată recunoaște comportamentul real, evitând învățarea din erori neconfirmate. Optimizarea de consum aprobată la propunerea 14 NU poate degrada detectarea, inclusiv în background și cu GPS problematic.
+5. **Limitări și protecții:** roluri verificate pe server, autorizarea echipei, activitate deja pornită, schimbări de membri, acces refuzat, spații apropiate, GPS fals ori salturi, program de noapte, offline/retry, mod economic Android și oprirea/continuarea observării fără pierderea datelor. Pentru rezultate nesigure nu se emite START.
+6. **Testele și parametrii concreți de încredere** (praguri statistice, timp staționare, consimțământ/permisii GPS, interacțiuni între doi membri) trebuie proiectate și validate într-o decizie/lot separat; niciun prag numeric nu este încă aprobat. Se compară fals pozitive/negative, costul de baterie și date, efectul asupra randamentului și posibilitatea corecției auditate.
+7. **Această decizie actualizează regula veche «fără START automat» NUMAI pentru viitoarele cazuri cu încredere suficientă**, după implementare autorizată și teste. Regula STOP automat la plecare **NU este aprobată prin această decizie** și se discută separat. Până atunci nu se schimbă comportamentul existent.
+
+**Status:** regulă aprobată și documentată, fără cod, Firestore/Rules, modificări de producție, CI sau deploy. Continuă aprobarea regulilor înainte de implementare.
