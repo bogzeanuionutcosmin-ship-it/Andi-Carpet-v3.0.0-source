@@ -358,15 +358,30 @@ class RepositoryHygieneTests(unittest.TestCase):
             hashlib.sha256(normalized_money.encode("utf-8")).hexdigest(),
             "e7326bf0fe3d3798ec246f094e6d53f4221abc08a7942b94b1438b80ad77c16b",
         )
-        for name in ("_StatCard", "_InfoCard"):
+        for name in ("_StatCard",):
             declaration = "class " + name + " extends StatelessWidget"
             self.assertNotIn(declaration, main)
             self.assertEqual(module.count(declaration), 1)
         for contract in ("assert(icon != null || asset != null)",
-                         "appAssetIcon(", "sectionAccent(title)", "ListTile("):
+                         "appAssetIcon(", "sectionAccent(title)"):
             self.assertIn(contract, module)
         self.assertIn("value.toStringAsFixed(2)", money)
         self.assertIn("onTap:onTap", money)
+
+    def test_info_card_extracted_with_accent_adapter(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        summary = (ROOT / "lib/ui/summary_cards.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/info_card.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'ui/info_card.dart' as info_card;", main)
+        self.assertIn("class _InfoCard extends StatelessWidget", main)
+        self.assertIn("accent: sectionAccent(title)", main)
+        self.assertIn("info_card.InfoCard(", main)
+        self.assertNotIn("class _InfoCard extends StatelessWidget", summary)
+        self.assertIn("import 'package:flutter/material.dart';", module)
+        self.assertEqual(module.count("class InfoCard extends StatelessWidget"), 1)
+        for contract in ("accent.withValues(alpha: .14)", "Icon(icon, color: accent)",
+                         "fontWeight: FontWeight.w800", "subtitle: Text(text)"):
+            self.assertIn(contract, module)
 
     def test_empty_state_extracted_preserving_content(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

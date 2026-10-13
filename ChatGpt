@@ -1510,3 +1510,13 @@ Corectat constructorul bibliotecii la `const EmptyState`; `_Empty` privat din ma
 După CI verde, `ui/money_card.dart` devine bibliotecă Material. Corpul widgetului e SHA-256 identic după normalizarea numelui `_MoneyCard` → `MoneyCard`: `e7326bf0fe3d3798ec246f094e6d53f4221abc08a7942b94b1438b80ad77c16b`. Wrapper-ul privat main păstrează constructorul și forwardează titlu, valoare și callback. Calculele de sume rămân în apelanții Expense neschimbate. Test Flutter direct verifică `1234.50 lei` și callbackul.
 
 Inventar 138 Dart, **75 parts**, 63 biblioteci (44 lib, 18 teste, 1 script), zero missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, audit import-export, 116 hashuri protejate și diff-check PASS. CI pentru `48eda76f705f5b64cafc01ad955d77fab23c9859`, run `38391208890`: **5/5 SUCCESS**, inclusiv testele Flutter/widget și buildul web.
+
+## MOD-INFO-CARD-LIBRARY-20261013 — componentă informativă cu accent injectat
+
+Bază: `92a62c6080594778bee9a44ece90de03dfd08deb`, actualizare documentară pentru MoneyCard validată de CI run `38391645487`, 5/5 SUCCESS. `InfoCard` este extras în `lib/ui/info_card.dart` ca bibliotecă Material. Biblioteca primește `accent` explicit; wrapperul privat `_InfoCard` păstrează constructorul și callsite-urile existente, calculând aceeași `sectionAccent(title)` la build și pasând rezultatul.
+
+Structura Card/ListTile, cercul, iconul, stilul fontului și titlul/subtitlul rămân identice. Test Flutter direct verifică accentul și conținutul; test structural verifică adapterul și absența vechii clase din `summary_cards.dart`. `summary_cards.dart` rămâne part pentru `_StatCard`; nu eliminăm fișierul sau directiva pe baza unei căutări de nume. Nu sunt schimbate rapoarte financiare ori logică OCR/diurne.
+
+Inventar regenerat: 140 fișiere Dart (120 lib, 19 teste, 1 script), 75 parts, 65 biblioteci (45 lib, 19 teste, 1 script), fără ținte lipsă, orfani, duplicate în aceeași bibliotecă ori cicluri import/export. Local 152 teste Python, 1 Node, syntax Functions, 4 verificări pentru PDF/rutare, manifestul protejat de 117 fișiere și diff-check PASS. Flutter/Dart nu există local; CI pentru codul curent trebuie să valideze testul widget și toate cele 5 joburi.
+
+PR #20 PDF/PV Magic/Million și fluxurile Android/web rămân byte-identice; PR #29 OCR/permisiuni financiare/diurne neatins. Modularizarea integrală nu este finalizată. Următorul audit: mici componente UI cu dependențe pure; auth/sync și PDF download/share nu se forțează fără contracte de stare/anulare compatibile.

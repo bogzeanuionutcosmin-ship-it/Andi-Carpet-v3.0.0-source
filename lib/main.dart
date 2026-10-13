@@ -54,6 +54,7 @@ import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';
 import 'ui/empty_state.dart' as empty_state;
 import 'ui/money_card.dart' as money_card;
+import 'ui/info_card.dart' as info_card;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
@@ -172,6 +173,19 @@ class _MoneyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       money_card.MoneyCard(title: title, value: value, onTap: onTap);
+}
+
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title, text;
+  const _InfoCard({required this.icon, required this.title, required this.text});
+  @override
+  Widget build(BuildContext context) => info_card.InfoCard(
+        icon: icon,
+        title: title,
+        text: text,
+        accent: sectionAccent(title),
+      );
 }
 
 class _Empty extends StatelessWidget {

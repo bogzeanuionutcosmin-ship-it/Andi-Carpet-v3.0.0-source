@@ -20,14 +20,3 @@ class _StatCard extends StatelessWidget {
     )));
   }
 }
-class _InfoCard extends StatelessWidget {
-  final IconData icon; final String title,text;
-  const _InfoCard({required this.icon,required this.title,required this.text});
-  @override Widget build(BuildContext context){
-    final accent=sectionAccent(title);
-    return Card(child:ListTile(
-      leading:CircleAvatar(backgroundColor:accent.withValues(alpha:.14),child:Icon(icon,color:accent)),
-      title:Text(title,style:TextStyle(fontWeight:FontWeight.w800,color:accent)),subtitle:Text(text),
-    ));
-  }
-}

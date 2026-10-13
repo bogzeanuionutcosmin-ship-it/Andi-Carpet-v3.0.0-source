@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 138,
-  "lib_dart_files": 119,
-  "test_dart_files": 18,
+  "dart_files": 140,
+  "lib_dart_files": 120,
+  "test_dart_files": 19,
   "script_dart_files": 1,
   "parts": 75,
-  "libraries": 63,
+  "libraries": 65,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -77,6 +77,7 @@
       "lib/reports/pdf_report_format.dart",
       "lib/ui/empty_state.dart",
       "lib/ui/icon_badge_catalog.dart",
+      "lib/ui/info_card.dart",
       "lib/ui/money_card.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
@@ -132,6 +133,7 @@
     "lib/reports/pdf_report_format.dart": [],
     "lib/ui/empty_state.dart": [],
     "lib/ui/icon_badge_catalog.dart": [],
+    "lib/ui/info_card.dart": [],
     "lib/ui/money_card.dart": [],
     "lib/utils/graph_names.dart": [],
     "lib/utils/operational_dates.dart": [
@@ -173,6 +175,9 @@
     "test/icon_badge_catalog_library_test.dart": [
       "lib/main.dart",
       "lib/ui/icon_badge_catalog.dart"
+    ],
+    "test/info_card_library_test.dart": [
+      "lib/ui/info_card.dart"
     ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
@@ -2057,8 +2062,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 18083,
-      "sha256": "cfbf39d6e49bd2a284c15dd21a8ccac51de719f7c5633ad0aafb4ef18a194ccd",
+      "bytes": 18483,
+      "sha256": "8a6d1c604411be48b5ab5d948ac1e08cc660c8b1556308fbc14a5bf40afb29f5",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2569,6 +2574,16 @@
           ],
           "local_targets": [
             "lib/ui/money_card.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'ui/info_card.dart' as info_card;",
+          "uris": [
+            "ui/info_card.dart"
+          ],
+          "local_targets": [
+            "lib/ui/info_card.dart"
           ]
         },
         {
@@ -3346,6 +3361,10 @@
         {
           "kind": "class",
           "name": "_MoneyCard"
+        },
+        {
+          "kind": "class",
+          "name": "_InfoCard"
         },
         {
           "kind": "class",
@@ -4803,6 +4822,29 @@
       ]
     },
     {
+      "path": "lib/ui/info_card.dart",
+      "bytes": 689,
+      "sha256": "7baeb0642e4a2d40f97633d38f4635e01c0193cf613cb9adf43645e8d8bdf204",
+      "owner": "lib/ui/info_card.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "InfoCard"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/ui/install_app_buttons.dart",
       "bytes": 2928,
       "sha256": "d4faf639e4d73cc4b7c17a86d982ab264f3ae1b1e9eccbf7455d318f2469503f",
@@ -4939,8 +4981,8 @@
     },
     {
       "path": "lib/ui/summary_cards.dart",
-      "bytes": 1685,
-      "sha256": "9a32621abaad1294a3b17e8d6efb7215bbeb4ec1ce7f4aefb6dbb628754881c9",
+      "bytes": 1176,
+      "sha256": "adc79f031215d7f89124a686dc91d20ca2d4aed1e66315708c89a7f873945216",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -4958,10 +5000,6 @@
         {
           "kind": "class",
           "name": "_StatCard"
-        },
-        {
-          "kind": "class",
-          "name": "_InfoCard"
         }
       ],
       "top_level_functions": []
@@ -5427,6 +5465,44 @@
           ],
           "local_targets": [
             "lib/ui/icon_badge_catalog.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/info_card_library_test.dart",
+      "bytes": 859,
+      "sha256": "8c29f2bfacf45860d86079534c6dbaac0e11926151238ade71b6c86b604c7e73",
+      "owner": "test/info_card_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/info_card.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/info_card.dart"
+          ],
+          "local_targets": [
+            "lib/ui/info_card.dart"
           ]
         }
       ],
