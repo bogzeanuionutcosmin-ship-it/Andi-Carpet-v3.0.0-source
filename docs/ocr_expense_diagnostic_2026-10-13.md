@@ -6,7 +6,7 @@
 
 În `lib/ocr_parser.dart`, ambele expresii pentru totaluri capturau forma scurtă `[0-9]{1,7}(?:[.,][0-9]{2})?`, care poate extrage doar o porțiune din `1.234,56`, `1,234.56` ori `1 234,56`. `_cleanNumber` știe deja să normalizeze separatori mixti, dar era apelată pe o valoare trunchiată. Patchul schimbă **doar cele două expresii de captură** să accepte grupuri de trei cifre și exact două zecimale; comportamentul formatelor standard rămâne acoperit de regresii.
 
-Teste Flutter pentru totaluri sintetic construite (fără bonuri reale sau date personale), inclusiv `1.234,56`, `1 234,56`, `1,234.56`, `12.345,67`, `1.234.567,89`, `148,75` și `199.99`; plus separarea între TOTAL TVA și TOTAL DE PLATĂ. Testele fac parte din `flutter test test/`.
+Teste Flutter pentru totaluri sintetic construite (fără bonuri reale sau date personale), inclusiv `1.234,56`, `1 234,56`, `1,234.56`, `12.345,67`, `123.456,78`, `148,75` și `199.99`; plus separarea între TOTAL TVA și TOTAL DE PLATĂ. Testele fac parte din `flutter test test/`.
 
 ## 2. Defect separat: autorizarea scrierii OCR pentru non-admin
 
