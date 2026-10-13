@@ -61,6 +61,7 @@ TVA 114,00
   test('Sumă fără etichetă doar dacă apare o singură valoare cu monedă', () {
     expect(parseFiscalOcr('118,45 LEI').amount, 118.45);
     expect(parseFiscalOcr('18,45 LEI\n118,45 LEI').amount, isNull);
+    expect(parseFiscalOcr('118,45 LEI\n118,45 LEI').amount, isNull);
     expect(parseFiscalOcr('7,25 LEI/L').amount, isNull);
   });
 
