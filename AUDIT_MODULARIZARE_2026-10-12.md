@@ -186,3 +186,21 @@ Bază: PR #23 commit `2e4a7312a526908ede4965a87bcb25bd8edcc9ee` (nu `main`), pen
 **Teste:** CI obișnuit Flutter unit/widget și web release, Python contracte, Node, Functions și Firestore emulator pe HEAD nou; rezultatul nu poate fi anticipat. Persistarea batch >500 documente și `catch (_)` din audit reprezintă eventuale riscuri de funcționalitate existente, nu se schimbă aici fără test și acord ulterior.
 
 **Restricții:** PR #28 rămâne Draft, fără merge în `main`, deploy, Firebase live/rules/config, plăți, versionare sau APK.
+
+## MOD-HOME-GPS-PUSH-NAVIGATION-20261013 — PR #28
+
+Bază exactă: `c5fb50026daaa9d15d6af7381fe9c6226c52f583`, CI anterior run 38370622154 completed/success.
+Au fost citite documentele obligatorii ChatGpt, registrul de reguli și arhitectura Vision; ordine păstrată: curățare, contracte, apoi Vision/Error Log.
+
+Extragere textuală a **27 metode** în patru extensii private din aceeași bibliotecă:
+- `home_push_notifications.dart`: 6 metode, popup, chat alert, token FCM și inițializare/permisiuni; 7.872 caractere.
+- `home_live_location.dart`: 5 metode, stream nativ/adaptiv, reverse geocoding, throttling și salvarea locației; 10.110 caractere.
+- `home_work_automation.dart`: 8 metode, selecție înregistrări, geofencing, confirmare START/așteptare și închidere legacy; 12.422 caractere.
+- `home_navigation.dart`: 8 metode, unread chat, profil/director/notificări/despre/admin; 4.608 caractere.
+HomePage **57.390 → 22.378 caractere**. Reinserarea tuturor blocurilor în pozițiile originale reconstruiește EXACT sursa de bază. Init/dispose/build, câmpurile și orchestrarea rămân în clasa State. Nu s-au schimbat instrucțiuni, praguri GPS, colecții, roluri, payloaduri, ordinea async sau fluxul financiar. Cele două listener-e FCM rămân în `_coreSubscriptions` și sunt anulate prin dispose; cele 15 listener-e Firestore core + 4 financiare sunt distincte.
+
+Validare locală: **134 teste Python PASS, 3 Node PASS, syntax Functions PASS, git diff --check PASS**. 6 contracte noi pentru unicitate/lifecycle, proprietar token/vizibilitate, GPS, ordinea scriere→detecție, confirmare umană și unread/mark-read. Flutter/Dart nu sunt instalate local: Flutter test/web release, npm ci Functions și emulator Firestore demo se verifică în CI pe SHA nou. Rezultatul final și run vor fi înscrise în descrierea PR fără a folosi verdele vechi.
+
+Riscuri existente reconfirmate, **necorectate pentru a păstra comportamentul**: START folosește verificare locală înainte de scriere, fără garanție contra concurenței; detecția GPS vine după scrierea liveLocations și nu rulează dacă aceasta eșuează; închiderea legacy consideră și Refuzată drept rezolvată, contrar specificației viitoare; payload GPS conține fotografia; delayed restart GPS nu are gard mounted. Sunt puncte de analiză/remediere ulterioară cu contracte, nu incidente de producție dovedite.
+
+Modularizarea integrală **NU este finalizată**: `part` păstrează cuplarea; Home mai conține starea/orchestrarea/UI, iar Expense/Program/Map/Dashboard, PDF și modele cer continuare. Bibliotecile independente și testele funcționale autentificate/Android/background rămân de făcut. Nu se șterg assets, cacheuri sau module v2 pe presupuneri. PR #28 rămâne Draft; PR #15/#19/#20/#21 neatinse. Fără merge, deploy, Firebase live/rules/config, migrare, billing, versiune ori APK publicat.
