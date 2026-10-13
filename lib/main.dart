@@ -28,6 +28,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'vision/vision_error_telemetry.dart';
+import 'vision/vision_error_log.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
@@ -109,6 +111,9 @@ const String _appVersionLabel = '3.0.0+32';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Error summaries remain local: no Firestore writes, no paid AI service.
+  await VisionErrorTelemetry.initialize();
+  VisionErrorTelemetry.installFlutterHandlers();
   try {
     await _initializeFirebaseForPlatform();
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -117,6 +122,11 @@ Future<void> main() async {
     }
     runApp(const AndiCarpetaApp());
   } catch (e) {
+    VisionErrorTelemetry.report(
+      area: 'startup',
+      code: e.runtimeType.toString(),
+      severity: VisionErrorSeverity.critical,
+    );
     runApp(_FirebaseBootstrapErrorApp(message: e.toString()));
   }
 }
