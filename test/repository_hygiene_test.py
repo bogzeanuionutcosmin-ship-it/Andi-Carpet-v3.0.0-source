@@ -476,8 +476,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_permission_groups_and_payment_labels_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/permission_status_labels.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/permission_status_labels.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/permission_status_labels.dart';", main)
+        self.assertIn("export 'models/permission_status_labels.dart';", main)
+        self.assertNotIn("part of ", module)
+        self.assertNotIn("../main.dart", module)
         for symbol in ("String functionPermissionGroup(FunctionPermission permission)",
                        "extension PerDiemStatusX on PerDiemStatus",
                        "extension PaymentMethodX on PerDiemPaymentMethod"):
@@ -559,8 +561,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_location_category_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/location_category_helpers.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/location_category_helpers.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/location_category_helpers.dart';", main)
+        self.assertIn("export 'models/location_category_helpers.dart';", main)
+        self.assertNotIn("part of ", module)
+        self.assertNotIn("../main.dart", module)
         for symbol in ("String defaultCategoryIdForType(",
                        "LocationType legacyTypeForCategory(",
                        "Color categoryColor(", "String categoryName("):
@@ -572,8 +576,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_default_categories_and_functions_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/default_categories_functions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/default_categories_functions.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/default_categories_functions.dart';", main)
+        self.assertIn("export 'models/default_categories_functions.dart';", main)
+        self.assertNotIn("part of ", module)
+        self.assertNotIn("../main.dart", module)
         for symbol in ("String functionPermissionId(",
                        "List<LocationCategory> defaultLocationCategories(",
                        "List<FunctionDefinition> defaultFunctionDefinitions(",
@@ -587,8 +593,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_location_status_and_function_models_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/location_status_and_functions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/location_status_and_functions.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/location_status_and_functions.dart';", main)
+        self.assertIn("export 'models/location_status_and_functions.dart';", main)
+        self.assertNotIn("part of ", module)
+        self.assertNotIn("../main.dart", module)
         for symbol in ("extension LocationStatusX on LocationStatus",
                        "class LocationCategory {", "class FunctionDefinition {"):
             self.assertNotIn(symbol, main)
@@ -751,8 +759,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_enums_and_permissions_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         enums = (ROOT / "lib/models/app_enums_permissions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/app_enums_permissions.dart';", main)
-        self.assertIn("part of '../main.dart';", enums)
+        self.assertIn("import 'models/app_enums_permissions.dart';", main)
+        self.assertIn("export 'models/app_enums_permissions.dart';", main)
+        self.assertNotIn("part of ", enums)
+        self.assertNotIn("../main.dart", enums)
         for name in ("LocationType", "LocationStatus", "UserRole",
                      "UserFunction", "FunctionPermission", "PerDiemStatus",
                      "PerDiemPaymentMethod", "ExpenseDocumentType",

@@ -1,4 +1,6 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
+import 'app_enums_permissions.dart';
+import 'location_status_and_functions.dart';
 
 String defaultCategoryIdForType(LocationType type) => switch (type) {
   LocationType.magic => 'magic',
