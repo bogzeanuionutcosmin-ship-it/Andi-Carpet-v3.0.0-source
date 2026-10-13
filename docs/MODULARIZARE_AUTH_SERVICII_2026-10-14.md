@@ -21,4 +21,12 @@ Inventar: 161 Dart, 62 parts, 99 biblioteci. Acesta este inventar lexical; nu do
 
 ## Lot 2 — QuickAccountStore
 
-Algoritmii și modelul devin Dart pur, cu I/O injectat prin trei callbackuri. Main păstrează pluginul, cheia/opțiunile și wrapper-ele existente; Settings califică numai tipul. Deduplicarea, limita la save, absența limitei la load, JSON/erori și apelul forget sunt păstrate. Teste în memorie cu date sintetice, fără stocare reală. Local 155 Python + 3 Node, syntax/equivalence/inventory/diff PASS. CI urmează. Inventar 162/61/101.
+Algoritmii și modelul devin Dart pur, cu I/O injectat prin trei callbackuri. Main păstrează pluginul, cheia/opțiunile și wrapper-ele existente; Settings califică numai tipul. Deduplicarea, limita la save, absența limitei la load, JSON/erori și apelul forget sunt păstrate. Teste în memorie cu date sintetice, fără stocare reală. Local 155 Python + 3 Node, syntax/equivalence/inventory/diff PASS. CI QuickAccounts: 0be4bce7d5054dc641b92f48dc7e6c94247438ac / run 38483520307, **5/5 SUCCESS**. Inventar 162/61/101.
+
+## Lot 3 — politica de inițializare Firebase
+
+Helper Dart pur pentru selectarea/acțiunile de inițializare; main furnizează predicate/acțiuni SDK lazy. VAPID și handlerul FCM cu pragma/gating rămân text-identice în biblioteca main. Configurația și ordinea main sunt păstrate. Teste pentru selecție, laziness, await și excepții fără retry/fallback. Local 155 Python + 3 Node, syntax/equivalence/inventory/diff PASS. CI urmează. Inventar 163/60/103.
+
+## Resurse Vision existente — numai audit read-only
+
+PR #19 la d4da2872a566eba258e82b8597c023e03ceb9b56 și #21 la d18b2523a31ead7eb65a04fe92a21276a4155c97 au deja Error Log, telemetry, Diagnostics și teste. #21 mai conține integrarea documentelor/offline smoke. Nu le duplicăm ori importăm în #28; după modularizare audităm implementarea și contractele pe acele ramuri înaintea extinderii. Acest inventar nu reprezintă acceptare pe dispozitiv/în producție.

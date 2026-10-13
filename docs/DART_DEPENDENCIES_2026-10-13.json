@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 162,
+  "dart_files": 163,
   "lib_dart_files": 124,
-  "test_dart_files": 37,
+  "test_dart_files": 38,
   "script_dart_files": 1,
-  "parts": 61,
-  "libraries": 101,
+  "parts": 60,
+  "libraries": 103,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -19,6 +19,7 @@
     ],
     "lib/auth/quick_accounts.dart": [],
     "lib/bootstrap/firebase_bootstrap_error_app.dart": [],
+    "lib/bootstrap/firebase_initialization.dart": [],
     "lib/download_file.dart": [
       "lib/download_file_stub.dart",
       "lib/download_file_web.dart"
@@ -71,6 +72,7 @@
       "lib/auth/firebase_user_profile.dart",
       "lib/auth/quick_accounts.dart",
       "lib/bootstrap/firebase_bootstrap_error_app.dart",
+      "lib/bootstrap/firebase_initialization.dart",
       "lib/download_file.dart",
       "lib/firebase_options.dart",
       "lib/home/seed_operational_locations.dart",
@@ -244,6 +246,9 @@
     ],
     "test/firebase_bootstrap_error_view_test.dart": [
       "lib/bootstrap/firebase_bootstrap_error_app.dart"
+    ],
+    "test/firebase_initialization_policy_test.dart": [
+      "lib/bootstrap/firebase_initialization.dart"
     ],
     "test/firebase_user_profile_library_test.dart": [
       "lib/auth/firebase_user_profile.dart",
@@ -953,25 +958,13 @@
     },
     {
       "path": "lib/bootstrap/firebase_initialization.dart",
-      "bytes": 772,
-      "sha256": "82b64ac76f9c2e9a17297489bc287b6dc7d0f3145af28a47ebd0952168c1ace5",
-      "owner": "lib/main.dart",
-      "directives": [
-        {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
-          "uris": [
-            "../main.dart"
-          ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
-        }
-      ],
+      "bytes": 485,
+      "sha256": "57687de7dc732cc717cdb5e1b63ced0f0d13db47c7d0f0c29dd1c5aeabb97fc7",
+      "owner": "lib/bootstrap/firebase_initialization.dart",
+      "directives": [],
       "declarations": [],
       "top_level_functions": [
-        "_initializeFirebaseForPlatform",
-        "_firebaseMessagingBackgroundHandler"
+        "initializeFirebaseForPlatform"
       ]
     },
     {
@@ -2228,8 +2221,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 27023,
-      "sha256": "34be338907338b1f4f568fd5cac40aaa566295ac6c4aeee56eacd3922e066bfc",
+      "bytes": 27961,
+      "sha256": "83d4095731e9aeb20d5e9c2e2e60e4bfa473ddaf423232af073c451230b96302",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2884,6 +2877,16 @@
         },
         {
           "kind": "import",
+          "text": "import 'bootstrap/firebase_initialization.dart' as firebase_initialization;",
+          "uris": [
+            "bootstrap/firebase_initialization.dart"
+          ],
+          "local_targets": [
+            "lib/bootstrap/firebase_initialization.dart"
+          ]
+        },
+        {
+          "kind": "import",
           "text": "import 'map/verified_location_fix.dart' as verified_fix;",
           "uris": [
             "map/verified_location_fix.dart"
@@ -2980,16 +2983,6 @@
           ],
           "local_targets": [
             "lib/ui/install_app_buttons.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'bootstrap/firebase_initialization.dart';",
-          "uris": [
-            "bootstrap/firebase_initialization.dart"
-          ],
-          "local_targets": [
-            "lib/bootstrap/firebase_initialization.dart"
           ]
         },
         {
@@ -3646,6 +3639,8 @@
         }
       ],
       "top_level_functions": [
+        "_initializeFirebaseForPlatform",
+        "_firebaseMessagingBackgroundHandler",
         "_loadQuickAccounts",
         "_saveQuickAccounts",
         "estimateGraphRoadDistanceKm",
@@ -6105,6 +6100,44 @@
           ],
           "local_targets": [
             "lib/bootstrap/firebase_bootstrap_error_app.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/firebase_initialization_policy_test.dart",
+      "bytes": 2316,
+      "sha256": "659426d92a5974b99bf5099ff1ba27c287efe9507760f9b1035331a2f50a0e56",
+      "owner": "test/firebase_initialization_policy_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/bootstrap/firebase_initialization.dart';",
+          "uris": [
+            "package:andi_carpeta/bootstrap/firebase_initialization.dart"
+          ],
+          "local_targets": [
+            "lib/bootstrap/firebase_initialization.dart"
           ]
         }
       ],

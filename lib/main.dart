@@ -69,6 +69,7 @@ import 'ui/install_app_buttons_view.dart' as install_buttons;
 import 'ui/interactive_member_badges.dart' as member_badges;
 import 'ui/auth_status_views.dart' as auth_status;
 import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;
+import 'bootstrap/firebase_initialization.dart' as firebase_initialization;
 import 'map/verified_location_fix.dart' as verified_fix;
 import 'ui/dashboard_map_components.dart' as dashboard_components;
 import 'auth/account_access_views.dart' as account_access_views;
@@ -80,7 +81,6 @@ export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
 part 'ui/install_app_buttons.dart';
-part 'bootstrap/firebase_initialization.dart';
 part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
@@ -140,6 +140,28 @@ part 'home/home_financial_write_actions.dart';
 part 'home/home_operational_write_actions.dart';
 part 'home/home_audit_persistence.dart';
 part 'home/home_document_codecs.dart';
+
+const String _webPushVapidKey = String.fromEnvironment(
+  'FCM_WEB_VAPID_KEY',
+  defaultValue: 'BMJikC3fON4-4uwRuMOzZRXYjQCbp2ftRsSt_PcBOpf9sTCv4VkwEkzxerxSZCMd5dyooMtHhU6hvLDeqWUkFHw',
+);
+
+Future<void> _initializeFirebaseForPlatform() async {
+  await firebase_initialization.initializeFirebaseForPlatform(
+    useNativeIosConfiguration: () => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS && !DefaultFirebaseOptions.hasIosDartConfig,
+    // Pe iOS acceptăm configurația nativă standard GoogleService-Info.plist.
+    initializeNative: () async { await Firebase.initializeApp(); },
+    initializeConfigured: () async {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    },
+  );
+}
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (Firebase.apps.isEmpty) await _initializeFirebaseForPlatform();
+}
+
 
 // Application adapter: retain the secure-storage instance, key and options.
 const FlutterSecureStorage _quickAccountStorage = FlutterSecureStorage();

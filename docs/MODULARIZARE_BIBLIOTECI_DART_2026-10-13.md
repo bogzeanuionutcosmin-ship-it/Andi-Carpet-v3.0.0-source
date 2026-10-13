@@ -470,3 +470,14 @@ Echivalența modelului, corpurilor load/save și Settings a fost verificată dup
 Local: **155 Python + 3 Node PASS**, syntax Functions, body-equivalence, diff-check și inventar PASS. Snapshot: **162 Dart (124 lib, 37 teste, 1 script), 61 parts, 101 biblioteci**, fără lipsuri/orfani/duplicate/cicluri. Testele Dart noi verifică fallbackul, filtrarea, limita, ordinea, delete la listă goală și propagarea erorilor; CI pe SHA-ul lotului urmează.
 
 După 5/5: audit bootstrap pentru separarea selecției native/configurate de apelurile SDK, păstrând exact handlerul FCM top-level/pragma și fallbackul iOS. AuthGate și restul abonărilor nu se modifică. Fără Vision funcțional în #28, fără merge/deploy/APK/date live/rules/config/billing/migrări; PR-urile independente rămân protejate.
+
+
+## MOD-FIREBASE-INITIALIZATION-POLICY-20261014 — bootstrap testabil, handler păstrat
+
+Lotul QuickAccounts `0be4bce7d5054dc641b92f48dc7e6c94247438ac`, run `38483520307`: **5/5 SUCCESS**. Bootstrap are acum un helper pur Dart cu predicate/acțiuni injectate. Main păstrează condiția iOS cu același short-circuit și evaluează `DefaultFirebaseOptions.currentPlatform` exclusiv în callbackul configurat. Constanta VAPID și handlerul FCM cu pragma sunt text-identice; verificarea `Firebase.apps.isEmpty`, înscrierea handlerului și secvența main nu se schimbă. Nu se adaugă retry, app Firebase, fallback nou ori configurație.
+
+Teste Dart: selecție unică, predicate o singură dată, await complet, acțiunea nealeasă lazy, erori propagate fără retry/fallback. Local **155 Python + 3 Node PASS**, syntax Functions, verificările de echivalență, diff și inventar PASS. Inventar **163 Dart (124 lib, 38 teste, 1 script), 60 parts, 103 biblioteci**, fără missing/orphan/duplicate/cicluri. CI pentru SHA-ul lotului urmează.
+
+Audit read-only PR #19/#21: există deja `lib/vision/vision_error_log.dart`, `vision_error_telemetry.dart`, `vision_diagnostics_page.dart` și teste pe aceste ramuri. Ele sunt resurse de reutilizat ulterior, nu sunt aduse/duplicate/activate în #28. Head-uri inspectate: #19 `d4da2872a566eba258e82b8597c023e03ceb9b56`, #21 `d18b2523a31ead7eb65a04fe92a21276a4155c97`. Documentele vechi de pe #28 care descriu Vision ca neimplementat se referă la acea ramură/instantaneu; nu infirmă codul existent separat.
+
+Următorul lot după 5/5: audit/adaptor explicit pentru sursele AuthGate (currentUser, auth changes, profile/meta streams), fără rescrierea lifecycle-ului și cu teste de reconectare/profil absent/cancel. Issue #30 și regulile aprobate rămân referința. Fără merge/deploy/APK/Vision funcțional nou/rules/config/date live/billing/migrări.
