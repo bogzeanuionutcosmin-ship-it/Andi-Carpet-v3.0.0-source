@@ -1151,7 +1151,7 @@ class _ExpensePageState extends State<ExpensePage> {
           const SizedBox(height: 8),
         ],
         if (ocr != null) ...[
-          _InfoCard(icon: Icons.document_scanner, title: 'OCR ${(ocr.confidence * 100).round()}%', text: ocr.rawText.isEmpty ? 'Textul nu a putut fi extras. Completează manual.' : 'Datele au fost completate automat. Verifică-le înainte de salvare. Fotografia este temporară și nu va fi salvată.'),
+          _InfoCard(icon: Icons.document_scanner, title: 'OCR ${(ocr.confidence * 100).round()}%', text: ocr.rawText.isEmpty ? 'Textul nu a putut fi extras. Completează manual.' : ocr.amount == null ? 'Totalul de plată nu a putut fi identificat sigur. Introdu suma manual, după bon/factură, înainte de salvare. Fotografia rămâne temporară.' : 'Suma a fost propusă de OCR. Verifică valoarea pe document înainte de confirmare. Fotografia rămâne temporară.'),
           const SizedBox(height: 8),
         ],
         DropdownButtonFormField<ExpenseDocumentType>(initialValue: docType, decoration: const InputDecoration(labelText: 'Tip document'), items: const [DropdownMenuItem(value: ExpenseDocumentType.fiscalReceipt, child: Text('Bon Fiscal')), DropdownMenuItem(value: ExpenseDocumentType.invoice, child: Text('Factură'))], onChanged: (v) { if (v != null) setD(() { docType = v; if (v == ExpenseDocumentType.invoice && cat == 'Alte cheltuieli') cat = 'Facturi'; if (v == ExpenseDocumentType.fiscalReceipt && cat == 'Facturi') cat = 'Alte cheltuieli'; }); }),
