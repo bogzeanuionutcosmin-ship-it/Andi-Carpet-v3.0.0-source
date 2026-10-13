@@ -59,3 +59,17 @@ Validări noi: test Python de integritate (dimensiune, hash, antet PDF), test Fl
 Rezultate locale înainte de push: **113 teste Python PASS**, **3 teste Node PASS**, syntax Functions PASS, `git diff --check` PASS. Flutter/Android SDK nu sunt instalate în acest mediu; testele Flutter, dependențele Functions, emulatorul Firestore și buildurile Android/web se execută prin cele două workflow-uri PR. Rezultatele pe SHA-ul final se vor înregistra în PR după terminarea CI.
 
 Rămâne necesară verificarea manuală a salvării/partajării pe Android și a descărcării într-un browser real. Buildul și checksumul validează includerea originalului, nu dialogurile sistemului pe telefon. Fără merge, deploy, Firebase live sau publicare APK; artifactul debug CI este temporar, exclusiv pentru verificare.
+
+## Validare manuală Android — raport de la proprietar (2026-10-13)
+
+**Mediu:** APK debug „AndiCarpet · TEST offline”, separat de aplicația de lucru, fără autentificare, Firebase, GPS sau date financiare. Acest test nu certifică automat fluxul complet din aplicația de producție.
+
+**Confirmat pe dispozitiv Android:**
+- Butonul „Descarcă PDF” pentru **Proces verbal MAGIC**: proprietarul confirmă că descărcarea funcționează.
+- Butonul „Descarcă PDF” pentru **Proces verbal MILLION**: proprietarul confirmă că descărcarea funcționează.
+- Butoanele „Partajează PDF” pentru **ambele** documente: proprietarul confirmă că partajarea funcționează.
+- **Vision · Error Log**: s-a generat proba locală `vision_test / persistence_probe`; după închiderea completă și redeschiderea aplicației, captura arată înregistrarea încă prezentă, platformă `android`, ultima apariție **2026-10-13 09:24**, număr **×1**, stare **Deschisă**. Astfel este confirmată persistența locală pentru acest test.
+
+**Nu sunt încă validate manual:** deschiderea/vizualizarea fiecărui fișier PDF salvat și hashul fișierelor efectiv salvate pe telefon, descărcarea în browser web real, ascunderea/reafișarea cardului Magic de către admin, comportamentul în aplicația principală autentificată și verificarea colectării automate a erorilor reale/retentiei după 7 zile. CI confirmă integritatea assetului din build, nu automat octeții salvați manual în telefon.
+
+**Separare clară:** acesta este un test real al ecranului de test offline și al jurnalului local Vision, NU dovada implementării complete Vision, a AI online sau a integrării cu datele live. Nicio modificare Firebase, merge, deploy sau publicare APK; PR #20 rămâne Draft.
