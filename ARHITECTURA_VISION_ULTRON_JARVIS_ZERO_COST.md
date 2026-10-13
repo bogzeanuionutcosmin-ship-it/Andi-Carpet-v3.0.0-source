@@ -70,3 +70,15 @@
 - ChatGPT Plus vs API: https://help.openai.com/en/articles/6950777-what-is-chatgpt-plus
 - Firebase pricing și limite: https://firebase.google.com/pricing ; https://firebase.google.com/docs/projects/billing/firebase-pricing-plans
 - Reguli și handoff din același repository, actualizate continuu după deciziile proprietarului.
+
+## 9. Audit preliminar read-only al codului existent (2026-10-13)
+
+Au fost verificate prin citire directă pe ramura de modularizare PR #17 (`refactor/home-codecs-sync-20261012`), **fără modificare de cod**:
+
+- `lib/learning/duration_estimates.dart`: **există**, ~63 linii, deja calculează `LearnedDurationEstimate` (durată, explicație, încredere, eșantioane) cu Learning configurabil; este legat momentan prin `part of '../main.dart'`. **Este punct de reutilizare**, dar învățarea duratei nu dovedește implementarea detecției GPS/sosire/plecare.
+- `lib/notifications/push_diagnostics_page.dart`: **există**, ~386 linii, diagnostic FCM/permisiuni/token; poate alimenta Vision Observability, fără a presupune că acoperă toate platformele.
+- `lib/bootstrap/firebase_initialization.dart`: **există**, inițializare Firebase și `_firebaseMessagingBackgroundHandler`, încă legat cu `part`.
+- `lib/learning/learning_service.dart` și `lib/ai/vision.dart`: **nu există la aceste căi pe această ramură**, fără a exclude alte implementări sub alt nume.
+- `pubspec.yaml` există; pachetele și compatibilitatea modelului local necesită audit separat, nu le considerăm deja alese.
+
+**Concluzie audit preliminar:** există piese reale de Learning pentru durate, diagnostic push și bootstrap, dar nu există dovezi suficiente pentru a declara Ultron/Jarvis/Vision deja «fuzionate» sau GPS Learning complet. Urmează inventarul exact al fișierelor/referințelor și contractelor înainte de crearea serviciilor Vision.
