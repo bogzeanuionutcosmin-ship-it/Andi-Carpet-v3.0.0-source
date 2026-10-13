@@ -74,6 +74,8 @@ import 'map/verified_location_fix.dart' as verified_fix;
 import 'ui/dashboard_map_components.dart' as dashboard_components;
 import 'auth/account_access_views.dart' as account_access_views;
 import 'auth/quick_accounts.dart' as quick_accounts;
+import 'auth/auth_gate_sources.dart';
+export 'auth/auth_gate_sources.dart';
 import 'auth/firebase_user_profile.dart';
 export 'auth/firebase_user_profile.dart';
 import 'ui/app_capabilities_view.dart' as app_capabilities;
@@ -162,6 +164,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (Firebase.apps.isEmpty) await _initializeFirebaseForPlatform();
 }
 
+
+// Read-only application adapter. SDK/query access stays lazy and ordered by AuthGate.
+AuthGateSources _firebaseAuthGateSources() => AuthGateSources(
+  currentUser: () => FirebaseAuth.instance.currentUser,
+  authStateChanges: () => FirebaseAuth.instance.authStateChanges(),
+  uiSettingsSnapshots: () => FirebaseFirestore.instance
+      .collection('meta').doc('uiSettings').snapshots(),
+  profileSnapshots: (uid) => FirebaseFirestore.instance
+      .collection('users').doc(uid).snapshots(includeMetadataChanges: true),
+);
 
 // Application adapter: retain the secure-storage instance, key and options.
 const FlutterSecureStorage _quickAccountStorage = FlutterSecureStorage();

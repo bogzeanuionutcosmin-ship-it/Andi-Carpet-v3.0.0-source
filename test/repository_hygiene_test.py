@@ -819,11 +819,15 @@ class RepositoryHygieneTests(unittest.TestCase):
                        "class _AuthGateState extends State<AuthGate>"):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
-        for feature in ("authStateChanges().listen(",
-                        "FirebaseAuth.instance.currentUser",
-                        "collection('meta').doc('uiSettings')",
+        for feature in ("_sources.authStateChanges().listen(", "_sources.currentUser()",
+                        "_sources.uiSettingsSnapshots()", "_sources.profileSnapshots(user.uid)",
                         "MissingProfilePage(", "PendingApprovalPage(", "HomePage("):
             self.assertIn(feature, module)
+        self.assertNotIn("FirebaseAuth.instance", module)
+        self.assertNotIn("FirebaseFirestore.instance", module)
+        for feature in ("FirebaseAuth.instance.currentUser", "FirebaseAuth.instance.authStateChanges()",
+                        "collection('meta').doc('uiSettings')", "snapshots(includeMetadataChanges: true)"):
+            self.assertIn(feature, main)
 
     def test_login_registration_page_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

@@ -25,8 +25,21 @@ Algoritmii și modelul devin Dart pur, cu I/O injectat prin trei callbackuri. Ma
 
 ## Lot 3 — politica de inițializare Firebase
 
-Helper Dart pur pentru selectarea/acțiunile de inițializare; main furnizează predicate/acțiuni SDK lazy. VAPID și handlerul FCM cu pragma/gating rămân text-identice în biblioteca main. Configurația și ordinea main sunt păstrate. Teste pentru selecție, laziness, await și excepții fără retry/fallback. Local 155 Python + 3 Node, syntax/equivalence/inventory/diff PASS. CI urmează. Inventar 163/60/103.
+Helper Dart pur pentru selectarea/acțiunile de inițializare; main furnizează predicate/acțiuni SDK lazy. VAPID și handlerul FCM cu pragma/gating rămân text-identice în biblioteca main. Configurația și ordinea main sunt păstrate. Teste pentru selecție, laziness, await și excepții fără retry/fallback. Local 155 Python + 3 Node, syntax/equivalence/inventory/diff PASS. CI bootstrap: 75279637b52cf588a26a6ec2d0a6d1a0b044e898 / run 38484010280, **5/5 SUCCESS**. Inventar 163/60/103.
 
 ## Resurse Vision existente — numai audit read-only
 
 PR #19 la d4da2872a566eba258e82b8597c023e03ceb9b56 și #21 la d18b2523a31ead7eb65a04fe92a21276a4155c97 au deja Error Log, telemetry, Diagnostics și teste. #21 mai conține integrarea documentelor/offline smoke. Nu le duplicăm ori importăm în #28; după modularizare audităm implementarea și contractele pe acele ramuri înaintea extinderii. Acest inventar nu reprezintă acceptare pe dispozitiv/în producție.
+
+## Lot 4 — AuthGateSources
+
+Port callback read-only independent de biblioteca main, cu tipuri SDK explicite. Adapter default lazy în main, query-uri originale și metadata păstrate. Constructorul AuthGate permite surse opționale; state-ul fixează furnizorul la initState. Întregul body al state machine/lifecycle rămâne text-identic după înlocuirea expresiilor sursă. Nu este un bus Vision și nu adaugă observabilitate funcțională.
+
+Teste widget de reconectare/pending/absent, UID switching/cancel, UI settings/duplicat/dispose și recuperare după eroare, folosind streamuri locale. Nu exercită încă HomePage activ, login/logout SDK sau autorizarea server-side. Local 155 Python + 3 Node, syntax/equivalence/diff/inventory PASS. CI urmează. Inventar 165/60/105.
+
+## Pași următori după validare
+
+1. Auditarea surselor de login și abonărilor Home după grupurile existente, înainte de mutarea stării. Fixture-uri pentru ordinea evenimentelor, UID și cancel; numărul de citiri/scrieri nu crește.
+2. Nu se repară implicit token ownership, START concurent, badge_v2 sau restore non-atomic: sunt schimbări funcționale/securitate documentate separat.
+3. Auditul diferențial final va marca aprobat+implementat / aprobat+neimplementat / parțial / clarificare tehnică / decizie nouă. Referințe: registrul existent și Issue #30; nu se reiau aprobările.
+4. Vision Error Log/telemetry/Diagnostics din #19/#21 se inspectează și reutilizează în etapa dedicată; în #28 nu apar module Vision noi.

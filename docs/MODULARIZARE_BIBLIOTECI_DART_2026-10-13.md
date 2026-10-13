@@ -481,3 +481,14 @@ Teste Dart: selecție unică, predicate o singură dată, await complet, acțiun
 Audit read-only PR #19/#21: există deja `lib/vision/vision_error_log.dart`, `vision_error_telemetry.dart`, `vision_diagnostics_page.dart` și teste pe aceste ramuri. Ele sunt resurse de reutilizat ulterior, nu sunt aduse/duplicate/activate în #28. Head-uri inspectate: #19 `d4da2872a566eba258e82b8597c023e03ceb9b56`, #21 `d18b2523a31ead7eb65a04fe92a21276a4155c97`. Documentele vechi de pe #28 care descriu Vision ca neimplementat se referă la acea ramură/instantaneu; nu infirmă codul existent separat.
 
 Următorul lot după 5/5: audit/adaptor explicit pentru sursele AuthGate (currentUser, auth changes, profile/meta streams), fără rescrierea lifecycle-ului și cu teste de reconectare/profil absent/cancel. Issue #30 și regulile aprobate rămân referința. Fără merge/deploy/APK/Vision funcțional nou/rules/config/date live/billing/migrări.
+
+
+## MOD-AUTH-GATE-SOURCES-20261014 — surse read-only injectate, lifecycle păstrat
+
+Bootstrap `75279637b52cf588a26a6ec2d0a6d1a0b044e898`, run `38484010280`: **5/5 SUCCESS**. AuthGate are acum un port explicit `AuthGateSources` pentru currentUser, authStateChanges, meta/uiSettings și profile snapshots. Adapterul main construiește callbackuri lazy către aceleași SDK-uri/query-uri, inclusiv `includeMetadataChanges: true`; sursele se fixează la initState, ca abonările existente. Constructorul păstrează apelanții existenți și permite injectare opțională pentru teste.
+
+Echivalența întregului fișier AuthGate a fost verificată după substituția strictă a surselor și adăugarea injecției. Callbackurile/starea, fallback currentUser, UID guards, păstrarea profilului la reconectare/erori, ruta de pagină și cancel/dispose nu sunt rescrise. AuthGate rămâne part; nu se forțează separarea UI de HomePage înaintea contractelor corespunzătoare.
+
+Teste widget cu streamuri în memorie și User/DocumentSnapshot fake: profil absent, pending, null auth tranzitoriu cu sesiune prezentă, eroare de profil după profil valid, schimbare UID și cancel vechi, setări UI/duplicat/dispose, eroare inițială și recuperare. Fără init Firebase/date live; nu se testează aici accesul operațional HomePage, login/reauth ori signout real. Local **155 Python + 3 Node PASS**, syntax, body-equivalence, diff și inventar PASS. CI pe SHA-ul lotului urmează.
+
+Snapshot **165 Dart (125 lib, 39 teste, 1 script), 60 parts, 105 biblioteci**, zero lipsuri/orfani/duplicate/cicluri. Următoarea etapă sigură de analizat: sursele/login/abonările Home, păstrând grupurile deja extrase, ordinea, UID/cancel și fără mărirea citirilor. Auditul diferențial complet se face după modularizare și reutilizează regulile aprobate; Vision rămâne în PR-urile dedicate existente. Fără merge/deploy/APK/rules/config/date live/billing/migrări; #19/#20/#21/#29 nealterate.

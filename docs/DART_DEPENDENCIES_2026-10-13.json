@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 163,
-  "lib_dart_files": 124,
-  "test_dart_files": 38,
+  "dart_files": 165,
+  "lib_dart_files": 125,
+  "test_dart_files": 39,
   "script_dart_files": 1,
   "parts": 60,
-  "libraries": 103,
+  "libraries": 105,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -14,6 +14,7 @@
     "lib/admin/admin_navigation_catalog.dart": [],
     "lib/admin/backup_codec.dart": [],
     "lib/auth/account_access_views.dart": [],
+    "lib/auth/auth_gate_sources.dart": [],
     "lib/auth/firebase_user_profile.dart": [
       "lib/models/app_enums.dart"
     ],
@@ -69,6 +70,7 @@
       "lib/admin/admin_navigation_catalog.dart",
       "lib/admin/backup_codec.dart",
       "lib/auth/account_access_views.dart",
+      "lib/auth/auth_gate_sources.dart",
       "lib/auth/firebase_user_profile.dart",
       "lib/auth/quick_accounts.dart",
       "lib/bootstrap/firebase_bootstrap_error_app.dart",
@@ -219,6 +221,9 @@
     ],
     "test/app_capabilities_view_test.dart": [
       "lib/ui/app_capabilities_view.dart"
+    ],
+    "test/auth_gate_sources_widget_test.dart": [
+      "lib/main.dart"
     ],
     "test/auth_status_views_test.dart": [
       "lib/ui/auth_status_views.dart"
@@ -806,8 +811,8 @@
     },
     {
       "path": "lib/auth/auth_gate.dart",
-      "bytes": 6326,
-      "sha256": "772f16c9d970debd769e3bd8e9b8307ed4cb1761f7c2518a55aaf2e61a478734",
+      "bytes": 6291,
+      "sha256": "7fd11689f645bb90a7347b6d025f09e54fe2c57aff7435922f7a50895b103025",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -829,6 +834,45 @@
         {
           "kind": "class",
           "name": "_AuthGateState"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
+      "path": "lib/auth/auth_gate_sources.dart",
+      "bytes": 686,
+      "sha256": "ebe6c0bab7c0cfffdb4020a61cd668d9ea1c5cf9ec1d35e7ea9fddd214917006",
+      "owner": "lib/auth/auth_gate_sources.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "uris": [
+            "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "AuthGateSources"
         }
       ],
       "top_level_functions": []
@@ -2221,8 +2265,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 27961,
-      "sha256": "83d4095731e9aeb20d5e9c2e2e60e4bfa473ddaf423232af073c451230b96302",
+      "bytes": 28561,
+      "sha256": "525597b8f529ed43b860629cec1816355348151878e4e53bc04d93b905e46b67",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2923,6 +2967,26 @@
           ],
           "local_targets": [
             "lib/auth/quick_accounts.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'auth/auth_gate_sources.dart';",
+          "uris": [
+            "auth/auth_gate_sources.dart"
+          ],
+          "local_targets": [
+            "lib/auth/auth_gate_sources.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'auth/auth_gate_sources.dart';",
+          "uris": [
+            "auth/auth_gate_sources.dart"
+          ],
+          "local_targets": [
+            "lib/auth/auth_gate_sources.dart"
           ]
         },
         {
@@ -3641,6 +3705,7 @@
       "top_level_functions": [
         "_initializeFirebaseForPlatform",
         "_firebaseMessagingBackgroundHandler",
+        "_firebaseAuthGateSources",
         "_loadQuickAccounts",
         "_saveQuickAccounts",
         "estimateGraphRoadDistanceKm",
@@ -5778,6 +5843,83 @@
       ],
       "declarations": [],
       "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/auth_gate_sources_widget_test.dart",
+      "bytes": 6385,
+      "sha256": "a5af57cf5a0786356317cecdb7f784ceebfb9256594902bd4d2f40d2ccf19048",
+      "owner": "test/auth_gate_sources_widget_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "uris": [
+            "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "_GateUser"
+        },
+        {
+          "kind": "class",
+          "name": "_GateSnapshot"
+        },
+        {
+          "kind": "class",
+          "name": "_GateHarness"
+        }
+      ],
+      "top_level_functions": [
+        "mountGate",
+        "flushGate",
         "main"
       ]
     },
