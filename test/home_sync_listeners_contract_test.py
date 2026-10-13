@@ -38,7 +38,10 @@ class HomeSyncListenersContracts(unittest.TestCase):
         self.assertEqual(listeners.count(".snapshots().listen("), 10)
         # These were the original 15 managed core subscriptions; the other
         # five remain in the HomePage audit/definitions/directory listeners.
-        self.assertEqual(home.count("_coreSubscriptions.add("), 5)
+        managed = home.split("  void _startAuditSync(", 1)[1].split(
+            "  Future<void> _writeLearningEvent(", 1
+        )[0]
+        self.assertEqual(managed.count("_coreSubscriptions.add("), 5)
         order = [name for name in GROUP_NAMES if (
             f"  void {name}(FirebaseFirestore db) {{" in listeners
         )]
