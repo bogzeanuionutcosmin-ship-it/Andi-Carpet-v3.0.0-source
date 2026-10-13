@@ -948,3 +948,14 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 5. **Modul de colaborare cerut:** asistentul înaintează **câte o singură propunere despre notificări**, iar proprietarul răspunde «Da», «Nu» sau o variantă proprie. Nu cereți aprobarea simultană a mai multor decizii deja nefinalizate.
 
 **Audit detaliat:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md`, secțiunea 10. Doar analiză/documentare; fără modificare cod Android, Flutter, workflow, Firebase, Rules, producție sau deploy.
+
+## 51. Notificări Learning — propunerea 1 CONFIRMATĂ (2026-10-13)
+
+**Proprietarul a confirmat explicit** prima propunere privind notificările Learning.
+
+1. **Violet-indigo + icon Learning (creier/scânteie), prioritate ridicată în clopoțel** pentru recomandările, sugestiile și informațiile Learning.
+2. **Sugestiile ce necesită acord** sunt persistente ca acțiuni până la **Aplică**, **Respinge** ori **Amână** până la termenul ales; deschiderea clopoțelului marchează citit, dar nu rezolvă aprobarea.
+3. **Recomandările pur informative** se păstrează în istoric, se marchează citite automat când clopoțelul este deschis și nu reapăr popup la fiecare pornire.
+4. **Learning nu aplică singur schimbări pentru care este obligatorie aprobarea**. Implementarea viitoare validează identitatea, drepturile, idempotenta și auditul.
+
+**Decizie aprobată, fără modificări de cod/Firebase/CI/deploy.** Următoarele propuneri privind notificările se discută **pe rând**, cu răspuns «Da»/«Nu»/altă variantă.
