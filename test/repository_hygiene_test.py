@@ -568,13 +568,36 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_app_backdrop_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/app_backdrop.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'ui/app_backdrop.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
-        self.assertNotIn("class _AppBackdrop extends StatelessWidget", main)
-        self.assertEqual(module.count("class _AppBackdrop extends StatelessWidget"), 1)
-        self.assertIn("_plainBackgroundColor(settings, brightness)", module)
-        self.assertIn("settings.customBackgrounds[customId]", module)
-        self.assertIn("settings.backgroundOpacity.clamp(0.0, 0.70)", module)
+        self.assertNotIn("part 'ui/app_backdrop.dart';", main)
+        self.assertIn("import 'ui/app_backdrop.dart' as app_backdrop;", main)
+        self.assertEqual(main.count("class _AppBackdrop extends StatelessWidget"), 1)
+        self.assertIn("_plainBackgroundColor(settings, brightness)", main)
+        self.assertIn("settings.customBackgrounds[customId]", main)
+        self.assertIn("customData['imageBase64'] ?? ''", main)
+        self.assertEqual(module.count("class AppBackdrop extends StatelessWidget"), 1)
+        self.assertNotIn("AppSettings", module)
+        self.assertIn("backgroundOpacity.clamp(0.0, 0.70)", module)
+
+    def test_app_backdrop_library_preserves_settings_adapter_and_fallbacks(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/app_backdrop.dart").read_text(encoding="utf-8")
+        self.assertNotIn("part 'ui/app_backdrop.dart';", main)
+        self.assertIn("import 'ui/app_backdrop.dart' as app_backdrop;", main)
+        self.assertIn("class _AppBackdrop extends StatelessWidget", main)
+        self.assertIn("required this.settings, required this.child", main)
+        self.assertIn("_bundledBackgroundAssets[selected]", main)
+        self.assertIn("_plainBackgroundColor(settings, brightness)", main)
+        self.assertIn("customData == null ? null : customData['imageBase64'] ?? ''", main)
+        self.assertIn("app_backdrop.AppBackdrop(", main)
+        for import_line in ("import 'dart:convert';", "import 'dart:typed_data';",
+                            "import 'package:flutter/material.dart';"):
+            self.assertIn(import_line, module)
+        self.assertNotIn("AppSettings", module)
+        self.assertNotIn("part of", module)
+        for contract in ("backgroundOpacity.clamp(0.0, 0.70)",
+                         "catch (_) {}", "Image.memory(", "Image.asset(",
+                         "Colors.white.withValues(alpha: .10)"):
+            self.assertIn(contract, module)
 
     def test_icon_badge_catalog_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

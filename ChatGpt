@@ -1532,3 +1532,13 @@ Inventar: 141 Dart (120 lib, 20 teste, 1 script), 74 parts, 67 biblioteci (46 li
 PR #20 PDF/PV Magic/Million/download/web/Android și PR #29 OCR/financial/diurne rămân neatinse. Modularizarea integrală nu este finalizată. Următoarea analiză după CI: componente UI mici cu dependențe clare, apoi auth/sync numai prin adaptere explicite.
 
 Următorul pas exact după acest checkpoint: audit read-only al dependențelor din AppBackdrop și PageShell, în special decodarea setărilor de background și branding-ul global. Nu există încă un adapter sigur fără contracte explicite pentru settings/logo; auth, sync și PDF download/share rămân amânate până se pot păstra anularea, starea și singletonurile fără modificări funcționale.
+
+## MOD-APP-BACKDROP-LIBRARY-20261013 — adapter pentru fundalul aplicației
+
+Bază: `502f891cdf412b2c97f159cc0752add78ef1c7b8`. `lib/ui/app_backdrop.dart` este acum bibliotecă Material independentă. Primește culoarea simplă deja rezolvată, assetul bundled, Base64-ul opțional, opacitatea și child-ul. Wrapperul privat `_AppBackdrop` păstrează constructorul vechi cu `AppSettings`, lookup-ul assetului, cheia `custom:`, fallbackul pentru Base64 absent/invalid, helperul de culoare și toate callsite-urile. Componenta păstrează clamp-ul opacității la 0–0,70, Stack-ul, decodarea tolerantă, imaginile și overlay-ul de contrast light.
+
+Test Dart direct verifică child-ul, Base64 invalid și overlay-ul pentru teme light/dark; testele structurale verifică adapterul și contractele vizuale. Inventar: 142 fișiere Dart (120 lib, 21 teste, 1 script), 73 parts și 69 biblioteci (47 lib, 21 teste, 1 script); fără missing/orphan/duplicate/cicluri. Verificarea locală structurală: 84 teste PASS. Testul de boundary local raportează diferență numai pentru assetul sticker_24 din checkout-ul local (fișierul nu intră în commit); CI remote va valida snapshotul branch-ului. Flutter/Dart nu sunt instalate local.
+
+Nu s-au schimbat PDF-urile, fonturile, download/share, Mapbox, rutarea, OCR, diurnele, permisiunile financiare sau PR #29. Hashurile PV Magic/Million și asseturile protejate rămân responsabilitatea testelor/CI pe tree-ul remote. PageShell rămâne part fiindcă citește branding prin `_activeAppSettingsForBranding` global mutabil; fără contract explicit de branding, extragerea nu este sigură. Modularizarea integrală nu este finalizată.
+
+CI pentru commitul acestui lot: în așteptare. După 5/5 SUCCESS, următorul pas este audit read-only al următoarelor componente UI cu stare izolabilă; PageShell/auth/sync și download/share rămân blocate până la adaptere fără schimbarea contractelor.

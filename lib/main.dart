@@ -56,6 +56,7 @@ import 'ui/empty_state.dart' as empty_state;
 import 'ui/money_card.dart' as money_card;
 import 'ui/info_card.dart' as info_card;
 import 'ui/stat_card.dart' as stat_card;
+import 'ui/app_backdrop.dart' as app_backdrop;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
@@ -72,7 +73,6 @@ part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
 part 'ui/section_visual_helpers.dart';
-part 'ui/app_backdrop.dart';
 part 'ui/interactive_member_badges.dart';
 part 'ui/app_root_theme.dart';
 part 'ui/app_information_page.dart';
@@ -211,6 +211,31 @@ class _InfoCard extends StatelessWidget {
         text: text,
         accent: sectionAccent(title),
       );
+}
+
+class _AppBackdrop extends StatelessWidget {
+  final AppSettings settings;
+  final Widget child;
+  const _AppBackdrop({required this.settings, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final selected = settings.brandingBackgroundId;
+    final bundledAsset = _bundledBackgroundAssets[selected];
+    final customId =
+        selected.startsWith('custom:') ? selected.substring('custom:'.length) : '';
+    final customData =
+        customId.isEmpty ? null : settings.customBackgrounds[customId];
+    return app_backdrop.AppBackdrop(
+      plainBackground: _plainBackgroundColor(settings, brightness),
+      bundledAsset: bundledAsset,
+      customBackgroundBase64:
+          customData == null ? null : customData['imageBase64'] ?? '',
+      backgroundOpacity: settings.backgroundOpacity,
+      child: child,
+    );
+  }
 }
 
 class _Empty extends StatelessWidget {
