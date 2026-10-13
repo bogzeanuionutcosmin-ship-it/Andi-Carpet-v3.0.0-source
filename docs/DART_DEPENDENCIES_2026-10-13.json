@@ -1,10 +1,10 @@
 {
   "format_version": 1,
-  "dart_files": 123,
-  "lib_dart_files": 113,
-  "test_dart_files": 10,
-  "parts": 84,
-  "libraries": 39,
+  "dart_files": 125,
+  "lib_dart_files": 114,
+  "test_dart_files": 11,
+  "parts": 81,
+  "libraries": 44,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -46,19 +46,33 @@
       "lib/finance/per_diem_ledger.dart"
     ],
     "lib/firebase_options.dart": [],
+    "lib/learning/duration_estimates.dart": [
+      "lib/models/app_data_models.dart",
+      "lib/models/app_enums_permissions.dart",
+      "lib/utils/operational_dates.dart"
+    ],
     "lib/main.dart": [
       "lib/download_file.dart",
       "lib/firebase_options.dart",
+      "lib/learning/duration_estimates.dart",
       "lib/mapbox_services.dart",
+      "lib/models/app_data_models.dart",
       "lib/models/app_enums_permissions.dart",
       "lib/models/default_categories_functions.dart",
       "lib/models/location_category_helpers.dart",
       "lib/models/location_status_and_functions.dart",
       "lib/models/permission_status_labels.dart",
       "lib/ocr_parser.dart",
-      "lib/ocr_service.dart"
+      "lib/ocr_service.dart",
+      "lib/utils/graph_names.dart",
+      "lib/utils/operational_dates.dart"
     ],
     "lib/mapbox_services.dart": [],
+    "lib/models/app_data_models.dart": [
+      "lib/models/app_enums_permissions.dart",
+      "lib/models/location_category_helpers.dart",
+      "lib/utils/graph_names.dart"
+    ],
     "lib/models/app_enums_permissions.dart": [],
     "lib/models/default_categories_functions.dart": [
       "lib/models/app_enums_permissions.dart",
@@ -83,6 +97,18 @@
     "lib/ocr_service_mobile.dart": [],
     "lib/ocr_service_stub.dart": [],
     "lib/ocr_service_web.dart": [],
+    "lib/utils/graph_names.dart": [],
+    "lib/utils/operational_dates.dart": [
+      "lib/models/app_data_models.dart"
+    ],
+    "test/core_model_libraries_test.dart": [
+      "lib/learning/duration_estimates.dart",
+      "lib/main.dart",
+      "lib/models/app_data_models.dart",
+      "lib/models/app_enums_permissions.dart",
+      "lib/utils/graph_names.dart",
+      "lib/utils/operational_dates.dart"
+    ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
       "lib/models/app_enums_permissions.dart",
@@ -1907,18 +1933,38 @@
     },
     {
       "path": "lib/learning/duration_estimates.dart",
-      "bytes": 3476,
-      "sha256": "3a017435e21ee8e20dd31255955428c4d5b100800969ff615ec06fc3974b7c5f",
-      "owner": "lib/main.dart",
+      "bytes": 3582,
+      "sha256": "e9d87c8d64192e989b7f4c04d444202c34b5c3ad700975dc5ef58d2f68ea2fa9",
+      "owner": "lib/learning/duration_estimates.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import '../models/app_enums_permissions.dart';",
           "uris": [
-            "../main.dart"
+            "../models/app_enums_permissions.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_enums_permissions.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../utils/operational_dates.dart';",
+          "uris": [
+            "../utils/operational_dates.dart"
+          ],
+          "local_targets": [
+            "lib/utils/operational_dates.dart"
           ]
         }
       ],
@@ -1935,8 +1981,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 15000,
-      "sha256": "13c63f38869a8f14fb4ca132169d52c08256481fcdf30c361c89ecd60a80d7e0",
+      "bytes": 15095,
+      "sha256": "d4b3133d8f82ed9843ee58e02b85c118439d4de79c60b8714bcb9e49cf5fc245",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2191,6 +2237,86 @@
         },
         {
           "kind": "import",
+          "text": "import 'utils/graph_names.dart';",
+          "uris": [
+            "utils/graph_names.dart"
+          ],
+          "local_targets": [
+            "lib/utils/graph_names.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'utils/graph_names.dart';",
+          "uris": [
+            "utils/graph_names.dart"
+          ],
+          "local_targets": [
+            "lib/utils/graph_names.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'models/app_data_models.dart';",
+          "uris": [
+            "models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'models/app_data_models.dart';",
+          "uris": [
+            "models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'utils/operational_dates.dart';",
+          "uris": [
+            "utils/operational_dates.dart"
+          ],
+          "local_targets": [
+            "lib/utils/operational_dates.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'utils/operational_dates.dart';",
+          "uris": [
+            "utils/operational_dates.dart"
+          ],
+          "local_targets": [
+            "lib/utils/operational_dates.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'learning/duration_estimates.dart';",
+          "uris": [
+            "learning/duration_estimates.dart"
+          ],
+          "local_targets": [
+            "lib/learning/duration_estimates.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'learning/duration_estimates.dart';",
+          "uris": [
+            "learning/duration_estimates.dart"
+          ],
+          "local_targets": [
+            "lib/learning/duration_estimates.dart"
+          ]
+        },
+        {
+          "kind": "import",
           "text": "import 'models/app_enums_permissions.dart';",
           "uris": [
             "models/app_enums_permissions.dart"
@@ -2361,16 +2487,6 @@
         },
         {
           "kind": "part",
-          "text": "part 'utils/operational_dates.dart';",
-          "uris": [
-            "utils/operational_dates.dart"
-          ],
-          "local_targets": [
-            "lib/utils/operational_dates.dart"
-          ]
-        },
-        {
-          "kind": "part",
           "text": "part 'map/verified_location_fix.dart';",
           "uris": [
             "map/verified_location_fix.dart"
@@ -2427,26 +2543,6 @@
           ],
           "local_targets": [
             "lib/contacts/location_contacts_page.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'models/app_data_models.dart';",
-          "uris": [
-            "models/app_data_models.dart"
-          ],
-          "local_targets": [
-            "lib/models/app_data_models.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'learning/duration_estimates.dart';",
-          "uris": [
-            "learning/duration_estimates.dart"
-          ],
-          "local_targets": [
-            "lib/learning/duration_estimates.dart"
           ]
         },
         {
@@ -3133,7 +3229,6 @@
       "declarations": [],
       "top_level_functions": [
         "main",
-        "graphDefaultName",
         "idNow"
       ]
     },
@@ -3390,18 +3485,38 @@
     },
     {
       "path": "lib/models/app_data_models.dart",
-      "bytes": 13814,
-      "sha256": "a059a5d785e958c7d894975cb2d8a5775c9eea7b4b326f1be3bc784aa07933c9",
-      "owner": "lib/main.dart",
+      "bytes": 13904,
+      "sha256": "ffb01774a6e6d472e22a9de4d8068a3a03a99743ad75c22eb7ca707651343a3f",
+      "owner": "lib/models/app_data_models.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'app_enums_permissions.dart';",
           "uris": [
-            "../main.dart"
+            "app_enums_permissions.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_enums_permissions.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'location_category_helpers.dart';",
+          "uris": [
+            "location_category_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/models/location_category_helpers.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../utils/graph_names.dart';",
+          "uris": [
+            "../utils/graph_names.dart"
+          ],
+          "local_targets": [
+            "lib/utils/graph_names.dart"
           ]
         }
       ],
@@ -4518,19 +4633,30 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/utils/graph_names.dart",
+      "bytes": 97,
+      "sha256": "59ce964312be4e8eca5284366675f22296828e4481e44b4cf4a81089e6772875",
+      "owner": "lib/utils/graph_names.dart",
+      "directives": [],
+      "declarations": [],
+      "top_level_functions": [
+        "graphDefaultName"
+      ]
+    },
+    {
       "path": "lib/utils/operational_dates.dart",
-      "bytes": 2212,
-      "sha256": "98bf7f353355e6070b97563c331f2f369d610b742abb8da1796b0392d4fa12d4",
-      "owner": "lib/main.dart",
+      "bytes": 2229,
+      "sha256": "4bdaf64a46b1448b5e46864aee07360c281e4f5a1aba5d55fc97ca5290b261fc",
+      "owner": "lib/utils/operational_dates.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
           "uris": [
-            "../main.dart"
+            "../models/app_data_models.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_data_models.dart"
           ]
         }
       ],
@@ -4548,6 +4674,87 @@
         "isInsideWorkWindow",
         "recordBelongsToWorkDate",
         "recordEventTime"
+      ]
+    },
+    {
+      "path": "test/core_model_libraries_test.dart",
+      "bytes": 6633,
+      "sha256": "ce637c7057891131be38ea616eccf91379487411243026f638aa0e7417c280a4",
+      "owner": "test/core_model_libraries_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_data_models.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_enums_permissions.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_enums_permissions.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums_permissions.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/utils/graph_names.dart';",
+          "uris": [
+            "package:andi_carpeta/utils/graph_names.dart"
+          ],
+          "local_targets": [
+            "lib/utils/graph_names.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/utils/operational_dates.dart';",
+          "uris": [
+            "package:andi_carpeta/utils/operational_dates.dart"
+          ],
+          "local_targets": [
+            "lib/utils/operational_dates.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/learning/duration_estimates.dart';",
+          "uris": [
+            "package:andi_carpeta/learning/duration_estimates.dart"
+          ],
+          "local_targets": [
+            "lib/learning/duration_estimates.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart' as legacy;",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "completedRecord",
+        "main"
       ]
     },
     {

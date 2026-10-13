@@ -28,6 +28,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'utils/graph_names.dart';
+export 'utils/graph_names.dart';
+import 'models/app_data_models.dart';
+export 'models/app_data_models.dart';
+import 'utils/operational_dates.dart';
+export 'utils/operational_dates.dart';
+import 'learning/duration_estimates.dart';
+export 'learning/duration_estimates.dart';
 import 'models/app_enums_permissions.dart';
 export 'models/app_enums_permissions.dart';
 import 'models/location_status_and_functions.dart';
@@ -46,15 +54,12 @@ part 'ui/branding_theme_helpers.dart';
 part 'ui/install_app_buttons.dart';
 part 'bootstrap/firebase_initialization.dart';
 part 'bootstrap/firebase_bootstrap_error_app.dart';
-part 'utils/operational_dates.dart';
 part 'map/verified_location_fix.dart';
 part 'map/graph_route_calculations.dart';
 part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
-part 'models/app_data_models.dart';
-part 'learning/duration_estimates.dart';
 part 'ui/section_visual_helpers.dart';
 part 'ui/app_backdrop.dart';
 part 'ui/icon_badge_catalog.dart';
@@ -151,7 +156,6 @@ Future<void> main() async {
 // PDF-urile, funcțiile dinamice și administrarea sunt integrate aici.
 // ============================================================
 
-String graphDefaultName(DateTime d) => 'Grafic ${d.month.toString().padLeft(2, '0')}/${d.year}';
 
 String idNow() => DateTime.now().microsecondsSinceEpoch.toString();
 

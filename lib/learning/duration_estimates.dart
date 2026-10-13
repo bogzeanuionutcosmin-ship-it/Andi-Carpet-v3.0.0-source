@@ -1,4 +1,6 @@
-part of '../main.dart';
+import '../models/app_enums_permissions.dart';
+import '../models/app_data_models.dart';
+import '../utils/operational_dates.dart';
 
 class LearnedDurationEstimate {
   final Duration duration;

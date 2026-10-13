@@ -458,8 +458,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'utils/operational_dates.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'utils/operational_dates.dart';", main)
+        self.assertIn("export 'utils/operational_dates.dart';", main)
+        self.assertNotIn("part of ", module)
+        self.assertNotIn("../main.dart", module)
         for symbol in ("String two(int n)", "String formatDate(DateTime d)",
                        "String formatMonth(DateTime d)", "String timeText(DateTime? d)",
                        "String durationText(Duration? d)", "bool sameDay(DateTime a, DateTime b)",
@@ -491,8 +493,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_learning_duration_estimates_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/learning/duration_estimates.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'learning/duration_estimates.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'learning/duration_estimates.dart';", main)
+        self.assertIn("export 'learning/duration_estimates.dart';", main)
+        self.assertNotIn("part of ", module)
+        self.assertNotIn("../main.dart", module)
         for symbol in ("class LearnedDurationEstimate {",
                        "LearnedDurationEstimate? learnedDurationEstimate(",
                        "Duration? learnedAverageDuration("):
@@ -744,8 +748,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_core_models_extracted_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         models = (ROOT / "lib/models/app_data_models.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/app_data_models.dart';", main)
-        self.assertIn("part of '../main.dart';", models)
+        self.assertIn("import 'models/app_data_models.dart';", main)
+        self.assertIn("export 'models/app_data_models.dart';", main)
+        self.assertNotIn("part of ", models)
+        self.assertNotIn("../main.dart", models)
         names = ("AppUser", "Team", "Car", "LocationContact", "Location",
                  "ScheduleItem", "WorkSchedule", "CentralizerRecord", "Expense",
                  "PerDiemEntry", "ReceivedMoneyEntry", "TravelSettlement",

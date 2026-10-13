@@ -32,6 +32,21 @@ class DartLibraryDependenciesTests(unittest.TestCase):
                 self.assertNotIn("lib/main.dart", report["library_edges"][path])
                 self.assertTrue(set(report["library_edges"][path]) <= paths)
 
+    def test_core_models_dates_and_learning_have_explicit_one_way_dependencies(self):
+        report = audit.inventory()
+        edges = report["library_edges"]
+        expected = {
+            "lib/utils/graph_names.dart": [],
+            "lib/models/app_data_models.dart": ["lib/models/app_enums_permissions.dart", "lib/models/location_category_helpers.dart", "lib/utils/graph_names.dart"],
+            "lib/utils/operational_dates.dart": ["lib/models/app_data_models.dart"],
+            "lib/learning/duration_estimates.dart": ["lib/models/app_data_models.dart", "lib/models/app_enums_permissions.dart", "lib/utils/operational_dates.dart"],
+        }
+        rows = {row["path"]: row for row in report["files"]}
+        for path, dependencies in expected.items():
+            with self.subTest(path=path):
+                self.assertEqual(rows[path]["owner"], path)
+                self.assertEqual(edges[path], dependencies)
+
     def test_conditional_platform_implementations_are_all_inventoried(self):
         rows = {row["path"]: row for row in audit.inventory()["files"]}
         for source, targets in (

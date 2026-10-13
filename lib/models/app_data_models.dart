@@ -1,4 +1,6 @@
-part of '../main.dart';
+import 'app_enums_permissions.dart';
+import 'location_category_helpers.dart';
+import '../utils/graph_names.dart';
 
 class AppUser {
   final String id;
