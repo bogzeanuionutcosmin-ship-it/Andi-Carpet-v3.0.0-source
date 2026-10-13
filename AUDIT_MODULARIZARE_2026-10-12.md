@@ -473,3 +473,10 @@ Inventar: 148 fișiere Dart, 71 parts, 77 biblioteci; zero missing/orphan/duplic
 Bază: `490ce02a068d642a409cd9c6de384fa08d6dc4bc`. Modelul de date `_VerifiedLocationFix` a devenit `VerifiedLocationFix` într-o bibliotecă Dart independentă cu import explicit pentru `LocationStatus`. Wrapperul privat extinde modelul și păstrează numele, constructorul/defaulturile și callsite-urile din main/map. Catalogul Magic/Million și algoritmul de import nu au fost rescrise. Testul structural fixează SHA-256 al întregului bloc `_verifiedLocationFixes`: `0d00e992bc52e500a87b307f601ec6486dbb5d6f6dd0e6db93f0cacec267a812` (8.192 bytes); testul Dart verifică defaulturi și semantica hasGps.
 
 Inventar: 149 Dart, 70 parts, 79 biblioteci; fără missing/orphan/duplicate/cicluri. Teste Python structurale 85 PASS, parserul inventory și Node syntax PASS; Flutter/Dart indisponibil local. CI lot în așteptare. PR #20 PDF Magic/Million, PR #29 și regulile/datele financiare rămân neatinse.
+
+
+## MOD-VERIFIED-LOCATION-FIX-CI-GREEN-20261013
+
+Lotul `verified_location_fix.dart` este validat pe commitul cod `926f77b1d04342a696331cf9a7f967a1299c3f79`, workflow run `38464464699`: **5/5 SUCCESS**, inclusiv Flutter/widget, web build, emulator Firestore, Node, Functions și Python/security. Blocul de date `_verifiedLocationFixes` a rămas hash-identic (`0d00e992bc52e500a87b307f601ec6486dbb5d6f6dd0e6db93f0cacec267a812`, 8.192 bytes); wrapperul păstrează semantica/defaulturile și import actions.
+
+Inventar: 149 Dart, 70 parts, 79 biblioteci; fără missing/orphan/duplicate/cicluri. Următorul pas exact: audit read-only al `ui/dashboard_map_components.dart` și al altor widgeturi de dashboard pentru callbackuri/stare implicite; nu extrage UI dependent de starea MapPage până nu există un adapter clar. Modularizarea completă nu este finalizată.
