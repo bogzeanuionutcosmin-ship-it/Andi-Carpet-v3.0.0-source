@@ -1,0 +1,63 @@
+name: Verify Vision Android APK (PR #19 only)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/vision-android-pr-test.yml'
+      - 'lib/vision/**'
+      - 'lib/ocr_parser.dart'
+      - 'lib/expenses/expense_page.dart'
+      - 'lib/home/home_page.dart'
+      - 'test/ocr_parser_test.dart'
+      - 'test/vision_error_log_test.dart'
+      - 'test/vision_diagnostics_page_test.dart'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vision-android-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  android-apk:
+    if: github.event.pull_request.number == 19
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout PR source
+        uses: actions/checkout@v4
+
+      - name: Java 17 for Android toolchain
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Flutter stable (match standard CI)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+
+      - name: Run OCR and Vision tests
+        run: flutter test test/ocr_parser_test.dart test/vision_error_log_test.dart test/vision_diagnostics_page_test.dart
+
+      - name: Compile Android debug APK (no deploy/install)
+        env:
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
+        run: flutter build apk --debug --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN"
+
+      - name: Upload short-lived TEST build only
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndiCarpet-Vision-PR19-Android-debug-TEST
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 3
