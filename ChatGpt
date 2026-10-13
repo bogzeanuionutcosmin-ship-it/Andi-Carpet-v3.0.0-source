@@ -1503,4 +1503,10 @@ Primul CI run `38389669780` pe `acaf495b95f18c2a7490348625c89691974a2926`: **4/5
 
 Inventar: 136 Dart (118 lib,17 teste,1 script), **75 parts**, 61 biblioteci (43 lib,17 test,1 script), fără missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, dependency audit, 116 hashuri protejate și diff-check PASS. CI run `38390449115` pe `9ba22143a734d83ac1b9d410e88b2079f577c946` a avut 4/5 SUCCESS: Flutter test compilation a eșuat fiindcă după redenumirea clasei constructorul rămăsese `const _Empty`. 52 teste au trecut; 6 test files nu s-au compilat.
 
-Corectat constructorul bibliotecii la `const EmptyState`; `_Empty` privat din main rămâne wrapper pentru toți utilizatorii. Testul de hash normalizează acum redenumirea clasei și constructorului; hashul corpului rămâne `2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92`. Testele locale trec, commitul de corecție și CI complet urmează; nu încep alt lot până la 5/5.
+Corectat constructorul bibliotecii la `const EmptyState`; `_Empty` privat din main rămâne wrapper pentru toți utilizatorii. Testul de hash normalizează redenumirea clasei și constructorului; hashul corpului rămâne `2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92`. Commitul corectiv `f95233dbdc50b44219306d9fcc18e1da25a0ade9` a trecut CI run `38390758123`, 5/5.
+
+## Continuare — MoneyCard cu callback separat
+
+După CI verde, `ui/money_card.dart` devine bibliotecă Material. Corpul widgetului e SHA-256 identic după normalizarea numelui `_MoneyCard` → `MoneyCard`: `e7326bf0fe3d3798ec246f094e6d53f4221abc08a7942b94b1438b80ad77c16b`. Wrapper-ul privat main păstrează constructorul și forwardează titlu, valoare și callback. Calculele de sume rămân în apelanții Expense neschimbate. Test Flutter direct verifică `1234.50 lei` și callbackul.
+
+Inventar 138 Dart, **75 parts**, 63 biblioteci (44 lib, 18 teste, 1 script), zero missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, audit import-export, 116 hashuri protejate și diff-check PASS. Commitul lotului trebuie validat în toate cele 5 joburi CI înainte de alt lot.

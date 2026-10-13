@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 136,
-  "lib_dart_files": 118,
-  "test_dart_files": 17,
+  "dart_files": 138,
+  "lib_dart_files": 119,
+  "test_dart_files": 18,
   "script_dart_files": 1,
   "parts": 75,
-  "libraries": 61,
+  "libraries": 63,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -77,6 +77,7 @@
       "lib/reports/pdf_report_format.dart",
       "lib/ui/empty_state.dart",
       "lib/ui/icon_badge_catalog.dart",
+      "lib/ui/money_card.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
     ],
@@ -131,6 +132,7 @@
     "lib/reports/pdf_report_format.dart": [],
     "lib/ui/empty_state.dart": [],
     "lib/ui/icon_badge_catalog.dart": [],
+    "lib/ui/money_card.dart": [],
     "lib/utils/graph_names.dart": [],
     "lib/utils/operational_dates.dart": [
       "lib/models/app_data_models.dart"
@@ -179,6 +181,9 @@
       "lib/models/location_category_helpers.dart",
       "lib/models/location_status_and_functions.dart",
       "lib/models/permission_status_labels.dart"
+    ],
+    "test/money_card_library_test.dart": [
+      "lib/ui/money_card.dart"
     ],
     "test/ocr_parser_test.dart": [
       "lib/ocr_parser.dart"
@@ -2052,8 +2057,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 17723,
-      "sha256": "acec1523826a1e16c882ac21261a605b36b38c73c2193a2f338343aa689b4709",
+      "bytes": 18083,
+      "sha256": "cfbf39d6e49bd2a284c15dd21a8ccac51de719f7c5633ad0aafb4ef18a194ccd",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2554,6 +2559,16 @@
           ],
           "local_targets": [
             "lib/ui/empty_state.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'ui/money_card.dart' as money_card;",
+          "uris": [
+            "ui/money_card.dart"
+          ],
+          "local_targets": [
+            "lib/ui/money_card.dart"
           ]
         },
         {
@@ -3328,6 +3343,10 @@
         }
       ],
       "declarations": [
+        {
+          "kind": "class",
+          "name": "_MoneyCard"
+        },
         {
           "kind": "class",
           "name": "_Empty"
@@ -4735,8 +4754,8 @@
     },
     {
       "path": "lib/ui/empty_state.dart",
-      "bytes": 375,
-      "sha256": "21a475158511970dca85d97468437054be5564caf0119d1115fb32c00960e1da",
+      "bytes": 379,
+      "sha256": "c19733f9b1e815a85b1aac2b8c691accd4c7e8f73da794dfb1fcf6040677a8b0",
       "owner": "lib/ui/empty_state.dart",
       "directives": [
         {
@@ -4846,6 +4865,29 @@
       ]
     },
     {
+      "path": "lib/ui/money_card.dart",
+      "bytes": 585,
+      "sha256": "e730f489d592ec0a8afda8b9a1cf70324ee7c1f604353870727ccd103b2daed7",
+      "owner": "lib/ui/money_card.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "MoneyCard"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/ui/page_shell.dart",
       "bytes": 4503,
       "sha256": "b645c6202865f3f2e7f4cd61681cfa635678ea535a971a76c4cedd2462e8aa76",
@@ -4897,8 +4939,8 @@
     },
     {
       "path": "lib/ui/summary_cards.dart",
-      "bytes": 2231,
-      "sha256": "358460cd3b488b2d62f4ff24367dd3b086280877b1affde2cd4cbecd322b4420",
+      "bytes": 1685,
+      "sha256": "9a32621abaad1294a3b17e8d6efb7215bbeb4ec1ce7f4aefb6dbb628754881c9",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -4916,10 +4958,6 @@
         {
           "kind": "class",
           "name": "_StatCard"
-        },
-        {
-          "kind": "class",
-          "name": "_MoneyCard"
         },
         {
           "kind": "class",
@@ -5477,6 +5515,44 @@
           ],
           "local_targets": [
             "lib/main.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/money_card_library_test.dart",
+      "bytes": 707,
+      "sha256": "56dcff7199bd7386620da0dc19c680d704904c888675e7ba776e4a3ca816a593",
+      "owner": "test/money_card_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/money_card.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/money_card.dart"
+          ],
+          "local_targets": [
+            "lib/ui/money_card.dart"
           ]
         }
       ],

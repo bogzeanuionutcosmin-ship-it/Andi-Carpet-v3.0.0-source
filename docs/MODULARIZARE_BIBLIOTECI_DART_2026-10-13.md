@@ -163,4 +163,12 @@ PDF/Mapbox/download/share, PR #20 și PR #29 neatins. Următoarea analiză după
 
 ### Corecție CI — redenumirea constructorului
 
-Run `38390449115` pe `9ba22143a734d83ac1b9d410e88b2079f577c946`: 4/5 SUCCESS. Flutter a oprit compilarea deoarece clasa redenumită `EmptyState` păstra constructorul vechi `const _Empty`, invalid în noua bibliotecă. 52 teste trecuseră; 6 fișiere nu s-au putut compila din cauza erorii. Corecție: constructorul public al componentei se numește acum `EmptyState`; wrapper-ul privat din main păstrează în continuare `const _Empty`. Hashul structural normalizează și numele constructorului. Python/Node/Functions/Firestore trec local/CI; CI complet al SHA corectat urmează.
+Run `38390449115` pe `9ba22143a734d83ac1b9d410e88b2079f577c946`: 4/5 SUCCESS. Flutter a oprit compilarea deoarece clasa redenumită `EmptyState` păstra constructorul vechi `const _Empty`, invalid în noua bibliotecă. 52 teste trecuseră; 6 fișiere nu s-au putut compila din cauza erorii. Corecție: constructorul componentei se numește `EmptyState`; wrapper-ul privat din main păstrează `const _Empty`. Hashul structural normalizează și numele constructorului. Commit corectiv `f95233dbdc50b44219306d9fcc18e1da25a0ade9`, run `38390758123`: **5/5 SUCCESS**, inclusiv Flutter tests și web build.
+
+## MOD-MONEY-CARD-LIBRARY-20261013 — card de valoare cu callback injectat
+
+Bază: CI corectiv Empty run `38390758123` pe `f95233dbdc50b44219306d9fcc18e1da25a0ade9`, 5/5 SUCCESS. `ui/money_card.dart` devine bibliotecă Material. Corpul widgetului original, normalizat doar pentru numele `_MoneyCard`/`MoneyCard`, are SHA-256 `e7326bf0fe3d3798ec246f094e6d53f4221abc08a7942b94b1438b80ad77c16b`. Wrapper-ul privat din main păstrează constructorul și transmite titlu, sumă și callback fără transformare. Nicio formulă sau regulă financiară nu este mutată/modificată; apelanții Expense continuă să calculeze valorile ca înainte.
+
+Test Dart importă direct componenta și verifică textul sumei cu două zecimale și invocarea callbackului. Test Python fixează corpul widgetului și adapterul. Inventar: 138 Dart (119 lib, 18 teste, 1 script), **75 parts**, 63 biblioteci (44 lib, 18 test, 1 script), zero ținte lipsă/orfani/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, 116 hashuri protejate, audit și diff-check PASS; Dart/Flutter lipsește local. CI pentru lotul curent urmează.
+
+PV/PDF/Android-web download, Mapbox și PR #20/#29 neatinse. Modularizarea integrală nu este finalizată; după CI următorul pas este auditarea altor componente UI pure, fără atingerea calculelor financiare.

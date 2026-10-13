@@ -53,6 +53,7 @@ import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';
 import 'ui/empty_state.dart' as empty_state;
+import 'ui/money_card.dart' as money_card;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
@@ -162,6 +163,16 @@ String _adminSectionGroup(int index) => admin_navigation.adminSectionGroup(index
 String? _adminSectionAsset(int index) => admin_navigation.adminSectionAsset(index);
 Widget _badgeGraphic(String asset, {required double size, Color? color}) =>
     badgeGraphic(asset, size: size, color: color);
+
+class _MoneyCard extends StatelessWidget {
+  final String title;
+  final double value;
+  final VoidCallback? onTap;
+  const _MoneyCard({required this.title, required this.value, this.onTap});
+  @override
+  Widget build(BuildContext context) =>
+      money_card.MoneyCard(title: title, value: value, onTap: onTap);
+}
 
 class _Empty extends StatelessWidget {
   final IconData icon;

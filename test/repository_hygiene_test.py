@@ -343,17 +343,30 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_summary_cards_extracted_preserving_values_and_actions(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/summary_cards.dart").read_text(encoding="utf-8")
+        money = (ROOT / "lib/ui/money_card.dart").read_text(encoding="utf-8")
         self.assertEqual(main.count("part 'ui/summary_cards.dart';"), 1)
         self.assertIn("part of '../main.dart';", module)
-        for name in ("_StatCard", "_MoneyCard", "_InfoCard"):
+        self.assertIn("import 'ui/money_card.dart' as money_card;", main)
+        self.assertIn("class _MoneyCard extends StatelessWidget", main)
+        self.assertIn("money_card.MoneyCard(title: title, value: value, onTap: onTap)", main)
+        self.assertIn("import 'package:flutter/material.dart';", money)
+        self.assertEqual(money.count("class MoneyCard extends StatelessWidget"), 1)
+        normalized_money = money.split("\n\n", 1)[1].strip().replace(
+            "class MoneyCard extends StatelessWidget", "class _MoneyCard extends StatelessWidget", 1
+        ).replace("const MoneyCard(", "const _MoneyCard(", 1)
+        self.assertEqual(
+            hashlib.sha256(normalized_money.encode("utf-8")).hexdigest(),
+            "e7326bf0fe3d3798ec246f094e6d53f4221abc08a7942b94b1438b80ad77c16b",
+        )
+        for name in ("_StatCard", "_InfoCard"):
             declaration = "class " + name + " extends StatelessWidget"
             self.assertNotIn(declaration, main)
             self.assertEqual(module.count(declaration), 1)
         for contract in ("assert(icon != null || asset != null)",
-                         "appAssetIcon(", "sectionAccent(title)",
-                         "onTap:onTap", "value.toStringAsFixed(2)",
-                         "ListTile("):
+                         "appAssetIcon(", "sectionAccent(title)", "ListTile("):
             self.assertIn(contract, module)
+        self.assertIn("value.toStringAsFixed(2)", money)
+        self.assertIn("onTap:onTap", money)
 
     def test_empty_state_extracted_preserving_content(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

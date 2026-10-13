@@ -249,7 +249,9 @@ Run `38389669780` a încheiat 4/5: Flutter a eșuat la compilare deoarece `inter
 
 Următorul lot: componenta `ui/empty_state.dart` este desprinsă cu import Material explicit și wrapper `_Empty` în main, păstrând callsite-urile. Corpul widgetului, după normalizarea numelui clasei, rămâne SHA-256 `2be8dc91332ee092c2c7858b6c9f36cf40f8efe2377190996b549d11fcba6c92`. Test Dart verifică renderul direct; inventar nou 136 Dart / 75 parts / 61 biblioteci, zero missing/orphan/duplicate/cicluri. Teste locale și hashurile PDF protejate PASS; CI pentru acest lot încă trebuie verificat.
 
-CI run `38390449115` pe `9ba22143a734d83ac1b9d410e88b2079f577c946`: 4/5 SUCCESS. Flutter a eșuat la compilare pentru că `EmptyState` avea constructorul vechi `const _Empty`; 52 teste au trecut, 6 fișiere nu s-au putut compila, celelalte joburi au trecut. Constructor redenumit la `EmptyState`; wrapper-ul privat main neschimbat. Hashul sursei normalizează atât clasa cât și constructorul. Testele statice locale trec; CI pentru corecție urmează.
+CI run `38390449115` pe `9ba22143a734d83ac1b9d410e88b2079f577c946`: 4/5 SUCCESS. Flutter a eșuat la compilare pentru că `EmptyState` avea constructorul vechi `const _Empty`; 52 teste au trecut, 6 fișiere nu s-au putut compila, celelalte joburi au trecut. Constructor redenumit la `EmptyState`; wrapper-ul privat main neschimbat. Hashul sursei normalizează atât clasa cât și constructorul. Corecția `f95233dbdc50b44219306d9fcc18e1da25a0ade9`, run `38390758123`, a trecut 5/5.
+
+Lotul următor izolează `MoneyCard` (titlu, valoare și callback) din `summary_cards.dart` în `ui/money_card.dart`, cu wrapper privat main păstrat. Corpul original după normalizarea numelui este SHA-256 `e7326bf0fe3d3798ec246f094e6d53f4221abc08a7942b94b1438b80ad77c16b`. Separarea nu schimbă sau mută formulele din Expense; testul direct verifică formatarea și callbackul. Inventar 138 Dart / 75 parts / 63 biblioteci; fără anomalii import-export. Local 151 Python/1 Node și cele 116 hashuri protejate PASS. CI pentru lotul MoneyCard urmează.
 
 ## MOD-SCREEN-ACTIONS-CI-FIX-20261013
 
