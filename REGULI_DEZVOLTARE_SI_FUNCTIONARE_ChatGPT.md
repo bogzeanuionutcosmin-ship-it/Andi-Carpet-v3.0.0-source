@@ -1047,3 +1047,15 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 5. **Teste de implementare:** fiecare combinație categorie/sunet/vibrație/banner, chat privat pus pe silențios fără alte conversații afectate, persistență restart/relogin, schimbare cont, două dispozitive, Android/web și permisiune OS refuzată, mesaj critic autentic vs mesaj obișnuit cu titlu înșelător, mesaje necitite fără sunet, FCM + Firestore fără alertă dublă, offline/reconectare.
 
 **Status:** numai regulă aprobată și documentată; fără cod, reguli Firebase, date de producție, build sau deploy. Următoarea propunere se discută separat cu proprietarul.
+
+## 58. Notificări — propunerea 7 CONFIRMATĂ: modul Nu deranja (2026-10-13)
+
+**Aprobare expresă:** «Confirm propunerea 7 pentru AndiCarpet.»
+
+1. Fiecare utilizator poate activa un mod personal **Nu deranja** manual, pentru **o perioadă aleasă** sau prin **program automat pe intervale orare**. Se afișează clar când este activ și când expiră.
+2. În timpul modului, notificările obișnuite sunt în continuare primite și păstrate în istoricul aplicației și în contoarele necitite, însă **nu produc sunet, vibrație sau popup intruziv**. Nu se marchează automat ca citite sau rezolvate doar din cauza modului.
+3. **Notificările critice autentificate** care necesită intervenție imediată rămân vizibile în aplicație (clopoțel/lista de acțiuni), dar **nu forțează sunetul telefonului** și nu ocolesc permisiunile sau restricțiile Android/web. Se păstrează diferențierea dintre critic autentificat și un titlu arbitrar «urgent».
+4. Preferința aparține utilizatorului, nu schimbă comportamentul colegilor. Modurile manual/temporizat/programat au nevoie de o precedență deterministă, intervale peste miezul nopții, fus orar corect, respectarea setărilor OS și expirare sigură; detaliile tehnice se proiectează la implementare.
+5. La implementare se testează: activare/dezactivare manuală, expirare, ore recurente și tură de noapte, restart/relogin, două dispozitive, schimbare fus orar, offline/reconectare, mesaj privat/Chat live/Learning, alerte autentice Admin/Sistem, badge-uri și deduplicare FCM/Firestore.
+
+**Status:** regula este CONFIRMATĂ și documentată, nu implementată sau testată în produs; fără schimbări de cod, Firestore, Functions, date de producție, APK sau deploy.
