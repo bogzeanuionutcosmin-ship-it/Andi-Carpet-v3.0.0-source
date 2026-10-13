@@ -341,10 +341,11 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_full_schedule_card_extracted_preserving_reorder_controls(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/schedule/schedule_card_full.dart").read_text(encoding="utf-8")
-        self.assertEqual(main.count("part 'schedule/schedule_card_full.dart';"), 1)
-        self.assertIn("part of '../main.dart';", module)
-        self.assertNotIn("class _ScheduleCardFull extends StatelessWidget", main)
-        self.assertEqual(module.count("class _ScheduleCardFull extends StatelessWidget"), 1)
+        self.assertIn("import 'schedule/schedule_card_full.dart' as schedule_card;", main)
+        self.assertNotIn("part of '../main.dart';", module)
+        self.assertEqual(main.count("class _ScheduleCardFull extends StatelessWidget"), 1)
+        self.assertEqual(module.count("class ScheduleCardFull extends StatelessWidget"), 1)
+        self.assertIn("schedule_card.ScheduleCardFull(", main)
         for contract in ("ReorderableListView.builder", "onReorder", "onRemove",
                          "onAdd", "autoProposed", "learningConfidence",
                          "categoryBrandWidget", "schedule.closed"):

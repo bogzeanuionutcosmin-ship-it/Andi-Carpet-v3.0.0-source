@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 154,
+  "dart_files": 155,
   "lib_dart_files": 122,
-  "test_dart_files": 31,
+  "test_dart_files": 32,
   "script_dart_files": 1,
-  "parts": 65,
-  "libraries": 89,
+  "parts": 64,
+  "libraries": 91,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -80,6 +80,7 @@
       "lib/ocr_parser.dart",
       "lib/ocr_service.dart",
       "lib/reports/pdf_report_format.dart",
+      "lib/schedule/schedule_card_full.dart",
       "lib/teams/team_selector.dart",
       "lib/ui/app_backdrop.dart",
       "lib/ui/auth_status_views.dart",
@@ -148,6 +149,15 @@
     "lib/ocr_service_stub.dart": [],
     "lib/ocr_service_web.dart": [],
     "lib/reports/pdf_report_format.dart": [],
+    "lib/schedule/schedule_card_full.dart": [
+      "lib/models/app_data_models.dart",
+      "lib/models/location_category_helpers.dart",
+      "lib/models/location_status_and_functions.dart",
+      "lib/ui/icon_badge_catalog.dart",
+      "lib/ui/info_card.dart",
+      "lib/ui/section_visual_helpers.dart",
+      "lib/utils/operational_dates.dart"
+    ],
     "lib/teams/team_selector.dart": [
       "lib/models/app_data_models.dart"
     ],
@@ -279,6 +289,11 @@
     ],
     "test/per_diem_settlement_test.dart": [
       "lib/finance/per_diem_settlement.dart"
+    ],
+    "test/schedule_card_full_library_test.dart": [
+      "lib/models/app_data_models.dart",
+      "lib/models/app_enums.dart",
+      "lib/schedule/schedule_card_full.dart"
     ],
     "test/section_visual_helpers_library_test.dart": [
       "lib/models/app_data_models.dart",
@@ -2130,8 +2145,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 24882,
-      "sha256": "b55b49a0a885459ab1320e5bf2db4bc93ec5f020f6fb72bb36c7775ff366f1ef",
+      "bytes": 25816,
+      "sha256": "53899df02fac2d5eeab5bad3e35425b206383479bd580541ebbdf855fe382cda",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2636,6 +2651,16 @@
         },
         {
           "kind": "import",
+          "text": "import 'schedule/schedule_card_full.dart' as schedule_card;",
+          "uris": [
+            "schedule/schedule_card_full.dart"
+          ],
+          "local_targets": [
+            "lib/schedule/schedule_card_full.dart"
+          ]
+        },
+        {
+          "kind": "import",
           "text": "import 'ui/branding_theme_helpers.dart' as branding_helpers;",
           "uris": [
             "ui/branding_theme_helpers.dart"
@@ -2982,16 +3007,6 @@
           ],
           "local_targets": [
             "lib/feedback/feedback_page.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'schedule/schedule_card_full.dart';",
-          "uris": [
-            "schedule/schedule_card_full.dart"
-          ],
-          "local_targets": [
-            "lib/schedule/schedule_card_full.dart"
           ]
         },
         {
@@ -3469,6 +3484,10 @@
         {
           "kind": "class",
           "name": "_TeamSelector"
+        },
+        {
+          "kind": "class",
+          "name": "_ScheduleCardFull"
         },
         {
           "kind": "class",
@@ -4689,25 +4708,93 @@
     },
     {
       "path": "lib/schedule/schedule_card_full.dart",
-      "bytes": 2473,
-      "sha256": "eaad22cb9a4acc24198a7be7a6753fc674b43462d990d69114a4ad927b44a913",
-      "owner": "lib/main.dart",
+      "bytes": 5094,
+      "sha256": "cebc20c984cfa3db10f27a5808dbfc7d5b21a171e671e38da5d0f3a4575d6e4d",
+      "owner": "lib/schedule/schedule_card_full.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/location_category_helpers.dart';",
+          "uris": [
+            "../models/location_category_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/models/location_category_helpers.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/location_status_and_functions.dart';",
+          "uris": [
+            "../models/location_status_and_functions.dart"
+          ],
+          "local_targets": [
+            "lib/models/location_status_and_functions.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../ui/icon_badge_catalog.dart';",
+          "uris": [
+            "../ui/icon_badge_catalog.dart"
+          ],
+          "local_targets": [
+            "lib/ui/icon_badge_catalog.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../ui/info_card.dart' as info_card;",
+          "uris": [
+            "../ui/info_card.dart"
+          ],
+          "local_targets": [
+            "lib/ui/info_card.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../ui/section_visual_helpers.dart';",
+          "uris": [
+            "../ui/section_visual_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/ui/section_visual_helpers.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../utils/operational_dates.dart';",
+          "uris": [
+            "../utils/operational_dates.dart"
+          ],
+          "local_targets": [
+            "lib/utils/operational_dates.dart"
           ]
         }
       ],
       "declarations": [
         {
           "kind": "class",
-          "name": "_ScheduleCardFull"
+          "name": "ScheduleCardFull"
         }
       ],
       "top_level_functions": []
@@ -6553,6 +6640,64 @@
           ],
           "local_targets": [
             "lib/finance/per_diem_settlement.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/schedule_card_full_library_test.dart",
+      "bytes": 3492,
+      "sha256": "a6d2b4bec7aa37b55f1f2a79c2b88a1e66594cf68c019e3d8287a18de82d812c",
+      "owner": "test/schedule_card_full_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_data_models.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_enums.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_enums.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/schedule/schedule_card_full.dart';",
+          "uris": [
+            "package:andi_carpeta/schedule/schedule_card_full.dart"
+          ],
+          "local_targets": [
+            "lib/schedule/schedule_card_full.dart"
           ]
         }
       ],

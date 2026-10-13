@@ -53,6 +53,7 @@ import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';
 import 'teams/team_selector.dart' as team_selector;
+import 'schedule/schedule_card_full.dart' as schedule_card;
 import 'ui/branding_theme_helpers.dart' as branding_helpers;
 import 'admin/backup_codec.dart' as backup_codec;
 export 'ui/branding_theme_helpers.dart' show appBrandLogo;
@@ -90,7 +91,6 @@ part 'chat/group_chat_page.dart';
 part 'members/member_profile_page.dart';
 part 'members/members_directory_page.dart';
 part 'feedback/feedback_page.dart';
-part 'schedule/schedule_card_full.dart';
 part 'ui/page_shell.dart';
 part 'settings/settings_page.dart';
 part 'profile/profile_page.dart';
@@ -200,6 +200,40 @@ class _TeamSelector extends StatelessWidget {
         selected: selected,
         onChanged: onChanged,
         accent: sectionAccent('Echipe'),
+      );
+}
+
+class _ScheduleCardFull extends StatelessWidget {
+  final WorkSchedule schedule;
+  final List<Location> locations;
+  final List<LocationCategory> categories;
+  final List<CentralizerRecord> records;
+  final bool canEdit;
+  final VoidCallback onAdd;
+  final void Function(ScheduleItem) onRemove;
+  final void Function(int, int) onReorder;
+
+  const _ScheduleCardFull({
+    required this.schedule,
+    required this.locations,
+    required this.categories,
+    required this.records,
+    required this.canEdit,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onReorder,
+  });
+
+  @override
+  Widget build(BuildContext context) => schedule_card.ScheduleCardFull(
+        schedule: schedule,
+        locations: locations,
+        categories: categories,
+        records: records,
+        canEdit: canEdit,
+        onAdd: onAdd,
+        onRemove: onRemove,
+        onReorder: onReorder,
       );
 }
 

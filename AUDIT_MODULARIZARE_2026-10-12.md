@@ -528,6 +528,17 @@ Nu sunt schimbate programele, permisiunile, echipele stocate, datele/rules Fireb
 
 `lib/admin/backup_codec.dart` devine bibliotecă Dart independentă și importă explicit `cloud_firestore`. Logica recursivă de serializare a `Timestamp`/`GeoPoint`, a hărților și listelor este mutată textual; redenumirile la `encodeBackupValue`/`decodeBackupValue` permit exporturile. `main.dart` păstrează `_backupEncode`/`_backupDecode` ca adaptoare private, iar `admin_backup_actions.dart` și fluxurile existente nu își schimbă apelurile ori formatul.
 
-Test Dart direct nou verifică Timestamp și GeoPoint în structură imbricată, liste/scalari și date-marker necunoscute. Inventarul regenerat: **154 fișiere Dart, 65 parts, 89 biblioteci totale**, fără ținte lipsă, părți orfane, declarații duplicate sau cicluri. CI pentru noul SHA este necesar înaintea următorului lot. SDK Flutter/Dart nu este disponibil local.
+Test Dart direct nou verifică Timestamp și GeoPoint în structură imbricată, liste/scalari și date-marker necunoscute. Inventarul regenerat: **154 fișiere Dart, 65 parts, 89 biblioteci totale**, fără ținte lipsă, părți orfane, declarații duplicate sau cicluri. CI pe commitul `4579e6ab11f9b0ec9370feb28e8cee34f5c25483`, run [38476811197](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38476811197): **5/5 SUCCESS** (Python/security, Node, Functions, emulator Firestore, Flutter tests + web build). SDK Flutter/Dart nu este disponibil local.
 
 Nu s-au schimbat exportul/restaurarea, preflight-ul restaurării, colecțiile, datele/rules Firebase, permisiunile, finanțele, OCR, PDF/PV sau PR #29. Fără merge, deploy, APK publicat ori Firebase producție/billing. Modularizarea completă rămâne neterminată.
+
+
+## MOD-SCHEDULE-CARD-LIBRARY-20261014 — cardul complet de program standalone
+
+**Bază validată:** codec-ul de backup pe commitul `4579e6ab11f9b0ec9370feb28e8cee34f5c25483`, CI run [38476811197](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38476811197), **5/5 SUCCESS**.
+
+`lib/schedule/schedule_card_full.dart` devine bibliotecă Flutter independentă. Folosește importuri explicite pentru modele, categorii, badge, dată, accent și card informativ. `main.dart` păstrează `_ScheduleCardFull` cu același constructor pentru apelanții existenți și îl redirecționează la API-ul public `ScheduleCardFull`. Condițiile de editare/închidere, textul pentru progres, încrederea Learning, badge-urile, cheia de reorder, callbackurile și filtrul înregistrărilor finalizate rămân aceleași.
+
+Teste Flutter directe noi verifică randarea datei/propunerii/progresului, callbackurile add/remove/reorder și dezactivarea acțiunilor pe programe închise. Inventar regenerat: **155 fișiere Dart, 64 parts, 91 biblioteci totale**, fără ținte lipsă, parts orfane, declarații duplicate sau cicluri. Local: **85 teste Python PASS, 3 teste Node PASS**, audit repository PASS și `git diff --check` PASS; Flutter/Dart SDK indisponibil local. CI pe SHA-ul nou este obligatoriu înaintea următorului lot.
+
+Nu se schimbă datele, permisiunile, algoritmii de program/Learning sau operațiile Firestore. PageShell/tema globală, auth/sync, PDF/PV, Mapbox și PR #29 rămân neatinse. Fără merge/deploy/APK/Firebase producție/billing.
