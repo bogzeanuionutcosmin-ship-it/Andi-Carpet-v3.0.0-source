@@ -176,3 +176,13 @@ Bază: PR #23 commit `2e4a7312a526908ede4965a87bcb25bd8edcc9ee` (nu `main`), pen
 **Validări:** test nou `test/home_operational_write_actions_contract_test.py` pentru integritate structurală a celor 4 metode, permisiuni, colecții, Learning/cache/UI; CI pe HEAD nou pentru Python, Flutter unit/web, Node, Functions și emulator Firestore. Contractele statice nu substituie verificările autentificate pe dispozitiv. Acest lot păstrează `part of main.dart` ca etapă intermediară, nu face separare într-o bibliotecă independentă.
 
 **Livrare:** PR #28 rămâne Open/Draft, fără merge în main, deploy, date/rules/config producție, migrare financiară sau APK release. PR #15/#19/#20/#21 neatinse.
+
+## MOD-HOME-AUDIT-PERSISTENCE-20261013 — audit acțiuni și persistență batch
+
+**Bază:** PR #28 commit `d028686af286bc9b11bc5dcf284b44bb84bb284d`. Două metode existente, `_writeAuditRemote` și `_persistCoreData`, sunt mutate fără editări interne în `lib/home/home_audit_persistence.dart`, ca `extension _HomeAuditPersistence on _HomePageState` din aceeași bibliotecă Dart `main.dart`. Bloc mutat: 2485 caractere. `lib/home/home_page.dart`: 59875 → 57390 caractere. Reintroducerea blocului extras la poziția originală recreează exact sursa dinaintea acestui lot.
+
+**Invariante de risc:** `dispose` și anularea abonărilor rămân în HomePage, împreună cu `me`, `isAdmin`, `canEditTeam`, `userName`, `log`. Auditul și jurnalul Learning nu sunt schimbate, inclusiv capturarea existentă `catch (_)`; nu se pretinde că auditul este acum infailibil. `_persistCoreData` rămâne admin-only, diferențializează cacheurile și face `batch.commit` înainte de actualizarea celor 4 cache-uri în memorie. Nu s-au schimbat colecțiile, autorizațiile, paginarea, opțiunile de merge sau tratamentul eșecurilor. Testul `test/home_audit_persistence_contract_test.py` apără contractele structurale, nu execută date live.
+
+**Teste:** CI obișnuit Flutter unit/widget și web release, Python contracte, Node, Functions și Firestore emulator pe HEAD nou; rezultatul nu poate fi anticipat. Persistarea batch >500 documente și `catch (_)` din audit reprezintă eventuale riscuri de funcționalitate existente, nu se schimbă aici fără test și acord ulterior.
+
+**Restricții:** PR #28 rămâne Draft, fără merge în `main`, deploy, Firebase live/rules/config, plăți, versionare sau APK.
