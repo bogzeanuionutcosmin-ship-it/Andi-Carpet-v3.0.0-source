@@ -1517,6 +1517,16 @@ Bază: `92a62c6080594778bee9a44ece90de03dfd08deb`, actualizare documentară pent
 
 Structura Card/ListTile, cercul, iconul, stilul fontului și titlul/subtitlul rămân identice. Test Flutter direct verifică accentul și conținutul; test structural verifică adapterul și absența vechii clase din `summary_cards.dart`. `summary_cards.dart` rămâne part pentru `_StatCard`; nu eliminăm fișierul sau directiva pe baza unei căutări de nume. Nu sunt schimbate rapoarte financiare ori logică OCR/diurne.
 
-Inventar regenerat: 140 fișiere Dart (120 lib, 19 teste, 1 script), 75 parts, 65 biblioteci (45 lib, 19 teste, 1 script), fără ținte lipsă, orfani, duplicate în aceeași bibliotecă ori cicluri import/export. Local 152 teste Python, 1 Node, syntax Functions, 4 verificări pentru PDF/rutare, manifestul protejat de 117 fișiere și diff-check PASS. Flutter/Dart nu există local; CI pentru codul curent trebuie să valideze testul widget și toate cele 5 joburi.
+Inventar regenerat: 140 fișiere Dart (120 lib, 19 teste, 1 script), 75 parts, 65 biblioteci (45 lib, 19 teste, 1 script), fără ținte lipsă, orfani, duplicate în aceeași bibliotecă ori cicluri import/export. Local 152 teste Python, 1 Node, syntax Functions, 4 verificări pentru PDF/rutare, manifestul protejat de 117 fișiere și diff-check PASS. Flutter/Dart nu există local. CI run 38392826791 pe 834c58350910fa9f290c5fcb489f1d87188927ef a trecut 5/5 SUCCESS, inclusiv testul widget InfoCard și web build.
 
 PR #20 PDF/PV Magic/Million și fluxurile Android/web rămân byte-identice; PR #29 OCR/permisiuni financiare/diurne neatins. Modularizarea integrală nu este finalizată. Următorul audit: mici componente UI cu dependențe pure; auth/sync și PDF download/share nu se forțează fără contracte de stare/anulare compatibile.
+
+## MOD-STAT-CARD-LIBRARY-20261013 — card statistic independent
+
+Bază: InfoCard 834c58350910fa9f290c5fcb489f1d87188927ef, CI run 38392826791 5/5 SUCCESS. _StatCard din Dashboard/Admin devine ui/stat_card.dart, cu accent și widgetul leading injectate. Adapterul privat din main păstrează constructorul, parametrii și aserțiunea originale; calculează sectionAccent(title) și construiește același appAssetIcon/CircleAvatar înainte de a delega.
+
+Corpul independent păstrează lățimea 230, raza 18, gradientul, paddingul 18, spațierile și stilurile. Test Flutter direct verifică aspectul și leading; test structural confirmă injectarea și adapterul. După extragerea InfoCard, summary_cards.dart conținea doar această clasă și directiva part of; analiza directă a fișierului a confirmat că nu există alte declarații sau efecte. Clasa este mutată, iar fișierul gol și directiva sa sunt eliminate ca rezultat demonstrat al conversiei, nu pe baza căutării lexicale a referințelor.
+
+Inventar: 141 Dart (120 lib, 20 teste, 1 script), 74 parts, 67 biblioteci (46 lib, 20 test, 1 script), zero lipsuri/orfani/duplicate/cicluri. Local 152 Python, 1 Node, 4 verificări PDF/rutare și 117 hashuri protejate PASS; CI pentru codul acestui lot urmează și trebuie să treacă toate cele 5 joburi.
+
+PR #20 PDF/PV Magic/Million/download/web/Android și PR #29 OCR/financial/diurne rămân neatinse. Modularizarea integrală nu este finalizată. Următoarea analiză după CI: componente UI mici cu dependențe clare, apoi auth/sync numai prin adaptere explicite.

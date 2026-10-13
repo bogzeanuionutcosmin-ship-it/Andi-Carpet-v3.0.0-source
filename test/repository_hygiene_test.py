@@ -342,10 +342,13 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_summary_cards_extracted_preserving_values_and_actions(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        module = (ROOT / "lib/ui/summary_cards.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/stat_card.dart").read_text(encoding="utf-8")
         money = (ROOT / "lib/ui/money_card.dart").read_text(encoding="utf-8")
-        self.assertEqual(main.count("part 'ui/summary_cards.dart';"), 1)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("part 'ui/summary_cards.dart';", main)
+        self.assertIn("import 'ui/stat_card.dart' as stat_card;", main)
+        self.assertIn("class _StatCard extends StatelessWidget", main)
+        self.assertIn("accent: accent", main)
+        self.assertIn("leading: leading", main)
         self.assertIn("import 'ui/money_card.dart' as money_card;", main)
         self.assertIn("class _MoneyCard extends StatelessWidget", main)
         self.assertIn("money_card.MoneyCard(title: title, value: value, onTap: onTap)", main)
@@ -358,25 +361,28 @@ class RepositoryHygieneTests(unittest.TestCase):
             hashlib.sha256(normalized_money.encode("utf-8")).hexdigest(),
             "e7326bf0fe3d3798ec246f094e6d53f4221abc08a7942b94b1438b80ad77c16b",
         )
-        for name in ("_StatCard",):
+        for name in ("StatCard",):
             declaration = "class " + name + " extends StatelessWidget"
             self.assertNotIn(declaration, main)
             self.assertEqual(module.count(declaration), 1)
         for contract in ("assert(icon != null || asset != null)",
-                         "appAssetIcon(", "sectionAccent(title)"):
+                         "appAssetIcon(", "sectionAccent(title)",
+                         "accent: accent", "leading: leading"):
+            self.assertIn(contract, main)
+        for contract in ("accent.withValues(alpha: .16)", "BorderRadius.circular(18)",
+                         "SizedBox(", "FontWeight.w900"):
             self.assertIn(contract, module)
         self.assertIn("value.toStringAsFixed(2)", money)
         self.assertIn("onTap:onTap", money)
 
     def test_info_card_extracted_with_accent_adapter(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        summary = (ROOT / "lib/ui/summary_cards.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/info_card.dart").read_text(encoding="utf-8")
         self.assertIn("import 'ui/info_card.dart' as info_card;", main)
         self.assertIn("class _InfoCard extends StatelessWidget", main)
         self.assertIn("accent: sectionAccent(title)", main)
         self.assertIn("info_card.InfoCard(", main)
-        self.assertNotIn("class _InfoCard extends StatelessWidget", summary)
+        self.assertNotIn("class _InfoCard extends StatelessWidget", module)
         self.assertIn("import 'package:flutter/material.dart';", module)
         self.assertEqual(module.count("class InfoCard extends StatelessWidget"), 1)
         for contract in ("accent.withValues(alpha: .14)", "Icon(icon, color: accent)",

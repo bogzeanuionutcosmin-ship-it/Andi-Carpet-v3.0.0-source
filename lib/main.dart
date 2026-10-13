@@ -55,6 +55,7 @@ import 'ui/icon_badge_catalog.dart';
 import 'ui/empty_state.dart' as empty_state;
 import 'ui/money_card.dart' as money_card;
 import 'ui/info_card.dart' as info_card;
+import 'ui/stat_card.dart' as stat_card;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
@@ -85,7 +86,6 @@ part 'feedback/feedback_page.dart';
 part 'schedule/schedule_card_full.dart';
 part 'teams/team_selector.dart';
 part 'ui/page_shell.dart';
-part 'ui/summary_cards.dart';
 part 'settings/settings_page.dart';
 part 'profile/profile_page.dart';
 part 'centralizer/centralizer_page.dart';
@@ -173,6 +173,31 @@ class _MoneyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       money_card.MoneyCard(title: title, value: value, onTap: onTap);
+}
+
+class _StatCard extends StatelessWidget {
+  final String title, value;
+  final IconData? icon;
+  final String? asset;
+  const _StatCard({required this.title, required this.value, this.icon, this.asset})
+      : assert(icon != null || asset != null);
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = sectionAccent(title);
+    final leading = asset != null
+        ? appAssetIcon(asset!, size: 24, accent: accent, selected: true)
+        : CircleAvatar(
+            backgroundColor: accent.withValues(alpha: .16),
+            child: Icon(icon, color: accent),
+          );
+    return stat_card.StatCard(
+      title: title,
+      value: value,
+      accent: accent,
+      leading: leading,
+    );
+  }
 }
 
 class _InfoCard extends StatelessWidget {
