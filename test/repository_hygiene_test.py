@@ -836,7 +836,10 @@ class RepositoryHygieneTests(unittest.TestCase):
                                 "_startNotificationSync", "_startChatSync", "_startSettingsSync"])
         self.assertNotIn(".snapshots()", core)
         sync = home.split("  void _startAuditSync(", 1)[1].split("  Future<void> _writeLearningEvent(", 1)[0]
-        self.assertEqual(sync.count("_coreSubscriptions.add("), 15)
+        listeners = (ROOT / "lib/home/home_sync_listeners.dart").read_text(encoding="utf-8")
+        self.assertEqual(sync.count("_coreSubscriptions.add("), 5)
+        self.assertEqual(listeners.count("_coreSubscriptions.add("), 10)
+        self.assertEqual(sync.count("_coreSubscriptions.add(") + listeners.count("_coreSubscriptions.add("), 15)
         self.assertIn("for (final sub in _coreSubscriptions) { sub.cancel(); }", home)
         self.assertIn("if (isAdmin) {\n      _startAuditSync(db);", core)
         self.assertIn("_startFinancialSync();", core)
@@ -848,8 +851,11 @@ class RepositoryHygieneTests(unittest.TestCase):
                   ("_startNotificationSync", "_startChatSync", ["where('userId', isEqualTo: currentUserId)", "_notificationsPrimed", "_knownNotificationIds", "_allowPersonalAlert", "Notificări: $e"]),
                   ("_startChatSync", "_startSettingsSync", ["where('recipientId', isEqualTo: currentUserId)", "orderBy('createdAt', descending: true).limit(20)", "mandatoryChatAlert", "_hiddenUserIds", "_recomputeGroupUnread();", "Chat comun: $e"]),
                   ("_startSettingsSync", "_startCoreSync", ["doc('uiSettings')", "_runAutomaticMaintenance()", "Setări UI: $e"])]
+        listeners = (ROOT / "lib/home/home_sync_listeners.dart").read_text(encoding="utf-8")
         for name, following, contracts in groups:
-            group = home.split("  void " + name + "(FirebaseFirestore db) {", 1)[1].split("  void " + following, 1)[0]
+            group = listeners.split("  void " + name + "(FirebaseFirestore db) {", 1)[1]
+            if following != "_startCoreSync":
+                group = group.split("  void " + following + "(FirebaseFirestore db) {", 1)[0]
             for contract in contracts:
                 with self.subTest(group=name, contract=contract):
                     self.assertIn(contract, group)
