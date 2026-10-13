@@ -378,3 +378,10 @@ CI run `38426801822` pe `5b2b3910ee2e3e5d5cb9d7145c7ff45744393838`: Python/secur
 ## MOD-APP-BACKDROP-WIDGET-TEST-SETTLE-20261013
 
 CI run `38427180232`: Python/security, Node, Functions și Firestore emulator **4/5 PASS**; Flutter a executat 84 teste Python și 84 teste Flutter înainte să eșueze numai testul AppBackdrop pe fundal dark, deoarece animația de temă nu se stabilizase după înlocuirea MaterialApp. Am adăugat `pumpAndSettle()` înainte de assert, fără schimbări în componentă sau comportamentul aplicației. CI integral pentru corecție este în așteptare; nu avansăm lotul până la 5/5.
+
+
+## MOD-APP-BACKDROP-CI-GREEN-20261013
+
+Lotul AppBackdrop este validat pe commitul cod `64ab4000be91e3c3e0919b1419f35eec76be1a97` prin workflow run `38427425339`: **5/5 joburi SUCCESS** (Python/security, Node projection, Firestore emulator, Firebase Functions, Flutter tests + web build). Flutter suite/widget și verificarea bibliotecilor pure au trecut; web build a trecut. Corecțiile din acest lot au fost numai la snapshotul de inventar și la determinismul/finder-ele testului; componenta și comportamentul de producție nu s-au schimbat după extragere.
+
+Inventar final: 142 Dart (120 lib, 21 tests, 1 script), 73 parts, 69 biblioteci; zero missing/orphan/duplicate/cicluri. `AppBackdrop` este bibliotecă independentă, iar `_AppBackdrop` menține adapterul de setări și callsite-urile. `PageShell` rămâne part din cauza brandingului global mutabil. Următorul lot exact, după audit read-only: evaluarea widgetului vizual din `install_app_buttons.dart` ca bibliotecă cu callbackuri, păstrând funcțiile și contractele Android/web în wrapperul existent. Nu se modifică fluxul de instalare/launch.
