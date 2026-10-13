@@ -1191,3 +1191,11 @@ Continuați cu **o singură propunere** nouă despre notificări pentru confirma
 - **FĂRĂ modificări reale:** doar documentație și audit read-only, fără Flutter, Firebase/Firestore Rules, Cloud Functions, Storage, date, build, APK ori deploy. Deciziile sunt funcționale și definitive; se implementează ulterior la etapa permisă, cu PR și teste.
 
 **Pas conversațional:** după închiderea regulilor de chat, se poate reveni la propunerile de notificări câte una (propunerile 1 și 2 sunt deja confirmate), fără a le redeschide sau a confunda fundalul partajat cu alegerea individuală.
+
+## 134. Propunerea 3 CONFIRMATĂ — mesaje văzute în chatul deschis fără popup/sunet/badge (2026-10-13)
+
+**Proprietarul a răspuns «Confirm» la propunerea 3 despre notificările de chat.** Pentru Chat live și conversații private: dacă ecranul acelei conversații este vizibil și mesajul nou este **realmente văzut**, acesta apare fără un al doilea popup, fără sunet de notificare și fără să crească numărul de necitite. Mesajele din **alte** conversații notifică normal.
+
+**Nu echivala simpla deschidere cu citirea** când utilizatorul este derulat la mesaje vechi, aplicația e minimizată ori chatul nu e vizibil. Marker/cursor de citire persistent pe server, monoton, inclusiv pentru mesajele noi în timp ce chatul este activ; mesaje proprii excluse, badge corect după F5/relogin/două dispozitive. Deduplicare Firestore/FCM și comportament separat foreground/background. Testare reală Flutter/Firestore/FCM rămâne pentru etapa finală autorizată.
+
+**Documente:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md` secțiunea 14 și `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` secțiunea 54. Nu a fost modificat codul aplicației, regulile, datele ori produsul publicat. **Continuați cu propunerea 4 despre notificări, una singură, pentru răspuns Da/Nu/altă variantă.**
