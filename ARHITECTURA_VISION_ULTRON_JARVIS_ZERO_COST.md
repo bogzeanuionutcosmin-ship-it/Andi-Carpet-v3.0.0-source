@@ -82,3 +82,13 @@ Au fost verificate prin citire directă pe ramura de modularizare PR #17 (`refac
 - `pubspec.yaml` există; pachetele și compatibilitatea modelului local necesită audit separat, nu le considerăm deja alese.
 
 **Concluzie audit preliminar:** există piese reale de Learning pentru durate, diagnostic push și bootstrap, dar nu există dovezi suficiente pentru a declara Ultron/Jarvis/Vision deja «fuzionate» sau GPS Learning complet. Urmează inventarul exact al fișierelor/referințelor și contractelor înainte de crearea serviciilor Vision.
+
+## 10. Decizia arhitecturală confirmată explicit: Vision autonom, AI online opțional (2026-10-13)
+
+După explicația directă «AI local vs AI online», proprietarul a răspuns **«Ok, de acord»** la recomandarea de a construi Vision autonom, necondiționat de un model cloud plătit, dar extensibil pe viitor.
+
+**Consecințe obligatorii pentru design:** contract abstract pentru un provider opțional AI; implementare implicită fără model extern, cu reguli, diagnostic și explicații locale; timeout, circuit breaker și fallback pentru providerul online dacă va fi vreodată aprobat; zero apeluri la API extern în configurația implicită; niciun token/secret în APK ori client web; niciun cost nou sau modificare de billing fără aprobarea expresă a proprietarului; cererile financiare, START/STOP și datele de producție rămân supuse autorizării și auditului.
+
+**Criteriu de acceptare distinct:** o instalare fără nicio cheie AI și fără conectare la un model lingvistic trebuie să poată folosi funcțiile de bază AndiCarpet și componentele locale Vision prevăzute; simularea indisponibilității AI cloud nu poate bloca operațiunile. Se vor testa funcțiile efectiv implementate înainte de a pretinde disponibilitatea lor.
+
+**Status:** decizie documentată; fără implementare, integrare API, contract de plată ori deploy.
