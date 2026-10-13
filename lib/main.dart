@@ -50,6 +50,7 @@ import 'models/location_category_helpers.dart';
 export 'models/location_category_helpers.dart';
 import 'models/permission_status_labels.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;
+import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 export 'models/permission_status_labels.dart';
 
 part 'ui/dashboard_map_components.dart';
@@ -94,7 +95,6 @@ part 'expenses/expense_page.dart';
 part 'expenses/expense_settlement_actions.dart';
 part 'expenses/expense_per_diem_actions.dart';
 part 'expenses/expense_document_actions.dart';
-part 'admin/admin_navigation_catalog.dart';
 part 'admin/backup_codec.dart';
 part 'admin/admin_backup_actions.dart';
 part 'admin/admin_team_actions.dart';
@@ -155,6 +155,10 @@ Future<double?> estimateGraphRoadDistanceKm(
     get: (uri) => http.get(uri),
   );
 }
+
+IconData _adminSectionIcon(int index) => admin_navigation.adminSectionIcon(index);
+String _adminSectionGroup(int index) => admin_navigation.adminSectionGroup(index);
+String? _adminSectionAsset(int index) => admin_navigation.adminSectionAsset(index);
 
 // PDF composition adapters preserve existing private callers in PDF and JPEG exports.
 class _ApplicationPdfFonts implements pdf_format.PdfFontProvider {

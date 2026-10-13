@@ -1,16 +1,17 @@
 {
   "format_version": 1,
-  "dart_files": 133,
+  "dart_files": 134,
   "lib_dart_files": 118,
-  "test_dart_files": 14,
+  "test_dart_files": 15,
   "script_dart_files": 1,
-  "parts": 78,
-  "libraries": 55,
+  "parts": 77,
+  "libraries": 57,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
   "duplicate_declarations_in_library": [],
   "library_edges": {
+    "lib/admin/admin_navigation_catalog.dart": [],
     "lib/download_file.dart": [
       "lib/download_file_stub.dart",
       "lib/download_file_web.dart"
@@ -57,6 +58,7 @@
       "lib/utils/operational_dates.dart"
     ],
     "lib/main.dart": [
+      "lib/admin/admin_navigation_catalog.dart",
       "lib/download_file.dart",
       "lib/firebase_options.dart",
       "lib/home/seed_operational_locations.dart",
@@ -136,6 +138,9 @@
       "lib/models/location_type_mapping.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
+    ],
+    "test/admin_navigation_catalog_test.dart": [
+      "lib/admin/admin_navigation_catalog.dart"
     ],
     "test/core_model_libraries_test.dart": [
       "lib/learning/duration_estimates.dart",
@@ -446,26 +451,24 @@
     },
     {
       "path": "lib/admin/admin_navigation_catalog.dart",
-      "bytes": 1081,
-      "sha256": "659584259bec25a8ef3a93ebcfbf23020e206ad45df53b150c9a1df3b67d0fa7",
-      "owner": "lib/main.dart",
+      "bytes": 1094,
+      "sha256": "f26510ca528493248918ab861ca053f6045d1817de9e28b7546e41e8671fe581",
+      "owner": "lib/admin/admin_navigation_catalog.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
           ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
+          "local_targets": []
         }
       ],
       "declarations": [],
       "top_level_functions": [
-        "_adminSectionIcon",
-        "_adminSectionGroup",
-        "_adminSectionAsset"
+        "adminSectionIcon",
+        "adminSectionGroup",
+        "adminSectionAsset"
       ]
     },
     {
@@ -2038,8 +2041,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 17023,
-      "sha256": "afd2daeb0e25b4172f50bf7aa498de6f6971b1c0466b8a4302d0c592f88cbf5d",
+      "bytes": 17296,
+      "sha256": "fd504bcdfae2a398ef9d76f0f54e47f23998372ee037058139ad48168f51dde6",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2513,6 +2516,16 @@
           ]
         },
         {
+          "kind": "import",
+          "text": "import 'admin/admin_navigation_catalog.dart' as admin_navigation;",
+          "uris": [
+            "admin/admin_navigation_catalog.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_navigation_catalog.dart"
+          ]
+        },
+        {
           "kind": "export",
           "text": "export 'models/permission_status_labels.dart';",
           "uris": [
@@ -2944,16 +2957,6 @@
         },
         {
           "kind": "part",
-          "text": "part 'admin/admin_navigation_catalog.dart';",
-          "uris": [
-            "admin/admin_navigation_catalog.dart"
-          ],
-          "local_targets": [
-            "lib/admin/admin_navigation_catalog.dart"
-          ]
-        },
-        {
-          "kind": "part",
           "text": "part 'admin/backup_codec.dart';",
           "uris": [
             "admin/backup_codec.dart"
@@ -3311,6 +3314,9 @@
       ],
       "top_level_functions": [
         "estimateGraphRoadDistanceKm",
+        "_adminSectionIcon",
+        "_adminSectionGroup",
+        "_adminSectionAsset",
         "_buildPdfTheme",
         "_safeFilePart",
         "_pdfDate",
@@ -5014,6 +5020,44 @@
       "declarations": [],
       "top_level_functions": [
         "check",
+        "main"
+      ]
+    },
+    {
+      "path": "test/admin_navigation_catalog_test.dart",
+      "bytes": 1871,
+      "sha256": "5b699fabb84987d5a0b6a4af9fa7182e12e6f172752dcf40dd8072c0cbd16b24",
+      "owner": "test/admin_navigation_catalog_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/admin/admin_navigation_catalog.dart';",
+          "uris": [
+            "package:andi_carpeta/admin/admin_navigation_catalog.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_navigation_catalog.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
         "main"
       ]
     },

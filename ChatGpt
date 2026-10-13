@@ -1476,3 +1476,11 @@ Lot efectuat: `home/home_location_seed.dart` a devenit biblioteca independentă 
 Manifestul protejat a trecut local, inclusiv PV Magic `eaf7be7d1ff77aafaa328c1ffd08c8e3c668f689104be432436cf5fb40eaaa6b`. PV Million e prezent numai în PR #20 (`3bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23`, 1.399.921 bytes), nu a fost adăugat aici.
 
 Inventar după extragere: **78 parts**, **55 biblioteci totale** (40 lib, 14 teste Dart, 1 script), 133 fișiere Dart; zero ținte lipsă/parts orfane/duplicate/cicluri. Local 151 Python PASS, 1 Node PASS, Functions syntax + diff-check PASS. Flutter/Dart lipsește local. CI run `38388145518` pe `f6fe0370dd66a6694c172a0ad854939a4b8e57d8`: toate cele 5 joburi SUCCESS, inclusiv cele 2 teste Dart ale catalogului și web build. Audit complet/modularizare integrală neîncheiate. Următorul candidat structural: audit Home pentru logică pură cu dependențe independente; PR #29/OCR/financiar neatins.
+
+## Continuare — catalog navigare Admin
+
+Commitul documentar după lotul seed `2ebb77ca8c09a9511995fa51aa6203e67cb91c69` are CI run `38388469494`, 5/5 SUCCESS. Următorul component ales a fost `admin/admin_navigation_catalog.dart`: metadate UI pure, fără State/Firebase. A devenit bibliotecă explicită Material cu icon/grup/asset; `main.dart` păstrează wrapper-ele private originale și toate callsite-urile rămân neschimbate. Test Dart verifică 17 intrări și comportamentul indexului invalid; Python verifică importurile, unicitatea și wrapper-ele.
+
+Inventar regenerat: 134 fișiere Dart, **77 parts**, 57 biblioteci totale (41 lib, 15 teste, 1 script), fără missing/orphan/duplicate/cicluri. Local 151 Python PASS, 1 Node PASS, Functions syntax, dependency audit și diff-check PASS. Flutter SDK nu este disponibil local. CI-ul noului commit se verifică acum; nu se pornește alt lot de cod înainte de 5/5.
+
+Blocajul PDF rămâne: contractele download PR #28 (`Future<void>`) și PR #20 anulabil (`Future<bool>`) diferă; generatorii depind de helpers private, rutare și helperul partajat cu JPEG. Nu s-au schimbat rapoartele, fluxurile Android/web, assetul Magic ori nimic din #20/#29. Următorul candidat după CI este auditul Home/sync pentru componente fără stare privată; nu se forțează fișierele de sincronizare/auth cu state/callbacks complexe.

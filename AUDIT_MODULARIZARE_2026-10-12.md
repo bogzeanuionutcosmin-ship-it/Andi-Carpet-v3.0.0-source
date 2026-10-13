@@ -235,6 +235,10 @@ Nu s-a forțat izolarea `pdf_reports.dart`: PR #28 are download PDF `Future<void
 
 Inventar regenerat: 133 fișiere Dart, 78 parts și 55 biblioteci; fără missing/orphan/duplicate/cicluri import-export. 151 teste Python, 1 Node, syntax Functions și diff-check PASS local. CI run `38388145518` pe `f6fe0370dd66a6694c172a0ad854939a4b8e57d8`: 5/5 SUCCESS, incluzând cele două teste Flutter noi și web build. Modularizarea completă rămâne nefinalizată.
 
+Continuare structurală: `admin/admin_navigation_catalog.dart` devine bibliotecă Material independentă de main; wrapper-ele private cu semnăturile vechi rămân în main pentru callsite-urile Admin/dashboard. Catalogul nu accesează stare/Firebase. Test Dart acoperă toate 17 intrările icon/grup/asset; testul static cere adapterele și importul explicit. Inventarul actualizat: 134 Dart / 77 parts / 57 biblioteci; zero ținte lipsă/orfani/duplicate/cicluri. Local 151 Python, 1 Node, `node --check`, audit și diff-check PASS. CI pentru commitul acestui lot este în așteptare; nu continuăm la alt lot de cod până la 5/5 SUCCESS.
+
+PR #20 rămâne separat. Download anulabil (`Future<bool>`) și share nu se aplatizează la contractul PDF #28 (`Future<void>`); rapoartele și PV-urile rămân protejate. PR #29 și regulile/datele sale nu se modifică.
+
 ## MOD-SCREEN-ACTIONS-CI-FIX-20261013
 
 CI run 38372790209 pe `23d88a4cad17eb21ae9e3af34e4023641a796928`: 4 joburi SUCCESS, Flutter FAILURE la compilarea widget_test, înainte de build web. Cauză exactă: în extensia Decont, `const DropdownMenuItem(value: _legacySettlementKey, ...)` nu poate rezolva implicit constanta statică a State în context const. Corecție strictă: `value: _ExpensePageState._legacySettlementKey`; aceeași valoare/instanță const/comportament, fără schimbare business. Nu eliminăm const și nu schimbăm identificatorul legacy.

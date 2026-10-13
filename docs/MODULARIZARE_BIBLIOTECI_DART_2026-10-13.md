@@ -126,3 +126,13 @@ Bază de lucru verificată: PR #28 `a01e8c98e48b023e325012deabb3735290563895` (a
 **Validare:** local 151 teste Python PASS, 1 test Node PASS, `node --check functions/index.js` PASS, `git diff --check` PASS; scriptul de audit Dart a regenerat inventarul fără anomalii. Flutter/Dart lipsește local. CI run `38388145518` pe SHA-ul lotului `f6fe0370dd66a6694c172a0ad854939a4b8e57d8`: toate cele 5 joburi SUCCESS (Flutter tests + web, Functions, Python, Node, Firestore emulator); include cele două teste Dart ale catalogului.
 
 **Rămâne:** PDF download/share/runtime și 78 parts, inclusiv Mapbox/UI/sync. Pasul următor sigur: audit static al modulelor Home care nu au stare privată și callbackuri comune; pentru PDF, proiectarea artifactului de generare + adaptere per ramură, fără atingerea fluxurilor până la probe Android/web. Modularizarea completă NU este finalizată.
+
+## MOD-ADMIN-NAV-CATALOG-20261013 — navigație admin independentă
+
+Validarea lotului precedent: CI run `38388145518` pe `f6fe0370dd66a6694c172a0ad854939a4b8e57d8`, **5/5 SUCCESS**. Commitul exclusiv documentar `2ebb77ca8c09a9511995fa51aa6203e67cb91c69` a fost și el validat de run `38388469494`, **5/5 SUCCESS**.
+
+`admin/admin_navigation_catalog.dart` devine bibliotecă cu import explicit Material; funcțiile pure index→icon/grup/asset rămân aceleași. În main se păstrează wrapper-ele private `_adminSectionIcon`, `_adminSectionGroup`, `_adminSectionAsset`, deci callsite-urile din Admin panel și dashboard nu se schimbă. Nu este un domain package fără Flutter: biblioteca este separată de main/Firebase, dar IconData/Icons cer Material. Testele Dart verifică toate cele 17 poziții, grupurile și asseturile, plus indexul invalid; testul Python verifică limitele import/export și wrapper-ele.
+
+Inventar curent: 134 Dart (118 lib, 15 teste, 1 script), **77 parts**, **57 biblioteci totale** (41 lib, 15 test, 1 script). Snapshot fără ținte lipsă, orphan parts, duplicate în aceeași bibliotecă sau cicluri. Local: 151 Python PASS, 1 Node PASS, Functions syntax, snapshot și diff-check PASS; Flutter nu este instalat local. CI pe commitul acestui lot urmează să ruleze toate cele 5 joburi înaintea unui lot nou.
+
+PDF și PR #29 rămân neatinse. Riscul/limitarea PDF download/share documentată mai sus rămâne; următorul candidat este analiza Home/sync cu dependențe private, fără a forța conversia. Modularizarea integrală NU este finalizată.

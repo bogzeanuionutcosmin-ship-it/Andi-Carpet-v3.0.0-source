@@ -1095,10 +1095,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         admin = (ROOT / "lib/admin/admin_panel_page.dart").read_text(encoding="utf-8")
         catalog = (ROOT / "lib/admin/admin_navigation_catalog.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'admin/admin_navigation_catalog.dart';", main)
-        for symbol in ("_adminSectionIcon(", "_adminSectionGroup(", "_adminSectionAsset("):
+        self.assertNotIn("part 'admin/admin_navigation_catalog.dart';", main)
+        self.assertIn("import 'admin/admin_navigation_catalog.dart' as admin_navigation;", main)
+        self.assertNotIn("part of", catalog)
+        self.assertIn("import 'package:flutter/material.dart';", catalog)
+        for symbol in ("adminSectionIcon(", "adminSectionGroup(", "adminSectionAsset("):
             self.assertIn(symbol, catalog)
+        for symbol in ("_adminSectionIcon(", "_adminSectionGroup(", "_adminSectionAsset("):
             self.assertIn(symbol, admin)
+        for wrapper in (
+            "IconData _adminSectionIcon(int index) => admin_navigation.adminSectionIcon(index);",
+            "String _adminSectionGroup(int index) => admin_navigation.adminSectionGroup(index);",
+            "String? _adminSectionAsset(int index) => admin_navigation.adminSectionAsset(index);",
+        ):
+            self.assertIn(wrapper, main)
         self.assertNotIn("IconData _icon(int i)", admin)
         self.assertNotIn("String _groupFor(int i)", admin)
         self.assertNotIn("String? _adminSectionAsset(int i)", admin)
