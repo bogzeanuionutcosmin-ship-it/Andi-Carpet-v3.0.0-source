@@ -31,6 +31,7 @@ import 'mapbox_services.dart';
 import 'map/graph_route_calculations.dart';
 export 'map/graph_route_calculations.dart';
 import 'map/graph_road_distance.dart' as graph_routing;
+import 'reports/pdf_report_format.dart' as pdf_format;
 import 'utils/graph_names.dart';
 export 'utils/graph_names.dart';
 import 'models/app_data_models.dart';
@@ -66,7 +67,6 @@ part 'ui/section_visual_helpers.dart';
 part 'ui/app_backdrop.dart';
 part 'ui/icon_badge_catalog.dart';
 part 'ui/interactive_member_badges.dart';
-part 'reports/pdf_format_helpers.dart';
 part 'ui/app_root_theme.dart';
 part 'ui/app_information_page.dart';
 part 'notifications/sms_gateway_card.dart';
@@ -155,6 +155,25 @@ Future<double?> estimateGraphRoadDistanceKm(
     get: (uri) => http.get(uri),
   );
 }
+
+// PDF composition adapters preserve existing private callers in PDF and JPEG exports.
+class _ApplicationPdfFonts implements pdf_format.PdfFontProvider {
+  @override
+  Future<pw.Font> regular() => PdfGoogleFonts.openSansRegular();
+
+  @override
+  Future<pw.Font> bold() => PdfGoogleFonts.openSansBold();
+
+  @override
+  Future<pw.Font> italic() => PdfGoogleFonts.openSansItalic();
+}
+
+Future<pw.ThemeData> _buildPdfTheme() =>
+    pdf_format.buildPdfTheme(_ApplicationPdfFonts());
+
+String _safeFilePart(String text) => pdf_format.safePdfFilePart(text);
+
+String _pdfDate(DateTime date) => pdf_format.formatPdfDate(date, two);
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';

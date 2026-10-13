@@ -611,18 +611,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("iconKey = this.badgeKeys.first;", module)
         self.assertIn("permissions = permissions ?? <String>{}", module)
 
-    def test_pdf_format_helpers_are_extracted(self):
+    def test_pdf_format_helpers_keep_private_adapters_and_explicit_font_provider(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        module = (ROOT / "lib/reports/pdf_format_helpers.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'reports/pdf_format_helpers.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
-        for symbol in ("Future<pw.ThemeData> _buildPdfTheme(",
-                       "String _safeFilePart(", "String _pdfDate("):
-            self.assertNotIn(symbol, main)
+        adapter = main
+        module = (ROOT / "lib/reports/pdf_report_format.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'reports/pdf_report_format.dart' as pdf_format;", main)
+        self.assertNotIn("part 'reports/pdf_format_helpers.dart';", main)
+        self.assertNotIn("part of ", adapter + module)
+        self.assertIn("abstract interface class PdfFontProvider", module)
+        for symbol in ("Future<pw.ThemeData> buildPdfTheme(", "String safePdfFilePart(", "String formatPdfDate("):
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("PdfGoogleFonts.openSansRegular()", module)
-        self.assertIn("PdfGoogleFonts.openSansBold()", module)
-        self.assertIn("PdfGoogleFonts.openSansItalic()", module)
+        for symbol in ("Future<pw.ThemeData> _buildPdfTheme()", "String _safeFilePart(", "String _pdfDate("):
+            self.assertEqual(main.count(symbol), 1)
+        for font in ("PdfGoogleFonts.openSansRegular()", "PdfGoogleFonts.openSansBold()", "PdfGoogleFonts.openSansItalic()"):
+            self.assertIn(font, main)
 
     def test_app_root_theme_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

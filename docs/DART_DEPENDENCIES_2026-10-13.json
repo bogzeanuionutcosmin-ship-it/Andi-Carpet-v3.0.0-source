@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 131,
+  "dart_files": 132,
   "lib_dart_files": 118,
-  "test_dart_files": 12,
+  "test_dart_files": 13,
   "script_dart_files": 1,
-  "parts": 80,
-  "libraries": 51,
+  "parts": 79,
+  "libraries": 53,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -67,6 +67,7 @@
       "lib/models/permission_status_labels.dart",
       "lib/ocr_parser.dart",
       "lib/ocr_service.dart",
+      "lib/reports/pdf_report_format.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
     ],
@@ -118,6 +119,7 @@
     "lib/ocr_service_mobile.dart": [],
     "lib/ocr_service_stub.dart": [],
     "lib/ocr_service_web.dart": [],
+    "lib/reports/pdf_report_format.dart": [],
     "lib/utils/graph_names.dart": [],
     "lib/utils/operational_dates.dart": [
       "lib/models/app_data_models.dart"
@@ -155,6 +157,9 @@
     ],
     "test/ocr_parser_test.dart": [
       "lib/ocr_parser.dart"
+    ],
+    "test/pdf_report_format_test.dart": [
+      "lib/reports/pdf_report_format.dart"
     ],
     "test/per_diem_ledger_edge_cases_test.dart": [
       "lib/finance/per_diem_ledger.dart"
@@ -2017,8 +2022,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 16347,
-      "sha256": "81a16bc05c739d4fbec7c0cc60e931ab319f872322f747f38946064c42620553",
+      "bytes": 16984,
+      "sha256": "1334044995b95c827b510c9880b0bca64df9c21cdfe63d39686558beba937637",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2299,6 +2304,16 @@
           ],
           "local_targets": [
             "lib/map/graph_road_distance.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'reports/pdf_report_format.dart' as pdf_format;",
+          "uris": [
+            "reports/pdf_report_format.dart"
+          ],
+          "local_targets": [
+            "lib/reports/pdf_report_format.dart"
           ]
         },
         {
@@ -2639,16 +2654,6 @@
           ],
           "local_targets": [
             "lib/ui/interactive_member_badges.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'reports/pdf_format_helpers.dart';",
-          "uris": [
-            "reports/pdf_format_helpers.dart"
-          ],
-          "local_targets": [
-            "lib/reports/pdf_format_helpers.dart"
           ]
         },
         {
@@ -3282,9 +3287,17 @@
           ]
         }
       ],
-      "declarations": [],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "_ApplicationPdfFonts"
+        }
+      ],
       "top_level_functions": [
         "estimateGraphRoadDistanceKm",
+        "_buildPdfTheme",
+        "_safeFilePart",
+        "_pdfDate",
         "main",
         "idNow"
       ]
@@ -4305,27 +4318,25 @@
       "top_level_functions": []
     },
     {
-      "path": "lib/reports/pdf_format_helpers.dart",
-      "bytes": 538,
-      "sha256": "47d45f8d18fa516a61926a9858a7549dc7879fc7c97703104e6bcf9e7de13ca6",
-      "owner": "lib/main.dart",
+      "path": "lib/reports/pdf_report_format.dart",
+      "bytes": 768,
+      "sha256": "81cf18637523cab42c0101e91b90a880bb53de7c4f77a1ae44bf6b9e6879d493",
+      "owner": "lib/reports/pdf_report_format.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:pdf/widgets.dart' as pw;",
           "uris": [
-            "../main.dart"
+            "package:pdf/widgets.dart"
           ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
+          "local_targets": []
         }
       ],
       "declarations": [],
       "top_level_functions": [
-        "_buildPdfTheme",
-        "_safeFilePart",
-        "_pdfDate"
+        "buildPdfTheme",
+        "safePdfFilePart",
+        "formatPdfDate"
       ]
     },
     {
@@ -5292,6 +5303,53 @@
         }
       ],
       "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/pdf_report_format_test.dart",
+      "bytes": 2188,
+      "sha256": "eaddc659b76c13a40d52f89b6565a5a35b49c093a1a2d5c38eb1eee03723b5d4",
+      "owner": "test/pdf_report_format_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:pdf/widgets.dart' as pw;",
+          "uris": [
+            "package:pdf/widgets.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/reports/pdf_report_format.dart';",
+          "uris": [
+            "package:andi_carpeta/reports/pdf_report_format.dart"
+          ],
+          "local_targets": [
+            "lib/reports/pdf_report_format.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "_RecordingFonts"
+        },
+        {
+          "kind": "class",
+          "name": "_FailingFonts"
+        }
+      ],
       "top_level_functions": [
         "main"
       ]
