@@ -93,15 +93,16 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_quick_accounts_auth_module_extracted_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/auth/quick_accounts.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'auth/quick_accounts.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
-        for symbol in ("class _QuickAccount ", "Future<List<_QuickAccount>> _loadQuickAccounts()",
-                       "Future<void> _saveQuickAccounts(", "const FlutterSecureStorage _quickAccountStorage"):
-            self.assertNotIn(symbol, main)
-            self.assertEqual(module.count(symbol), 1)
-        self.assertIn("_quickAccountStorage.read(", module)
-        self.assertIn("_quickAccountStorage.write(", module)
-        self.assertIn("_quickAccountStorage.delete(", module)
+        self.assertIn("import 'auth/quick_accounts.dart' as quick_accounts;", main)
+        self.assertNotIn("part 'auth/quick_accounts.dart';", main)
+        self.assertNotIn("part of", module)
+        self.assertNotIn("flutter_secure_storage", module)
+        self.assertIn("class QuickAccountStore", module)
+        self.assertIn("class QuickAccount ", module)
+        self.assertIn("const FlutterSecureStorage _quickAccountStorage", main)
+        self.assertIn("'andi_carpeta_quick_accounts_v1'", main)
+        for operation in ("read", "write", "delete"):
+            self.assertIn("_quickAccountStorage." + operation + "(", main)
 
     def test_branding_and_font_helpers_are_extracted_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

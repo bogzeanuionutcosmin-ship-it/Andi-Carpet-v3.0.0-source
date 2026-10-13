@@ -618,3 +618,14 @@ Bază verificată: PR #28 HEAD `3be7a09b6a28122bfae23e8ff779e7765a24cd39`, CI ru
 Testele Dart directe acoperă profil absent, fallback email/nume/status, precedență admin, nickname, conversia permissivă/mutabilitatea functionIds și lookup-ul comun de funcții. Local: **155 Python, 3 Node PASS**, syntax Functions și diff-check PASS. Flutter/Dart indisponibile local; CI pe SHA-ul lotului urmează. Inventar regenerat cu scriptul: **161 Dart (124 lib, 36 teste, 1 script), 62 parts, 99 biblioteci**, zero missing/orphan/duplicate/cicluri.
 
 Următorul lot: izolarea stocării QuickAccounts cu dependență securizată explicită și teste fără acces la credentiale reale; cheia, formatul JSON, plafonul de două conturi și tratarea erorilor trebuie păstrate. Detalii în `docs/MODULARIZARE_AUTH_SERVICII_2026-10-14.md`. PR #19/#20/#21/#29 și producția sunt protejate; fără merge/deploy/APK/rules/config/date live/billing. Modularizarea integrală și auditul diferențial ulterior rămân deschise.
+
+
+## MOD-QUICK-ACCOUNT-STORE-20261014 — secure storage injectat, fără migrare
+
+Lotul de identitate `d4d90a7796bb6899f8d9fac36e44db480d2ba82c`, run CI `38482963824`: **5/5 SUCCESS**, inclusiv Flutter tests/web. Următorul lot izolează `QuickAccount` și `QuickAccountStore` într-o bibliotecă pur Dart (`dart:convert`), cu callbackuri read/write/delete. Adaptorul main păstrează instanța const FlutterSecureStorage, opțiunile implicite și cheia `andi_carpeta_quick_accounts_v1`; wrapper-ele load/save și forget din Settings păstrează aceleași operații. În Settings se schimbă numai calificarea tipului.
+
+Echivalența modelului, corpurilor load/save și Settings a fost verificată după substituția numelor/I-O. JSON invalid/non-list revine la listă goală; erorile SecureStorage se propagă; la load nu se introduce o limită nouă, iar save păstrează deduplicarea case-insensitive și primele două chei în ordinea existentă. Nu sunt mutate parole către alt mediu sau logate; testele folosesc exclusiv date sintetice.
+
+Local: **155 Python + 3 Node PASS**, syntax Functions, body-equivalence, diff-check și inventar PASS. Snapshot: **162 Dart (124 lib, 37 teste, 1 script), 61 parts, 101 biblioteci**, fără lipsuri/orfani/duplicate/cicluri. Testele Dart noi verifică fallbackul, filtrarea, limita, ordinea, delete la listă goală și propagarea erorilor; CI pe SHA-ul lotului urmează.
+
+După 5/5: audit bootstrap pentru separarea selecției native/configurate de apelurile SDK, păstrând exact handlerul FCM top-level/pragma și fallbackul iOS. AuthGate și restul abonărilor nu se modifică. Fără Vision funcțional în #28, fără merge/deploy/APK/date live/rules/config/billing/migrări; PR-urile independente rămân protejate.

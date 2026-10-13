@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 161,
+  "dart_files": 162,
   "lib_dart_files": 124,
-  "test_dart_files": 36,
+  "test_dart_files": 37,
   "script_dart_files": 1,
-  "parts": 62,
-  "libraries": 99,
+  "parts": 61,
+  "libraries": 101,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -17,6 +17,7 @@
     "lib/auth/firebase_user_profile.dart": [
       "lib/models/app_enums.dart"
     ],
+    "lib/auth/quick_accounts.dart": [],
     "lib/bootstrap/firebase_bootstrap_error_app.dart": [],
     "lib/download_file.dart": [
       "lib/download_file_stub.dart",
@@ -68,6 +69,7 @@
       "lib/admin/backup_codec.dart",
       "lib/auth/account_access_views.dart",
       "lib/auth/firebase_user_profile.dart",
+      "lib/auth/quick_accounts.dart",
       "lib/bootstrap/firebase_bootstrap_error_app.dart",
       "lib/download_file.dart",
       "lib/firebase_options.dart",
@@ -318,6 +320,9 @@
     ],
     "test/per_diem_settlement_test.dart": [
       "lib/finance/per_diem_settlement.dart"
+    ],
+    "test/quick_account_store_test.dart": [
+      "lib/auth/quick_accounts.dart"
     ],
     "test/schedule_card_full_library_test.dart": [
       "lib/models/app_data_models.dart",
@@ -895,30 +900,32 @@
     },
     {
       "path": "lib/auth/quick_accounts.dart",
-      "bytes": 1648,
-      "sha256": "fe278012879a6abe587b031e2942e88b7287c34a2d7a6f099b5346c4c463f766",
-      "owner": "lib/main.dart",
+      "bytes": 1570,
+      "sha256": "87691df96b2ff4eddbe6434866dd1546ef104d522ff819ce26bc216f84cec2fa",
+      "owner": "lib/auth/quick_accounts.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'dart:convert';",
           "uris": [
-            "../main.dart"
+            "dart:convert"
           ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
+          "local_targets": []
         }
       ],
       "declarations": [
         {
           "kind": "class",
-          "name": "_QuickAccount"
+          "name": "QuickAccount"
+        },
+        {
+          "kind": "class",
+          "name": "QuickAccountStore"
         }
       ],
       "top_level_functions": [
-        "_loadQuickAccounts",
-        "_saveQuickAccounts"
+        "load",
+        "save"
       ]
     },
     {
@@ -2221,8 +2228,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 26206,
-      "sha256": "f432cab99db80c75f7381ede9a74bc7e2f14ca43f480f1630f0d8313b9350729",
+      "bytes": 27023,
+      "sha256": "34be338907338b1f4f568fd5cac40aaa566295ac6c4aeee56eacd3922e066bfc",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2907,6 +2914,16 @@
         },
         {
           "kind": "import",
+          "text": "import 'auth/quick_accounts.dart' as quick_accounts;",
+          "uris": [
+            "auth/quick_accounts.dart"
+          ],
+          "local_targets": [
+            "lib/auth/quick_accounts.dart"
+          ]
+        },
+        {
+          "kind": "import",
           "text": "import 'auth/firebase_user_profile.dart';",
           "uris": [
             "auth/firebase_user_profile.dart"
@@ -2953,16 +2970,6 @@
           ],
           "local_targets": [
             "lib/models/permission_status_labels.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'auth/quick_accounts.dart';",
-          "uris": [
-            "auth/quick_accounts.dart"
-          ],
-          "local_targets": [
-            "lib/auth/quick_accounts.dart"
           ]
         },
         {
@@ -3639,6 +3646,8 @@
         }
       ],
       "top_level_functions": [
+        "_loadQuickAccounts",
+        "_saveQuickAccounts",
         "estimateGraphRoadDistanceKm",
         "_plainBackgroundColor",
         "_normalizeFontChoice",
@@ -4897,8 +4906,8 @@
     },
     {
       "path": "lib/settings/settings_page.dart",
-      "bytes": 12815,
-      "sha256": "e1f86ba2c623f72c0613330f16015c20dc0ef1de716928e16e09359715ccee80",
+      "bytes": 12885,
+      "sha256": "217ae440d9e000329eab2e9f6224cf7c031435998f22a084a801b92ccfde1f82",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -7002,6 +7011,44 @@
           ],
           "local_targets": [
             "lib/finance/per_diem_settlement.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/quick_account_store_test.dart",
+      "bytes": 2831,
+      "sha256": "83718df849936166a14808ad3f3731f3e913d2ea8e68d03c9cb4dbcb20924bdd",
+      "owner": "test/quick_account_store_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:convert';",
+          "uris": [
+            "dart:convert"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/auth/quick_accounts.dart';",
+          "uris": [
+            "package:andi_carpeta/auth/quick_accounts.dart"
+          ],
+          "local_targets": [
+            "lib/auth/quick_accounts.dart"
           ]
         }
       ],

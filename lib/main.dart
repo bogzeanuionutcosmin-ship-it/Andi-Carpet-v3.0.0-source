@@ -72,13 +72,13 @@ import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;
 import 'map/verified_location_fix.dart' as verified_fix;
 import 'ui/dashboard_map_components.dart' as dashboard_components;
 import 'auth/account_access_views.dart' as account_access_views;
+import 'auth/quick_accounts.dart' as quick_accounts;
 import 'auth/firebase_user_profile.dart';
 export 'auth/firebase_user_profile.dart';
 import 'ui/app_capabilities_view.dart' as app_capabilities;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
-part 'auth/quick_accounts.dart';
 part 'ui/install_app_buttons.dart';
 part 'bootstrap/firebase_initialization.dart';
 part 'map/location_adjust_page.dart';
@@ -140,6 +140,24 @@ part 'home/home_financial_write_actions.dart';
 part 'home/home_operational_write_actions.dart';
 part 'home/home_audit_persistence.dart';
 part 'home/home_document_codecs.dart';
+
+// Application adapter: retain the secure-storage instance, key and options.
+const FlutterSecureStorage _quickAccountStorage = FlutterSecureStorage();
+const String _quickAccountsStorageKey = 'andi_carpeta_quick_accounts_v1';
+final quick_accounts.QuickAccountStore _quickAccountStore =
+    quick_accounts.QuickAccountStore(
+  read: () => _quickAccountStorage.read(key: _quickAccountsStorageKey),
+  write: (value) => _quickAccountStorage.write(
+    key: _quickAccountsStorageKey,
+    value: value,
+  ),
+  delete: () => _quickAccountStorage.delete(key: _quickAccountsStorageKey),
+);
+
+Future<List<quick_accounts.QuickAccount>> _loadQuickAccounts() =>
+    _quickAccountStore.load();
+Future<void> _saveQuickAccounts(List<quick_accounts.QuickAccount> accounts) =>
+    _quickAccountStore.save(accounts);
 
 // Application adapter: retain the singleton and lazy initialization in main.
 /// Distanța rutieră în kilometri, pe drumuri practicabile cu automobilul.
