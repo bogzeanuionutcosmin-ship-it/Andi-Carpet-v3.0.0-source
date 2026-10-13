@@ -187,3 +187,48 @@ test('expenses OCR: membru din altă echipă nu poate salva prin distributedBy f
   await assertFails(setDoc(doc(db('expense-ocr-outsider'), 'expenses/expense-ocr-forgery'),
     { ...expenseOcrPayload(), distributedBy: 'expense-ocr-outsider' }, { merge: true }));
 });
+
+
+test('expenses update: colegul cu viewOwnDecont poate schimba amount și confirmed (regula actuală)', async () => {
+  const { setDoc } = require('firebase/firestore');
+  const path = 'expenses/expense-ocr-existing-teammate';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), expenseOcrPayload());
+  });
+  // Contractul actual acceptă schimbarea sumei și confirmarea din SDK direct.
+  // Acesta este un defect de autorizare documentat, NU permisiunea dorită.
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    amount: 999.99, confirmed: true,
+  }));
+});
+
+test('expenses update: altă echipă nu poate modifica cheltuiala', async () => {
+  const { setDoc } = require('firebase/firestore');
+  const path = 'expenses/expense-ocr-existing-outsider';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), expenseOcrPayload());
+  });
+  await assertFails(updateDoc(doc(db('expense-ocr-outsider'), path), {
+    amount: 999.99, confirmed: true,
+  }));
+});
+
+test('expenses update: colegul nu poate muta cheltuiala în afara echipei', async () => {
+  const { setDoc } = require('firebase/firestore');
+  const path = 'expenses/expense-ocr-existing-move';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), expenseOcrPayload());
+  });
+  await assertFails(updateDoc(doc(db('expense-ocr-member'), path), {
+    teamId: 'another-team',
+  }));
+});
+
+test('expenses create: creatorul poate seta confirmed direct în payloadul permis acum', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'expenses/expense-ocr-self-confirm'),
+    { ...expenseOcrPayload(), distributedBy: 'expense-ocr-member', confirmed: true },
+    { merge: true },
+  ));
+});
