@@ -46,3 +46,18 @@ Au fost conectate *doar operații de observare locală* în codul existent, făr
 **Important:** Telemetria urmărește doar punctele de eroare conectate. Nu diagnostichează automat *sume recunoscute OCR dar interpretate/salvate greșit fără excepție*; acestea cer teste de parser/validator și verificare completă înainte de noul release. Nu modificăm acum schema de diurnă, cuantumul plăților sau politicile de permisiune.
 
 **Validare la data scrierii:** urmărim CI pe SHA final al PR #19. Nicio declarație de «testat pe telefon» fără probă efectivă, niciun merge/deploy.
+
+## Continuarea etapei 1 — validarea sigură a sumelor OCR (2026-10-13)
+
+Auditul traseului `recognizeTextFromImage` → `parseFiscalOcr` → `_expenseDialog` → `_saveNewExpense` a constatat o problemă de logică care **nu producea excepții**, deci nu ar fi putut fi surprinsă de Error Log: `lib/ocr_parser.dart` selecta cea mai mare valoare numerică disponibilă pe document dacă regexurile de TOTAL eșuau. În lipsa unui total explicit, TVA-ul, cantitatea/prețul sau alt număr puteau ajunge în câmpul sumă și păreau un rezultat valid.
+
+**Corecția conservatoare propusă în același PR #19:**
+- Extractorul alege doar o sumă etichetată clar TOTAL / SUMA DE PLATĂ / TOTAL DE PLATĂ / DE PLATĂ, cu prioritate pentru eticheta specifică de plată; exclude ca total linii de TVA/subtotal și valori adiacente care nu sunt întregi numeric.
+- Suportă numere monetare cu două zecimale și formate cu grupări de mii (de ex. `1.234,56`, `1 234,56`, `1,234.56`), convertite prin unități întregi de bani înainte de `double`; valori cu mai mult de două zecimale ori grupare invalidă nu sunt autofill.
+- Dacă două totaluri explicite de aceeași prioritate sunt diferite, nu alege unul arbitrar. Dacă nu există o etichetă de total, acceptă doar o **singură** valoare de monedă izolată pe o linie, nu valoarea maximă și nu prețul `LEI/L`. Când totalul lipsește ori este ambiguu, `FiscalOcrData.amount == null`.
+- UI `ExpensePage` afișează explicit «Totalul de plată nu a putut fi identificat sigur. Introdu suma manual...» pentru suma null, înainte de butonul de confirmare. Câmpul păstrează validatorul existent de sumă pozitivă cu cel mult două zecimale; salvarea documentului și verificarea gestionară rămân ca înainte. Nu modificăm automat documente financiare deja salvate și nu efectuăm migrări.
+- Au fost adăugate teste în `test/ocr_parser_test.dart`: TVA, subtotal, `LEI/L`, sume cu mii, etichetă separată de valoare, totale în conflict și lipsa totalului. **Existența testelor nu echivalează cu o verificare cap-coadă pe o fotografie reală sau cu Firebase în producție.**
+
+**Limită de cunoaștere:** aceasta este o **cauză posibilă, confirmată în cod**, pentru o valoare OCR greșită; nu este dovedit că explică exact incidentul istoric al utilizatorului, deoarece nu avem aici bonul original și logul lui. Dacă o sumă corectă este afișată dar refuzată de Firestore, cauza e diferită și Error Log-ul va evidenția eroarea de salvare. Urmează teste instrumentate Android cu documente anonimizate și probe reale de autorizare, înainte de merge/deploy.
+
+**CI:** urmărește ultima rulare de pe SHA final al PR #19; nu presupune verde pentru commituri ulterioare.
