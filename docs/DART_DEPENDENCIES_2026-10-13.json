@@ -1,10 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 125,
-  "lib_dart_files": 114,
+  "dart_files": 128,
+  "lib_dart_files": 116,
   "test_dart_files": 11,
+  "script_dart_files": 1,
   "parts": 81,
-  "libraries": 44,
+  "libraries": 47,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -48,7 +49,7 @@
     "lib/firebase_options.dart": [],
     "lib/learning/duration_estimates.dart": [
       "lib/models/app_data_models.dart",
-      "lib/models/app_enums_permissions.dart",
+      "lib/models/app_enums.dart",
       "lib/utils/operational_dates.dart"
     ],
     "lib/main.dart": [
@@ -69,24 +70,31 @@
     ],
     "lib/mapbox_services.dart": [],
     "lib/models/app_data_models.dart": [
-      "lib/models/app_enums_permissions.dart",
-      "lib/models/location_category_helpers.dart",
+      "lib/models/app_enums.dart",
+      "lib/models/location_type_mapping.dart",
       "lib/utils/graph_names.dart"
     ],
-    "lib/models/app_enums_permissions.dart": [],
+    "lib/models/app_enums.dart": [],
+    "lib/models/app_enums_permissions.dart": [
+      "lib/models/app_enums.dart"
+    ],
     "lib/models/default_categories_functions.dart": [
-      "lib/models/app_enums_permissions.dart",
+      "lib/models/app_enums.dart",
       "lib/models/location_status_and_functions.dart"
     ],
     "lib/models/location_category_helpers.dart": [
       "lib/models/app_enums_permissions.dart",
-      "lib/models/location_status_and_functions.dart"
+      "lib/models/location_status_and_functions.dart",
+      "lib/models/location_type_mapping.dart"
     ],
     "lib/models/location_status_and_functions.dart": [
-      "lib/models/app_enums_permissions.dart"
+      "lib/models/app_enums.dart"
+    ],
+    "lib/models/location_type_mapping.dart": [
+      "lib/models/app_enums.dart"
     ],
     "lib/models/permission_status_labels.dart": [
-      "lib/models/app_enums_permissions.dart"
+      "lib/models/app_enums.dart"
     ],
     "lib/ocr_parser.dart": [],
     "lib/ocr_service.dart": [
@@ -100,6 +108,14 @@
     "lib/utils/graph_names.dart": [],
     "lib/utils/operational_dates.dart": [
       "lib/models/app_data_models.dart"
+    ],
+    "scripts/verify_pure_models.dart": [
+      "lib/learning/duration_estimates.dart",
+      "lib/models/app_data_models.dart",
+      "lib/models/app_enums.dart",
+      "lib/models/location_type_mapping.dart",
+      "lib/utils/graph_names.dart",
+      "lib/utils/operational_dates.dart"
     ],
     "test/core_model_libraries_test.dart": [
       "lib/learning/duration_estimates.dart",
@@ -1933,18 +1949,18 @@
     },
     {
       "path": "lib/learning/duration_estimates.dart",
-      "bytes": 3582,
-      "sha256": "e9d87c8d64192e989b7f4c04d444202c34b5c3ad700975dc5ef58d2f68ea2fa9",
+      "bytes": 3570,
+      "sha256": "389cb8437e99ed1b4338d3b7b197605f9141d7b5a1984bc20e5d992af3f8ae7e",
       "owner": "lib/learning/duration_estimates.dart",
       "directives": [
         {
           "kind": "import",
-          "text": "import '../models/app_enums_permissions.dart';",
+          "text": "import '../models/app_enums.dart';",
           "uris": [
-            "../models/app_enums_permissions.dart"
+            "../models/app_enums.dart"
           ],
           "local_targets": [
-            "lib/models/app_enums_permissions.dart"
+            "lib/models/app_enums.dart"
           ]
         },
         {
@@ -3485,28 +3501,28 @@
     },
     {
       "path": "lib/models/app_data_models.dart",
-      "bytes": 13904,
-      "sha256": "ffb01774a6e6d472e22a9de4d8068a3a03a99743ad75c22eb7ca707651343a3f",
+      "bytes": 13888,
+      "sha256": "03e5fdbe524d9b2ea8fdea522fc2004a67b240cdfe95e8e15ffc23b2677d9fd0",
       "owner": "lib/models/app_data_models.dart",
       "directives": [
         {
           "kind": "import",
-          "text": "import 'app_enums_permissions.dart';",
+          "text": "import 'app_enums.dart';",
           "uris": [
-            "app_enums_permissions.dart"
+            "app_enums.dart"
           ],
           "local_targets": [
-            "lib/models/app_enums_permissions.dart"
+            "lib/models/app_enums.dart"
           ]
         },
         {
           "kind": "import",
-          "text": "import 'location_category_helpers.dart';",
+          "text": "import 'location_type_mapping.dart';",
           "uris": [
-            "location_category_helpers.dart"
+            "location_type_mapping.dart"
           ],
           "local_targets": [
-            "lib/models/location_category_helpers.dart"
+            "lib/models/location_type_mapping.dart"
           ]
         },
         {
@@ -3595,20 +3611,11 @@
       ]
     },
     {
-      "path": "lib/models/app_enums_permissions.dart",
-      "bytes": 5473,
-      "sha256": "8b251d811183cdfac4f61af995177c56d21e9fc683ad4f40e017ed3a569ab023",
-      "owner": "lib/models/app_enums_permissions.dart",
-      "directives": [
-        {
-          "kind": "import",
-          "text": "import 'package:flutter/material.dart';",
-          "uris": [
-            "package:flutter/material.dart"
-          ],
-          "local_targets": []
-        }
-      ],
+      "path": "lib/models/app_enums.dart",
+      "bytes": 1287,
+      "sha256": "867753b798cc997a8de2b988a900ef6aafe0933d8e2878f6238706139a0607bc",
+      "owner": "lib/models/app_enums.dart",
+      "directives": [],
       "declarations": [
         {
           "kind": "enum",
@@ -3653,7 +3660,46 @@
         {
           "kind": "enum",
           "name": "AppThemeChoice"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
+      "path": "lib/models/app_enums_permissions.dart",
+      "bytes": 4236,
+      "sha256": "2bbdbdee75fb2f3a2f3be4e3a379c5f9c09605cd51728cba44062b64565484f1",
+      "owner": "lib/models/app_enums_permissions.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
         },
+        {
+          "kind": "import",
+          "text": "import 'app_enums.dart';",
+          "uris": [
+            "app_enums.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'app_enums.dart';",
+          "uris": [
+            "app_enums.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums.dart"
+          ]
+        }
+      ],
+      "declarations": [
         {
           "kind": "extension",
           "name": "LocationTypeX"
@@ -3675,8 +3721,8 @@
     },
     {
       "path": "lib/models/default_categories_functions.dart",
-      "bytes": 1067,
-      "sha256": "f4cff2c576c40dd2b6428dcccbdefb156fb82d122967db4a03d57b5096f3c347",
+      "bytes": 1055,
+      "sha256": "4ca82e4c706f9c5f4962eefc82deae67b29c0034419efa8cbc1e98e0803e3f24",
       "owner": "lib/models/default_categories_functions.dart",
       "directives": [
         {
@@ -3689,12 +3735,12 @@
         },
         {
           "kind": "import",
-          "text": "import 'app_enums_permissions.dart';",
+          "text": "import 'app_enums.dart';",
           "uris": [
-            "app_enums_permissions.dart"
+            "app_enums.dart"
           ],
           "local_targets": [
-            "lib/models/app_enums_permissions.dart"
+            "lib/models/app_enums.dart"
           ]
         },
         {
@@ -3718,8 +3764,8 @@
     },
     {
       "path": "lib/models/location_category_helpers.dart",
-      "bytes": 1232,
-      "sha256": "e148228a9e47d6c11c6fbbf1afe31702127a948686e9ace7842fb290b15bb564",
+      "bytes": 880,
+      "sha256": "29e8f898ee66c2548ca2f4799cb580b00555c625b513f45dfa372d8ff643b37b",
       "owner": "lib/models/location_category_helpers.dart",
       "directives": [
         {
@@ -3749,20 +3795,38 @@
           "local_targets": [
             "lib/models/location_status_and_functions.dart"
           ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'location_type_mapping.dart';",
+          "uris": [
+            "location_type_mapping.dart"
+          ],
+          "local_targets": [
+            "lib/models/location_type_mapping.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'location_type_mapping.dart';",
+          "uris": [
+            "location_type_mapping.dart"
+          ],
+          "local_targets": [
+            "lib/models/location_type_mapping.dart"
+          ]
         }
       ],
       "declarations": [],
       "top_level_functions": [
-        "defaultCategoryIdForType",
-        "legacyTypeForCategory",
         "categoryColor",
         "categoryName"
       ]
     },
     {
       "path": "lib/models/location_status_and_functions.dart",
-      "bytes": 1848,
-      "sha256": "7b2463a9c15d088ccd01b4a2a32c0ae585bdfe73c72c4bcdc75609e092cdf0d5",
+      "bytes": 1836,
+      "sha256": "cee93493548beeb8065bb7bbfe2d2df5daad8fec493d9ff00c41afea6713cac2",
       "owner": "lib/models/location_status_and_functions.dart",
       "directives": [
         {
@@ -3775,12 +3839,12 @@
         },
         {
           "kind": "import",
-          "text": "import 'app_enums_permissions.dart';",
+          "text": "import 'app_enums.dart';",
           "uris": [
-            "app_enums_permissions.dart"
+            "app_enums.dart"
           ],
           "local_targets": [
-            "lib/models/app_enums_permissions.dart"
+            "lib/models/app_enums.dart"
           ]
         }
       ],
@@ -3801,19 +3865,42 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/models/location_type_mapping.dart",
+      "bytes": 452,
+      "sha256": "28b217922ec550376d1f44da7d7f7bd1b72d301e44c943bc95152a63bce20703",
+      "owner": "lib/models/location_type_mapping.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'app_enums.dart';",
+          "uris": [
+            "app_enums.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "defaultCategoryIdForType",
+        "legacyTypeForCategory"
+      ]
+    },
+    {
       "path": "lib/models/permission_status_labels.dart",
-      "bytes": 2556,
-      "sha256": "e241dc3cd99b6992f98aeb3e67e2b4e39cec04ad5930da21d218e6516fd628dc",
+      "bytes": 2544,
+      "sha256": "0f60636ef12d4d6132ba1308071e05d9cbad9060c79a75b42290d7d567f3695a",
       "owner": "lib/models/permission_status_labels.dart",
       "directives": [
         {
           "kind": "import",
-          "text": "import 'app_enums_permissions.dart';",
+          "text": "import 'app_enums.dart';",
           "uris": [
-            "app_enums_permissions.dart"
+            "app_enums.dart"
           ],
           "local_targets": [
-            "lib/models/app_enums_permissions.dart"
+            "lib/models/app_enums.dart"
           ]
         }
       ],
@@ -4674,6 +4761,79 @@
         "isInsideWorkWindow",
         "recordBelongsToWorkDate",
         "recordEventTime"
+      ]
+    },
+    {
+      "path": "scripts/verify_pure_models.dart",
+      "bytes": 1568,
+      "sha256": "fa3dfb1a3005b4a2b43b2a6989d7f1efed3294a100e943a11575d3511f4b2998",
+      "owner": "scripts/verify_pure_models.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import '../lib/models/app_data_models.dart';",
+          "uris": [
+            "../lib/models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../lib/models/app_enums.dart';",
+          "uris": [
+            "../lib/models/app_enums.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../lib/models/location_type_mapping.dart';",
+          "uris": [
+            "../lib/models/location_type_mapping.dart"
+          ],
+          "local_targets": [
+            "lib/models/location_type_mapping.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../lib/utils/graph_names.dart';",
+          "uris": [
+            "../lib/utils/graph_names.dart"
+          ],
+          "local_targets": [
+            "lib/utils/graph_names.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../lib/utils/operational_dates.dart';",
+          "uris": [
+            "../lib/utils/operational_dates.dart"
+          ],
+          "local_targets": [
+            "lib/utils/operational_dates.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../lib/learning/duration_estimates.dart';",
+          "uris": [
+            "../lib/learning/duration_estimates.dart"
+          ],
+          "local_targets": [
+            "lib/learning/duration_estimates.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "check",
+        "main"
       ]
     },
     {

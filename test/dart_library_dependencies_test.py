@@ -24,7 +24,7 @@ class DartLibraryDependenciesTests(unittest.TestCase):
         paths = {"lib/models/" + name for name in (
             "app_enums_permissions.dart", "location_status_and_functions.dart",
             "default_categories_functions.dart", "location_category_helpers.dart",
-            "permission_status_labels.dart")}
+            "permission_status_labels.dart", "app_enums.dart", "location_type_mapping.dart")}
         rows = {row["path"]: row for row in report["files"]}
         for path in paths:
             with self.subTest(path=path):
@@ -37,9 +37,9 @@ class DartLibraryDependenciesTests(unittest.TestCase):
         edges = report["library_edges"]
         expected = {
             "lib/utils/graph_names.dart": [],
-            "lib/models/app_data_models.dart": ["lib/models/app_enums_permissions.dart", "lib/models/location_category_helpers.dart", "lib/utils/graph_names.dart"],
+            "lib/models/app_data_models.dart": ["lib/models/app_enums.dart", "lib/models/location_type_mapping.dart", "lib/utils/graph_names.dart"],
             "lib/utils/operational_dates.dart": ["lib/models/app_data_models.dart"],
-            "lib/learning/duration_estimates.dart": ["lib/models/app_data_models.dart", "lib/models/app_enums_permissions.dart", "lib/utils/operational_dates.dart"],
+            "lib/learning/duration_estimates.dart": ["lib/models/app_data_models.dart", "lib/models/app_enums.dart", "lib/utils/operational_dates.dart"],
         }
         rows = {row["path"]: row for row in report["files"]}
         for path, dependencies in expected.items():
@@ -56,6 +56,29 @@ class DartLibraryDependenciesTests(unittest.TestCase):
             with self.subTest(source=source):
                 exported = {t for d in rows[source]["directives"] if d["kind"] == "export" for t in d["local_targets"]}
                 self.assertEqual(exported, targets)
+
+    def test_domain_dependency_closure_has_no_flutter_firebase_or_main(self):
+        report = audit.inventory()
+        rows = {row["path"]: row for row in report["files"]}
+        pending = ["lib/models/app_data_models.dart", "lib/utils/operational_dates.dart", "lib/learning/duration_estimates.dart"]
+        seen = set()
+        while pending:
+            path = pending.pop()
+            if path in seen:
+                continue
+            seen.add(path)
+            self.assertNotEqual(path, "lib/main.dart")
+            self.assertEqual(rows[path]["owner"], path)
+            for directive in rows[path]["directives"]:
+                for uri in directive["uris"]:
+                    self.assertFalse(uri.startswith("package:"), (path, uri))
+                    self.assertNotEqual(uri, "dart:ui")
+            pending.extend(report["library_edges"][path])
+        self.assertEqual(seen, {
+            "lib/models/app_data_models.dart", "lib/models/app_enums.dart",
+            "lib/models/location_type_mapping.dart", "lib/utils/graph_names.dart",
+            "lib/utils/operational_dates.dart", "lib/learning/duration_estimates.dart",
+        })
 
 
 if __name__ == "__main__":

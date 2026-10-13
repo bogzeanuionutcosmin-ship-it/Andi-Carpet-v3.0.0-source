@@ -569,11 +569,13 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("export 'models/location_category_helpers.dart';", main)
         self.assertNotIn("part of ", module)
         self.assertNotIn("../main.dart", module)
+        mapping = (ROOT / "lib/models/location_type_mapping.dart").read_text(encoding="utf-8")
+        self.assertIn("export 'location_type_mapping.dart';", module)
         for symbol in ("String defaultCategoryIdForType(",
                        "LocationType legacyTypeForCategory(",
                        "Color categoryColor(", "String categoryName("):
             self.assertNotIn(symbol, main)
-            self.assertEqual(module.count(symbol), 1)
+            self.assertEqual((mapping + module).count(symbol), 1)
         self.assertIn("if (categoryId == 'million') return Colors.red;", module)
         self.assertIn("if (categoryId == 'magic') return Colors.black87;", module)
 
@@ -769,12 +771,15 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("export 'models/app_enums_permissions.dart';", main)
         self.assertNotIn("part of ", enums)
         self.assertNotIn("../main.dart", enums)
+        values = (ROOT / "lib/models/app_enums.dart").read_text(encoding="utf-8")
+        self.assertIn("export 'app_enums.dart';", enums)
         for name in ("LocationType", "LocationStatus", "UserRole",
                      "UserFunction", "FunctionPermission", "PerDiemStatus",
                      "PerDiemPaymentMethod", "ExpenseDocumentType",
                      "WorkAttemptStatus", "LearningMode", "AppThemeChoice"):
             self.assertEqual(main.count("enum " + name + " "), 0)
-            self.assertEqual(enums.count("enum " + name + " "), 1)
+            self.assertEqual(values.count("enum " + name + " "), 1)
+            self.assertNotIn("enum " + name + " ", enums)
         for name in ("LocationTypeX", "UserRoleX", "UserFunctionX",
                      "FunctionPermissionX"):
             self.assertEqual(main.count("extension " + name + " "), 0)

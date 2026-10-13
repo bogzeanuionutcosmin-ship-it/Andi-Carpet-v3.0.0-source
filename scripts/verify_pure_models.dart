@@ -1,0 +1,31 @@
+// Run with `dart run scripts/verify_pure_models.dart`, without a Flutter engine.
+import '../lib/models/app_data_models.dart';
+import '../lib/models/app_enums.dart';
+import '../lib/models/location_type_mapping.dart';
+import '../lib/utils/graph_names.dart';
+import '../lib/utils/operational_dates.dart';
+import '../lib/learning/duration_estimates.dart';
+
+void check(bool condition, String contract) {
+  if (!condition) throw StateError(contract);
+}
+
+void main() {
+  final schedule = WorkSchedule(
+    id: 'schedule', teamId: 'team', date: DateTime(2027, 1, 1), items: [],
+  );
+  check(schedule.graphName == graphDefaultName(schedule.date), 'Default graph name');
+  check(defaultCategoryIdForType(LocationType.magic) == 'magic', 'Legacy category mapping');
+  check(operationalWorkDate(DateTime(2026, 12, 31, 23, 30)) == DateTime(2027, 1, 1), 'Year boundary');
+  final records = List.generate(3, (index) {
+    final start = DateTime(2026, 10, index + 1, 1);
+    return CentralizerRecord(
+      id: 'record-$index', teamId: 'team', locationId: 'location', type: LocationType.magic,
+      locationNameSnapshot: 'Synthetic', addressSnapshot: 'Synthetic', startedAt: start,
+      finishedAt: start.add(const Duration(minutes: 30)), status: WorkAttemptStatus.completed,
+    );
+  });
+  final estimate = learnedDurationEstimate(records, 'location', AppSettings(), targetDate: DateTime(2026, 10, 31));
+  check(estimate?.duration == const Duration(minutes: 30), 'Duration learning');
+  print('PURE_MODEL_SMOKE PASS: defaults, mapping, operational boundary, duration learning');
+}

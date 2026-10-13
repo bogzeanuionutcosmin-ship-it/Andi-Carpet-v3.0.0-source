@@ -1,5 +1,5 @@
-import 'app_enums_permissions.dart';
-import 'location_category_helpers.dart';
+import 'app_enums.dart';
+import 'location_type_mapping.dart';
 import '../utils/graph_names.dart';
 
 class AppUser {

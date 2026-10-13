@@ -1,19 +1,9 @@
 import 'package:flutter/material.dart';
 import 'app_enums_permissions.dart';
 import 'location_status_and_functions.dart';
+import 'location_type_mapping.dart';
+export 'location_type_mapping.dart';
 
-String defaultCategoryIdForType(LocationType type) => switch (type) {
-  LocationType.magic => 'magic',
-  LocationType.million => 'million',
-  LocationType.horeca => 'horeca',
-  LocationType.other => 'cazari',
-};
-LocationType legacyTypeForCategory(String categoryId) => switch (categoryId) {
-  'magic' => LocationType.magic,
-  'million' => LocationType.million,
-  'horeca' => LocationType.horeca,
-  _ => LocationType.other,
-};
 Color categoryColor(List<LocationCategory> categories, String categoryId, {LocationType? fallbackType}) {
   // Culorile de brand stabilite inițial rămân fixe peste tot în aplicație.
   if (categoryId == 'million') return Colors.red;

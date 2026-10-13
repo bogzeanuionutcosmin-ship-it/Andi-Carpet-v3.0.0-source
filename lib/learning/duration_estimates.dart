@@ -1,4 +1,4 @@
-import '../models/app_enums_permissions.dart';
+import '../models/app_enums.dart';
 import '../models/app_data_models.dart';
 import '../utils/operational_dates.dart';
 

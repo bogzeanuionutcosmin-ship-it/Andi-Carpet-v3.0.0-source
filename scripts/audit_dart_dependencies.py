@@ -50,7 +50,7 @@ def cycles(graph):
 
 
 def inventory(root=ROOT):
-    paths = sorted(p for folder in ("lib", "test") for p in (root / folder).rglob("*.dart"))
+    paths = sorted(p for folder in ("lib", "test", "scripts") for p in (root / folder).rglob("*.dart"))
     sources = {p.relative_to(root).as_posix(): p.read_text(encoding="utf-8") for p in paths}
     rows, owners, missing = [], {}, []
     for path, body in sources.items():
@@ -95,6 +95,7 @@ def inventory(root=ROOT):
     return {"format_version": 1, "dart_files": len(rows),
             "lib_dart_files": sum(row["path"].startswith("lib/") for row in rows),
             "test_dart_files": sum(row["path"].startswith("test/") for row in rows),
+            "script_dart_files": sum(row["path"].startswith("scripts/") for row in rows),
             "parts": sum(row["owner"] != row["path"] for row in rows), "libraries": len(graph),
             "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
             "missing_targets": missing, "orphan_parts": orphan_parts,
