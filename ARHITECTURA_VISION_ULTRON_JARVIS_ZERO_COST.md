@@ -131,3 +131,21 @@ După explicația directă «AI local vs AI online», proprietarul a răspuns **
 **V4:** staging + teste reale Android/background/offline/concurență și măsurarea consumului înainte de orice rollout.
 
 **Acest audit a fost numai citire de fișiere GitHub și verificare CI; niciun test nou executat, niciun cod de producție schimbat, fără merge sau deploy.**
+
+## 12. Vision Error Log — primă componentă de implementat, cost minim (2026-10-13)
+
+**Cerință explicită nouă:** proprietarul vrea să putem cunoaște erorile relevante și să se șteargă periodic datele temporare, fără consum excesiv de memorie sau costuri. Acesta este un criteriu de acceptare **obligatoriu pentru prima versiune Vision**, nu o opțiune de amânat după Learning GPS.
+
+**Audit suplimentar read-only în PR #17:** `lib/main.dart` nu conține mecanisme de colectare globală `FlutterError.onError`, `PlatformDispatcher.instance.onError`, `runZonedGuarded` în versiunea inspectată; `pubspec.yaml` nu declară `firebase_crashlytics`; `home_page.dart` raportează local prin `debugPrint` (13 apariții în fișier), iar `functions/index.js` are `console.log/warn/error` (18 apeluri). Există diagnostic FCM, dar nu un sistem centralizat de raportare pentru toate categoriile. Nu afirmați că este deja implementat sau că toate erorile sunt vizibile.
+
+**Design recomandat:**
+
+1. `VisionErrorEvent` = timestamp, fingerprint determinist, categoria, severitate, modul, aplicație/versiune/platformă, stack sanitizat minim, primă/ultimă apariție, număr de repetări, status, referință de diagnostic fără date personale.
+2. `VisionErrorCollector` = interceptori de erori Flutter/framework/async, adaptori pentru excepții operaționale deja gestionate, colector Functions prin infrastructura existentă, buffer local limitat; verificare de suport pe fiecare platformă și evitare logări în buclă.
+3. `VisionErrorStore` = ring buffer local configurabil, pornind de la **max. 500 evenimente sau ~1 MB și max. 7 zile**, prioritate pentru evenimente nepredate; purjare la deschidere și întreținere incrementală fără job periodic costisitor.
+4. `VisionErrorAggregator` = deduplicare pe fingerprint, rate limiting, păstrare statistici compacte de tip prima/ultima apariție + count. După sincronizare sigură și consent/drepturi, upload **numai dacă se încadrează în cote**, cu fallback local și stări de trimitere oneste.
+5. `VisionErrorPanel` = lista administrativă autorizată pentru incident deschis/rezolvat, căutare după modul/severitate, ultima apariție și link la funcția afectată; notificările critice respectă Nu deranja pentru push-uri.
+6. `VisionErrorRetention` = recomandare de retenție agregate rezolvate **30 zile** după rezolvare; incidente deschise persistă ca sinteză compactă până la rezolvare; detaliile brute se șterg după termen/limita de volum. Nu șterge niciodată istoricul operational/financiar sau auditul obligatoriu. Calibrează pragurile după testele de volum și verificarea costului, nu presupune TTL gratuit.
+7. **Teste**: erori UI/framework/async, startup când Firebase e indisponibil, GPS permisiune refuzată, OCR sumă recunoscută dar nesalvată, funcții backend, offline/reconectare, dubluri 10.000, protecție date, plafon local, curățare calendaristică, autorizare, retry sigur și cost măsurat.
+
+**Plan:** include colectorul, panoul și curățarea în prima etapă Vision după modularizarea/contractele de bază, înainte de noile automatizări. Nu promite supraveghere continuă de către ChatGPT/GPT prin API la 0 lei: în lipsa conexiunii sau cu aplicația oprită, doar datele colectabile local/cloud pot fi consultate ulterior. Nu modifica acum codul, Firebase, facturarea ori deploy-ul.
