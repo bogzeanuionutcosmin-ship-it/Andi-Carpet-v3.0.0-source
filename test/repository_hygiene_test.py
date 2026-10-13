@@ -638,18 +638,26 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_interactive_member_badges_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/interactive_member_badges.dart").read_text(encoding="utf-8")
+        preview = (ROOT / "lib/ui/interactive_badge_preview.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/interactive_member_badges.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("class _InteractiveBadgeIcon extends StatefulWidget",
-                       "class _InteractiveBadgeIconState extends State<_InteractiveBadgeIcon>",
-                       "Widget functionKeyWidget(",
+        self.assertIn("import 'ui/interactive_badge_preview.dart' as badge_preview;", main)
+        self.assertEqual(main.count("class _InteractiveBadgeIcon extends StatelessWidget"), 1)
+        self.assertIn("badgeGraphic: _badgeGraphic", main)
+        for symbol in ("Widget functionKeyWidget(",
                        "List<String> effectiveBadgeKeysForFunctionIds(",
                        "Widget badgeStripWidget(", "Widget memberBadgeStripWidget("):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("if (widgets.length >= 3) break;", module)
         self.assertIn("badge == 'badge_machine' ? 'badge_worker' : badge", module)
-        self.assertIn("if (_entry == null)", module)
+        self.assertNotIn("_InteractiveBadgeIconState", module)
+        self.assertIn("class InteractiveBadgePreview extends StatefulWidget", preview)
+        self.assertIn("Overlay.of(context, rootOverlay: true).insert(_entry!)", preview)
+        self.assertIn("if (_entry == null)", preview)
+        self.assertIn("if (!_pinned) _hidePreview();", preview)
+        self.assertIn("void _hidePreview()", preview)
+        self.assertIn("typedef BadgeGraphicBuilder", preview)
 
     def test_location_category_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

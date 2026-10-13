@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 144,
-  "lib_dart_files": 121,
-  "test_dart_files": 22,
+  "dart_files": 146,
+  "lib_dart_files": 122,
+  "test_dart_files": 23,
   "script_dart_files": 1,
   "parts": 73,
-  "libraries": 71,
+  "libraries": 73,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -80,6 +80,7 @@
       "lib/ui/icon_badge_catalog.dart",
       "lib/ui/info_card.dart",
       "lib/ui/install_app_buttons_view.dart",
+      "lib/ui/interactive_badge_preview.dart",
       "lib/ui/money_card.dart",
       "lib/ui/stat_card.dart",
       "lib/utils/graph_names.dart",
@@ -139,6 +140,7 @@
     "lib/ui/icon_badge_catalog.dart": [],
     "lib/ui/info_card.dart": [],
     "lib/ui/install_app_buttons_view.dart": [],
+    "lib/ui/interactive_badge_preview.dart": [],
     "lib/ui/money_card.dart": [],
     "lib/ui/stat_card.dart": [],
     "lib/utils/graph_names.dart": [],
@@ -190,6 +192,9 @@
     ],
     "test/install_app_buttons_view_test.dart": [
       "lib/ui/install_app_buttons_view.dart"
+    ],
+    "test/interactive_badge_preview_test.dart": [
+      "lib/ui/interactive_badge_preview.dart"
     ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
@@ -2077,8 +2082,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 20656,
-      "sha256": "c148f68890a5197387396d04ca1768ae709e029cd7976889bff82ee7eb517c5d",
+      "bytes": 21127,
+      "sha256": "95122e77a953d9705beb373c7fe00dfe98d7de14c0371b5c99cb14052b7dca95",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2629,6 +2634,16 @@
           ],
           "local_targets": [
             "lib/ui/install_app_buttons_view.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'ui/interactive_badge_preview.dart' as badge_preview;",
+          "uris": [
+            "ui/interactive_badge_preview.dart"
+          ],
+          "local_targets": [
+            "lib/ui/interactive_badge_preview.dart"
           ]
         },
         {
@@ -3398,6 +3413,10 @@
         {
           "kind": "class",
           "name": "_AppBackdrop"
+        },
+        {
+          "kind": "class",
+          "name": "_InteractiveBadgeIcon"
         },
         {
           "kind": "class",
@@ -4942,9 +4961,48 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/ui/interactive_badge_preview.dart",
+      "bytes": 3978,
+      "sha256": "d85074ce58d34fa1dc2c7c57e95849e1087c85ad022904fe6a17464751408c83",
+      "owner": "lib/ui/interactive_badge_preview.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:math' as math;",
+          "uris": [
+            "dart:math"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "typedef",
+          "name": "BadgeGraphicBuilder"
+        },
+        {
+          "kind": "class",
+          "name": "InteractiveBadgePreview"
+        },
+        {
+          "kind": "class",
+          "name": "_InteractiveBadgePreviewState"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/ui/interactive_member_badges.dart",
-      "bytes": 5082,
-      "sha256": "976ed17eea4a25cbb37e16e201894eca296a7358820b95518996ea5db7234d1d",
+      "bytes": 1953,
+      "sha256": "fa126e136dd30cc68442b1ed3188695bdde0ba3c6ffe04d587da5658600f1dca",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -4958,16 +5016,7 @@
           ]
         }
       ],
-      "declarations": [
-        {
-          "kind": "class",
-          "name": "_InteractiveBadgeIcon"
-        },
-        {
-          "kind": "class",
-          "name": "_InteractiveBadgeIconState"
-        }
-      ],
+      "declarations": [],
       "top_level_functions": [
         "functionKeyWidget",
         "effectiveBadgeKeysForFunctionIds",
@@ -5651,6 +5700,45 @@
       ],
       "declarations": [],
       "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/interactive_badge_preview_test.dart",
+      "bytes": 1602,
+      "sha256": "d839efd095151ee79f430cd702d8012cb83f2c144502e27feac35f3e5f61f7fa",
+      "owner": "test/interactive_badge_preview_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/interactive_badge_preview.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/interactive_badge_preview.dart"
+          ],
+          "local_targets": [
+            "lib/ui/interactive_badge_preview.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "_fakeBadge",
         "main"
       ]
     },

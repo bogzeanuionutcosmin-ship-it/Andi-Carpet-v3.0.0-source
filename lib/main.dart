@@ -58,6 +58,7 @@ import 'ui/info_card.dart' as info_card;
 import 'ui/stat_card.dart' as stat_card;
 import 'ui/app_backdrop.dart' as app_backdrop;
 import 'ui/install_app_buttons_view.dart' as install_buttons;
+import 'ui/interactive_badge_preview.dart' as badge_preview;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
@@ -237,6 +238,21 @@ class _AppBackdrop extends StatelessWidget {
       child: child,
     );
   }
+}
+
+class _InteractiveBadgeIcon extends StatelessWidget {
+  final String asset;
+  final double size;
+  final Color? color;
+  const _InteractiveBadgeIcon({required this.asset, required this.size, this.color});
+
+  @override
+  Widget build(BuildContext context) => badge_preview.InteractiveBadgePreview(
+        asset: asset,
+        size: size,
+        color: color,
+        badgeGraphic: _badgeGraphic,
+      );
 }
 
 class _InstallAppButtons extends StatelessWidget {

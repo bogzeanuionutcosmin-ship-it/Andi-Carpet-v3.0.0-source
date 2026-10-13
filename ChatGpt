@@ -1580,3 +1580,12 @@ Nicio schimbare PDF, Mapbox/rutare, OCR, diurne, permisiuni financiare sau fluxu
 Lotul `install_app_buttons_view.dart` este validat pe commitul cod `dbf801cc9d4bdbb034300a098bc337ec97392bd6`, workflow run `38460150662`: **5/5 joburi SUCCESS**. Python/security, Node projection, Firestore emulator, Functions syntax/dependencies, Flutter tests, verificarea bibliotecilor independente și buildul web au trecut. Dialogurile și rutarea de instalare au rămas în partul existent și wrapperul main păstrează callbackurile pentru login/dashboard.
 
 Inventar după lot: 144 Dart (121 lib, 22 teste, 1 script), 73 parts, 71 biblioteci, fără lipsuri/orfani/duplicate/cicluri. Următoarea acțiune exactă: audit read-only pentru `interactive_member_badges.dart` și `app_root_theme.dart`, inventariind overlay/state și branding/global settings; se extrage numai un widget pur dacă interfețele pot păstra aceiași callbackuri, setări și singletonuri. PageShell, auth/sync și PDF download/share rămân neatinse până la adaptere sigure. Modularizarea integrală nu este finalizată.
+
+
+## MOD-INTERACTIVE-BADGE-PREVIEW-LIBRARY-20261013
+
+Bază: `99c6852c37861c8fb36db67f5d8856b23cd9f871`. Stateful overlay-ul de previzualizare a badge-ului este separat în `lib/ui/interactive_badge_preview.dart`, cu builder `BadgeGraphicBuilder` injectat pentru randarea assetului. Wrapperul privat `_InteractiveBadgeIcon` păstrează parametrii și callbackul `_badgeGraphic`; funcțiile și adaptoarele badge din part rămân acolo. Overlay root, hover, pin la tap, închiderea la tap/exit și cleanup la dispose sunt păstrate. `app_root_theme.dart` rămâne part: setează `_activeAppSettingsForBranding` global și construiește tema din setări, deci nu are încă o limită sigură fără contract de stare/branding.
+
+Test Dart nou acoperă previzualizarea mărită la tap, toggle/cleanup și hover/exit. Inventar: 146 Dart (122 lib, 23 teste, 1 script), 73 parts, 73 biblioteci; fără missing/orphan/duplicate/cicluri. Verificările locale Python structurale (84), inventory JSON, Node syntax și diff-check PASS; Flutter/Dart indisponibil local.
+
+Nicio schimbare la utilitarele sticker/emoji partajate, chat, PDF, Mapbox, OCR, diurne sau permisiuni. Modularizarea integrală nu este finalizată. CI pentru acest lot este în așteptare; următorul pas numai după 5/5 este un nou audit read-only pentru un widget cu stare locală fără dependențe globale.
