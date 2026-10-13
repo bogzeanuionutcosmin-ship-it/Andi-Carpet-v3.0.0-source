@@ -49,6 +49,8 @@ export 'models/default_categories_functions.dart';
 import 'models/location_category_helpers.dart';
 export 'models/location_category_helpers.dart';
 import 'models/permission_status_labels.dart';
+import 'home/home_definition_sources.dart';
+export 'home/home_definition_sources.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';
@@ -168,7 +170,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 
-// Read-only application adapter. SDK/query access stays lazy and ordered by AuthGate.
+// Operation adapters stay lazy; LoginPage owns validation and ordering.
 LoginActions _firebaseLoginActions() => LoginActions(
   resolveIdentifier: (identifier, password) =>
       LoginAliasResolver(post: http.post).resolve(identifier, password),
@@ -182,6 +184,7 @@ LoginActions _firebaseLoginActions() => LoginActions(
       .collection('users').doc(uid).set(data),
 );
 
+// Read-only SDK/query access stays lazy and ordered by AuthGate.
 AuthGateSources _firebaseAuthGateSources() => AuthGateSources(
   currentUser: () => FirebaseAuth.instance.currentUser,
   authStateChanges: () => FirebaseAuth.instance.authStateChanges(),

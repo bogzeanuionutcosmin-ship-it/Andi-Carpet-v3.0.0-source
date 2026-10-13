@@ -29,8 +29,9 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
   }
 
   void _startDefinitionsSync(FirebaseFirestore db) {
+    final sources = widget.definitionSources ?? HomeDefinitionSources.fromFirestore(db);
     _coreSubscriptions.add(
-      db.collection('locationCategories').snapshots().listen((snap) {
+      sources.categories().listen((snap) {
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedDefinitionsIfNeeded());
           return;
@@ -46,7 +47,7 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
     );
 
     _coreSubscriptions.add(
-      db.collection('backgrounds').snapshots().listen((snap) {
+      sources.backgrounds().listen((snap) {
         final next=<String,Map<String,String>>{};
         for(final doc in snap.docs){
           final d=doc.data();
@@ -62,7 +63,7 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
     );
 
     _coreSubscriptions.add(
-      db.collection('functions').snapshots().listen((snap) {
+      sources.functions().listen((snap) {
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedDefinitionsIfNeeded());
           return;

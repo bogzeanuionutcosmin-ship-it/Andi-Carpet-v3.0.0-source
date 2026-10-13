@@ -17,7 +17,9 @@ class HomeDirectorySyncContracts(unittest.TestCase):
             self.assertNotIn(sig,home)
             self.assertIn(name+"(db);",home)
         self.assertEqual(module.count("_coreSubscriptions.add("),5)
-        self.assertEqual(module.count(".snapshots().listen("),5)
+        self.assertEqual(module.count(".snapshots().listen("),2)
+        for source in ("categories", "backgrounds", "functions"):
+            self.assertEqual(module.count(f"sources.{source}().listen("), 1)
         core=home.split("  void _startCoreSync() {",1)[1].split("  Future<void> _writeLearningEvent(",1)[0]
         self.assertLess(core.index("_startDefinitionsSync(db);"),core.index("_startDirectorySync(db);"))
         self.assertIn("if (isAdmin) {\n      _startAuditSync(db);",core)
@@ -26,8 +28,8 @@ class HomeDirectorySyncContracts(unittest.TestCase):
     def test_safety_boundaries_and_side_effects_remain(self):
         module=(ROOT/"lib/home/home_directory_definitions_audit_sync.dart").read_text()
         for fragment in ("if (!isAdmin) return;", "collection('audit').orderBy('at', descending: true).limit(500)",
-                         "db.collection('locationCategories')","db.collection('backgrounds')",
-                         "db.collection('functions')", "db.collection('users') : db.collection('memberDirectory')",
+                         "sources.categories().listen(","sources.backgrounds().listen(",
+                         "sources.functions().listen(", "db.collection('users') : db.collection('memberDirectory')",
                          "_syncUserPermissionSnapshots()", "_applyTeamMembership()",
                          "_startFinancialSync()", "coreSyncError = 'Audit: $e'",
                          "coreSyncError = 'Conturi: $e'"):

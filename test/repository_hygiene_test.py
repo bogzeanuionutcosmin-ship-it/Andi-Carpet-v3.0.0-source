@@ -1125,8 +1125,13 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("void _startDefinitionsSync(FirebaseFirestore db)", module)
         self.assertIn("_startDefinitionsSync(db);", home)
         definitions = module.split("void _startDefinitionsSync(FirebaseFirestore db)", 1)[1].split("void _startDirectorySync(FirebaseFirestore db)", 1)[0]
-        for collection in ("locationCategories", "backgrounds", "functions"):
-            self.assertIn("db.collection('" + collection + "')", definitions)
+        sources = (ROOT / "lib/home/home_definition_sources.dart").read_text(encoding="utf-8")
+        self.assertIn("widget.definitionSources ?? HomeDefinitionSources.fromFirestore(db)", definitions)
+        for field, collection in (("categories", "locationCategories"),
+                                  ("backgrounds", "backgrounds"), ("functions", "functions")):
+            self.assertEqual(definitions.count("sources." + field + "().listen("), 1)
+            self.assertIn(field + ": () => db.collection('" + collection + "').snapshots()", sources)
+        self.assertNotIn(".listen(", sources)
         self.assertIn("_syncUserPermissionSnapshots()", definitions)
         self.assertIn("_startFinancialSync()", definitions)
 

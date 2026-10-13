@@ -4,7 +4,8 @@ class HomePage extends StatefulWidget {
   final AppSettings settings;
   final VoidCallback onSettingsChanged;
   final FirebaseUserProfile profile;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile});
+  final HomeDefinitionSources? definitionSources;
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources});
   @override State<HomePage> createState() => _HomePageState();
 }
 

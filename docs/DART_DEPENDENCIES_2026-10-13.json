@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 169,
-  "lib_dart_files": 127,
-  "test_dart_files": 41,
+  "dart_files": 171,
+  "lib_dart_files": 128,
+  "test_dart_files": 42,
   "script_dart_files": 1,
   "parts": 60,
-  "libraries": 109,
+  "libraries": 111,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -59,6 +59,7 @@
       "lib/finance/per_diem_ledger.dart"
     ],
     "lib/firebase_options.dart": [],
+    "lib/home/home_definition_sources.dart": [],
     "lib/home/seed_operational_locations.dart": [
       "lib/models/app_data_models.dart",
       "lib/models/app_enums.dart"
@@ -81,6 +82,7 @@
       "lib/bootstrap/firebase_initialization.dart",
       "lib/download_file.dart",
       "lib/firebase_options.dart",
+      "lib/home/home_definition_sources.dart",
       "lib/home/seed_operational_locations.dart",
       "lib/learning/duration_estimates.dart",
       "lib/map/graph_road_distance.dart",
@@ -269,6 +271,9 @@
       "lib/map/graph_route_calculations.dart",
       "lib/models/app_data_models.dart",
       "lib/models/app_enums.dart"
+    ],
+    "test/home_definition_sources_test.dart": [
+      "lib/home/home_definition_sources.dart"
     ],
     "test/home_location_seed_test.dart": [
       "lib/home/seed_operational_locations.dart",
@@ -1952,9 +1957,32 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/home/home_definition_sources.dart",
+      "bytes": 837,
+      "sha256": "67f6d4e999637ed867a3fddcb05b7e8c19304b3bbff532a23ebe5ea3fdd532bc",
+      "owner": "lib/home/home_definition_sources.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "HomeDefinitionSources"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/home/home_directory_definitions_audit_sync.dart",
-      "bytes": 7831,
-      "sha256": "3634439c8fb5d5858c481af8d5e64428c12395c9a44215b135b9a6fd5d4d28ec",
+      "bytes": 7855,
+      "sha256": "2c16cd2c20d855e41b07e4ea3c0a3802f564b99489dff8c42e570e93278126b4",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2128,8 +2156,8 @@
     },
     {
       "path": "lib/home/home_page.dart",
-      "bytes": 22482,
-      "sha256": "6e2d67870f062216e233636f5b1bdb6b9cd3ce7e8dcd65f809a0cb18032945cf",
+      "bytes": 22556,
+      "sha256": "d5b752d64e2cc81b3497313b97f19c7e9ae49d5f5379bb227cb4f76ab9eee3ca",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2337,8 +2365,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 29351,
-      "sha256": "bcaa1680a1aa4d167ecd85c68d3c8baef3eaa5421eda7483202e2fac8e0b42e2",
+      "bytes": 29491,
+      "sha256": "ed9eec70987092257940f50200e930259621dea10786a8a1678b8357cf95f738",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2799,6 +2827,26 @@
           ],
           "local_targets": [
             "lib/models/permission_status_labels.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'home/home_definition_sources.dart';",
+          "uris": [
+            "home/home_definition_sources.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_definition_sources.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'home/home_definition_sources.dart';",
+          "uris": [
+            "home/home_definition_sources.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_definition_sources.dart"
           ]
         },
         {
@@ -6561,6 +6609,65 @@
         "location",
         "noMapbox",
         "noHttp",
+        "main"
+      ]
+    },
+    {
+      "path": "test/home_definition_sources_test.dart",
+      "bytes": 4620,
+      "sha256": "9f54006533db55f9309d763b2a2dc22b87dda7a796effc53006da4bdff757142",
+      "owner": "test/home_definition_sources_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/home/home_definition_sources.dart';",
+          "uris": [
+            "package:andi_carpeta/home/home_definition_sources.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_definition_sources.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "_DefinitionSnapshot"
+        },
+        {
+          "kind": "class",
+          "name": "_DefinitionCollection"
+        },
+        {
+          "kind": "class",
+          "name": "_DefinitionFirestore"
+        }
+      ],
+      "top_level_functions": [
         "main"
       ]
     },
