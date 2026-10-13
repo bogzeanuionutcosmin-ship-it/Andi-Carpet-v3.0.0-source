@@ -459,3 +459,10 @@ Bază: `a9a520992454222a03761b4b4c3728d290a65d8e`. Ecranul de eroare Firebase a 
 Test Flutter direct verifică instrucțiunile iOS/web/Android și mesajul SelectableText. Inventar: 148 Dart, 71 parts, 77 biblioteci, fără lipsuri/orfani/duplicate/cicluri. Testele structurale locale (84), parserul de inventar, Node syntax și diff-check PASS; Flutter/Dart indisponibil local.
 
 PR #29 și logica de autentificare/permisiuni nu sunt modificate. CI pentru lot în așteptare; următorul pas după 5/5 este audit read-only pentru un widget UI rămas cu contract mic. Modularizarea completă nu este finalizată.
+
+
+## MOD-FIREBASE-BOOTSTRAP-ERROR-CI-GREEN-20261013
+
+Lotul `firebase_bootstrap_error_app.dart` a fost convertit la bibliotecă Material independentă și validat pe commitul cod `3b21f31e37b29c61a0d749109c98ef65f69fdc94`, workflow run `38463643897`: **5/5 SUCCESS**. Widget test, verificarea pură, build web și toate joburile de Node/Python/Functions/Firestore au trecut. Wrapperul privat păstrează apelul `runApp` și mesajul primit; initialization/excepția rămân neschimbate.
+
+Inventar: 148 fișiere Dart, 71 parts, 77 biblioteci; zero missing/orphan/duplicate/cicluri. Următorul audit read-only: modelul `_VerifiedLocationFix`, cu atenție la păstrarea exactă a catalogului Magic/Million și a callsite-urilor de import. Nu se editează datele sau algoritmii din map. Modularizarea integrală nu este finalizată.
