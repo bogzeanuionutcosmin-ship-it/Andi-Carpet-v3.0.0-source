@@ -30,17 +30,3 @@ Future<void> _showAppleInstallFlow(BuildContext context) async {
     actions:[FilledButton(onPressed:()=>Navigator.pop(c),child:const Text('Am înțeles'))],
   ));
 }
-
-class _InstallAppButtons extends StatelessWidget {
-  final AppSettings settings;
-  final bool compact;
-  const _InstallAppButtons({required this.settings,this.compact=false});
-  @override Widget build(BuildContext context)=>Wrap(
-    spacing:8,runSpacing:8,alignment:WrapAlignment.center,
-    children:[
-      FilledButton.tonalIcon(onPressed:()=>_showAndroidInstallFlow(context,settings),icon:const Icon(Icons.android),label:Text(compact?'Android':'Instalează aplicația · Android')),
-      OutlinedButton.icon(onPressed:()=>_showAppleInstallFlow(context),icon:const Icon(Icons.apple),label:Text(compact?'Apple':'Instalează aplicația · Apple')),
-    ],
-  );
-}
-

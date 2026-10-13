@@ -1564,3 +1564,12 @@ CI run `38427180232`: Python/security, Node, Functions și Firestore emulator **
 Lotul AppBackdrop este validat pe commitul cod `64ab4000be91e3c3e0919b1419f35eec76be1a97` prin workflow run `38427425339`: **5/5 joburi SUCCESS** (Python/security, Node projection, Firestore emulator, Firebase Functions, Flutter tests + web build). Flutter suite/widget și verificarea bibliotecilor pure au trecut; web build a trecut. Corecțiile din acest lot au fost numai la snapshotul de inventar și la determinismul/finder-ele testului; componenta și comportamentul de producție nu s-au schimbat după extragere.
 
 Inventar final: 142 Dart (120 lib, 21 tests, 1 script), 73 parts, 69 biblioteci; zero missing/orphan/duplicate/cicluri. `AppBackdrop` este bibliotecă independentă, iar `_AppBackdrop` menține adapterul de setări și callsite-urile. `PageShell` rămâne part din cauza brandingului global mutabil. Următorul lot exact, după audit read-only: evaluarea widgetului vizual din `install_app_buttons.dart` ca bibliotecă cu callbackuri, păstrând funcțiile și contractele Android/web în wrapperul existent. Nu se modifică fluxul de instalare/launch.
+
+
+## MOD-INSTALL-BUTTON-VIEW-LIBRARY-20261013
+
+Bază: `7e15d7511dc123d95c7f3d16e5c898fbff8c53de`. Widgetul vizual `_InstallAppButtons` este mutat într-o bibliotecă Material independentă `lib/ui/install_app_buttons_view.dart`, cu callbackuri explicite pentru Android și Apple și starea compactă. Wrapperul privat cu același constructor din main păstrează ambele callsite-uri existente (login și dashboard) și leagă aceleași funcții. Dialogurile, URL-ul din setări, mesajele de eroare și apelurile `launchUrl` rămân neschimbate în `install_app_buttons.dart`; contractele Android/web nu sunt rescrise.
+
+Test Flutter nou: callbackurile sunt invocate o dată și etichetele full/compact rămân identice. Inventar: 144 fișiere Dart (121 lib, 22 teste, 1 script), 73 parts, 71 biblioteci; fără missing/orphan/duplicate/cicluri. Local 84 teste Python structurale, inventar JSON, Node syntax și diff-check PASS; Flutter/Dart indisponibil local.
+
+Nicio schimbare PDF, Mapbox/rutare, OCR, diurne, permisiuni financiare sau fluxuri de autentificare. Modularizarea integrală nu este finalizată. CI pentru commitul acestui lot: în așteptare; următorul pas doar după 5/5 este auditul următoarelor componente UI mici cu stare explicită.

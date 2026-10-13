@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 142,
-  "lib_dart_files": 120,
-  "test_dart_files": 21,
+  "dart_files": 144,
+  "lib_dart_files": 121,
+  "test_dart_files": 22,
   "script_dart_files": 1,
   "parts": 73,
-  "libraries": 69,
+  "libraries": 71,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -79,6 +79,7 @@
       "lib/ui/empty_state.dart",
       "lib/ui/icon_badge_catalog.dart",
       "lib/ui/info_card.dart",
+      "lib/ui/install_app_buttons_view.dart",
       "lib/ui/money_card.dart",
       "lib/ui/stat_card.dart",
       "lib/utils/graph_names.dart",
@@ -137,6 +138,7 @@
     "lib/ui/empty_state.dart": [],
     "lib/ui/icon_badge_catalog.dart": [],
     "lib/ui/info_card.dart": [],
+    "lib/ui/install_app_buttons_view.dart": [],
     "lib/ui/money_card.dart": [],
     "lib/ui/stat_card.dart": [],
     "lib/utils/graph_names.dart": [],
@@ -185,6 +187,9 @@
     ],
     "test/info_card_library_test.dart": [
       "lib/ui/info_card.dart"
+    ],
+    "test/install_app_buttons_view_test.dart": [
+      "lib/ui/install_app_buttons_view.dart"
     ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
@@ -2072,8 +2077,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 20147,
-      "sha256": "2a8e2bf7223d43e57f43f0ac3ac8bb7f12730c9679dd0f2e0e7da3f9f5567dd2",
+      "bytes": 20656,
+      "sha256": "c148f68890a5197387396d04ca1768ae709e029cd7976889bff82ee7eb517c5d",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2614,6 +2619,16 @@
           ],
           "local_targets": [
             "lib/ui/app_backdrop.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'ui/install_app_buttons_view.dart' as install_buttons;",
+          "uris": [
+            "ui/install_app_buttons_view.dart"
+          ],
+          "local_targets": [
+            "lib/ui/install_app_buttons_view.dart"
           ]
         },
         {
@@ -3383,6 +3398,10 @@
         {
           "kind": "class",
           "name": "_AppBackdrop"
+        },
+        {
+          "kind": "class",
+          "name": "_InstallAppButtons"
         },
         {
           "kind": "class",
@@ -4878,8 +4897,8 @@
     },
     {
       "path": "lib/ui/install_app_buttons.dart",
-      "bytes": 2928,
-      "sha256": "d4faf639e4d73cc4b7c17a86d982ab264f3ae1b1e9eccbf7455d318f2469503f",
+      "bytes": 2261,
+      "sha256": "c3b273a1e39d4e5b9e53dd098dde085cfec7b6d1041f1fb1c3979817cc07324f",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -4893,16 +4912,34 @@
           ]
         }
       ],
-      "declarations": [
-        {
-          "kind": "class",
-          "name": "_InstallAppButtons"
-        }
-      ],
+      "declarations": [],
       "top_level_functions": [
         "_showAndroidInstallFlow",
         "_showAppleInstallFlow"
       ]
+    },
+    {
+      "path": "lib/ui/install_app_buttons_view.dart",
+      "bytes": 994,
+      "sha256": "5781603f819bf616c9bd03bae9c8437a1781167f55754fe1b3d771965270e81b",
+      "owner": "lib/ui/install_app_buttons_view.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "InstallAppButtonsView"
+        }
+      ],
+      "top_level_functions": []
     },
     {
       "path": "lib/ui/interactive_member_badges.dart",
@@ -5571,6 +5608,44 @@
           ],
           "local_targets": [
             "lib/ui/info_card.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/install_app_buttons_view_test.dart",
+      "bytes": 1502,
+      "sha256": "5a908bb9381189a47ae4af159d1ad39f1e8be0fce0179daa2bffd4ca84ea40df",
+      "owner": "test/install_app_buttons_view_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/install_app_buttons_view.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/install_app_buttons_view.dart"
+          ],
+          "local_targets": [
+            "lib/ui/install_app_buttons_view.dart"
           ]
         }
       ],

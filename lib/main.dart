@@ -57,6 +57,7 @@ import 'ui/money_card.dart' as money_card;
 import 'ui/info_card.dart' as info_card;
 import 'ui/stat_card.dart' as stat_card;
 import 'ui/app_backdrop.dart' as app_backdrop;
+import 'ui/install_app_buttons_view.dart' as install_buttons;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
@@ -236,6 +237,19 @@ class _AppBackdrop extends StatelessWidget {
       child: child,
     );
   }
+}
+
+class _InstallAppButtons extends StatelessWidget {
+  final AppSettings settings;
+  final bool compact;
+  const _InstallAppButtons({required this.settings, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) => install_buttons.InstallAppButtonsView(
+        compact: compact,
+        onAndroidPressed: () => _showAndroidInstallFlow(context, settings),
+        onApplePressed: () => _showAppleInstallFlow(context),
+      );
 }
 
 class _Empty extends StatelessWidget {

@@ -110,17 +110,26 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_install_buttons_are_extracted_without_behavior_loss(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        module = (ROOT / "lib/ui/install_app_buttons.dart").read_text(encoding="utf-8")
+        flows = (ROOT / "lib/ui/install_app_buttons.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/ui/install_app_buttons_view.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/install_app_buttons.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("part of '../main.dart';", flows)
+        self.assertIn("import 'ui/install_app_buttons_view.dart' as install_buttons;", main)
+        self.assertEqual(main.count("class _InstallAppButtons extends StatelessWidget"), 1)
+        self.assertIn("onAndroidPressed: () => _showAndroidInstallFlow(context, settings)", main)
+        self.assertIn("onApplePressed: () => _showAppleInstallFlow(context)", main)
         for symbol in ("Future<void> _showAndroidInstallFlow(",
-                       "Future<void> _showAppleInstallFlow(",
-                       "class _InstallAppButtons extends StatelessWidget"):
-            self.assertNotIn(symbol, main)
-            self.assertEqual(module.count(symbol), 1)
-        self.assertIn("launchUrl(uri,mode:LaunchMode.externalApplication)", module)
-        self.assertIn("Auto Blocker", module)
-        self.assertIn("Adaugă pe ecranul principal", module)
+                       "Future<void> _showAppleInstallFlow("):
+            self.assertEqual(flows.count(symbol), 1)
+        self.assertIn("launchUrl(uri,mode:LaunchMode.externalApplication)", flows)
+        self.assertIn("Auto Blocker", flows)
+        self.assertIn("Adaugă pe ecranul principal", flows)
+        self.assertIn("import 'package:flutter/material.dart';", module)
+        self.assertNotIn("AppSettings", module)
+        self.assertNotIn("launchUrl", module)
+        self.assertEqual(module.count("class InstallAppButtonsView extends StatelessWidget"), 1)
+        self.assertIn("onPressed: onAndroidPressed", module)
+        self.assertIn("onPressed: onApplePressed", module)
 
     def test_firebase_bootstrap_is_extracted_and_entrypoint_stays_in_main(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
