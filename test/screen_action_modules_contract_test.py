@@ -14,7 +14,6 @@ def source(path):
 class ScreenActionContracts(unittest.TestCase):
     def test_methods_have_one_definition_and_parts_are_linked(self):
         main = source('lib/main.dart')
-        library = '\n'.join(p.read_text(encoding='utf-8') for p in (ROOT / 'lib').rglob('*.dart'))
         for path, (state, extension, methods) in MODULES.items():
             with self.subTest(path=path):
                 module = source(path)
@@ -22,12 +21,15 @@ class ScreenActionContracts(unittest.TestCase):
                 self.assertEqual(main.count(f"part '{path[4:]}';"), 1)
                 self.assertIn(f'extension {extension} on {state} {{', module)
                 # Scoped to each State: identical private names in other States are valid.
-                page = next(p for p in (ROOT / Path(path).parent).glob('*_page.dart'))
+                page_name = {'_ExpensePageState': 'expense_page.dart', '_ProgramPageState': 'program_page.dart', '_MapPageState': 'map_page.dart', '_DashboardPageState': 'dashboard_page.dart'}[state]
+                page = ROOT / Path(path).parent / page_name
+                scope = page.read_text() + '\n'.join(source(p) for p, spec in MODULES.items() if spec[0] == state)
                 self.assertIn('Widget build(BuildContext context)', page.read_text())
                 self.assertNotIn('@override', module)
                 for method in methods:
                     signature = rf'^  (?:Future<[^\n]+?>|List<[^\n]+?>|Map<[^\n]+?>|String|int|double|bool|void|Widget|Location|Expense|WorkSchedule|CentralizerRecord|Duration|DateTime|Uint8List)\?? {method}\('
                     self.assertEqual(len(re.findall(signature, module, re.M)), 1, method)
+                    self.assertEqual(len(re.findall(signature, scope, re.M)), 1, method)
                     self.assertFalse(re.search(signature, page.read_text(), re.M), method)
 
     def test_per_diem_beneficiary_rollback_and_disputes_preserved(self):
@@ -60,7 +62,8 @@ class ScreenActionContracts(unittest.TestCase):
         for item in ('expenseIds.add(e.id)', 'paymentIds.add(d.id)', 'd.received==true',
                      'd.actualReceivedAmount!.isFinite', 'dateOk(d.confirmedAt??d.date)',
                      'seenTransferIds.add(transfer.id)', 'else if(allTime)',
-                     'await widget.saveSettlement(result);', 'await widget.saveFinance(finance);'):
+                     'await widget.saveSettlement(result);', 'await widget.saveFinance(finance);',
+                     'value: _ExpensePageState._legacySettlementKey'):
             self.assertIn(item, module)
 
     def test_program_route_protects_active_items_and_incomplete_gps(self):

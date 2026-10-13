@@ -6,7 +6,7 @@ extension _ExpenseSettlementActions on _ExpensePageState {
     for (final s in teamSettlements) {
       items.add(DropdownMenuItem(value: s.id, child: Text('${s.name} · ${_shortDate(s.startDate)}${s.closed ? ' · închisă' : ''}')));
     }
-    if (hasLegacyData) items.add(const DropdownMenuItem(value: _legacySettlementKey, child: Text('Istoric anterior · date fără deplasare')));
+    if (hasLegacyData) items.add(const DropdownMenuItem(value: _ExpensePageState._legacySettlementKey, child: Text('Istoric anterior · date fără deplasare')));
     final value = _resolvedSettlementId();
     return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
