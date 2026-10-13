@@ -430,10 +430,21 @@ Lotul AccountAccessViews a fost validat pe commitul b73994b60f3ba5898e44d512f981
 
 Bază validată: AccountAccessViews pe commitul b73994b60f3ba5898e44d512f98139905ee55bda, CI run 38480354362 **5/5 SUCCESS**. Helperul vizual și lista statică din tabul Capacități sunt mutate textual în lib/ui/app_capabilities_view.dart. AppInformationPage păstrează setările/brandingul, pagina cu taburi, istoricul static, streamul updateHistory, formularul și scrierile admin în Firestore. Taburile, textele, pictogramele, stilurile și ordinea secțiunilor nu se schimbă.
 
-Testul Flutter direct verifică secțiunea zilnică, textul ei și secțiunea Web după scroll. Snapshotul inventarului: **160 fișiere Dart (124 lib, 35 test, 1 script), 63 parts, 97 biblioteci**; fără ținte lipsă, parts orfane, duplicate sau cicluri. CI-ul lotului este în așteptare.
+Testul Flutter direct verifică secțiunea zilnică, textul ei și secțiunea Web după scroll. Snapshotul inventarului: **160 fișiere Dart (124 lib, 35 test, 1 script), 63 parts, 97 biblioteci**; fără ținte lipsă, parts orfane, duplicate sau cicluri. CI run 38480743062 pentru commitul ecaf732538b8939dbd69835f66883aa05dffe3a5 este **5/5 SUCCESS**.
 
 Nu se schimbă istoricul, rolurile, permisiunile, datele/rules Firebase sau textele de produs. PR #20/#29, PDF/PV, OCR/diurne, Mapbox, billing și producția rămân neatinse. Fără merge, deploy ori APK publicat.
 
 ## LATEST CHECKPOINT — 2026-10-14
 
 HEAD de cod anterior: b73994b60f3ba5898e44d512f98139905ee55bda, run CI 38480354362 **5/5 SUCCESS**. Lotul curent este AppCapabilitiesView și este comis în continuare pe PR #28; CI pentru el urmează. Ultimul inventar complet înaintea acestui lot: 158 fișiere, 63 parts, 95 biblioteci; inventarul lotului curent este 160/63/97.
+
+
+## FINAL CHECKPOINT — 2026-10-14, după loturile AccountAccessViews și AppCapabilities
+
+PR #28 HEAD de cod: ecaf732538b8939dbd69835f66883aa05dffe3a5, CI run [38480743062](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38480743062) **5/5 SUCCESS**. Lotul anterior AccountAccessViews este validat separat pe b73994b60f3ba5898e44d512f98139905ee55bda, run 38480354362 **5/5 SUCCESS**. PR rămâne Draft/Open, fără merge; main și configurația de producție nu s-au schimbat.
+
+Inventar: **160 fișiere Dart (124 lib, 35 test, 1 script), 63 parts, 97 biblioteci**, fără ținte lipsă, parts orfane, duplicate în aceeași bibliotecă ori cicluri import/export. Testele directe pentru cele două loturi au trecut în CI, împreună cu Python/security, Node, Functions, Firestore emulator, verificarea domeniilor fără motor Flutter și buildul web.
+
+Auditul read-only pentru următoarele părți nu a identificat încă un modul la fel de mic și independent: QuickAccounts gestionează parole în SecureStorage; FirebaseUserProfile/AuthGate și inițializarea sunt legate de identitate/streams/startup; AppInformationPage păstrează updateHistory și scrierile admin; PageShell/tema folosesc branding global; install flow folosește URL launch extern. Aceste zone rămân pentru loturi viitoare cu interfețe și teste specifice. **Modularizarea completă nu este finalizată; 63 parts încă așteaptă separare graduală.**
+
+PR #20, PR #29/OCR/diurne, PDF/PV, Mapbox, date/rules/config Firebase, billing și producția rămân neatinse. Fără merge, deploy, APK publicat sau modificări în producție.
