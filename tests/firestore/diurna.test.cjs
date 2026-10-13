@@ -236,7 +236,7 @@ test('expenses create: creatorul poate seta confirmed direct în payloadul permi
 
 test('managerId registration characterization: finance team member can edit manager field today', async () => {
   const { setDoc } = require('firebase/firestore');
-  const path = 'finance/expense-ocr-manager-check';
+  const path = 'finance/expense-ocr-team';
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(doc(ctx.firestore(), path), { teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin' });
   });
@@ -254,7 +254,7 @@ test('managerId registration characterization: settlement team member can edit m
 
 test('managerId registration characterization: unrelated user cannot edit finance manager field', async () => {
   const { setDoc } = require('firebase/firestore');
-  const path = 'finance/expense-ocr-outsider-check';
+  const path = 'finance/expense-ocr-team';
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(doc(ctx.firestore(), path), { teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin' });
   });
