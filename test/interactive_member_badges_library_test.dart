@@ -22,17 +22,22 @@ void main() {
           'custom-first',
           'custom-first',
           'custom-second',
-          'custom-third',
-          'custom-fourth',
         ],
         colorValue: Colors.blue.value,
+      ),
+      FunctionDefinition(
+        id: 'also-active',
+        name: 'Tot activă',
+        iconKey: 'custom-second',
+        badgeKeys: const ['custom-second', 'custom-third'],
+        colorValue: Colors.green.value,
       ),
     ];
 
     expect(
       effectiveBadgeKeysForFunctionIds(
         definitions,
-        ['missing', 'inactive', 'active'],
+        ['missing', 'inactive', 'active', 'also-active'],
       ),
       ['custom-first', 'custom-second', 'custom-third'],
     );
@@ -48,9 +53,15 @@ void main() {
         badgeKeys: const [
           'custom-a',
           'badge_coordinator',
-          'custom-a',
           'custom-b',
         ],
+        colorValue: Colors.teal.value,
+      ),
+      FunctionDefinition(
+        id: 'duplicate',
+        name: 'Duplicată',
+        iconKey: 'custom-a',
+        badgeKeys: const ['custom-a', 'custom-b'],
         colorValue: Colors.teal.value,
       ),
     ];
@@ -63,7 +74,7 @@ void main() {
               const ['custom-one', ' ', 'custom-two', 'custom-three', 'custom-four'],
               color: Colors.red,
             ),
-            memberBadgeStripWidget(definitions, const ['member']),
+            memberBadgeStripWidget(definitions, const ['member', 'duplicate']),
           ],
         ),
       ),
