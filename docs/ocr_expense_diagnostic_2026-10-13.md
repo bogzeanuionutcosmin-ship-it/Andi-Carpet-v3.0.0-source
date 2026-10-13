@@ -25,3 +25,9 @@ Am adăugat **4 teste emulator Firestore** în `tests/firestore/diurna.test.cjs`
 - Rămân de făcut teste autentificate Android/web cu 2 membri reali, înainte de aprobarea oricărui deploy. Nu se stochează text OCR brut în logs, nu se adaugă API plătite și nu se modifică facturarea.
 
 **Stare finală a acestui lot:** așteptarea CI pe SHA final; PR Draft, independent de Work.
+
+## 4. Consolidare OCR: total de plată vs TVA și validare calendaristică (13.10.2026)
+
+- Defect adițional identificat: algoritmul prefera ultima apariție TOTAL, astfel `TOTAL TVA` tipărit după `TOTAL DE PLATĂ` putea deveni suma salvată. Prioritatea de extragere este acum (1) TOTAL DE PLATĂ / SUMA DE PLATĂ explicit, (2) TOTAL generic dar nu SUBTOTAL / TOTAL TVA, (3) sume cu RON/LEI ca fallback. Această schimbare afectează exclusiv parserul OCR și este verificată cu bonuri sintetice în ordini diferite.
+- Defect de dată: `DateTime` normalizează zile calendaristice imposibile, de exemplu 31 februarie în martie. Parserul respinge acum datele care nu corespund exact zilei/lunii/anului; păstrează 29 februarie în an bisect și verifică și formatul ISO. În lipsa unei date recunoscute, utilizatorul verifică manual data în dialog.
+- Sfera: două fișiere de parser/test și această notă; fără model financiar, Firebase rules, schema, Learning, folderele Work/PR #28, date personale ori deploy. Sunt necesare Flutter tests/web și celelalte verificări CI pe commitul final.

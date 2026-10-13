@@ -50,4 +50,37 @@ TOTAL 308,13 LEI
     );
     expect(result.amount, closeTo(1234.56, 0.001));
   });
+
+  test('OCR pune totalul de plată înaintea taxei TVA, independent de ordinea liniilor', () {
+    const texts = <String>[
+      'SC TEST SRL\nTOTAL DE PLATA 1.234,56 LEI\nTOTAL TVA 234,56',
+      'SC TEST SRL\nTOTAL TVA 234,56\nTOTAL DE PLATA 1.234,56 LEI',
+      'SC TEST SRL\nSUMA DE PLATĂ 1.234,56 LEI\nTVA 234,56',
+      'SC TEST SRL\nSUBTOTAL 1.000,00\nTOTAL TVA 234,56\nTOTAL 1.234,56 LEI',
+      'SC TEST SRL\nTOTAL 1.234,56 LEI\nTOTAL TVA 234,56',
+    ];
+    for (final input in texts) {
+      expect(parseFiscalOcr(input).amount, closeTo(1234.56, 0.001),
+          reason: input);
+    }
+  });
+
+  test('OCR ignoră zilele imposibile și acceptă 29 februarie în an bisect', () {
+    for (final date in <String>[
+      '31.02.2026', '29.02.2025', '31.04.2026', '2026-02-30',
+    ]) {
+      expect(parseFiscalOcr('SC TEST SRL\nDATA $date\nTOTAL 15,90 LEI').date,
+          isNull, reason: date);
+    }
+    expect(parseFiscalOcr('DATA 29.02.2024\nTOTAL 15,90').date,
+        DateTime(2024, 2, 29));
+    expect(parseFiscalOcr('DATA 2024-02-29\nTOTAL 15,90').date,
+        DateTime(2024, 2, 29));
+  });
+
+  test('OCR sare peste o dată invalidă înaintea uneia valide', () {
+    final parsed = parseFiscalOcr(
+        'DATA 31.02.2026\nDATA 05.03.2026\nTOTAL 15,90 LEI');
+    expect(parsed.date, DateTime(2026, 3, 5));
+  });
 }
