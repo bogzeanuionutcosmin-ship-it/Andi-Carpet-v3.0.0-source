@@ -96,7 +96,7 @@ double? _extractReceiptTotal(List<String> lines) {
     r'^([0-9][0-9.,\s\u00A0]*)\s+(?:RON|LEI)$',
     caseSensitive: false,
   );
-  final candidates = <double>{};
+  final candidates = <double>[];
   for (final line in lines) {
     final match = exactCurrency.firstMatch(line);
     if (match == null) continue;
