@@ -111,3 +111,13 @@ Aceasta este dovadă de mutare textuală, nu test real pe dispozitiv.
 - `git diff --check` semnalează spații finale moștenite din documentele aprobate; acestea sunt păstrate pentru integritatea textului, inclusiv hard breaks Markdown. Verificarea modificărilor proprii nu introduce spații finale. Nu confundăm aceste avertismente cu defecte de cod.
 - La înregistrarea acestei note, CI pentru noul commit nu este încă executat. Verdictul final, SHA exact și linkul rulării sunt consemnate în descrierea PR #17 după încheierea celor cinci joburi; verdele istoric 38220879828 nu validează singur noul commit.
 - Fără merge în main, deploy, APK, modificări Firebase live, chei/API ori billing. Vision/Error Log rămâne specificație, nu implementare. Modularizarea integrală și riscurile din acest audit și arhitectura Vision rămân pentru etapele următoare.
+
+## MOD-LEDGER-20261013 — testele financiare ajung în CI (lot nou, separat)
+
+**Constatare verificată pe `main` după integrarea PR #17/#18:** exista exact un fișier Dart `*_test.dart` sub `lib/`: `lib/finance/per_diem_ledger_test.dart` (5 cazuri). `flutter test test/` nu descoperă acel fișier, deci aceste cinci regresii nu erau executate în suita standard. `test/per_diem_ledger_test.dart` are alte teste, unele asemănătoare, dar nu acoperă explicit toate cele cinci condiții din fișierul ascuns.
+
+**Soluție strict structurală:** mutare textuală a celor cinci teste la `test/per_diem_ledger_edge_cases_test.dart`; singura schimbare din conținutul Dart este importul relativ înlocuit cu importul de pachet necesar după mutare. Ștergere a vechii copii din `lib/`; fără modificarea `lib/finance/per_diem_ledger.dart` sau a calculelor financiare. Un test Python `test/ledger_test_discovery_test.py` verifică faptul că nicio suită Dart nu rămâne ascunsă în `lib/` și toate cele cinci cazuri sunt prezente.
+
+**Impact:** testele pentru plăți în așteptare/confirmate, plăți parțiale, ID duplicat între perechi, inversare cu dată invalidă și confirmare de reversare devin obligatorii în CI. Datele, permisiunile, fluxurile Firestore, versionarea, dependențele, configurațiile și codul operațional rămân neschimbate. Fișierul de test este extras din `lib/`, nu dintr-un modul runtime.
+
+**Validări prevăzute:** CI Flutter `flutter test test/` + web build, contractele Python, Node, emulator Firestore demo și Functions din workflow existent. Nu declarăm PASS înainte de verificarea run-urilor pe HEAD final. Fără merge, deploy, producție, billing, actualizare de versiune sau APK publicat. Acesta este un checkpoint de igienă, **nu încheierea modularizării**.
