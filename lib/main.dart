@@ -54,6 +54,7 @@ import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';
 import 'teams/team_selector.dart' as team_selector;
 import 'ui/branding_theme_helpers.dart' as branding_helpers;
+import 'admin/backup_codec.dart' as backup_codec;
 export 'ui/branding_theme_helpers.dart' show appBrandLogo;
 import 'ui/section_visual_helpers.dart';
 export 'ui/section_visual_helpers.dart'
@@ -103,7 +104,6 @@ part 'expenses/expense_page.dart';
 part 'expenses/expense_settlement_actions.dart';
 part 'expenses/expense_per_diem_actions.dart';
 part 'expenses/expense_document_actions.dart';
-part 'admin/backup_codec.dart';
 part 'admin/admin_backup_actions.dart';
 part 'admin/admin_team_actions.dart';
 part 'admin/admin_member_actions.dart';
@@ -184,6 +184,9 @@ String _activeLogoAsset(AppSettings settings) =>
     branding_helpers.activeLogoAsset(settings);
 Widget appBrandLogo(AppSettings settings, {double width = 520, double height = 130}) =>
     branding_helpers.appBrandLogo(settings, width: width, height: height);
+
+dynamic _backupEncode(dynamic value) => backup_codec.encodeBackupValue(value);
+dynamic _backupDecode(dynamic value) => backup_codec.decodeBackupValue(value);
 
 class _TeamSelector extends StatelessWidget {
   final List<Team> teams;

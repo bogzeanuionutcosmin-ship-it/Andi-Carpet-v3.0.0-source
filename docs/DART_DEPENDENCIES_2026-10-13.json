@@ -1,17 +1,18 @@
 {
   "format_version": 1,
-  "dart_files": 153,
+  "dart_files": 154,
   "lib_dart_files": 122,
-  "test_dart_files": 30,
+  "test_dart_files": 31,
   "script_dart_files": 1,
-  "parts": 66,
-  "libraries": 87,
+  "parts": 65,
+  "libraries": 89,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
   "duplicate_declarations_in_library": [],
   "library_edges": {
     "lib/admin/admin_navigation_catalog.dart": [],
+    "lib/admin/backup_codec.dart": [],
     "lib/bootstrap/firebase_bootstrap_error_app.dart": [],
     "lib/download_file.dart": [
       "lib/download_file_stub.dart",
@@ -60,6 +61,7 @@
     ],
     "lib/main.dart": [
       "lib/admin/admin_navigation_catalog.dart",
+      "lib/admin/backup_codec.dart",
       "lib/bootstrap/firebase_bootstrap_error_app.dart",
       "lib/download_file.dart",
       "lib/firebase_options.dart",
@@ -185,6 +187,9 @@
     ],
     "test/auth_status_views_test.dart": [
       "lib/ui/auth_status_views.dart"
+    ],
+    "test/backup_codec_library_test.dart": [
+      "lib/admin/backup_codec.dart"
     ],
     "test/branding_theme_helpers_library_test.dart": [
       "lib/models/app_data_models.dart",
@@ -669,19 +674,17 @@
     },
     {
       "path": "lib/admin/backup_codec.dart",
-      "bytes": 978,
-      "sha256": "89e43c936a8979d4e934b1ef17c54c72f21be2d7aba35c690be3194a90901977",
-      "owner": "lib/main.dart",
+      "bytes": 1033,
+      "sha256": "5be0d49c8b29235d1b94fd4d9778beada6d41849f212e825e6d9a8427c232834",
+      "owner": "lib/admin/backup_codec.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
           "uris": [
-            "../main.dart"
+            "package:cloud_firestore/cloud_firestore.dart"
           ],
-          "local_targets": [
-            "lib/main.dart"
-          ]
+          "local_targets": []
         }
       ],
       "declarations": [],
@@ -2127,8 +2130,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 24705,
-      "sha256": "4b4a1ad0e329b3eff53693ab40e3334264dc0d0d8dcb3b38c86bd6fbf0c2bbd3",
+      "bytes": 24882,
+      "sha256": "b55b49a0a885459ab1320e5bf2db4bc93ec5f020f6fb72bb36c7775ff366f1ef",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2642,6 +2645,16 @@
           ]
         },
         {
+          "kind": "import",
+          "text": "import 'admin/backup_codec.dart' as backup_codec;",
+          "uris": [
+            "admin/backup_codec.dart"
+          ],
+          "local_targets": [
+            "lib/admin/backup_codec.dart"
+          ]
+        },
+        {
           "kind": "export",
           "text": "export 'ui/branding_theme_helpers.dart' show appBrandLogo;",
           "uris": [
@@ -3109,16 +3122,6 @@
           ],
           "local_targets": [
             "lib/expenses/expense_document_actions.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'admin/backup_codec.dart';",
-          "uris": [
-            "admin/backup_codec.dart"
-          ],
-          "local_targets": [
-            "lib/admin/backup_codec.dart"
           ]
         },
         {
@@ -5469,6 +5472,44 @@
           ],
           "local_targets": [
             "lib/ui/auth_status_views.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/backup_codec_library_test.dart",
+      "bytes": 1809,
+      "sha256": "36e998d90c1a273ae5faefcdfe0857df1a42a8b1d23f24054964d0cfc48084c7",
+      "owner": "test/backup_codec_library_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/admin/backup_codec.dart';",
+          "uris": [
+            "package:andi_carpeta/admin/backup_codec.dart"
+          ],
+          "local_targets": [
+            "lib/admin/backup_codec.dart"
           ]
         }
       ],

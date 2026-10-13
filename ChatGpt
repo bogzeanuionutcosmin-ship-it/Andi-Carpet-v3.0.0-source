@@ -1698,6 +1698,17 @@ PDF/PV/download/share PR #20, PR #29/OCR/diurne, Mapbox, auth/sync, date/rules F
 
 `lib/teams/team_selector.dart` devine bibliotecă Material independentă, cu import explicit pentru modelele `Team`; accentul secțiunii este injectat. Wrapperul `_TeamSelector` din `main.dart` păstrează constructorul/callsite-urile și transmite același `sectionAccent('Echipe')`. Dropdown-ul, `selected.clamp`, etichetele, constrângerile și forwardarea callbackului rămân neschimbate.
 
-Test Flutter direct nou verifică echipa inițial selectată, culoarea pictogramei și selectarea celei de-a doua echipe prin callback. Inventarul regenerat: 153 fișiere Dart, 66 parts, 87 biblioteci totale; zero ținte lipsă, parts orfane, duplicate în aceeași bibliotecă și cicluri. Local: 154 teste Python PASS, 3 Node PASS, `audit_repository.py` și `git diff --check` PASS; SDK Flutter/Dart indisponibil local. CI pe commitul lotului trebuie să confirme testul widget și web build.
+Test Flutter direct nou verifică echipa inițial selectată, culoarea pictogramei și selectarea celei de-a doua echipe prin callback. Inventarul regenerat: 153 fișiere Dart, 66 parts, 87 biblioteci totale; zero ținte lipsă, parts orfane, duplicate în aceeași bibliotecă și cicluri. Local: 154 teste Python PASS, 3 Node PASS, `audit_repository.py` și `git diff --check` PASS; SDK Flutter/Dart indisponibil local. CI pe commitul `84cd1fced0c3037a071b8441ff71ac57febec31f`, run [38476310797](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38476310797): **5/5 SUCCESS** (Python/security, Node, Functions, emulator Firestore, Flutter/widget + web build).
 
 Nu sunt schimbate programele, permisiunile, echipele stocate, datele/rules Firebase, finanțele, OCR, PDF/PV, Mapbox ori PR #29. Fără merge/deploy/APK. Următorul pas numai după 5/5: audit read-only al următorului widget cu adapter simplu.
+
+
+## MOD-BACKUP-CODEC-LIBRARY-20261014 — codec de backup standalone
+
+**Bază validată:** TeamSelector pe commitul `84cd1fced0c3037a071b8441ff71ac57febec31f`, CI run [38476310797](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38476310797), **5/5 SUCCESS**. Lotul precedent este complet; nu a fost reluat.
+
+`lib/admin/backup_codec.dart` devine bibliotecă Dart independentă și importă explicit `cloud_firestore`. Logica recursivă de serializare a `Timestamp`/`GeoPoint`, a hărților și listelor este mutată textual; redenumirile la `encodeBackupValue`/`decodeBackupValue` permit exporturile. `main.dart` păstrează `_backupEncode`/`_backupDecode` ca adaptoare private, iar `admin_backup_actions.dart` și fluxurile existente nu își schimbă apelurile ori formatul.
+
+Test Dart direct nou verifică Timestamp și GeoPoint în structură imbricată, liste/scalari și date-marker necunoscute. Inventarul regenerat: **154 fișiere Dart, 65 parts, 89 biblioteci totale**, fără ținte lipsă, părți orfane, declarații duplicate sau cicluri. CI pentru noul SHA este necesar înaintea următorului lot. SDK Flutter/Dart nu este disponibil local.
+
+Nu s-au schimbat exportul/restaurarea, preflight-ul restaurării, colecțiile, datele/rules Firebase, permisiunile, finanțele, OCR, PDF/PV sau PR #29. Fără merge, deploy, APK publicat ori Firebase producție/billing. Modularizarea completă rămâne neterminată.
