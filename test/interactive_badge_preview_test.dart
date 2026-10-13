@@ -43,12 +43,15 @@ void main() {
       ),
     );
 
-    await tester.sendMouseMoveTo(find.text('badge-test:40.0'));
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(find.text('badge-test:40.0')));
     await tester.pumpAndSettle();
     expect(find.text('badge-test:86.0'), findsOneWidget);
 
-    await tester.sendMouseMoveTo(const Offset(1, 1));
+    await mouse.moveTo(const Offset(1, 1));
     await tester.pumpAndSettle();
     expect(find.text('badge-test:86.0'), findsNothing);
+    await mouse.removePointer();
   });
 }

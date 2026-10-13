@@ -410,3 +410,8 @@ Bază: `99c6852c37861c8fb36db67f5d8856b23cd9f871`. Stateful overlay-ul de previz
 Test Dart nou acoperă previzualizarea mărită la tap, toggle/cleanup și hover/exit. Inventar: 146 Dart (122 lib, 23 teste, 1 script), 73 parts, 73 biblioteci; fără missing/orphan/duplicate/cicluri. Verificările locale Python structurale (84), inventory JSON, Node syntax și diff-check PASS; Flutter/Dart indisponibil local.
 
 Nicio schimbare la utilitarele sticker/emoji partajate, chat, PDF, Mapbox, OCR, diurne sau permisiuni. Modularizarea integrală nu este finalizată. CI pentru acest lot este în așteptare; următorul pas numai după 5/5 este un nou audit read-only pentru un widget cu stare locală fără dependențe globale.
+
+
+## MOD-INTERACTIVE-BADGE-CI-FIX-20261013
+
+Runul `38461011616` pe `2266f53b41d30b62dab304d1f6649eb1aa1a38af`: Python/security, Node, Functions și Firestore **4/5 PASS**. Flutter a eșuat la compilarea testului hover deoarece WidgetTester din Flutter CI nu expune `sendMouseMoveTo`. L-am înlocuit cu `TestGesture` creat pentru `PointerDeviceKind.mouse`, cu add/move/remove pointer explicit; codul de producție rămâne identic. Urmează rerun integral, lotul nu este validat până la 5/5.
