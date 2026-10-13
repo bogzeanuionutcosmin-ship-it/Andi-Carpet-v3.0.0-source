@@ -1209,3 +1209,12 @@ Continuați cu **o singură propunere** nouă despre notificări pentru confirma
 **Implementare viitoare:** cheia de grupare per cont/conversație; ID-uri stabile; deduplicare Firestore/FCM/OS, sunet o singură dată pe grup per dispozitiv, tratarea mesajelor concurente/offline/multidispozitiv și a citirii în timpul ferestrei. Urgențele Admin/Sistem și sugestiile Learning care cer aprobare nu se absorb în carduri chat obișnuite.
 
 **Documentație:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md` secțiunea 15, `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` secțiunea 55. **Nicio modificare Flutter/Firebase/CI/producție, fără teste live**. Continuăm cu propunerea 5, una singură, așteptând Da/Nu/altă variantă.
+
+## 136. Propunerea 5 de notificări CONFIRMATĂ și reluarea deciziilor (2026-10-13)
+
+- **Confirmarea proprietarului:** «Confirm propunerea» (mesaj transmis după limitarea conversației precedente). Nu cereți o reconfirmare.
+- **Navigație contextuală obligatorie:** notificare despre sugestie/recomandare → recomandarea exactă și opțiunile ei, fără aplicare tacită; notificare despre eșecul finalizării unei săli → sala + intervenția exactă, cauza și variantele autorizate. Dacă eroarea s-a rezolvat între timp, informare discretă, **fără redeschidere, fără relansarea STOP/START și fără modificarea datelor**.
+- Se validează din nou în backend starea și permisiunile la tap; ID stabil de notificare/referință; comportament sigur pentru notificări vechi, legături lipsă, offline și acces schimbat. Distincția citit ≠ rezolvat rămâne obligatorie.
+- **Sursă canonică:** registrul de reguli secțiunea 56. Propunerile 1–4 sunt în secțiunile 131–135 ale acestei note și 51–55 ale regulilor. Propunerea 6 este **neaprobată** și trebuie prezentată separat.
+- **Starea tehnică importantă pentru reluare:** PR #17 de modularizare HomePage era încă DESCHIS/NEINTEGRAT la verificarea GitHub din 2026-10-13; conținea CI 5/5 reușit pentru commitul din PR, dar nu s-a verificat o nouă publicare. Nu confundați cerințele de chat/cache/Learning/OCR și notificări cu implementări existente. Probleme de urmărit: GPS Learning încă euristic, OCR bonuri mixte și proveniență eveniment, posibilă incompatibilitate de permisiuni `expenses.create`, UI încă diferită de cerință, certificat de release Android.
+- **Ordinea etapelor rămâne neschimbată:** curățare/modularizare cu CI → stabilirea regulilor → Diagnostics & Self-Healing → alte funcționalități. Deciziile pot continua între timp; **fără modificare de cod/produse/date live pentru aceste decizii**.
