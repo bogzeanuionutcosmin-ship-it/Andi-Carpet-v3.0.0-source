@@ -23,3 +23,15 @@ Teste cu administrator, gestionar autorizat, autor obișnuit, coleg neautorizat,
 **Încă necesită decizii:** cine poate rectifica o sumă neconfirmată, cine poate rectifica una deja confirmată, cine desemnează gestionarul pentru fiecare deplasare și cum tratăm documentele din deconturi închise.
 
 Fără modificări `firestore.rules`, date Firebase, deploy, merge, billing, diurne sau PR #28.
+
+## Teste suplimentare de integritate pentru finanțe (13.10.2026)
+
+Cinci scenarii noi, exclusiv în emulatorul Firestore `demo-andi-carpet`, caracterizează efectele regulilor **existente** și evidențiază că un simplu control de confirmare în UI nu este suficient:
+
+- `finance`: un membru autorizat al echipei poate desemna ca `managerId` un utilizator din altă echipă; nu se verifică apartenența celui desemnat și nici permisiunea lui de gestionar.
+- `finance`: aceeași categorie de membru poate suprascrie direct suma declarată primită, ocolind restricțiile UI.
+- `settlements`: un membru al echipei poate redeschide direct un decont închis, fără fluxul de confirmare din interfață.
+- `expenses`: un membru poate reveni de la `confirmed=true` la `false` și modifica simultan suma unei cheltuieli confirmate.
+- `expenses.create`: dacă adaugă manual câmpul `distributedBy` cerut actualmente de rules (absent din modelul real Expense), un membru poate crea un document cu sumă negativă și `confirmed=true`; serverul nu validează pozitivitatea sumei.
+
+**Atenție:** `assertSucceeds` pe aceste scenarii indică vulnerabilitățile existente, nu permisiuni aprobate. Până la un contract stabilit cu proprietarul nu se schimbă `firestore.rules` ori istoricul. În remedierea viitoare, aceste scenarii trebuie să fie refuzate și testele schimbate explicit la `assertFails`, fără pierderea fluxurilor legitime, a avansurilor și confirmărilor istorice. Nu se consideră că regulile publicate în producție sunt identice cu cele din repository; datele reale nu au fost accesate.

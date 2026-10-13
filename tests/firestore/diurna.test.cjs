@@ -260,3 +260,71 @@ test('managerId registration characterization: unrelated user cannot edit financ
   });
   await assertFails(updateDoc(doc(db('expense-ocr-outsider'), path), { managerId: 'expense-ocr-outsider' }));
 });
+
+
+test('finance characterization: another team user can be nominated as manager', async () => {
+  const { setDoc } = require('firebase/firestore');
+  const path = 'finance/expense-ocr-team';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), {
+      teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin',
+    });
+  });
+  // Current server rule validates who writes, not whether the nominee belongs to this team.
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    managerId: 'expense-ocr-outsider',
+  }));
+});
+
+test('finance characterization: teammate can overwrite received money', async () => {
+  const { setDoc } = require('firebase/firestore');
+  const path = 'finance/expense-ocr-team';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), {
+      teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin',
+      receivedDeparture: 10,
+    });
+  });
+  // Regression characterization of existing overly broad update, not the desired policy.
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    receivedDeparture: 99999,
+  }));
+});
+
+test('settlements characterization: member can reopen a closed decont directly', async () => {
+  const { setDoc } = require('firebase/firestore');
+  const path = 'settlements/expense-ocr-closed-settlement';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), {
+      teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin',
+      closed: true, name: 'Decont de test închis',
+    });
+  });
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    closed: false,
+  }));
+});
+
+test('expenses characterization: member can reverse confirmation and rewrite amount', async () => {
+  const { setDoc } = require('firebase/firestore');
+  const path = 'expenses/expense-ocr-confirmed-existing';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), {
+      ...expenseOcrPayload(), confirmed: true, amount: 1234.56,
+    });
+  });
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    confirmed: false, amount: 1,
+  }));
+});
+
+test('expenses characterization: current create rule does not validate positive amount', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'expenses/expense-ocr-negative-probe'),
+    {
+      ...expenseOcrPayload(),
+      distributedBy: 'expense-ocr-member', amount: -10, confirmed: true,
+    },
+  ));
+});
