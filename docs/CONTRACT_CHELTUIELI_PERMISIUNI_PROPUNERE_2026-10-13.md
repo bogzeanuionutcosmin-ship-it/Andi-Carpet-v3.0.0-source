@@ -35,3 +35,10 @@ Cinci scenarii noi, exclusiv în emulatorul Firestore `demo-andi-carpet`, caract
 - `expenses.create`: dacă adaugă manual câmpul `distributedBy` cerut actualmente de rules (absent din modelul real Expense), un membru poate crea un document cu sumă negativă și `confirmed=true`; serverul nu validează pozitivitatea sumei.
 
 **Atenție:** `assertSucceeds` pe aceste scenarii indică vulnerabilitățile existente, nu permisiuni aprobate. Până la un contract stabilit cu proprietarul nu se schimbă `firestore.rules` ori istoricul. În remedierea viitoare, aceste scenarii trebuie să fie refuzate și testele schimbate explicit la `assertFails`, fără pierderea fluxurilor legitime, a avansurilor și confirmărilor istorice. Nu se consideră că regulile publicate în producție sunt identice cu cele din repository; datele reale nu au fost accesate.
+
+
+## Compatibilitate documente legacy: confirmed absent
+
+Analiza codului `lib/home/home_document_codecs.dart::_expenseFromDoc` a identificat expresia `confirmed: d['confirmed'] != false`. Dacă `confirmed` lipsește dintr-un document vechi, interfața îl va considera **confirmat**, deoarece `null != false`. Acest comportament poate avea scop de compatibilitate cu arhiva istorică, dar nu dovedește existența unei confirmări reale. Nu schimbăm retroactiv această interpretare fără examinarea formatelor legacy și acord explicit. Introducerea unor câmpuri noi pentru autorizare nu trebuie să reclasifice automat documentele existente.
+
+**Decizie de aprobat:** păstrăm afișarea implicit-confirmată numai pentru documentele legacy provenite dintr-un format verificat, sau introducem un statut separat `legacyUnknown` fără alterarea calculului financiar până la reconciliere? Evaluăm efectele asupra centralizatorului, decontului, raportării și utilizatorilor existenți. Soluția nu poate fi stabilită doar dintr-o valoare `null`.
