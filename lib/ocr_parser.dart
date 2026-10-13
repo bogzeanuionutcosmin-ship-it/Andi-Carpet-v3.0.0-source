@@ -22,33 +22,88 @@ class FiscalOcrData {
   });
 }
 
-String _cleanNumber(String value) {
-  var v=value.replaceAll(' ','').replaceAll(RegExp(r'[^0-9,.-]'),'');
-  final comma=v.lastIndexOf(',');
-  final dot=v.lastIndexOf('.');
-  if(comma>=0&&dot>=0){
-    final decimalIsComma=comma>dot;
-    final decimalIndex=decimalIsComma?comma:dot;
-    final integer=v.substring(0,decimalIndex).replaceAll(RegExp(r'[,.]'),'');
-    final decimals=v.substring(decimalIndex+1).replaceAll(RegExp(r'[,.]'),'');
-    return '$integer.$decimals';
+/// Acceptă exclusiv valori monetare valide, nu numere ambigue preluate
+/// din prețuri/litri/numere de bon. Conversia folosește bani întregi.
+double? _money(String value) {
+  final v = value.replaceAll(RegExp(r'[\s\u00A0]'), '');
+  if (!RegExp(r'^\d[\d.,]*$').hasMatch(v)) return null;
+  final decimal = RegExp(r'[.,]\d{2}$').firstMatch(v);
+  final integer = decimal == null ? v : v.substring(0, decimal.start);
+  final fractional = decimal == null ? '00' : v.substring(decimal.start + 1);
+
+  if (integer.contains('.') || integer.contains(',')) {
+    final grouping = integer.contains('.') ? '.' : ',';
+    if (integer.contains(grouping == '.' ? ',' : '.')) return null;
+    final groups = integer.split(grouping);
+    if (groups.first.isEmpty || groups.first.length > 3 ||
+        groups.skip(1).any((g) => g.length != 3)) return null;
   }
-  final separator=comma>=0?',':(dot>=0?'.':'');
-  if(separator.isEmpty)return v;
-  final pieces=v.split(separator);
-  if(pieces.length==2&&pieces.last.length<=3)return '${pieces.first}.${pieces.last}';
-  if(pieces.length>2){
-    final last=pieces.last;
-    if(last.length<=3)return '${pieces.take(pieces.length-1).join()}.$last';
-  }
-  return v.replaceAll(separator,'');
+  final digits = integer.replaceAll(RegExp(r'[.,]'), '');
+  if (digits.length > 7) return null;
+  final lei = int.tryParse(digits);
+  final bani = int.tryParse(fractional);
+  if (lei == null || bani == null) return null;
+  final totalBani = lei * 100 + bani;
+  if (totalBani <= 0 || totalBani > 100000000) return null;
+  return totalBani / 100.0;
 }
 
-double? _money(String value) {
-  final normalized = _cleanNumber(value);
-  final v = double.tryParse(normalized);
-  if (v == null || v <= 0 || v > 1000000) return null;
-  return v;
+/// Nu extrage o cifră parțială dintr-o linie mai lungă (TVA, număr
+/// document, preț / litru etc.). O sumă trebuie să ocupe întreaga valoare.
+double? _moneyLine(String value) {
+  final match = RegExp(
+    r'^([0-9][0-9.,\s\u00A0]*)(?:\s*(?:LEI|RON))?$',
+    caseSensitive: false,
+  ).firstMatch(value.trim());
+  return match == null ? null : _money(match.group(1)!.trim());
+}
+
+/// Alege doar un total clar etichetat sau, în lipsa etichetei, o singură
+/// valoare izolată cu moneda explicită. Niciodată valoarea MAXIMĂ de pe bon.
+double? _extractReceiptTotal(List<String> lines) {
+  final labels = RegExp(
+    r'^(TOTAL(?:\s+DE\s+PLAT[ĂA]|\s+PLAT[ĂA]|\s+(?:RON|LEI))?|SUMA\s+DE\s+PLAT[ĂA]|DE\s+PLAT[ĂA])\s*[:=\-]?\s*(.*)$',
+    caseSensitive: false,
+  );
+  final totals = <int, Set<double>>{};
+  var hasTotalLabel = false;
+  for (var index = 0; index < lines.length; index++) {
+    final line = lines[index];
+    final match = labels.firstMatch(line);
+    if (match == null) continue;
+    hasTotalLabel = true;
+    final label = match.group(1)!.toUpperCase();
+    var value = match.group(2)!.trim();
+    if (value.isEmpty && index + 1 < lines.length) {
+      value = lines[index + 1];
+    }
+    final amount = _moneyLine(value);
+    if (amount == null) continue;
+    final priority = label.contains('PLAT') ? 2 : 1;
+    totals.putIfAbsent(priority, () => <double>{}).add(amount);
+  }
+
+  for (final priority in [2, 1]) {
+    final candidates = totals[priority];
+    if (candidates == null || candidates.isEmpty) continue;
+    return candidates.length == 1 ? candidates.single : null;
+  }
+  if (hasTotalLabel) return null;
+
+  // Fallback sigur: o valoare cu LEI/RON pe o linie separată.
+  // „7,25 LEI/L” sau multiple sume nu sunt un total demonstrat.
+  final exactCurrency = RegExp(
+    r'^([0-9][0-9.,\s\u00A0]*)\s+(?:RON|LEI)$',
+    caseSensitive: false,
+  );
+  final candidates = <double>[];
+  for (final line in lines) {
+    final match = exactCurrency.firstMatch(line);
+    if (match == null) continue;
+    final amount = _moneyLine(line);
+    if (amount != null) candidates.add(amount);
+  }
+  return candidates.length == 1 ? candidates.single : null;
 }
 
 DateTime? _parseDate(String value) {
@@ -100,27 +155,7 @@ FiscalOcrData parseFiscalOcr(String text) {
     if (date != null) break;
   }
 
-  double? amount;
-  final totalPatterns = <RegExp>[
-    RegExp(r'(?:TOTAL\s+(?:DE\s+PLAT[ĂA]|PLAT[ĂA])?|TOTAL|SUMA\s+DE\s+PLAT[ĂA]|DE\s+PLAT[ĂA])[^0-9]{0,20}([0-9]{1,7}(?:[.,][0-9]{2})?)', caseSensitive: false),
-    RegExp(r'([0-9]{1,7}(?:[.,][0-9]{2})?)\s*(?:RON|LEI)\b', caseSensitive: false),
-  ];
-  for (final re in totalPatterns) {
-    final matches = re.allMatches(raw).toList();
-    for (final m in matches.reversed) {
-      final v = _money(m.group(1) ?? '');
-      if (v != null) { amount = v; break; }
-    }
-    if (amount != null) break;
-  }
-  if (amount == null) {
-    final candidates = RegExp(r'\b([0-9]{1,6}[.,][0-9]{2})\b').allMatches(raw)
-        .map((m) => _money(m.group(1) ?? ''))
-        .whereType<double>()
-        .where((x) => x < 100000)
-        .toList();
-    if (candidates.isNotEmpty) amount = candidates.reduce((a, b) => a > b ? a : b);
-  }
+  final amount = _extractReceiptTotal(lines);
 
   final fuel = RegExp(r'\b(MOTORIN[ĂA]|DIESEL|BENZIN[ĂA]|GPL|CARBURANT)\b', caseSensitive: false).hasMatch(upper);
   double? liters;
