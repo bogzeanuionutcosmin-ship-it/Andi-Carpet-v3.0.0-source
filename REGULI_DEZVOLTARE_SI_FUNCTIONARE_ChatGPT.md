@@ -1192,3 +1192,16 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 6. **Teste viitoare:** ieșire scurtă și întoarcere, mers la mașină, deplasare între două săli apropiate, semnal GPS oscilant sau lipsă, două dispozitive/membri, ture de noapte, START manual urmat de automatizare, false pozitive/negative și STOP propus doar când există probabilitate susținută. Verificați completarea câmpurilor și auditul înaintea confirmării.
 
 **Status:** regulă aprobată/documentată, fără implementare Flutter/Firebase ori teste live; nu se face deploy.
+
+## 69. Learning GPS — propunerea 18 CONFIRMATĂ: învățare graduală din corectări confirmate (2026-10-13)
+
+**Aprobare expresă, varianta A:** «Confirm varianta A pentru propunerea 18 AndiCarpet: Learning învață gradual din corectările confirmate, fără schimbarea automată a istoricului.»
+
+1. Learning poate folosi **corectările explicite, confirmate de utilizatori autorizați** (de exemplu «Sunt încă la sală» după o interpretare falsă de plecare, corectarea sălii identificate, confirmarea unei sosiri ori a unei plecări) ca exemple pentru îmbunătățirea **treptată** a estimărilor și a gradului de încredere. Corectările nu sunt echivalate cu o execuție nouă și nu se inventează START/STOP.
+2. **O singură corectare, un semnal GPS imprecis sau un eveniment neverificat nu provoacă schimbări radicale** de praguri/model. Antrenarea ține cont de calitatea datelor, de repetabilitatea observațiilor, de sala și echipa relevante, cu fallback sigur pentru istoric insuficient și limitări împotriva supraînvățării. Pragurile/algoritmul final se proiectează și testează înainte de implementare.
+3. **Istoricul intervențiilor, orele reale START/STOP, drepturile de diurnă, randamentul și evidența facturabilă NU sunt modificate retroactiv** de învățarea unui model. Dacă există o eroare reală de înregistrare, corectarea operațională se face printr-un flux separat autorizat, auditat și confirmat.
+4. **Prevenirea învățării greșite:** se păstrează minimul de metadate necesare pentru proveniența corectării, identificatorul stabil al situației, versiunea estimării, tipul corectării și rezultatul validat; se deduplică evenimentele și se filtrează corectările contradictorii, abuzive sau neautorizate. Nu se colectează istoric GPS brut nelimitat; retenție minimizată, acces și cost controlate.
+5. **Siguranța automatizării:** regulile aprobate la propunerile 15–17 rămân obligatorii: START automat numai la încredere suficientă și fără dublare față de START manual; săli apropiate/semnal incert → confirmare; plecări temporare nu generează propuneri premature; **STOP niciodată automat**, doar după confirmare și completarea datelor.
+6. **Teste ulterioare:** plecare falsă corectată prin «Sunt încă la sală», revenire, săli vecine, semnale contradictorii, corectări repetate și duplicate, două dispozitive, schimbare echipă, model înainte/după corectări, regresii false pozitive/negative, date lipsă/offline și verificarea că istoricul financiar/operational rămâne neschimbat.
+
+**Status:** regulă confirmată în documentație, fără implementare, migrare Firebase, teste live sau deploy. Următoarea decizie se discută separat.
