@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 import 'vision_error_log.dart';
@@ -22,6 +23,22 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
       appBar: AppBar(
         title: const Text('Vision · Error Log'),
         actions: <Widget>[
+          // Only debug builds can create a harmless local persistence probe.
+          // Release builds remain read-only; this never writes to Firebase.
+          if (kDebugMode && widget.log == null)
+            IconButton(
+              tooltip: 'Test local · salvare jurnal',
+              icon: const Icon(Icons.science_outlined),
+              onPressed: () async {
+                VisionErrorTelemetry.report(
+                  area: 'vision_test',
+                  code: 'persistence_probe',
+                  severity: VisionErrorSeverity.warning,
+                );
+                await VisionErrorTelemetry.flush();
+                if (mounted) setState(() {});
+              },
+            ),
           IconButton(
             tooltip: 'Actualizează',
             onPressed: () => setState(() {}),
