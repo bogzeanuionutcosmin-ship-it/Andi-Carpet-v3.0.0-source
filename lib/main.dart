@@ -100,6 +100,7 @@ part 'home/home_permission_maintenance.dart';
 part 'home/home_page.dart';
 part 'home/home_sync_listeners.dart';
 part 'home/home_directory_definitions_audit_sync.dart';
+part 'home/home_financial_sync.dart';
 part 'home/home_document_codecs.dart';
 part 'home/home_location_seed.dart';
 

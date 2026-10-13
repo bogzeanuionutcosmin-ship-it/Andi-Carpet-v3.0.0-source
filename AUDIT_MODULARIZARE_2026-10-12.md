@@ -129,3 +129,15 @@ Aceasta este dovadă de mutare textuală, nu test real pe dispozitiv.
 ## MOD-HOME-DIRECTORY-20261013 — audit lot consecutiv
 
 Bază: PR #23 commit `2e4a7312a526908ede4965a87bcb25bd8edcc9ee` (nu `main`), pentru a păstra toate extragerile de abonări. Trei metode de sincronizare admin, definiții și director utilizatori mutate textual, fără editări în interior: 7645 caractere, 5 abonări. După acest lot, cele 15 abonări core se află în două fișiere dedicate (10 anterior + 5 acum), în aceeași bibliotecă prin extensii private. `_startCoreSync` și `dispose` rămân în HomePage. Reconstrucția exactă a sursei confirmă mutarea fără pierderi, dar NU echivalează cu teste funcționale; CI Flutter/Python/Node/Firestore emulator/Functions/web obligatoriu. Fără schimbare business, migrare, producție, Firebase, rules, billing sau deploy.
+
+## MOD-HOME-FINANCIAL-20261013 — extragerea celor patru abonări financiare
+
+**Bază cumulativă:** PR #26 HEAD `bbef8b3492c6d6e868a9726e3cf25fa6caa9af3c`; păstrăm extragerile PR #23 și #26, fără modificarea lor. Codul existent `_startFinancialSync` (2471 caractere, **4** abonări pentru `expenses`, `perDiems`, `finance`, `settlements`) a fost mutat textual în noul `part` `lib/home/home_financial_sync.dart`, extensie pe `_HomePageState`. Fișierul `home_page.dart` se reduce de la 72856 la 70385 caractere. **Reinserarea exactă a blocului reconstituie byte/text-exact versiunea din HEAD PR #26**.
+
+**Invariante:** sfera `*` pentru admin ori drept `viewOtherDecont`, filtrarea obligatorie `teamId` pentru restul, reinițializarea numai la schimbare scope, anularea abonărilor existente înainte de refacere, tratarea scope-ului gol, ordinea celor patru streamuri, sortări și onError neschimbate. Callback-urile din sincronizarea operațiunilor/directorului/definițiilor încă apelează aceeași metodă. `dispose` continuă să anuleze `_financialSubscriptions`.
+
+**Separare contabilă:** cele **15 abonări core** rămân în cele două părți extrase anterior; cele **4 abonări financiare** sunt distincte și nu trebuie însumate greșit. Nu se schimbă algoritmi, plăți, solduri, identificatori, schema Firestore, reguli, permisiuni ori fluxuri reale.
+
+**Teste:** `test/home_financial_sync_contract_test.py` (unicitate, filtre, anulare, număr abonări și contracte). CI standard pentru Flutter, web, Python, Node, Functions și emulator trebuie verificat pe commitul final. Nu pretindem testare autenticată live; acesta rămâne un modul `part of main.dart`, nu o bibliotecă independentă.
+
+**Interdicții:** fără merge în main, Firebase de producție, rules/config, deploy, APK publicat sau billing; Draft PR separat.
