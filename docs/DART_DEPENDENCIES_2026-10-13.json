@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 128,
-  "lib_dart_files": 116,
-  "test_dart_files": 11,
+  "dart_files": 131,
+  "lib_dart_files": 118,
+  "test_dart_files": 12,
   "script_dart_files": 1,
-  "parts": 81,
-  "libraries": 47,
+  "parts": 80,
+  "libraries": 51,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -56,6 +56,8 @@
       "lib/download_file.dart",
       "lib/firebase_options.dart",
       "lib/learning/duration_estimates.dart",
+      "lib/map/graph_road_distance.dart",
+      "lib/map/graph_route_calculations.dart",
       "lib/mapbox_services.dart",
       "lib/models/app_data_models.dart",
       "lib/models/app_enums_permissions.dart",
@@ -67,6 +69,17 @@
       "lib/ocr_service.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
+    ],
+    "lib/map/graph_road_distance.dart": [
+      "lib/map/graph_route_points.dart",
+      "lib/models/app_data_models.dart"
+    ],
+    "lib/map/graph_route_calculations.dart": [
+      "lib/map/graph_route_points.dart",
+      "lib/models/app_data_models.dart"
+    ],
+    "lib/map/graph_route_points.dart": [
+      "lib/models/app_data_models.dart"
     ],
     "lib/mapbox_services.dart": [],
     "lib/models/app_data_models.dart": [
@@ -124,6 +137,13 @@
       "lib/models/app_enums_permissions.dart",
       "lib/utils/graph_names.dart",
       "lib/utils/operational_dates.dart"
+    ],
+    "test/graph_routing_libraries_test.dart": [
+      "lib/main.dart",
+      "lib/map/graph_road_distance.dart",
+      "lib/map/graph_route_calculations.dart",
+      "lib/models/app_data_models.dart",
+      "lib/models/app_enums.dart"
     ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
@@ -1997,8 +2017,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 15095,
-      "sha256": "d4b3133d8f82ed9843ee58e02b85c118439d4de79c60b8714bcb9e49cf5fc245",
+      "bytes": 16347,
+      "sha256": "81a16bc05c739d4fbec7c0cc60e931ab319f872322f747f38946064c42620553",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2249,6 +2269,36 @@
           ],
           "local_targets": [
             "lib/mapbox_services.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'map/graph_route_calculations.dart';",
+          "uris": [
+            "map/graph_route_calculations.dart"
+          ],
+          "local_targets": [
+            "lib/map/graph_route_calculations.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'map/graph_route_calculations.dart';",
+          "uris": [
+            "map/graph_route_calculations.dart"
+          ],
+          "local_targets": [
+            "lib/map/graph_route_calculations.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'map/graph_road_distance.dart' as graph_routing;",
+          "uris": [
+            "map/graph_road_distance.dart"
+          ],
+          "local_targets": [
+            "lib/map/graph_road_distance.dart"
           ]
         },
         {
@@ -2509,16 +2559,6 @@
           ],
           "local_targets": [
             "lib/map/verified_location_fix.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'map/graph_route_calculations.dart';",
-          "uris": [
-            "map/graph_route_calculations.dart"
-          ],
-          "local_targets": [
-            "lib/map/graph_route_calculations.dart"
           ]
         },
         {
@@ -3244,24 +3284,140 @@
       ],
       "declarations": [],
       "top_level_functions": [
+        "estimateGraphRoadDistanceKm",
         "main",
         "idNow"
       ]
     },
     {
-      "path": "lib/map/graph_route_calculations.dart",
-      "bytes": 4214,
-      "sha256": "e69b21630d7b818e5f71e479b653bc1a47e30fe6a9700d5e044ba78def9bb927",
-      "owner": "lib/main.dart",
+      "path": "lib/map/graph_road_distance.dart",
+      "bytes": 1844,
+      "sha256": "15da088e73e308ac8f4fb5bae7fb1bedb516b1d9a93fa727a3bb0743e2e2879d",
+      "owner": "lib/map/graph_road_distance.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'dart:convert';",
           "uris": [
-            "../main.dart"
+            "dart:convert"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:http/http.dart' as http;",
+          "uris": [
+            "package:http/http.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'graph_route_points.dart';",
+          "uris": [
+            "graph_route_points.dart"
+          ],
+          "local_targets": [
+            "lib/map/graph_route_points.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "typedef",
+          "name": "DrivingDistanceLookup"
+        },
+        {
+          "kind": "typedef",
+          "name": "RouteHttpGet"
+        }
+      ],
+      "top_level_functions": [
+        "calculateGraphRoadDistanceKm"
+      ]
+    },
+    {
+      "path": "lib/map/graph_route_calculations.dart",
+      "bytes": 611,
+      "sha256": "ee325d5c53ef58b0725fb3489f8301e789cc0ad67ef3c66b2ff5ba445c6342cf",
+      "owner": "lib/map/graph_route_calculations.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:geolocator/geolocator.dart';",
+          "uris": [
+            "package:geolocator/geolocator.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'graph_route_points.dart';",
+          "uris": [
+            "graph_route_points.dart"
+          ],
+          "local_targets": [
+            "lib/map/graph_route_points.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'graph_route_points.dart';",
+          "uris": [
+            "graph_route_points.dart"
+          ],
+          "local_targets": [
+            "lib/map/graph_route_points.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "estimateGraphDistanceKm"
+      ]
+    },
+    {
+      "path": "lib/map/graph_route_points.dart",
+      "bytes": 1673,
+      "sha256": "4ca4adc6a25d2f24e69617c24fb15faa873d1d56636a79f3d098b8ff493273b9",
+      "owner": "lib/map/graph_route_points.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:latlong2/latlong.dart';",
+          "uris": [
+            "package:latlong2/latlong.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
           ]
         }
       ],
@@ -3272,9 +3428,7 @@
         }
       ],
       "top_level_functions": [
-        "graphRoutePoints",
-        "estimateGraphDistanceKm",
-        "estimateGraphRoadDistanceKm"
+        "graphRoutePoints"
       ]
     },
     {
@@ -4914,6 +5068,113 @@
       "declarations": [],
       "top_level_functions": [
         "completedRecord",
+        "main"
+      ]
+    },
+    {
+      "path": "test/graph_routing_libraries_test.dart",
+      "bytes": 6592,
+      "sha256": "80b68d5bcd4e886e4fa5b3152426bdec26bcbef39955c95184801c81392c3bf6",
+      "owner": "test/graph_routing_libraries_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'dart:convert';",
+          "uris": [
+            "dart:convert"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:geolocator/geolocator.dart';",
+          "uris": [
+            "package:geolocator/geolocator.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:http/http.dart' as http;",
+          "uris": [
+            "package:http/http.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_data_models.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_enums.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_enums.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_enums.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/map/graph_route_calculations.dart';",
+          "uris": [
+            "package:andi_carpeta/map/graph_route_calculations.dart"
+          ],
+          "local_targets": [
+            "lib/map/graph_route_calculations.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/map/graph_road_distance.dart';",
+          "uris": [
+            "package:andi_carpeta/map/graph_road_distance.dart"
+          ],
+          "local_targets": [
+            "lib/map/graph_road_distance.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart' as legacy;",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "item",
+        "day",
+        "location",
+        "noMapbox",
+        "noHttp",
         "main"
       ]
     },

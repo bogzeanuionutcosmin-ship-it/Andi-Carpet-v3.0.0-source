@@ -28,6 +28,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'map/graph_route_calculations.dart';
+export 'map/graph_route_calculations.dart';
+import 'map/graph_road_distance.dart' as graph_routing;
 import 'utils/graph_names.dart';
 export 'utils/graph_names.dart';
 import 'models/app_data_models.dart';
@@ -55,7 +58,6 @@ part 'ui/install_app_buttons.dart';
 part 'bootstrap/firebase_initialization.dart';
 part 'bootstrap/firebase_bootstrap_error_app.dart';
 part 'map/verified_location_fix.dart';
-part 'map/graph_route_calculations.dart';
 part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
@@ -128,6 +130,31 @@ part 'home/home_operational_write_actions.dart';
 part 'home/home_audit_persistence.dart';
 part 'home/home_document_codecs.dart';
 part 'home/home_location_seed.dart';
+
+// Application adapter: retain the singleton and lazy initialization in main.
+/// Distanța rutieră în kilometri, pe drumuri practicabile cu automobilul.
+/// Null înseamnă că serviciul de rutare nu a putut confirma traseul.
+/// Serviciul public OSRM este destinat utilizării moderate, nu garantează SLA.
+/// Public Mapbox token supplied at build time. Never embed an sk.* secret here.
+const String kMapboxPublicToken = String.fromEnvironment('MAPBOX_ACCESS_TOKEN');
+
+String get kMapTileUrl => !kMapboxEnabled
+    ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+    : 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}?access_token=$kMapboxPublicToken';
+
+bool get kMapboxEnabled => kMapboxPublicToken.startsWith('pk.');
+final MapboxServices _mapboxServices = MapboxServices(kMapboxPublicToken);
+
+
+Future<double?> estimateGraphRoadDistanceKm(
+    List<WorkSchedule> days, List<Location> locations) async {
+  return graph_routing.calculateGraphRoadDistanceKm(
+    days, locations,
+    mapboxEnabled: kMapboxEnabled,
+    drivingKm: (points) => _mapboxServices.drivingKm(points),
+    get: (uri) => http.get(uri),
+  );
+}
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';

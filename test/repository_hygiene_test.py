@@ -728,13 +728,14 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_graph_route_calculations_extracted_and_linked(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/map/graph_route_calculations.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'map/graph_route_calculations.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
-        for name in ("GraphRoutePoints", "graphRoutePoints",
-                     "estimateGraphDistanceKm", "estimateGraphRoadDistanceKm"):
-            self.assertNotIn("class " + name + " ", main)
-            self.assertNotIn("\\n" + name + "(", main)
-            self.assertIn(name, module)
+        points = (ROOT / "lib/map/graph_route_points.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'map/graph_route_calculations.dart';", main)
+        self.assertIn("export 'map/graph_route_calculations.dart';", main)
+        self.assertNotIn("part of ", module + points)
+        self.assertIn("class GraphRoutePoints", points)
+        self.assertIn("GraphRoutePoints graphRoutePoints(", points)
+        self.assertIn("double estimateGraphDistanceKm(", module)
+        self.assertIn("Future<double?> estimateGraphRoadDistanceKm(", main)
 
     def test_pdf_report_generators_are_extracted_without_duplication(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
