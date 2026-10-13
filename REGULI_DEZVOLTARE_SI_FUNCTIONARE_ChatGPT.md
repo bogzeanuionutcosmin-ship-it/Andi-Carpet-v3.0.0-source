@@ -877,3 +877,47 @@ Specificația comparativă: [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIEC
 7. **Nu schimbăm datele din Firebase sau aplicația acum**; este documentare, nu autorizare de implementare. Ordinea rămâne curățare/refactorizare, proiectare și apoi implementare cu ramură separată, PR și teste.
 
 **Document tehnic:** [`docs/PROIECTARE_RANDAMENT_ADAPTIV.md`](docs/PROIECTARE_RANDAMENT_ADAPTIV.md), secțiunea 25, commit `dd8e21df803d85d609c08259f91c8dc18ab83d5f`. Decizia despre acest UI este **închisă**, nu se solicită iar confirmarea aceluiași lucru.
+
+## 48. Repartizarea responsabilităților 1–6; audit UI, notificări și pictograme (decizii delegate 2026-10-13)
+
+**Instrucțiune de proprietar:** «1 decizi tu după logică analizând foarte atent fiecare aspect; 2 decidem împreună; 3 decidem împreună; 4 decizi cum este logic analizând atent fiecare ipoteză; 5 aici nu mă bag, nu ține de competența mea, fă-le după cum este normal; 6 la final, dar mai avem de verificat sistemul de notificări pentru că în prezent avem niște probleme. Verificat pictograme lipsă, stabilit interfața pentru că nu știu dacă a rămas salvat în conversații cum stabilisem schimbarea interfeței.»
+
+**Mandat/ordine:** punctele **1, 4, 5** sunt delegate pentru decizii tehnice documentate, sigure și conservatoare; punctele **2 (interfața finală a profilului) și 3 (istoric echipe)** vor avea **decizii împreună cu proprietarul**; **6 (implementare și teste finale)** la sfârșit, respectând în continuare ordinea istorică (curățare/modularizare cu CI → reguli complete → Diagnostics & Self-Healing prima implementare nouă → alte funcții). Înainte de implementare investigăm problemele de notificări, iconuri și design. Această delegare NU aprobă modificări de Firebase, securitate, producție sau deploy.
+
+### Punctul 1 — regula operațională logică DECISĂ în limitele delegării
+
+- **Controlul de vizibilitate al profilului NU rescrie identitatea operațională și nici drepturile.** În grafice, componența echipelor, mesagerie, execuții, rapoarte și audit, membrii *autorizați pentru operația respectivă* pot vedea **identitatea minimă necesară** (nume/pseudonim de lucru neambiguu și funcția/rolul când contează), indiferent dacă aceste elemente sunt ascunse pe pagina socială de profil. Nu facem o excepție globală pentru toate datele sau toți colegii. Se va explica limpede limita ochiului: **«Ascuns în profil pentru colegi»**, nu «identitatea ștearsă din grafice/chat/audit».
+- **Fotografia NU este necesară pentru autorizare**; pentru vizitatorii fără nevoie legitimă se poate folosi avatar neutru. Telefon/email ascunse din profil NU apar în `memberDirectory`, dar pot rămâne accesibile adminului și fluxurilor operaționale explicit autorizate, fără a rescrie loginul ori contactele necesare comunicării.
+- **Diurnele rămân strict private în profil (titular/admin)**, fără control de publicare. Gestionarii au în continuare strict drepturile operaționale aprobate în modulul lor financiar, nu noi drepturi sociale.
+- **Nu schimbăm retroactiv** istoricul executării, al mesajelor sau al răspunderii prin comutarea unui ochi de profil. Același parteneriat comun poate rămâne vizibil în profilul partenerului, conform alegerii precedente «Fiecare controlează exclusiv».
+
+### Punctul 4 — situațiile-limită ale randamentului DECİSE în limitele delegării
+
+- Pentru fiecare execuție comună de mochetă Finalizată și verificată: **S m² integral ambilor participanți validați**, **S m² perechii** și **o singură dată S m² firmei**, fără împărțire pe sarcini/roluri. Refuzurile, duplicatele, m² necunoscuți, START/STOP invalid, echipe istorice fără participanți demonstrați și reamenajările cu dată efectivă sunt tratate explicit, fără valori inventate.
+- Aceeași pereche reformată continuă istoricul **General** și totalul m²; «Luna în curs» selectează data operațională (schimbare la 23:30), inclusiv situația fără lucrări. Randament numai cu perechi `T_ref/T_real` credibile, plafon 100%, fără penalizare personală și fără scor fictiv.
+- Intervențiile **mixte simultane** se evaluează prin modele **mixte comparabile**, nu prin adunarea timpilor ori m²; fațada ulterioară nu rescrie intervenția mochetei. Timpuri/măsurători neverificabile => «Date insuficiente»/«total incomplet». Înlocuirea membrilor pe durata unei lucrări cere dovezi și reconciliere, nu redistribuire automată retroactivă.
+- Designul schemei istorice, modalitatea de documentare efectivă a participării și layoutul rămân de discutat **împreună**, conform punctului 3. Asistentul nu inventează o schemă Firebase finală în locul proprietarului.
+
+### Punctul 5 — criterii de securitate tehnică și sincronizare DECİSE în limitele delegării
+
+- Principiul minimului necesar, verificare de permisiuni pe server, protecție per rol/scop, `users` privat titular/admin, `memberDirectory` backend filtrat per câmp, diurne niciodată publicate acolo. Restricțiile nu sunt doar widgeturi. Datele de randament provin din intervenții auditate, nu din contori editabili în profil.
+- Offline: sincronizare idempotentă, cache limitat, etichetarea stării neconfirmate, protecția operațiilor nesincronizate și testarea revocării vizibilității. Nu se promite imposibilul: valori deja descărcate offline înainte de ascundere pot necesita expirare/ștergere locală la reconectare; ascunderea NU este retragere globală retroactivă din mesaje/audit.
+- **Notificări și push cu protecție prioritară:** schimbarea contului pe un dispozitiv trebuie să dezactiveze/transferе tokenul vechi, să evite divulgarea către fostul cont și să elimine tokenurile expirate/duplicate. «Admin obligatoriu» trebuie să provină dintr-o **identitate autorizată pe server**, nu din titlul liber al notificării. Date sensibile și sume financiare nu se trimit inutil pe lock screen.
+- Orice schimbări la Rules, Functions sau date reale se implementează mai târziu numai cu PR, staging/emulator, teste și aprobări explicite.
+
+### AUDIT read-only al funcțiilor rămase, ÎNAINTE de punctul 6
+
+Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: **web drawer categorii în dreapta**, **Android taburi jos pe două rânduri**, **chat lateral glisant cu popup și X**, **antet simplificat sus: foto + nume**, **temă verde**, **Setări cu icon nou**, profil redesenat, butoane mari iconice Maps/Waze și notificări cu **«Marchează ca citit»**.
+
+**Constatări reale în cod (NU dovadă că deployul este corect):**
+- `lib/home/home_page.dart` conține **drawer în dreapta pe web** cu `endDrawer` și `openEndDrawer`; dar Android folosește încă **NavigationBar cu UN rând**, chatul deschide pagini cu `Navigator.push`, iar antetul are multiple comenzi și logo, nu doar foto+nume. `web/manifest.json` păstrează temă PWA maro, în timp ce tema solicitată este verde. Astfel există **diferențe nefinalizate**, iar versiunea web publicată nu este verificată.
+- `_openNotificationsSheet` și istoricul din Setări marchează citit la tap, **fără buton explicit «Marchează ca citit»**; lista sheetului poate rămâne vizual veche și starea este schimbată local înainte de confirmarea Firestore; snapshotul inițial poate repeta popupuri pentru notificări vechi. `notifyUser` nu creează istoric când `settings.pushNotifications` e fals. Clasificarea push din titlu/text este fragilă; pushurile din cont vechi sunt risc posibil la schimbarea rapidă a conturilor.
+- `functions/index.js` marchează drept «mandatory» titlurile «sistem» sau care conțin «admin», deși `firestore.rules` permite unor membri activi să creeze notificări pentru alți membri. **Risc de impersonare a mesajelor obligatorii**, de testat și eliminat la corecție.
+- Au fost **confirmate fișiere existente** în GitHub pentru principalele pictograme de navigare/categorii, cele 10 badge-uri și iconurile manifestului PWA. **Nu este dovedită randarea lor** în APK/build web publicat; socialul încă are icon generic în profil.
+- Sistemul push are `PushDiagnosticsPage`, token FCM și worker web în sursă, dar necesită test pe dispozitive **real** și verificarea cheii VAPID/permisiunilor din buildul publicat. Tap pe `type='notification'` nu are încă navigarea dedicată din handlerul care tratează doar chatul.
+
+**Defectele sunt clasificări din audit static și RISCURI, NU declarații de eșec dovedit în producție.** Problemele raportate de utilizator la notificări necesită descrierea simptomului/platformei, apoi reproducere/test.
+
+**Document de lucru detaliat, creat:** [`docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md`](docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md), commit `83413c2f164bb386a60b748031157a352ee25734`. Acesta conține matrice de riscuri, regulile delegate, ce interfață fusese stabilită și diferențele de cod, fără impunerea unilaterală a punctelor 2 și 3.
+
+**Nicio schimbare Flutter, Cloud Functions, reguli Firestore, date Firebase, APK ori deploy.** Continuăm analiza/notificările și apoi decidem ÎMPREUNĂ structura vizuală și istoricul echipelor, după regula de colaborare cerută. Testele și implementarea finală abia la finalul etapelor aprobate.
