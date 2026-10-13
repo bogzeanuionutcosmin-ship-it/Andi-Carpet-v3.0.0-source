@@ -34,6 +34,9 @@ jobs:
         run: flutter test test/
       - name: Build web
         run: flutter build web --release
+      - name: Verify original Million PDF bytes inside web build
+        run: |
+          echo '3bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23  build/web/assets/assets/pv_million.pdf' | sha256sum --check
       - name: Upload web build
         uses: actions/upload-artifact@v4
         with:
