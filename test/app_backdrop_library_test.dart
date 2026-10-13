@@ -22,7 +22,12 @@ void main() {
 
     expect(find.text('Screen content'), findsOneWidget);
     expect(find.byType(Image), findsNothing);
-    final backgrounds = tester.widgetList<ColoredBox>(find.byType(ColoredBox));
+    final backgrounds = tester.widgetList<ColoredBox>(
+      find.descendant(
+        of: find.byType(AppBackdrop),
+        matching: find.byType(ColoredBox),
+      ),
+    );
     expect(backgrounds.length, 2);
     expect(backgrounds.first.color, Colors.pink);
     expect(backgrounds.last.color, Colors.white.withValues(alpha: .10));
@@ -42,7 +47,12 @@ void main() {
       ),
     );
 
-    final darkBackgrounds = tester.widgetList<ColoredBox>(find.byType(ColoredBox));
+    final darkBackgrounds = tester.widgetList<ColoredBox>(
+      find.descendant(
+        of: find.byType(AppBackdrop),
+        matching: find.byType(ColoredBox),
+      ),
+    );
     expect(darkBackgrounds.length, 1);
     expect(darkBackgrounds.single.color, Colors.pink);
   });

@@ -368,3 +368,8 @@ CI pentru commitul acestui lot: în așteptare. După 5/5 SUCCESS, următorul pa
 ## MOD-APP-BACKDROP-CI-CORRECTION-20261013
 
 Runul CI `38426558633` pentru `a0306d882a602afe9234108917fdfe93a2f2dc80` a eșuat în două joburi din aceeași cauză: blobul snapshotului de dependențe a fost trunchiat la transmiterea din checkout și `json.loads` a raportat eroare la primul caracter. Celelalte trei joburi: Node projection și Firebase Functions PASS; Firestore emulator încă rula la verificare. Widget test nu a fost atins deoarece CI s-a oprit în testul Python. Am regenerat fișierul JSON complet (164.045 bytes), l-am verificat local cu parserul JSON și am transmis corecția ca blob complet. Urmează CI integral pe commitul corectiv; lotul nu este considerat validat până la 5/5.
+
+
+## MOD-APP-BACKDROP-WIDGET-TEST-CORRECTION-20261013
+
+CI run `38426801822` pe `5b2b3910ee2e3e5d5cb9d7145c7ff45744393838`: Python/security, Node, Functions și Firestore emulator **4/5 PASS**. Jobul Flutter a rulat testele structurale și a executat 84 teste Python; un widget test a eșuat deoarece finder-ul global număra fundalul Material/Scaffold (3 ColoredBox) în locul celor două straturi din AppBackdrop. Am restrâns aserțiunile light/dark la descendenții widgetului `AppBackdrop`; producția nu se modifică. Revalidare CI integrală în așteptare.
