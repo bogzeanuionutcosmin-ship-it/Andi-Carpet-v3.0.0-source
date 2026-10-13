@@ -35,7 +35,7 @@ PR #19 la d4da2872a566eba258e82b8597c023e03ceb9b56 și #21 la d18b2523a31ead7eb6
 
 Port callback read-only independent de biblioteca main, cu tipuri SDK explicite. Adapter default lazy în main, query-uri originale și metadata păstrate. Constructorul AuthGate permite surse opționale; state-ul fixează furnizorul la initState. Întregul body al state machine/lifecycle rămâne text-identic după înlocuirea expresiilor sursă. Nu este un bus Vision și nu adaugă observabilitate funcțională.
 
-Teste widget de reconectare/pending/absent, UID switching/cancel, UI settings/duplicat/dispose și recuperare după eroare, folosind streamuri locale. Nu exercită încă HomePage activ, login/logout SDK sau autorizarea server-side. Local 155 Python + 3 Node, syntax/equivalence/diff/inventory PASS. CI urmează. Inventar 165/60/105.
+Teste widget de reconectare/pending/absent, UID switching/cancel, UI settings/duplicat/dispose și recuperare după eroare, folosind streamuri locale. Nu exercită încă HomePage activ, login/logout SDK sau autorizarea server-side. Local 155 Python + 3 Node, syntax/equivalence/diff/inventory PASS. CI AuthGateSources: 0414b6cdc7211bd5a95ff58664d97458b0111604 / run 38484621957, **5/5 SUCCESS**. Inventar 165/60/105.
 
 ## Pași următori după validare
 
@@ -43,3 +43,27 @@ Teste widget de reconectare/pending/absent, UID switching/cancel, UI settings/du
 2. Nu se repară implicit token ownership, START concurent, badge_v2 sau restore non-atomic: sunt schimbări funcționale/securitate documentate separat.
 3. Auditul diferențial final va marca aprobat+implementat / aprobat+neimplementat / parțial / clarificare tehnică / decizie nouă. Referințe: registrul existent și Issue #30; nu se reiau aprobările.
 4. Vision Error Log/telemetry/Diagnostics din #19/#21 se inspectează și reutilizează în etapa dedicată; în #28 nu apar module Vision noi.
+
+
+## CHECKPOINT-AUTH-SERVICES-VALIDATED-20261014 — continuare PR #28 / Issue #30
+
+Reluare din `3be7a09b6a28122bfae23e8ff779e7765a24cd39` (CI deja finalizat 5/5, nu a fost așteptat din nou). HEAD de cod nou: **`0414b6cdc7211bd5a95ff58664d97458b0111604`**. Toate loturile au fost comise și validate separat înainte de următorul:
+
+| Lot | SHA | Run CI | Rezultat |
+|---|---|---|---|
+| FirebaseUserProfile independent | d4d90a7796bb6899f8d9fac36e44db480d2ba82c | 38482963824 | 5/5 SUCCESS |
+| QuickAccountStore / I-O injectat | 0be4bce7d5054dc641b92f48dc7e6c94247438ac | 38483520307 | 5/5 SUCCESS |
+| Politică inițializare Firebase | 75279637b52cf588a26a6ec2d0a6d1a0b044e898 | 38484010280 | 5/5 SUCCESS |
+| Surse read-only AuthGate | 0414b6cdc7211bd5a95ff58664d97458b0111604 | 38484621957 | 5/5 SUCCESS |
+
+Au trecut unit/widget Flutter, bibliotecile fără motor Flutter, build web, Python/security, Node, Functions și emulatorul Firestore în fiecare run. Local: **155 Python, 3 Node**, syntax Functions, diff-check și verificări de echivalență PASS. SDK Flutter/Dart indisponibil local; testele Dart/widget și compilarea au fost executate în CI, fără teste pe telefon ori Firebase live.
+
+Inventar final: **165 fișiere Dart (125 lib, 39 teste, 1 script), 60 parts, 105 biblioteci totale**. Snapshotul este generat cu `scripts/audit_dart_dependencies.py` și comparat byte-identic cu o regenerare finală; fără missing targets, parts orfane, duplicate sau cicluri. Bibliotecile totale includ testele/scriptul, nu doar lib. Reducerea 63→60 nu este singurul progres: porturile pentru auth/storage/startup explicite permit testarea fără SDK live, păstrând state machine-ul.
+
+Checkoutul local este curat și sincronizat cu HEAD-ul remote înaintea checkpointului documentației. Git read funcționează, dar push CLI nu are credentiale; commiturile au fost trimise prin connector cu lease pe HEAD-ul așteptat, apoi s-a verificat identitatea arborilor local/remote. Nicio modificare a altei ramuri. Verificare față de baza 3be7: zero diff în `lib/finance`, PDF/reports/documents/download, OCR, map/Mapbox, assets, Functions, workflow-uri, manifest/dependențe și rules/config Firebase/teste Firestore.
+
+**Pasul exact de reluare:** verifică HEAD/CI și această secțiune, apoi citește `docs/MODULARIZARE_AUTH_SERVICII_2026-10-14.md`. Auditează dependențele LoginPage (auth/secure storage), apoi furnizorii abonărilor Home din grupurile deja separate, păstrând ordinea, URI/UID/metadata, cancel și numărul citirilor/scrierilor. Construiește mai întâi fixture-urile de stream și adapterele; nu muta întreaga stare Home/Program/Map/Decont sau brandingul global fără teste specifice. AuthGateSources nu adaugă bus/observabilitate Vision.
+
+**Misiunea nu este finalizată:** 60 parts rămân cuplate; scopul nu este zero parts cu orice preț. Auditul diferențial complet vine după modularizare și clasifică: aprobat+implementat / aprobat+neimplementat / parțial / clarificare tehnică / decizie nouă. Regulile aprobate din registru/Issue #30 nu se votează din nou. Prima etapă nouă rămâne Vision Error Log/observabilitate, reutilizând codul existent în #19/#21 pe PR dedicat. Contractele PDF download/share/anulare din #20 rămân separate. Riscurile START concurent, token ownership, badge_v2, restore/OCR/permisiuni nu sunt reparate implicit prin aceste refactorizări.
+
+PR #28 rămâne Draft/Open; fără merge/main/deploy/APK/date live/rules/config/billing/migrări/schimbare versiune. PR #19/#20/#21/#29 sunt protejate. Acest checkpoint de cod validat este completat de un commit exclusiv de documentație, al cărui CI se verifică înaintea raportului final.
