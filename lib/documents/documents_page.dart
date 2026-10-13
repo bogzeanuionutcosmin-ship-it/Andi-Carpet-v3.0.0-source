@@ -28,6 +28,109 @@ class _DocumentsPageState extends State<DocumentsPage> {
   // Un document de configurare din colecția existentă, vizibil tuturor
   // membrilor activi, modificabil numai de admin conform firestore.rules.
   static const String _magicVisibilityId = '__pv_magic_visibility__';
+  // Devine disponibil automat după adăugarea PDF-ului original în assets/.
+  // Până atunci UI NU afișează un buton de descărcare fictiv.
+  late final Future<bool> _millionPdfAvailable = _isMillionPdfBundled();
+
+  Future<bool> _isMillionPdfBundled() async {
+    try {
+      final pdf = await rootBundle.load('assets/pv_million.pdf');
+      return pdf.lengthInBytes > 4 &&
+          pdf.getUint8(0) == 0x25 && pdf.getUint8(1) == 0x50 &&
+          pdf.getUint8(2) == 0x44 && pdf.getUint8(3) == 0x46;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _downloadPvMillion() async {
+    try {
+      final data = await rootBundle.load('assets/pv_million.pdf');
+      final saved = await downloadFile(
+        data.buffer.asUint8List(), 'PV_MILLION.pdf',
+        mimeType: 'application/pdf',
+      );
+      if (!mounted || !saved) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(
+          'PV MILLION: salvarea fișierului a fost solicitată.',
+        )),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PDF-ul MILLION nu este disponibil în această versiune.')),
+      );
+    }
+  }
+
+  Future<void> _sharePvMillion() async {
+    try {
+      final data = await rootBundle.load('assets/pv_million.pdf');
+      await Printing.sharePdf(
+        bytes: data.buffer.asUint8List(),
+        filename: 'PV_MILLION.pdf',
+      );
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PDF-ul MILLION nu este disponibil pentru partajare.')),
+      );
+    }
+  }
+
+  Widget _millionCard() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Proces verbal MILLION — recepția curățării mochetei',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Document fix, disponibil offline când PDF-ul original '
+            'este inclus în pachetul aplicației.',
+          ),
+          const SizedBox(height: 14),
+          FutureBuilder<bool>(
+            future: _millionPdfAvailable,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const LinearProgressIndicator();
+              }
+              if (snapshot.data != true) {
+                return const Text(
+                  'PDF Million în curs de integrare. '
+                  'Fișa existentă din Firebase rămâne nemodificată.',
+                );
+              }
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _downloadPvMillion,
+                    icon: const Icon(Icons.download_outlined),
+                    label: const Text('Descarcă PV Million'),
+                  ),
+                  if (!kIsWeb)
+                    OutlinedButton.icon(
+                      onPressed: _sharePvMillion,
+                      icon: const Icon(Icons.share_outlined),
+                      label: const Text('Partajează PV Million'),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+
   static const List<String> _categories = [
     'Proces verbal',
     'Contract',
@@ -424,6 +527,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _magicCard(visible: true),
+                _millionCard(),
                 _InfoCard(
                   icon: Icons.error_outline,
                   title: 'Documente sincronizate indisponibile',
@@ -437,6 +541,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _magicCard(visible: true),
+                _millionCard(),
                 const Padding(
                   padding: EdgeInsets.all(20),
                   child: Center(child: CircularProgressIndicator()),
@@ -468,6 +573,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
               children: [
                 if (magicVisible || widget.isAdmin)
                   _magicCard(visible: magicVisible),
+                _millionCard(),
                 if (pvDocuments.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text(
