@@ -996,3 +996,16 @@ Am recuperat exact din `ChatGpt` secțiunea **6** interfața cerută anterior: *
 **Cerință APROBATĂ pentru comportament, fără modificări de cod sau date**; schema exactă și tehnologia de prezență (de exemplu onDisconnect dacă infrastructura este configurată vs heartbeat+TTL) vor fi alese prin audit/test la implementarea autorizată.
 
 **Referință:** [`docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md`](docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md), secțiunea 13, commit `42b81479f472738129229350e757990e6b6cf0bb`. Doar documentație: fără Flutter, Firebase, reguli, Storage, date, APK ori deploy.
+
+## 54. Notificări — propunerea 3 APROBATĂ: chat deschis și vizibil nu notifică suplimentar (2026-10-13)
+
+**Răspuns expres al proprietarului: «Confirm»**, la propunerea 3.
+
+1. Dacă utilizatorul are deschis și activ **Chat live** ori o conversație privată și **a văzut efectiv mesajul nou**, acesta apare direct, **fără popup, fără sunet suplimentar și fără creșterea indicatorului necitit** pentru conversația respectivă.
+2. **Conversația diferită** continuă să emită notificare și contor normal potrivit preferințelor; deschiderea lui A nu dezactivează alerta lui B.
+3. **Nu confundăm «deschis» cu «citit»** dacă fereastra e minimizată/în fundal, se vede alt ecran sau utilizatorul este derulat la mesaje vechi și nu a parcurs mesajul nou. Atunci păstrăm mesajul ca necitit, cu indicator discret până la parcurgere; fără popupuri repetitive.
+4. **Server-side, monoton, idempotent:** salvăm markerul de citire pentru grup și `readAt` pentru privat, actualizate cât conversația e vizibilă și pentru mesajele nou vizualizate. După reload, reconectare și pe alt dispozitiv autorizat, contoarele rămân corecte, nu sunt resetări cosmetice. Nu numărăm mesajele proprii.
+5. **FCM și listener Firestore deduplicate:** același mesaj nu produce simultan popup OS și banner in-app pe același dispozitiv; în alte sesiuni și în background aplicăm explicit starea/permisiunile, nu tratăm un client vizibil drept motiv de a ignora toate evenimentele unui utilizator.
+6. Testare obligatorie pe chat grup/privat, derulare, minimizare, schimbare conversație, mesaj nou concurent, F5/relogin, două dispozitive, ceas greșit, offline și acces autorizat.
+
+**Detalii:** `docs/AUDIT_PROFIL_NOTIFICARI_PICTOGRAME_INTERFATA.md` secțiunea 14. **Numai documentație**, fără modificări de aplicație ori Firebase. Propunerile 1 (Learning) și 2 (ordinea în clopoțel) rămân confirmate anterior; următoarea propunere de notificări se prezintă individual.
