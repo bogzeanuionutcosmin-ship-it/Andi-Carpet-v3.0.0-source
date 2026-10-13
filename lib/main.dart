@@ -160,6 +160,8 @@ Future<double?> estimateGraphRoadDistanceKm(
 IconData _adminSectionIcon(int index) => admin_navigation.adminSectionIcon(index);
 String _adminSectionGroup(int index) => admin_navigation.adminSectionGroup(index);
 String? _adminSectionAsset(int index) => admin_navigation.adminSectionAsset(index);
+Widget _badgeGraphic(String asset, {required double size, Color? color}) =>
+    badgeGraphic(asset, size: size, color: color);
 
 // PDF composition adapters preserve existing private callers in PDF and JPEG exports.
 class _ApplicationPdfFonts implements pdf_format.PdfFontProvider {

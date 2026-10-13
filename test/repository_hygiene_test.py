@@ -540,18 +540,23 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("export 'ui/icon_badge_catalog.dart';", main)
         self.assertIn("import 'package:flutter/material.dart';", module)
         self.assertNotIn("part of", module)
+        module_body = module.split("\n\n", 1)[1].replace(
+            "Widget badgeGraphic(", "Widget _badgeGraphic(", 1)
         self.assertEqual(
-            hashlib.sha256(module.split("\n\n", 1)[1].encode("utf-8")).hexdigest(),
+            hashlib.sha256(module_body.encode("utf-8")).hexdigest(),
             "06a837cfd5d39a547e65d8a69a0f2a7097515d41c371da10513b8b53f81fcefd",
         )
         for symbol in ("const Map<String, IconData> appIconChoices",
                        "const Map<String, String> badgeAssetChoices",
                        "const List<String> availableBadgeKeys",
                        "const Map<String, String> categoryBrandAssets",
-                       "Widget _badgeGraphic(", "Widget categoryBrandWidget(",
+                       "Widget categoryBrandWidget(",
                        "Widget sectionAssetWidget(", "String badgeLabel("):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
+        self.assertIn("Widget badgeGraphic(", module)
+        self.assertIn("Widget _badgeGraphic(String asset, {required double size, Color? color}) =>", main)
+        self.assertIn("badgeGraphic(asset, size: size, color: color);", main)
         self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", module)
 
     def test_interactive_member_badges_are_extracted(self):

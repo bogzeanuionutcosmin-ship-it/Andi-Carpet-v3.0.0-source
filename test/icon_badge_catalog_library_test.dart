@@ -17,6 +17,8 @@ void main() {
     expect(catalog.availableBadgeKeys, isNot(contains('badge_machine')));
     expect(catalog.badgeLabel('custom'), 'custom');
     expect(catalog.categoryBrandAssets, contains('million'));
+    expect(catalog.badgeGraphic('assets/badges/badge_admin.png', size: 24),
+        isA<SizedBox>());
   });
 
   test('keeps section label matching and the main library exports', () {

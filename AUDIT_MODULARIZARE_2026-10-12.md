@@ -243,6 +243,10 @@ CI pentru commitul documentar de după Admin: run `38389244180`, 5/5 SUCCESS. `u
 
 Inventar curent: 135 fișiere Dart / 76 parts / 59 biblioteci, fără lipsuri/orfani/duplicate/cicluri. Local 151 Python PASS, 1 Node PASS, syntax Functions, toate cele 116 hashuri protejate și diff-check PASS. CI-ul lotului curent urmează.
 
+### Corecție CI — helper privat folosit din part
+
+Run `38389669780` a încheiat 4/5: Flutter a eșuat la compilare deoarece `interactive_member_badges.dart` (part of main) nu mai putea vedea `_badgeGraphic`, privat în biblioteca extrasă. 52 teste au trecut; 5 fișiere de test au fost blocate de eroarea de compilare, nu de aserțiuni. Celelalte patru joburi au trecut. Corecție: `badgeGraphic` public în biblioteca nouă și wrapper privat `_badgeGraphic` în main cu aceeași semnătură. SHA al corpului normalizează numele și rămâne identic. Testele locale PASS; run CI pe commitul corectiv urmează.
+
 ## MOD-SCREEN-ACTIONS-CI-FIX-20261013
 
 CI run 38372790209 pe `23d88a4cad17eb21ae9e3af34e4023641a796928`: 4 joburi SUCCESS, Flutter FAILURE la compilarea widget_test, înainte de build web. Cauză exactă: în extensia Decont, `const DropdownMenuItem(value: _legacySettlementKey, ...)` nu poate rezolva implicit constanta statică a State în context const. Corecție strictă: `value: _ExpensePageState._legacySettlementKey`; aceeași valoare/instanță const/comportament, fără schimbare business. Nu eliminăm const și nu schimbăm identificatorul legacy.

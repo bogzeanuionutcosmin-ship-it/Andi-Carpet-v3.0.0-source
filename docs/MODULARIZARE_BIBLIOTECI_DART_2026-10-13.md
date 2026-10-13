@@ -141,8 +141,14 @@ PDF și PR #29 rămân neatinse. Riscul/limitarea PDF download/share documentat�
 
 CI-ul lotului Admin: run `38388935786` pe `ffb35c16b2c1d41e9fce42b1e9255159609b58c4`, 5/5 SUCCESS. Actualizarea documentației: run `38389244180` pe `cb3946f5dd1d734f56bbf6bb0a37dc1acedd837b`, 5/5 SUCCESS.
 
-`ui/icon_badge_catalog.dart` a devenit bibliotecă Material autonomă față de main/Firebase. Corpul funcțiilor, constantelor și widgeturilor este identic cu sursa de bază după înlocuirea strictă a `part of` cu import Material: SHA-256 `06a837cfd5d39a547e65d8a69a0f2a7097515d41c371da10513b8b53f81fcefd`. Main importă și reexportă biblioteca, astfel că parts și clienții care importă main păstrează API-ul existent. `_badgeGraphic` rămâne privat intern bibliotecii.
+`ui/icon_badge_catalog.dart` a devenit bibliotecă Material autonomă față de main/Firebase. Corpul funcțiilor, constantelor și widgeturilor este identic cu sursa de bază după normalizarea singurei redenumiri de limită (`_badgeGraphic` → `badgeGraphic`) și înlocuirea strictă a `part of` cu import Material: SHA-256 `06a837cfd5d39a547e65d8a69a0f2a7097515d41c371da10513b8b53f81fcefd`. Main importă și reexportă biblioteca pentru API-ul public. Wrapper-ul privat `_badgeGraphic` cu aceeași semnătură din main păstrează utilizatorul din `interactive_member_badges.dart`.
 
 Teste noi importă direct biblioteca și main pentru regresia exporturilor, verifică iconuri/etichete/alias `badge_machine`, valorile necunoscute și ramurile existente de etichete asset. Testul structural protejează SHA-256-ul corpului și dependența Material explicită. Inventar: 135 Dart (118 lib, 16 teste, 1 script), **76 parts**, 59 biblioteci totale (42 lib, 16 test, 1 script), zero missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, manifestul PDF cu toate cele 116 hashuri, inventar și diff-check PASS; Dart/Flutter lipsesc local. CI pe commitul acestui lot urmează înainte de următoarea etapă.
 
 Nicio schimbare în Documents/download/share/PDF/assets sau PR #29. Următorul candidat după CI: evaluarea componentelor Home/UI cu stare privată minimă; auth, permisiuni, sync și PDF nu se forțează fără interfețe explicite și contracte compatibile.
+
+### Corecție găsită de CI
+
+CI inițial al acestui lot, run `38389669780` pe `acaf495b95f18c2a7490348625c89691974a2926`, a avut 4/5 SUCCESS. Testul Python, Node, Functions și emulatorul au trecut. Jobul Flutter a oprit la compilare: `interactive_member_badges.dart` folosea simbolul privat `_badgeGraphic` din altă bibliotecă `part of main`; acel simbol nu mai era vizibil după extragere. 52 teste au trecut, iar 5 test files nu s-au putut compila.
+
+Remediu: expunem widgetul ca `badgeGraphic` în biblioteca Material și reținem wrapper-ul privat `_badgeGraphic` în main pentru callbackurile/part-urile existente. Corpul funcției rămâne identic la normalizarea numelui. Contractul static și testul direct verifică această punte. Testele locale Python/Node, auditul import-export și diff-check PASS; CI complet al SHA corectat încă trebuie rulat. Nicio altă funcționalitate schimbată.

@@ -1487,8 +1487,12 @@ Blocajul PDF rămâne: contractele download PR #28 (`Future<void>`) și PR #20 a
 
 ## Continuare — bibliotecă shared icons/badges
 
-CI-ul commitului documentar admin `cb3946f5dd1d734f56bbf6bb0a37dc1acedd837b`: run `38389244180`, 5/5 SUCCESS. Lotul următor: `ui/icon_badge_catalog.dart` a devenit bibliotecă separată cu import Material; main face import + export pentru API-urile publice existente, iar simbolul privat `_badgeGraphic` rămâne intern. Corpul modulului este SHA-256 identic față de bază după eliminarea directivei part: `06a837cfd5d39a547e65d8a69a0f2a7097515d41c371da10513b8b53f81fcefd`.
+CI-ul commitului documentar admin `cb3946f5dd1d734f56bbf6bb0a37dc1acedd837b`: run `38389244180`, 5/5 SUCCESS. Lotul următor: `ui/icon_badge_catalog.dart` a devenit bibliotecă separată cu import Material; main face import + export pentru API-urile publice existente. Corpul modulului este SHA-256 identic față de bază după normalizarea redenumirii de limită `_badgeGraphic` → `badgeGraphic` și eliminarea directivei part: `06a837cfd5d39a547e65d8a69a0f2a7097515d41c371da10513b8b53f81fcefd`.
 
 Teste noi Dart verifică iconuri, badge aliases, labels/assets, fallbackuri necunoscute și exportul prin main. Python fixează hashul sursei/contractul import-export. Inventar: 135 Dart, **76 parts**, 59 biblioteci totale (42 lib, 16 test, 1 script); fără missing/orphan/duplicate/cicluri. Local 151 Python, 1 Node, Functions syntax, 116 hashuri protejate, dependency audit și diff-check PASS. CI pe commitul curent trebuie confirmat 5/5 înaintea altui lot.
 
 PDF, Documents, download/share, Android/web, Mapbox și PR #29 rămân neatinse. Modularizarea completă nu este declarată. Următoarea analiză: UI/Home cu dependențe private limitate; auth/permissions/sync se separă doar cu contracte complete de stare și callbacks.
+
+### Corecție obligatorie din CI
+
+Primul CI run `38389669780` pe `acaf495b95f18c2a7490348625c89691974a2926`: **4/5 SUCCESS**. Flutter a eșuat la compilare deoarece part-ul `interactive_member_badges.dart` apela `_badgeGraphic`, care devenise privat bibliotecii separate. 52 teste au trecut; 5 test files nu s-au putut compila. Am expus `badgeGraphic` în biblioteca nouă și păstrat wrapper-ul `_badgeGraphic` privat în main, cu aceeași semnătură. Testele locale Python 151/151 și Node 1/1, audit și `git diff --check` PASS. CI complet pentru commitul corectiv urmează; nu încep alt lot până atunci.
