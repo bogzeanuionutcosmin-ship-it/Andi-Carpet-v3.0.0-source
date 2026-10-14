@@ -157,3 +157,8 @@ Trackerul pur `VisionPersistenceTracker` ține acum cont de **ultima revizie pen
 Un eșec ulterior de read sau de rescriere a aceleiași revizii are întâietate față de indicatorul `saved`: interfața nu mai afirmă că stocarea este accesibilă doar fiindcă o scriere anterioară a reușit. Revenirea la `saved` necesită apoi succesul unei scrieri care acoperă ultima revizie eșuată. **Nici un payload, UID, coordonată, eroare brută sau document financiar nu este introdus în tracker.**
 
 Patru teste noi: failure revizia 2 urmat de success tardiv revizia 1; eșec vechi după revizie nouă confirmată; rescriere aceeași revizie eșuată; eșec de citire după scriere confirmată. Invariantele pentru callbackuri negative/viitoare și succesuri care nu acoperă revizia curentă rămân testate. Este logică exclusiv locală, fără Firebase, UI nou ori interacțiune cu PR #28. Validarea de închidere se face pe SHA exact în CI.
+
+
+## Totaluri distincte pentru incidente reale versus probe (lot independent)
+
+Raportul diagnostic copiat afișează acum **`Incidente locale: N`** (fingerprinturi reale distincte) și **`Aparitii ale incidentelor: M`** (suma repetărilor agregate), separat de `Probe locale`/`Aparitii ale probelor locale`. Exemplu sintetic: OCR save failure ×3 + probă de persistență ×4 produce 1 incident real, 3 apariții ale incidentelor, 1 tip de probă și 4 apariții ale probelor. Totalurile sunt extrase din jurnalul local deja limitat și rămân afișate chiar dacă exportul trunchiază liniile la 100 de evenimente. Nu sunt trimise sume, texte OCR, UID-uri, tokenuri ori poziții; zero acces suplimentar Firebase, zero schimări în PR #28. Teste unitare verify summary + unchanged snapshot. Așteptați CI pe SHA-ul final pentru acceptanță.
