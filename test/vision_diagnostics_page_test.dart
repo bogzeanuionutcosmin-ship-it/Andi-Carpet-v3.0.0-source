@@ -5,6 +5,22 @@ import 'package:andi_carpeta/vision/vision_diagnostics_page.dart';
 import 'package:andi_carpeta/vision/vision_error_log.dart';
 
 void main() {
+  testWidgets('authenticated device-wide journal stays closed without a '
+      'session-scoped source', (WidgetTester tester) async {
+    // No injected/scope-verified log and no offline-smoke define: do not
+    // expose a persisted installation-wide journal across account changes.
+    await tester.pumpWidget(
+      const MaterialApp(home: VisionDiagnosticsPage()),
+    );
+    expect(find.text('Vision'), findsOneWidget);
+    expect(find.textContaining('istoricul poate fi izolat sigur'),
+        findsOneWidget);
+    expect(find.byTooltip('Copiază raport tehnic anonimizat'), findsNothing);
+    expect(find.byTooltip('Actualizează'), findsNothing);
+    expect(find.byTooltip('Test local · salvare jurnal'), findsNothing);
+    expect(find.textContaining('Incidente locale:'), findsNothing);
+  });
+
   testWidgets('small screen keeps full Vision title and test is not an alert',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(360, 780);
