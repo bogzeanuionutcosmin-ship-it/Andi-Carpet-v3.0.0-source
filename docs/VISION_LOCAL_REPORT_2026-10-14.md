@@ -7,7 +7,10 @@ Vision V0 din PR #19/#21 înregistrează deja sumarizat erori Flutter/async și 
 
 ## Codul adăugat
 - `lib/vision/vision_diagnostic_report.dart`: formatează numai zona/codul/platforma/severitatea/timpul/numărul de repetări/starea, cu verificarea din nou a identificatorilor, limită de **100 intrări** și **16.000 caractere**.
+- `lib/vision/vision_diagnostic_advisor.dart`: **primul mecanism determinist read-only din nucleul Vision**. Prioritizează incidentele deschise după severitate și recență, prezintă explicații fixe pentru codurile deja instrumentate OCR/GPS/FCM/finanțe/diurne și recomandă doar verificări manuale, fără mutarea datelor sau presupunerea cauzei exacte.
+- `lib/vision/vision_diagnostics_page.dart`: afișează recomandarea cu cea mai mare prioritate într-un card discret, fără animații sau notificări noi; rămâne UI local.
 - `lib/vision/vision_diagnostics_page.dart`: buton `Copiază raport tehnic anonimizat` cu Clipboard **numai la gestul utilizatorului** și mesaj de confirmare/eroare; fără upload, SDK extern, permisiuni, costuri sau Firestore.
+- Teste noi de interpretare: incidente deschise/rezolvate, priorități, OCR salvat/eșuat, fallback pentru coduri necunoscute, limite maxime și lipsa efectelor secundare. Testul widget verifică recomandarea și absența acesteia când incidentele sunt rezolvate.
 - Teste Dart/unitate și widget pentru jurnal gol, 10.000 evenimente identice, câmpuri neacceptate, limitare de raport, absența copierii automate și Clipboard la apăsare.
 - Workflow-ul offline existent verifică și testele raportului, pe o ramură izolată, fără Google Services/INTERNET/GPS/cameră, cu identificator de pachet distinct. Nu este un build al aplicației autentificate.
 
@@ -29,3 +32,11 @@ Vision V0 din PR #19/#21 înregistrează deja sumarizat erori Flutter/async și 
 
 ## Etapa ulterioară
 După PR #33 RED→GREEN și evaluarea #28/#29, creare ramură **distinctă de integrare** a Vision V0.5 cu codul modularizat, OCR, documente și securitatea UID, teste Android/web reale, fără merge/deploy înainte de aprobare. Vision avansat — motor de reguli, Learning GPS, START idempotent, DND, diagnostic centralizat opt-in — rămâne separat.
+
+## Lot suplimentar — explicații Vision înainte de avatar
+
+Proprietarul a confirmat că avatarul (salut, dans, gesturi amuzante) se decide și implementează **după nucleul funcțional**. Decizia completă este salvată în Issue #30. Acest lot dezvoltă exclusiv logica read-only, fără elemente grafice noi în afară de cardul de explicație; niciun LLM/cloud/cost API.
+
+**Limită esențială:** un incident din jurnal poate declanșa o recomandare de verificare, dar nu confirmă că respectiva operațiune a eșuat definitiv sau că lipsesc alte buguri. Nu se efectuează reîncercări automate financiare, START/STOP, modificări de permisiuni sau sincronizare suplimentară. Observațiile silențioase fără excepții necesită integrare explicită ulterioară cu fluxurile reale.
+
+**CI pentru lotul nou:** rezultatele se vor trece în PR după validare. Nu confundați validarea precedentă pentru SHA `2995637e` (5/5 standard + Android offline SUCCESS) cu verificarea commiturilor suplimentare.
