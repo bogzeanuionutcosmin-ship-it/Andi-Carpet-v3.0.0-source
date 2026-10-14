@@ -20,6 +20,11 @@ class VisionDiagnosticsPage extends StatefulWidget {
 }
 
 class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
+  static const bool _offlineTestBuild =
+      bool.fromEnvironment('VISION_OFFLINE_SMOKE', defaultValue: false);
+  static const String _smokeRun =
+      String.fromEnvironment('VISION_SMOKE_RUN', defaultValue: 'local');
+
   @override
   Widget build(BuildContext context) {
     final currentLog = widget.log ?? VisionErrorTelemetry.log;
@@ -127,6 +132,17 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
       ),
       body: Column(
         children: <Widget>[
+          if (_offlineTestBuild)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'VISION TEST OFFLINE · BUILD #$_smokeRun',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+            ),
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
