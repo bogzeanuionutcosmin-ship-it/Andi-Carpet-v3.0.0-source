@@ -36,6 +36,7 @@ class VisionErrorTelemetry {
 
   static Timer? _writeTimer;
   static bool _installed = false;
+  static bool _persistenceStarted = false;
 
   // One observer for the app lifetime; only flush already pending snapshots.
   // An abrupt OS process kill can still interrupt an asynchronous write.
@@ -48,7 +49,10 @@ class VisionErrorTelemetry {
   static String get _platform =>
       kIsWeb ? 'web' : defaultTargetPlatform.name;
 
-  static Future<void> initialize() => _local.initialize();
+  static Future<void> initialize() {
+    _persistenceStarted = true;
+    return _local.initialize();
+  }
 
   static void installFlutterHandlers() {
     if (_installed) return;
@@ -59,7 +63,7 @@ class VisionErrorTelemetry {
     FlutterError.onError = (details) {
       report(
         area: 'flutter_framework',
-        code: details.exception.runtimeType.toString(),
+        code: 'framework_error',
         severity: VisionErrorSeverity.error,
       );
       // Preserve Flutter's previous reporting behavior.
@@ -74,7 +78,7 @@ class VisionErrorTelemetry {
     ui.PlatformDispatcher.instance.onError = (error, stack) {
       report(
         area: 'dart_async',
-        code: error.runtimeType.toString(),
+        code: 'uncaught_error',
         severity: VisionErrorSeverity.critical,
       );
       // Returning false when there was no handler preserves uncaught errors;
@@ -93,6 +97,9 @@ class VisionErrorTelemetry {
     try {
       log.record(area: area, code: code, platform: _platform, severity: severity);
       _local.changed();
+      // Hooks observed before bootstrap stay in RAM. Only explicit startup
+      // activates secure storage/debounce; embedding a page does not do I/O.
+      if (!_persistenceStarted) return;
       if (severity == VisionErrorSeverity.critical) {
         unawaited(flush());
       } else {

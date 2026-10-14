@@ -2,6 +2,8 @@ part of '../main.dart';
 
 class ExpensePage extends StatefulWidget {
   final AppUser currentUser;
+  /// Ownership for diagnostic observations only; does not grant financial rights.
+  final bool Function()? diagnosticSessionIsCurrent;
   final List<Team> teams;
   final List<AppUser> users;
   final List<Expense> expenses;
@@ -22,11 +24,12 @@ class ExpensePage extends StatefulWidget {
   final Future<void> Function(PerDiemEntry) savePerDiem;
   final Future<void> Function(TeamFinance) saveFinance;
   final Future<void> Function(TravelSettlement) saveSettlement;
-  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement,this.documentImagePicker,this.documentTextRecognizer});
+  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement,this.documentImagePicker,this.documentTextRecognizer,this.diagnosticSessionIsCurrent});
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 
 class _ExpensePageState extends State<ExpensePage> {
+  bool get _visionSessionActive => mounted && (widget.diagnosticSessionIsCurrent?.call() ?? true);
   static const String _legacySettlementKey = '__legacy__';
   int teamIndex = 0;
   String? selectedSettlementId;

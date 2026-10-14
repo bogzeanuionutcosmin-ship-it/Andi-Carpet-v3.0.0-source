@@ -25,7 +25,7 @@ class VisionCoverageArea {
 class VisionDiagnosticCoverage {
   VisionDiagnosticCoverage._();
 
-  /// Snapshot for the Vision branch based on #21.
+  /// Reviewed modular integration over #35; handlers and hooks are connected.
   /// Observed errors require installed handlers and actual execution.
   static const areas = <VisionCoverageArea>[
     VisionCoverageArea(

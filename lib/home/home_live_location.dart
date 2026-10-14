@@ -64,9 +64,14 @@ extension _HomeLiveLocation on _HomePageState {
       }
       _backgroundLocationSubscription = Geolocator.getPositionStream(locationSettings: settings).listen(
         (position) => unawaited(_shareLiveLocationIfAllowed(position)),
-        onError: (Object e) => debugPrint('[location] Background stream: $e'),
+        onError: (Object e) {
+          if (!_sessionActive) return;
+          VisionErrorTelemetry.report(area: 'gps', code: 'background_stream_failed');
+          debugPrint('[location] Background stream: $e');
+        },
       );
     } catch (e) {
+      if (_sessionActive) VisionErrorTelemetry.report(area: 'gps', code: 'background_start_failed');
       debugPrint('[location] Nu am putut porni tracking-ul nativ în background: $e');
     }
   }
@@ -216,6 +221,7 @@ extension _HomeLiveLocation on _HomePageState {
       _lastSharedAt = now;
       await _applyWorkAutomationFromPosition(p, now, workDate);
     } catch (e) {
+      if (_sessionActive) VisionErrorTelemetry.report(area: 'gps', code: 'location_update_failed');
       debugPrint('[location] Actualizarea locației a eșuat: $e');
     }
   }

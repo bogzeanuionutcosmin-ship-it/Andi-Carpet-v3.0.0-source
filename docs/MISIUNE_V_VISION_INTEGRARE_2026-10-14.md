@@ -36,3 +36,20 @@ CI pe SHA lot este obligatoriu înainte de bootstrap/hookuri; rezultatele și ar
 ## Limite
 
 Fără merge/deploy/APK publicat/instalat/web publicat/producție/role rights/finanțe/OCR/START-STOP/backup/migrare/Learning/billing. Panoul device-wide nu autorizează accesul unui alt cont; expunerea producție rămâne decizie explicită de permisiune. Hardware/autentificare/Firebase live NEEXECUTATE. Android se compilează în CI numai dacă runnerul permite, fără upload/distribuire de APK.
+
+
+## Lot 1 validat
+
+Commit b35be65f29952f66271e04addcdbf99850998343. Standard 38637194546 SUCCESS 5/5:390Flutter,158Python,3Node,Functions,financial10,smokeDart/web. Identity38637194426 SUCCESS5PASS. Merge-ref PR38 daf3ed12811143d0b360ca1913280efdba389040 / tree95b66651623dc7c19a03e8e3a0ee9df3f6d9358b identic HEAD. 96 teste Vision importate, cele294 originale și12+8AuthGate intacte. Million source SHA256 original verificat, assetul nu este portat.
+
+## Lot 2 — conectare observațională
+
+Bootstrap unic în main, înainte de Firebase: install handlers idempotent și restore non-blocking best-effort. Handlerii Flutter/Dart anteriori sunt înlănțuiți, nu suprascriși semantic; dacă async nu avea handler, false păstrează eroarea nehandled. Datele brute/stack/runtimeType nu intră în jurnal: doar framework_error/uncaught_error constante. Jurnalul colectează RAM înainte de bootstrap; numai initialize explicit activează stocarea/debounce. Astfel, un widget încorporat/test nu pornește I/O platformă implicit. Startup Firebase failure are un cod constant separat.
+
+13 hookuri unice, constante, în cele6 module reale Home/Expense. Home păstrează toate guardurile și verifică ownerul în error callbacks; Expense primește doar diagnosticSessionIsCurrent opțional, furnizat din ownership Home. Acest seam controlează exclusiv înregistrarea observației, nu acordă drepturi și nu modifică financial save/confirm/retry. Modulele Expense actions reconstruiesc byte-exact baza #35 după eliminarea celor7 hookuri, dovedit prin hashuri Python; parserul și fluxurile de form/save rămân.
+
+7 teste Flutter noi: bootstrap fără blocaj/failure, handler chaining/idempotence/sanitization,2 contexte UI A→B→A/logout cu sheet/route/SnackBar/copy explicite, realHome GPS/FCM/diurnă once/no-sensitive-payload, lateFCM error A respins înainte de dispose și OCR recognition/save once/no-retry. Panoul rămâne numai context intern/test cu log injectat; nu adăugăm acces device-wide sau buton public, deoarece politica de vizibilitate nu este aprobată. Verifier-ul rămâne neconectat.
+
+Source contract #34 este adaptat la modulele efective fără eliminarea celor5 aserțiuni anterioare; două contracte suplimentare cer unicitate/ownership/coduri fixe/zero public route și zero verifier wiring. Un test Python suplimentar demonstrează inversion financiar/OCR.166PythonPASS local. CI pe SHA lot și Android se raportează după execuție.
+
+Android: un workflow NOU compile-only, limitat prin head_ref la PR38, fără modificarea workflow-urilor protejate. Rulează teste Vision/AuthGate și compilează lib/main.dart real, fără secrets/token/Google Services modificat, fără artifact upload/instalare/deploy. Este compilare, nu hardware sau login Firebase live.

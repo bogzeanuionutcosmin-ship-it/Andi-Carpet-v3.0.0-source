@@ -165,7 +165,11 @@ extension _HomePushNotifications on _HomePageState {
         _pushListenersAttached = true;
         _coreSubscriptions.add(messaging.onTokenRefresh.listen(
           (value) => unawaited(_savePushToken(value)),
-          onError: (Object error) => debugPrint('[push] onTokenRefresh: $error'),
+          onError: (Object error) {
+            if (!_sessionActive) return;
+            VisionErrorTelemetry.report(area: 'fcm', code: 'token_refresh_failed');
+            debugPrint('[push] onTokenRefresh: $error');
+          },
         ));
         _coreSubscriptions.add((widget.messageOpenedApp ?? FirebaseMessaging.onMessageOpenedApp).listen((message) {
           if (!_sessionActive) return;
@@ -186,6 +190,7 @@ extension _HomePushNotifications on _HomePageState {
         }
       }
     } catch (e, st) {
+      if (_sessionActive) VisionErrorTelemetry.report(area: 'fcm', code: 'initialization_failed');
       debugPrint('[push] Inițializarea FCM a eșuat: $e');
       debugPrintStack(stackTrace: st);
       // Butonul din Profil rămâne doar ca diagnostic/fallback. Înregistrarea

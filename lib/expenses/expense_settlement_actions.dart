@@ -278,7 +278,7 @@ extension _ExpenseSettlementActions on _ExpensePageState {
         widget.log('Sumă primită adăugată','${team.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
       }
       if(mounted){setState((){});showSuccessMessage(context,'Suma primită a fost adăugată.');}
-    }catch(e){if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');}
+    }catch(e){if (_visionSessionActive) VisionErrorTelemetry.report(area: 'finance', code: 'received_amount_save_failed'); if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');}
   }
 
 

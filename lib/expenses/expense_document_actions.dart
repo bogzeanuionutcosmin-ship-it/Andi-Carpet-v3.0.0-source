@@ -87,6 +87,7 @@ extension _ExpenseDocumentActions on _ExpensePageState {
           parsed = parseFiscalOcr(text);
           widget.log('OCR automat la atașare', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
         } catch (_) {
+          if (_visionSessionActive) VisionErrorTelemetry.report(area: 'ocr', code: 'automatic_recognition_failed');
           // În modul automat, eșecul OCR nu blochează introducerea manuală.
         } finally {
           if (mounted) setState(() => scanning = false);
@@ -113,6 +114,7 @@ extension _ExpenseDocumentActions on _ExpensePageState {
       parsed = parseFiscalOcr(text);
       widget.log('OCR document procesat', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
     } catch (e) {
+      if (_visionSessionActive) VisionErrorTelemetry.report(area: 'ocr', code: 'recognition_failed');
       parsed = const FiscalOcrData(rawText: '');
       if (mounted) showErrorMessage(context, 'OCR-ul nu a putut citi documentul. Poți completa manual; fotografia nu se salvează în baza de date. Detalii: $e');
     } finally {
@@ -216,7 +218,7 @@ extension _ExpenseDocumentActions on _ExpensePageState {
       await widget.saveExpense(e);
       widget.log('${e.documentType == ExpenseDocumentType.fiscalReceipt ? 'Bon Fiscal' : 'Factură'} introdus', '${e.category} · ${settlement?.name ?? 'istoric anterior'}');
       if (mounted) showSuccessMessage(context, e.confirmed ? 'Documentul a fost salvat.' : 'Documentul a fost trimis gestionarului pentru confirmare.');
-    } catch (err) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva documentul: $err'); }
+    } catch (err) { if (_visionSessionActive) VisionErrorTelemetry.report(area: 'ocr', code: 'document_save_failed'); if (mounted) showErrorMessage(context, 'Nu s-a putut salva documentul: $err'); }
   }
 
   List<Widget> _groupedExpenses() {

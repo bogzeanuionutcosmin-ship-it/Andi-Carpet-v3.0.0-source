@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'vision/vision_bootstrap.dart';
+import 'vision/vision_error_telemetry.dart';
+import 'vision/vision_error_log.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -547,6 +550,7 @@ const String _appVersionLabel = '3.0.0+32';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  startVisionDiagnostics();
   try {
     await _initializeFirebaseForPlatform();
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -555,6 +559,7 @@ Future<void> main() async {
     }
     runApp(const AndiCarpetaApp());
   } catch (e) {
+    VisionErrorTelemetry.report(area: 'startup', code: 'firebase_initialization_failed', severity: VisionErrorSeverity.critical);
     runApp(_FirebaseBootstrapErrorApp(message: e.toString()));
   }
 }

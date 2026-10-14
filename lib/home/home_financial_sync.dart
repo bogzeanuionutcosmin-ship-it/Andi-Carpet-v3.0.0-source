@@ -29,7 +29,7 @@ extension _HomeFinancialSync on _HomePageState {
         if (!_sessionActive) return;
       final list=snap.docs.map(_perDiemFromDoc).toList()..sort((a,b)=>a.date.compareTo(b.date));
       if(!_sessionActive)return;setState((){perDiems..clear()..addAll(list);});
-    },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Diurne: $e');}));
+    },onError:(Object e){if (!_sessionActive) return; VisionErrorTelemetry.report(area: 'per_diem', code: 'sync_failed'); setState(()=>coreSyncError='Diurne: $e');}));
     _financialSubscriptions.add(financeQuery.snapshots().listen((snap){
         if (!_sessionActive) return;
       final list=snap.docs.map(_financeFromDoc).toList();

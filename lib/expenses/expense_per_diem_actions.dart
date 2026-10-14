@@ -138,6 +138,7 @@ extension _ExpensePerDiemActions on _ExpensePageState {
             : 'Suma efectiv primită a fost salvată. Diferența a fost semnalată.');
       }
     } catch (e) {
+      if (_visionSessionActive) VisionErrorTelemetry.report(area: 'per_diem', code: 'acknowledge_failed');
       entry.received = previousReceived;
       entry.status = previousStatus;
       entry.confirmedAt = previousConfirmedAt;
@@ -333,6 +334,7 @@ extension _ExpensePerDiemActions on _ExpensePageState {
         'Ai o plată suplimentară de ${payment.amount.toStringAsFixed(2)} lei de confirmat.');
       widget.onChanged();
     } catch (e) {
+      if (_visionSessionActive) VisionErrorTelemetry.report(area: 'per_diem', code: 'supplementary_save_failed');
       if (mounted) showErrorMessage(context, 'Plata suplimentară nu a putut fi salvată: $e');
     }
   }
@@ -369,7 +371,7 @@ extension _ExpensePerDiemActions on _ExpensePageState {
       if (!proceed) return;
     }
     try { await widget.savePerDiem(r); widget.notifyUser(r.memberId, 'Diurnă de confirmat', 'Ai primit ${r.amount.toStringAsFixed(2)} lei diurnă pentru ${settlement?.name ?? 'decontul anterior'}.'); widget.log('Diurnă distribuită', '${name(r.memberId)} · ${settlement?.name ?? 'istoric anterior'}'); }
-    catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva diurna: $e'); }
+    catch (e) { if (_visionSessionActive) VisionErrorTelemetry.report(area: 'per_diem', code: 'distribution_save_failed'); if (mounted) showErrorMessage(context, 'Nu s-a putut salva diurna: $e'); }
   }
 
 
