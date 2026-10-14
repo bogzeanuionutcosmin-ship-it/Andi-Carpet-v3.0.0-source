@@ -104,6 +104,11 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
+                        insights.first.occurrenceLabel,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
                         insights.first.explanation,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
