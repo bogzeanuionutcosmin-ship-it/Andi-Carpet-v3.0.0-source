@@ -79,7 +79,7 @@ void main() {
       generatedAt: timestamp);
     expect(output, contains('Incidente locale: 180'));
     expect(output, contains('raport limitat'));
-    expect(RegExp(r'\\| web \\| error \\|').allMatches(output).length, 100);
+    expect(output.split('| web | error |').length - 1, 100);
     expect(output.length, lessThanOrEqualTo(
         VisionDiagnosticReport.maxCharacters));
   });
