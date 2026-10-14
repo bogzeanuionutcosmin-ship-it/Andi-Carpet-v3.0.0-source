@@ -1,4 +1,5 @@
 import 'package:andi_carpeta/main.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,7 +21,8 @@ class AdminUiFixture {
   final logs = <String>[];
   int changes = 0;
   AdminUiFixture({this.users = const [], this.functions = const []});
-  AdminPanelPage page() => AdminPanelPage(
+  AdminPanelPage page({FirebaseFirestore? backupFirestore, AdminBackupFiles? backupFiles}) => AdminPanelPage(
+    backupFirestore: backupFirestore, backupFiles: backupFiles,
     users: users, teams: [], cars: [], locations: [], categories: [],
     functionDefinitions: functions, schedules: [], records: [], expenses: [],
     perDiems: [], finances: [], settlements: [], notifications: [], audit: [],
@@ -29,8 +31,8 @@ class AdminUiFixture {
     saveLocation: (_) async { fail('Unexpected location write'); },
     deleteLocation: (_) async { fail('Unexpected location delete'); },
   );
-  Future<void> mount(WidgetTester tester, int section) async {
-    await tester.pumpWidget(MaterialApp(home: page()));
+  Future<void> mount(WidgetTester tester, int section, {FirebaseFirestore? backupFirestore, AdminBackupFiles? backupFiles}) async {
+    await tester.pumpWidget(MaterialApp(home: page(backupFirestore: backupFirestore, backupFiles: backupFiles)));
     final dynamic state = tester.state(find.byType(AdminPanelPage));
     state.setState(() { state.section = section; });
     await tester.pumpAndSettle();

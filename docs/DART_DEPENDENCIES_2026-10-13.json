@@ -1,22 +1,26 @@
 {
   "format_version": 1,
-  "dart_files": 209,
-  "lib_dart_files": 138,
-  "test_dart_files": 70,
+  "dart_files": 213,
+  "lib_dart_files": 140,
+  "test_dart_files": 72,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 150,
+  "libraries": 154,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
   "duplicate_declarations_in_library": [],
   "library_edges": {
     "lib/admin/admin_account_projections.dart": [],
+    "lib/admin/admin_backup_files.dart": [],
     "lib/admin/admin_member_projections.dart": [
       "lib/models/app_data_models.dart"
     ],
     "lib/admin/admin_navigation_catalog.dart": [],
     "lib/admin/backup_codec.dart": [],
+    "lib/admin/file_picker_admin_backup_files.dart": [
+      "lib/admin/admin_backup_files.dart"
+    ],
     "lib/auth/account_access_views.dart": [],
     "lib/auth/auth_gate_sources.dart": [],
     "lib/auth/firebase_user_profile.dart": [
@@ -83,9 +87,11 @@
     ],
     "lib/main.dart": [
       "lib/admin/admin_account_projections.dart",
+      "lib/admin/admin_backup_files.dart",
       "lib/admin/admin_member_projections.dart",
       "lib/admin/admin_navigation_catalog.dart",
       "lib/admin/backup_codec.dart",
+      "lib/admin/file_picker_admin_backup_files.dart",
       "lib/auth/account_access_views.dart",
       "lib/auth/auth_gate_sources.dart",
       "lib/auth/firebase_user_profile.dart",
@@ -249,6 +255,10 @@
     ],
     "test/admin_account_projections_test.dart": [
       "lib/admin/admin_account_projections.dart"
+    ],
+    "test/admin_backup_preflight_characterization_test.dart": [
+      "test/support/admin_backup_fixture.dart",
+      "test/support/admin_ui_fixture.dart"
     ],
     "test/admin_cancel_characterization_test.dart": [
       "lib/main.dart",
@@ -488,6 +498,13 @@
     "test/stat_card_library_test.dart": [
       "lib/ui/stat_card.dart"
     ],
+    "test/support/admin_backup_fixture.dart": [
+      "lib/main.dart",
+      "test/support/admin_ui_fixture.dart",
+      "test/support/auth_gate_fixture.dart",
+      "test/support/home_maintenance_fixture.dart",
+      "test/support/home_sync_fixture.dart"
+    ],
     "test/support/admin_ui_fixture.dart": [
       "lib/main.dart"
     ],
@@ -539,8 +556,8 @@
     },
     {
       "path": "lib/admin/admin_backup_actions.dart",
-      "bytes": 9601,
-      "sha256": "168d771426d465ae5b03bb7ff260856c12719aa9e5255c547a65a3c39e88e48a",
+      "bytes": 9579,
+      "sha256": "1c6ebcf71e47b86a99b69f5e1c19daeb06513618163fb2728688410e8328e85f",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -563,9 +580,32 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/admin/admin_backup_files.dart",
+      "bytes": 607,
+      "sha256": "26fdc0cb1d4f8f83bfb6624959a4b7436721e132073611da4234951b675c2141",
+      "owner": "lib/admin/admin_backup_files.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:typed_data';",
+          "uris": [
+            "dart:typed_data"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "AdminBackupFile"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/admin/admin_backup_panel_actions.dart",
-      "bytes": 3442,
-      "sha256": "e665e44a4bfbec6517c67ee851c2decaf71092af41a00b0f73d52eae935d597c",
+      "bytes": 3443,
+      "sha256": "64dde1500211538fa28584cf64fca7e6c64be49a691c3c0b73b20bfcd1bb6e85",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -851,8 +891,8 @@
     },
     {
       "path": "lib/admin/admin_panel_page.dart",
-      "bytes": 11237,
-      "sha256": "a9e4998913ed303f62dca5c803ef1081b9c38f109e3fc9cce3f8fc126a979c4e",
+      "bytes": 11546,
+      "sha256": "6957e8b6c846b0d8d07c9e741be3377cac8ab4e299607cdaa09605c8afbce2cd",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -946,6 +986,47 @@
         }
       ],
       "declarations": [],
+      "top_level_functions": []
+    },
+    {
+      "path": "lib/admin/file_picker_admin_backup_files.dart",
+      "bytes": 712,
+      "sha256": "9ff0f6e8162a53fd2bed4601f960a8233ec97ccf29ef0fe5f97ab153299e72d8",
+      "owner": "lib/admin/file_picker_admin_backup_files.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:typed_data';",
+          "uris": [
+            "dart:typed_data"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:file_picker/file_picker.dart';",
+          "uris": [
+            "package:file_picker/file_picker.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'admin_backup_files.dart';",
+          "uris": [
+            "admin_backup_files.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_backup_files.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "FilePickerAdminBackupFiles"
+        }
+      ],
       "top_level_functions": []
     },
     {
@@ -2746,8 +2827,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 30535,
-      "sha256": "4d3e52322695ae0ebe383c629dea01ca5f5b4ec362a6fcf694a4c87cb4a6b54d",
+      "bytes": 30667,
+      "sha256": "3da9a482020983c36021064c58fb58e57faba7342b136f2781e9f9846bd916ac",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -3388,6 +3469,36 @@
           ],
           "local_targets": [
             "lib/admin/admin_account_projections.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'admin/admin_backup_files.dart';",
+          "uris": [
+            "admin/admin_backup_files.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_backup_files.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'admin/file_picker_admin_backup_files.dart';",
+          "uris": [
+            "admin/file_picker_admin_backup_files.dart"
+          ],
+          "local_targets": [
+            "lib/admin/file_picker_admin_backup_files.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'admin/admin_backup_files.dart';",
+          "uris": [
+            "admin/admin_backup_files.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_backup_files.dart"
           ]
         },
         {
@@ -6511,6 +6622,70 @@
             "package:flutter_test/flutter_test.dart"
           ],
           "local_targets": []
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/admin_backup_preflight_characterization_test.dart",
+      "bytes": 6260,
+      "sha256": "dc1e00d0354e5b5431f24fe3749f6e2c2311ce0f191624d427766bffcdbbd44a",
+      "owner": "test/admin_backup_preflight_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:convert';",
+          "uris": [
+            "dart:convert"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';",
+          "uris": [
+            "package:firebase_core_platform_interface/firebase_core_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/admin_ui_fixture.dart';",
+          "uris": [
+            "support/admin_ui_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/admin_ui_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/admin_backup_fixture.dart';",
+          "uris": [
+            "support/admin_backup_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/admin_backup_fixture.dart"
+          ]
         }
       ],
       "declarations": [],
@@ -9699,9 +9874,122 @@
       ]
     },
     {
+      "path": "test/support/admin_backup_fixture.dart",
+      "bytes": 5097,
+      "sha256": "e31f3f27bf716a69092fd4360785d1051e21b366cb14d9cc653f7c3c5a3cdabe",
+      "owner": "test/support/admin_backup_fixture.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:convert';",
+          "uris": [
+            "dart:convert"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'dart:typed_data';",
+          "uris": [
+            "dart:typed_data"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'home_maintenance_fixture.dart';",
+          "uris": [
+            "home_maintenance_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_maintenance_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'home_sync_fixture.dart';",
+          "uris": [
+            "home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'auth_gate_fixture.dart';",
+          "uris": [
+            "auth_gate_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/auth_gate_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'admin_ui_fixture.dart';",
+          "uris": [
+            "admin_ui_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/admin_ui_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "BackupFilesFixture"
+        },
+        {
+          "kind": "class",
+          "name": "AdminBackupDbFixture"
+        },
+        {
+          "kind": "class",
+          "name": "_BackupCollection"
+        },
+        {
+          "kind": "class",
+          "name": "_BackupDocument"
+        },
+        {
+          "kind": "class",
+          "name": "AdminBackupHarness"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "test/support/admin_ui_fixture.dart",
-      "bytes": 1668,
-      "sha256": "b6f2d16e31221280e2991b60182dc9f1d0d0d78c6fa91f1ea2598696722195dd",
+      "bytes": 1981,
+      "sha256": "90a753f509c133c23fc557ff39583436cad3395eb572c38aa88cff4057d5e000",
       "owner": "test/support/admin_ui_fixture.dart",
       "directives": [
         {
@@ -9713,6 +10001,14 @@
           "local_targets": [
             "lib/main.dart"
           ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
         },
         {
           "kind": "import",
