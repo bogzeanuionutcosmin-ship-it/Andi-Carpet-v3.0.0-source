@@ -182,3 +182,14 @@ Titlul recomandării este acum **„Salvarea documentului necesită verificare�
 În plus, pentru două incidente cu aceeași severitate, același indicator de repetare, timestamp și contor, advisorul folosește fingerprintul strict sanitizat ca ultim criteriu de ordine. Astfel, recomandarea de top nu mai depinde de ordinea întâmplătoare de inserare/restaurare a jurnalului.
 
 Teste noi pentru explicație non-categorică, protecție împotriva dublurilor și prioritizare deterministă după ordine inversată a evenimentelor; testele unit și widget existente pentru OCR au fost adaptate strict la noul text. Niciun upload, apel AI plătit sau intervenție în PR #28. Rezultatul final se confirmă doar cu CI/Android pe HEAD exact.
+
+
+## Persistență deterministă: restore înainte de write (lot separat)
+
+S-a identificat o fereastră de cursă în `VisionErrorTelemetry`: dacă un incident era raportat înainte să termine citirea din `FlutterSecureStorage`, `flush()` putea serializa/scrie doar incidentele noi, fără intrările istorice încă necitite; astfel un snapshot incomplet putea suprascrie jurnalul local existent.
+
+**Corecție în PR #34, fără integrare aplicație principală:** noul modul pur `VisionLocalPersistence` primește porturi async `read` și `write`, păstrează `VisionErrorLog` și `VisionPersistenceTracker`, asigură o singură restaurare inițială și pune toate scrierile într-o coadă serială. `flush()` așteaptă citirea inițială înainte de a codifica snapshotul; fiecare scriere folosește cea mai recentă versiune disponibilă după operațiile anterioare. Un eșec de stocare rămâne vizibil în status, dar nu blochează raportarea. Adaptorul `VisionErrorTelemetry` folosește aceleași `FlutterSecureStorage.read/write`, aceeași cheie locală, debounce de 3 secunde și flush imediat pentru incidente critice, fără schimbarea politicii de 150 intrări/48 KiB/7 zile.
+
+**Teste cu I/O simulat:** citire blocată + raport nou înainte de read, flush fără initialize explicit, două scrieri cu prima blocată și eveniment nou în coadă, eșec de read urmat de succes de write, eșec de write urmat de recover, payload sensibil respins înainte de persistență. Testele izolează strict stocarea locală, fără Firebase, permisiuni, UID, cost AI sau date reale.
+
+**Limite:** coada nu anulează retrospectiv operațiile platformei și nu demonstrează comportamentul Android Keystore real la pierdere de energie. Restore-ul cu fingerprint deja prezent favorizează intrarea curentă față de cea istorică, fără a agrega retroactiv contori din cache. Validarea oficială a lotului necesită CI 5/5 + Android offline pe SHA exact. Nu se cere APK nou pe telefon pentru aceste probe interne.
