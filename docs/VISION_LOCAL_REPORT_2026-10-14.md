@@ -162,3 +162,12 @@ Patru teste noi: failure revizia 2 urmat de success tardiv revizia 1; eșec vech
 ## Totaluri distincte pentru incidente reale versus probe (lot independent)
 
 Raportul diagnostic copiat afișează acum **`Incidente locale: N`** (fingerprinturi reale distincte) și **`Aparitii ale incidentelor: M`** (suma repetărilor agregate), separat de `Probe locale`/`Aparitii ale probelor locale`. Exemplu sintetic: OCR save failure ×3 + probă de persistență ×4 produce 1 incident real, 3 apariții ale incidentelor, 1 tip de probă și 4 apariții ale probelor. Totalurile sunt extrase din jurnalul local deja limitat și rămân afișate chiar dacă exportul trunchiază liniile la 100 de evenimente. Nu sunt trimise sume, texte OCR, UID-uri, tokenuri ori poziții; zero acces suplimentar Firebase, zero schimări în PR #28. Teste unitare verify summary + unchanged snapshot. Așteptați CI pe SHA-ul final pentru acceptanță.
+
+
+## Rezumatul stării și severității incidentelor din raport
+
+La generarea manuală a raportului Vision, după numărul de incidente distincte și aparițiile lor, exportul include acum `Incidente deschise: N (critice: C, erori: E, avertizari: W)` și `Incidente rezolvate: R`. Aceste totaluri sunt numere de **fingerprinturi**, nu număr de apariții, și sunt calculate pe jurnalul local deja limitat. Perechea sintetică `vision_test/persistence_probe` rămâne exclusă atât din totalurile de incidente, cât și din severitatea lor, chiar dacă a fost înregistrată cu nivel `critical`.
+
+Rezumatul este generat **înainte de trunchierea la 100 de linii/16.000 de caractere**: un incident rezolvat sau o eroare critică omisă din liniile individuale rămâne reflectată în statistici. Nu există date brute, valori financiare, nume, UID-uri, locații, tokenuri sau vreo cerere Firebase/API suplimentară. Este doar o îmbunătățire a raportului copiat explicit de utilizator; niciun diagnostic automat sau acțiune de business.
+
+Teste noi: critică repetată de trei ori + eroare deschisă + warning rezolvat + două probe simulate; respectiv 120 warnings, critică rezolvată și probă, pentru a dovedi că totalurile rămân corecte chiar dacă unele linii sunt trunchiate. Exportul nu schimbă snapshotul jurnalului. CI pe SHA final decide validarea.
