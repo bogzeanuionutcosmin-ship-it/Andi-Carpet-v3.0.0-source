@@ -609,7 +609,10 @@ class _ExpensePageState extends State<ExpensePage> {
         widget.log('Sumă primită adăugată','${team.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
       }
       if(mounted){setState((){});showSuccessMessage(context,'Suma primită a fost adăugată.');}
-    }catch(e){if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');}
+    }catch(e){
+      VisionErrorTelemetry.report(area: 'finance', code: 'received_amount_save_failed');
+      if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');
+    }
   }
 
   Widget _pendingPerDiemCard(PerDiemEntry entry) {
@@ -749,6 +752,7 @@ class _ExpensePageState extends State<ExpensePage> {
             : 'Suma efectiv primită a fost salvată. Diferența a fost semnalată.');
       }
     } catch (e) {
+      VisionErrorTelemetry.report(area: 'per_diem', code: 'acknowledge_failed');
       entry.received = previousReceived;
       entry.status = previousStatus;
       entry.confirmedAt = previousConfirmedAt;
@@ -944,6 +948,7 @@ class _ExpensePageState extends State<ExpensePage> {
         'Ai o plată suplimentară de ${payment.amount.toStringAsFixed(2)} lei de confirmat.');
       widget.onChanged();
     } catch (e) {
+      VisionErrorTelemetry.report(area: 'per_diem', code: 'supplementary_save_failed');
       if (mounted) showErrorMessage(context, 'Plata suplimentară nu a putut fi salvată: $e');
     }
   }
@@ -980,7 +985,10 @@ class _ExpensePageState extends State<ExpensePage> {
       if (!proceed) return;
     }
     try { await widget.savePerDiem(r); widget.notifyUser(r.memberId, 'Diurnă de confirmat', 'Ai primit ${r.amount.toStringAsFixed(2)} lei diurnă pentru ${settlement?.name ?? 'decontul anterior'}.'); widget.log('Diurnă distribuită', '${name(r.memberId)} · ${settlement?.name ?? 'istoric anterior'}'); }
-    catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva diurna: $e'); }
+    catch (e) {
+      VisionErrorTelemetry.report(area: 'per_diem', code: 'distribution_save_failed');
+      if (mounted) showErrorMessage(context, 'Nu s-a putut salva diurna: $e');
+    }
   }
 
   Future<XFile?> _pickDocumentImage({bool allowNoImage = false}) async {
@@ -1067,6 +1075,7 @@ class _ExpensePageState extends State<ExpensePage> {
           parsed = parseFiscalOcr(text);
           widget.log('OCR automat la atașare', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
         } catch (_) {
+          VisionErrorTelemetry.report(area: 'ocr', code: 'automatic_recognition_failed');
           // În modul automat, eșecul OCR nu blochează introducerea manuală.
         } finally {
           if (mounted) setState(() => scanning = false);
@@ -1091,6 +1100,7 @@ class _ExpensePageState extends State<ExpensePage> {
       parsed = parseFiscalOcr(text);
       widget.log('OCR document procesat', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
     } catch (e) {
+      VisionErrorTelemetry.report(area: 'ocr', code: 'recognition_failed');
       parsed = const FiscalOcrData(rawText: '');
       if (mounted) showErrorMessage(context, 'OCR-ul nu a putut citi documentul. Poți completa manual; fotografia nu se salvează în baza de date. Detalii: $e');
     } finally {
@@ -1141,7 +1151,7 @@ class _ExpensePageState extends State<ExpensePage> {
           const SizedBox(height: 8),
         ],
         if (ocr != null) ...[
-          _InfoCard(icon: Icons.document_scanner, title: 'OCR ${(ocr.confidence * 100).round()}%', text: ocr.rawText.isEmpty ? 'Textul nu a putut fi extras. Completează manual.' : 'Datele au fost completate automat. Verifică-le înainte de salvare. Fotografia este temporară și nu va fi salvată.'),
+          _InfoCard(icon: Icons.document_scanner, title: 'OCR ${(ocr.confidence * 100).round()}%', text: ocr.rawText.isEmpty ? 'Textul nu a putut fi extras. Completează manual.' : ocr.amount == null ? 'Totalul de plată nu a putut fi identificat sigur. Introdu suma manual, după bon/factură, înainte de salvare. Fotografia rămâne temporară.' : 'Suma a fost propusă de OCR. Verifică valoarea pe document înainte de confirmare. Fotografia rămâne temporară.'),
           const SizedBox(height: 8),
         ],
         DropdownButtonFormField<ExpenseDocumentType>(initialValue: docType, decoration: const InputDecoration(labelText: 'Tip document'), items: const [DropdownMenuItem(value: ExpenseDocumentType.fiscalReceipt, child: Text('Bon Fiscal')), DropdownMenuItem(value: ExpenseDocumentType.invoice, child: Text('Factură'))], onChanged: (v) { if (v != null) setD(() { docType = v; if (v == ExpenseDocumentType.invoice && cat == 'Alte cheltuieli') cat = 'Facturi'; if (v == ExpenseDocumentType.fiscalReceipt && cat == 'Facturi') cat = 'Alte cheltuieli'; }); }),
@@ -1194,7 +1204,10 @@ class _ExpensePageState extends State<ExpensePage> {
       await widget.saveExpense(e);
       widget.log('${e.documentType == ExpenseDocumentType.fiscalReceipt ? 'Bon Fiscal' : 'Factură'} introdus', '${e.category} · ${settlement?.name ?? 'istoric anterior'}');
       if (mounted) showSuccessMessage(context, e.confirmed ? 'Documentul a fost salvat.' : 'Documentul a fost trimis gestionarului pentru confirmare.');
-    } catch (err) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva documentul: $err'); }
+    } catch (err) {
+      VisionErrorTelemetry.report(area: 'ocr', code: 'document_save_failed');
+      if (mounted) showErrorMessage(context, 'Nu s-a putut salva documentul: $err');
+    }
   }
 
   List<Widget> _groupedExpenses() {
