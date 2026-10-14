@@ -148,3 +148,12 @@ Teste unitare: numai probe repetate (0 incidente, 1 fingerprint test și contor 
 În raportul copiat, `Probe locale (nu sunt erori): N tipuri` exprimă numărul de fingerprinturi de probă, iar `Aparitii ale probelor locale: M` însumează apăsările testului înregistrate. Exemplu: dacă proba de persistență Android apare ca `×4`, raportul explică **1 tip, 4 apariții, 0 incidente reale**. Acest sumar există chiar dacă liniile de probă sunt excluse de limita de export de 100 evenimente sau 16.000 caractere; incidentele reale au prioritate.
 
 Teste noi: o probă Android repetată de patru ori; două platforme simulate (4+2 apariții, 2 fingerprinturi); raport trunchiat cu 110 incidente reale și două apariții ale probei; jurnalul și exportul rămân nemutate și fără upload. Nu se adaugă scrieri Firebase și nu se schimbă semnificația categoriei de incident. Validarea de închidere se face numai pe CI aferent HEAD final.
+
+
+## Indicatorul de persistență la callback-uri întârziate (lot izolat)
+
+Trackerul pur `VisionPersistenceTracker` ține acum cont de **ultima revizie pentru care a eșuat salvarea**. Un succes întârziat pentru o revizie mai veche nu mai poate șterge starea `memoryOnly` a unei scrieri ulterioare nereușite. Ordinea reală a scrierilor rămâne serializată în `VisionErrorTelemetry`, dar această măsură apără contractul de status și dacă un adaptor schimbă ordinea notificărilor.
+
+Un eșec ulterior de read sau de rescriere a aceleiași revizii are întâietate față de indicatorul `saved`: interfața nu mai afirmă că stocarea este accesibilă doar fiindcă o scriere anterioară a reușit. Revenirea la `saved` necesită apoi succesul unei scrieri care acoperă ultima revizie eșuată. **Nici un payload, UID, coordonată, eroare brută sau document financiar nu este introdus în tracker.**
+
+Patru teste noi: failure revizia 2 urmat de success tardiv revizia 1; eșec vechi după revizie nouă confirmată; rescriere aceeași revizie eșuată; eșec de citire după scriere confirmată. Invariantele pentru callbackuri negative/viitoare și succesuri care nu acoperă revizia curentă rămân testate. Este logică exclusiv locală, fără Firebase, UI nou ori interacțiune cu PR #28. Validarea de închidere se face pe SHA exact în CI.
