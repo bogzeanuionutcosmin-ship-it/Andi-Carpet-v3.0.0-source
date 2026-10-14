@@ -5,6 +5,29 @@ import 'package:andi_carpeta/vision/vision_diagnostics_page.dart';
 import 'package:andi_carpeta/vision/vision_error_log.dart';
 
 void main() {
+  testWidgets('small screen keeps full Vision title and test is not an alert',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final log = VisionErrorLog();
+    log.record(area: 'vision_test', code: 'persistence_probe',
+      platform: 'android', severity: VisionErrorSeverity.warning);
+    log.record(area: 'vision_test', code: 'persistence_probe',
+      platform: 'android', severity: VisionErrorSeverity.warning);
+    await tester.pumpWidget(MaterialApp(
+      home: VisionDiagnosticsPage(log: log),
+    ));
+    expect(find.text('Vision'), findsOneWidget);
+    expect(find.textContaining('Vision observă:'), findsNothing);
+    expect(find.textContaining('Test de persistență'), findsOneWidget);
+    expect(find.text('×2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Vision shows local summarized events without raw messages',
       (WidgetTester tester) async {
     final log = VisionErrorLog();
