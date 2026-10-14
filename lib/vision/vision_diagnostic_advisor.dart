@@ -35,7 +35,12 @@ class VisionDiagnosticAdvisor {
     VisionErrorLog log, {int maxInsights = 3}
   ) {
     if (maxInsights <= 0) return const <VisionDiagnosticInsight>[];
-    final incidents = log.entries.where((item) => !item.resolved).toList()
+    // Synthetic debugging probes check local persistence; they are not faults.
+    // Keep them in the journal/report but never promote them to alerts.
+    final incidents = log.entries.where((item) =>
+        !item.resolved &&
+        !(item.area == 'vision_test' &&
+          item.code == 'persistence_probe')).toList()
       ..sort((a, b) {
         final severity = b.severity.index.compareTo(a.severity.index);
         if (severity != 0) return severity;
