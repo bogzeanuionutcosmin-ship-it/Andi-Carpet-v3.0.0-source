@@ -64,6 +64,54 @@ void main() {
     expect(tracker.state, VisionPersistenceState.saved);
   });
 
+  test('stale success cannot hide failure of a newer snapshot', () {
+    tracker.changed();
+    final oldSnapshot = tracker.revision;
+    tracker.changed();
+    final newSnapshot = tracker.revision;
+    tracker.writeFailed(newSnapshot);
+    expect(tracker.state, VisionPersistenceState.memoryOnly);
+
+    // Simulate unexpected out-of-order platform callback completion.
+    tracker.writeSucceeded(oldSnapshot);
+    expect(tracker.state, VisionPersistenceState.memoryOnly);
+    expect(tracker.displayMessage, contains('doar în memorie'));
+
+    // Only a confirmed write covering the failing revision can recover.
+    tracker.writeSucceeded(newSnapshot);
+    expect(tracker.state, VisionPersistenceState.saved);
+  });
+
+  test('stale failure never downgrades a newer verified snapshot', () {
+    tracker.changed();
+    final oldSnapshot = tracker.revision;
+    tracker.changed();
+    final latest = tracker.revision;
+    tracker.writeSucceeded(latest);
+    expect(tracker.state, VisionPersistenceState.saved);
+    tracker.writeFailed(oldSnapshot);
+    expect(tracker.state, VisionPersistenceState.saved);
+  });
+
+  test('a failed rewrite of the same revision is not called saved', () {
+    tracker.changed();
+    tracker.writeSucceeded(tracker.revision);
+    expect(tracker.state, VisionPersistenceState.saved);
+    tracker.writeFailed(tracker.revision);
+    expect(tracker.state, VisionPersistenceState.memoryOnly);
+    tracker.writeSucceeded(tracker.revision);
+    expect(tracker.state, VisionPersistenceState.saved);
+  });
+
+  test('failed local read after a verified write remains observable', () {
+    tracker.changed();
+    tracker.writeSucceeded(tracker.revision);
+    tracker.readFailed();
+    expect(tracker.state, VisionPersistenceState.memoryOnly);
+    tracker.writeSucceeded(tracker.revision);
+    expect(tracker.state, VisionPersistenceState.saved);
+  });
+
   test('invalid future/negative callbacks cannot mark journal saved', () {
     tracker.changed();
     tracker.writeSucceeded(3);
