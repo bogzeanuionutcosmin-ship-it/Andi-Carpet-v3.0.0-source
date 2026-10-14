@@ -76,6 +76,22 @@ void main() {
     expect(log.entries.single.count, 1);
   });
 
+  testWidgets('Vision displays single versus repeated observation counts',
+      (WidgetTester tester) async {
+    final log = VisionErrorLog();
+    log.record(area: 'ocr', code: 'document_save_failed',
+      platform: 'android');
+    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
+    expect(find.text('Observată o singură dată'), findsOneWidget);
+
+    log.record(area: 'ocr', code: 'document_save_failed',
+      platform: 'android');
+    await tester.tap(find.byTooltip('Actualizează'));
+    await tester.pump();
+    expect(find.text('Repetată: 2 apariții în jurnalul local'), findsOneWidget);
+    expect(find.text('×2'), findsOneWidget);
+  });
+
   testWidgets('Vision does not invent health advice without active incidents',
       (WidgetTester tester) async {
     final log = VisionErrorLog();
