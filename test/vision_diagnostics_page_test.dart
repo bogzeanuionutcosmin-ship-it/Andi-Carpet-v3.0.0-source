@@ -24,7 +24,10 @@ void main() {
     // Passing the same installation-wide singleton explicitly must not
     // bypass the closed production view.
     await tester.pumpWidget(MaterialApp(
-      home: VisionDiagnosticsPage(log: VisionErrorTelemetry.log),
+      home: VisionDiagnosticsPage(
+        log: VisionErrorTelemetry.log,
+        isSessionCurrent: () => true,
+      ),
     ));
     expect(find.textContaining('istoricul poate fi izolat sigur'),
         findsOneWidget);
@@ -45,7 +48,7 @@ void main() {
     log.record(area: 'vision_test', code: 'persistence_probe',
       platform: 'android', severity: VisionErrorSeverity.warning);
     await tester.pumpWidget(MaterialApp(
-      home: VisionDiagnosticsPage(log: log),
+      home: VisionDiagnosticsPage(log: log, isSessionCurrent: () => true),
     ));
     expect(find.text('Vision'), findsOneWidget);
     expect(find.textContaining('Vision observă:'), findsNothing);
@@ -55,11 +58,71 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('authenticated app requires explicit live session ownership',
+      (WidgetTester tester) async {
+    final log = VisionErrorLog();
+    log.record(area: 'gps', code: 'lost_signal', platform: 'android');
+    await tester.pumpWidget(MaterialApp(
+      home: VisionDiagnosticsPage(log: log),
+    ));
+    expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
+    expect(find.text('gps / lost_signal'), findsNothing);
+    expect(find.byTooltip('Copiază raport tehnic anonimizat'), findsNothing);
+  });
+
+  testWidgets('expired session cannot copy or inspect a prior log',
+      (WidgetTester tester) async {
+    final log = VisionErrorLog();
+    log.record(area: 'gps', code: 'lost_signal', platform: 'android');
+    var sessionCurrent = true;
+    var copied = false;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') copied = true;
+        return null;
+      },
+    );
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform, null);
+    });
+    await tester.pumpWidget(MaterialApp(
+      home: VisionDiagnosticsPage(
+        log: log,
+        isSessionCurrent: () => sessionCurrent,
+      ),
+    ));
+    expect(find.text('gps / lost_signal'), findsOneWidget);
+    // The owner is revoked without a new widget build (late input callback).
+    sessionCurrent = false;
+    await tester.tap(find.byTooltip('Copiază raport tehnic anonimizat'));
+    await tester.pump();
+    expect(copied, isFalse);
+    expect(find.text('gps / lost_signal'), findsNothing);
+    expect(find.byTooltip('Copiază raport tehnic anonimizat'), findsNothing);
+    expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
+  });
+
+  testWidgets('owner check exceptions deny diagnostic history',
+      (WidgetTester tester) async {
+    final log = VisionErrorLog();
+    log.record(area: 'fcm', code: 'token_failed', platform: 'android');
+    await tester.pumpWidget(MaterialApp(
+      home: VisionDiagnosticsPage(
+        log: log,
+        isSessionCurrent: () => throw StateError('expired session'),
+      ),
+    ));
+    expect(find.text('fcm / token_failed'), findsNothing);
+    expect(find.byTooltip('Copiază raport tehnic anonimizat'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('injected log never claims local persistence',
       (WidgetTester tester) async {
     final log = VisionErrorLog();
     log.record(area: 'ocr', code: 'save_failed', platform: 'android');
-    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
+    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log, isSessionCurrent: () => true)));
     expect(find.textContaining('Jurnal de probă'), findsOneWidget);
     expect(find.textContaining('salvată local'), findsNothing);
   });
@@ -70,7 +133,7 @@ void main() {
     log.record(area: 'ocr', code: 'save_failed', platform: 'android');
     log.record(area: 'ocr', code: 'save_failed', platform: 'android');
 
-    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
+    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log, isSessionCurrent: () => true)));
 
     expect(find.text('Vision'), findsOneWidget);
     expect(find.text('ocr / save_failed'), findsOneWidget);
@@ -83,7 +146,7 @@ void main() {
   testWidgets('Vision explains that an empty log is not a health guarantee',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: VisionDiagnosticsPage(log: VisionErrorLog())),
+      MaterialApp(home: VisionDiagnosticsPage(log: VisionErrorLog(), isSessionCurrent: () => true)),
     );
     expect(find.text('Nu există erori locale în jurnal.'), findsOneWidget);
     expect(find.textContaining('nu înseamnă că'), findsOneWidget);
@@ -113,7 +176,7 @@ void main() {
         SystemChannels.platform, null);
     });
     await tester.pumpWidget(
-      MaterialApp(home: VisionDiagnosticsPage(log: log)),
+      MaterialApp(home: VisionDiagnosticsPage(log: log, isSessionCurrent: () => true)),
     );
     expect(clipboard, isNull); // Copy is NEVER automatic.
     await tester.tap(find.byTooltip('Copiază raport tehnic anonimizat'));
@@ -129,7 +192,7 @@ void main() {
     final log = VisionErrorLog();
     log.record(area: 'ocr', code: 'document_save_failed',
       platform: 'android');
-    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
+    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log, isSessionCurrent: () => true)));
     expect(find.text('Vision observă: Salvarea documentului necesită verificare'), findsOneWidget);
     expect(find.textContaining('Verifică evidența'), findsOneWidget);
     expect(log.entries.single.count, 1);
@@ -140,7 +203,7 @@ void main() {
     final log = VisionErrorLog();
     log.record(area: 'ocr', code: 'document_save_failed',
       platform: 'android');
-    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
+    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log, isSessionCurrent: () => true)));
     expect(find.text('Observată o singură dată'), findsOneWidget);
 
     log.record(area: 'ocr', code: 'document_save_failed',
@@ -154,7 +217,7 @@ void main() {
   testWidgets('Vision explains which areas are instrumented and which are not',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: VisionDiagnosticsPage(log: VisionErrorLog())),
+      MaterialApp(home: VisionDiagnosticsPage(log: VisionErrorLog(), isSessionCurrent: () => true)),
     );
     expect(find.text('Acoperirea diagnosticului Vision'), findsNothing);
     await tester.tap(find.byTooltip('Ce monitorizează Vision'));
@@ -171,7 +234,7 @@ void main() {
     log.record(area: 'gps', code: 'location_update_failed',
       platform: 'android');
     expect(log.resolve(log.entries.single.fingerprint), isTrue);
-    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
+    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log, isSessionCurrent: () => true)));
     expect(find.textContaining('Vision observă:'), findsNothing);
     expect(find.text('gps / location_update_failed'), findsOneWidget);
   });
