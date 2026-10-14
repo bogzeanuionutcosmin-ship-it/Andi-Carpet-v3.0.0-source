@@ -225,4 +225,130 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('non-empty backup preserves payloads and collection identity across batches of eight', (tester) async {
+    final sync = HomeSyncFixture(); final maintenance = HomeMaintenanceFixture()..primeExisting();
+    addTearDown(sync.close);
+    maintenance.setQuery('notifications[before:createdAt]', []);
+    maintenance.setQuery('backups[before:createdAt]', []);
+    maintenance.setDocument('meta/backupAutomation', {});
+    const names = ['users','teams','cars','locations','locationCategories','functions',
+      'schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit'];
+    for (final name in names) { maintenance.setQuery(name, []); }
+    final users = List.generate(9, (i) => MaintenanceDoc(maintenance, 'users/id$i',
+      {'name': 'Synthetic $i', 'nested': {'values': [i, null, true]}, 'at': Timestamp(123, i)}));
+    final teams = List.generate(8, (i) => MaintenanceDoc(maintenance, 'teams/id$i', {'members': ['id$i']}));
+    maintenance.setQuery('users', users); maintenance.setQuery('teams', teams);
+    await _mount(tester, sync, maintenance,
+      settings: AppSettings()..automaticBackup = true..autoCloseWhenAllDone = false);
+    sync.document('meta/uiSettings').add(GateFixtureSnapshot({}));
+    await flushHomeFixture(tester);
+    expect(maintenance.commits.map((batch) => batch.length).toList(), [8, 8, 1]);
+    final root = maintenance.directWrites.first.path;
+    final items = maintenance.commits.expand((batch) => batch).toList();
+    expect(items.map((w) => w.path).toList(), [
+      ...users.map((d) => '$root/items/users__${d.id}'),
+      ...teams.map((d) => '$root/items/teams__${d.id}'),
+    ]);
+    for (var i = 0; i < items.length; i++) {
+      final source = [...users, ...teams][i];
+      expect(items[i].operation, 'set'); expect(items[i].merge, isFalse);
+      expect(items[i].data, {'collection': i < 9 ? 'users' : 'teams',
+        'documentId': source.id, 'data': source.data()});
+    }
+    expect(maintenance.directWrites[1].data!['status'], 'complete');
+    expect(maintenance.directWrites[1].data!['documentCount'], 17);
+    expect(maintenance.directWrites.last.path, 'meta/backupAutomation');
+    expect(maintenance.trace.lastIndexOf('commit:1'), lessThan(maintenance.trace.lastIndexOf('set:$root')));
+    expect(maintenance.unexpected, isEmpty);
+    await tester.pumpWidget(const SizedBox()); expect(sync.activeCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('KNOWN DEFECT: backup batch failure keeps earlier items and counts attempted documents without rollback', (tester) async {
+    final sync = HomeSyncFixture(); final maintenance = HomeMaintenanceFixture()..primeExisting();
+    addTearDown(sync.close);
+    maintenance.setQuery('notifications[before:createdAt]', []);
+    maintenance.setQuery('backups[before:createdAt]', []);
+    maintenance.setDocument('meta/backupAutomation', {});
+    maintenance.setQuery('users', List.generate(17, (i) =>
+      MaintenanceDoc(maintenance, 'users/id$i', {'name': 'Synthetic $i'})));
+    maintenance.beforeCommit = (_) async {
+      if (maintenance.commitAttempts.length == 2) throw StateError('synthetic second batch failure');
+    };
+    await _mount(tester, sync, maintenance,
+      settings: AppSettings()..automaticBackup = true..autoCloseWhenAllDone = false);
+    sync.document('meta/uiSettings').add(GateFixtureSnapshot({}));
+    await flushHomeFixture(tester);
+    expect(maintenance.commitAttempts.map((batch) => batch.length).toList(), [8, 8]);
+    expect(maintenance.commits.single.length, 8);
+    expect(maintenance.commits.single.every((w) => w.operation == 'set'), isTrue);
+    expect(maintenance.directWrites.length, 2);
+    final failed = maintenance.directWrites.last;
+    expect(failed.path, maintenance.directWrites.first.path);
+    expect(failed.data!['status'], 'failed');
+    expect(failed.data!['documentCount'], 16); // Attempted count, only eight committed in this fixture.
+    expect(failed.data!['error'], contains('synthetic second batch failure'));
+    expect(failed.merge, isTrue);
+    expect(maintenance.trace.contains('get:teams'), isFalse);
+    expect(maintenance.trace.contains('set:meta/backupAutomation'), isFalse);
+    expect(maintenance.directWrites.any((w) => w.operation == 'delete'), isFalse);
+    expect(maintenance.unexpected, isEmpty);
+    await tester.pumpWidget(const SizedBox()); expect(sync.activeCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('retention commits 300-item batches before deleting each backup parent, including empty backups', (tester) async {
+    final sync = HomeSyncFixture(); final maintenance = HomeMaintenanceFixture()..primeExisting();
+    addTearDown(sync.close);
+    maintenance.setQuery('notifications[before:createdAt]', List.generate(601, (i) =>
+      MaintenanceDoc(maintenance, 'notifications/n$i', {})));
+    maintenance.setQuery('backups[before:createdAt]', [
+      MaintenanceDoc(maintenance, 'backups/full', {}), MaintenanceDoc(maintenance, 'backups/empty', {}),
+    ]);
+    maintenance.setQuery('backups/full/items', List.generate(301, (i) =>
+      MaintenanceDoc(maintenance, 'backups/full/items/i$i', {})));
+    maintenance.setQuery('backups/empty/items', []);
+    await _mount(tester, sync, maintenance);
+    sync.document('meta/uiSettings').add(GateFixtureSnapshot({}));
+    await flushHomeFixture(tester);
+    expect(maintenance.commits.map((batch) => batch.length).toList(), [300, 300, 1, 300, 1]);
+    expect(maintenance.commits.expand((batch) => batch).map((w) => w.path).toList(), [
+      ...List.generate(601, (i) => 'notifications/n$i'),
+      ...List.generate(301, (i) => 'backups/full/items/i$i'),
+    ]);
+    expect(maintenance.commits.expand((batch) => batch).every((w) => w.operation == 'delete'), isTrue);
+    expect(maintenance.directWrites.map((w) => w.path).toList(), ['backups/full', 'backups/empty']);
+    expect(maintenance.trace.lastIndexOf('commit:1'), lessThan(maintenance.trace.indexOf('delete:backups/full')));
+    expect(maintenance.trace.indexOf('delete:backups/full'), lessThan(maintenance.trace.indexOf('get:backups/empty/items')));
+    expect(maintenance.trace.contains('get:meta/backupAutomation'), isFalse);
+    expect(maintenance.unexpected, isEmpty);
+    await tester.pumpWidget(const SizedBox()); expect(sync.activeCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('retention batch failure preserves parent and stops later backup reads without retry', (tester) async {
+    final sync = HomeSyncFixture(); final maintenance = HomeMaintenanceFixture()..primeExisting();
+    addTearDown(sync.close);
+    maintenance.setQuery('notifications[before:createdAt]', []);
+    maintenance.setQuery('backups[before:createdAt]', [
+      MaintenanceDoc(maintenance, 'backups/full', {}), MaintenanceDoc(maintenance, 'backups/later', {}),
+    ]);
+    maintenance.setQuery('backups/full/items', List.generate(301, (i) =>
+      MaintenanceDoc(maintenance, 'backups/full/items/i$i', {})));
+    maintenance.beforeCommit = (_) async {
+      if (maintenance.commitAttempts.length == 2) throw StateError('synthetic retention failure');
+    };
+    await _mount(tester, sync, maintenance);
+    sync.document('meta/uiSettings').add(GateFixtureSnapshot({}));
+    await flushHomeFixture(tester);
+    expect(maintenance.commitAttempts.map((batch) => batch.length).toList(), [300, 1]);
+    expect(maintenance.commits.single.length, 300);
+    expect(maintenance.directWrites, isEmpty);
+    expect(maintenance.trace.contains('get:backups/later/items'), isFalse);
+    expect(maintenance.trace.contains('get:meta/backupAutomation'), isFalse);
+    expect(maintenance.unexpected, isEmpty);
+    await tester.pumpWidget(const SizedBox()); expect(sync.activeCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
 }

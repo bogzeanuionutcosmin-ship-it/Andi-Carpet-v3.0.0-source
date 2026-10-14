@@ -116,3 +116,14 @@ Numai ramura PR #28 actualizată; arborii GitHub/local comparați înainte de si
 4. Caracterizează preferințele AppSettings comune root între conturi și callbackurile post-frame deja programate la dispose. Riscurile GPS/FCM late init/token ownership, reconectare/cache SDK real, finanțe/scope/generații și protecția backend rămân deschise.
 5. Riscurile istorice START concurent, badge_v2, restore non-atomic și OCR/permisiuni nu sunt reparate de aceste porturi. Nu muta stările financiare/GPS/FCM fără fixture-uri suficiente.
 6. Modularizarea integrală și auditul diferențial complet al regulilor rămân în lucru. Regulile/Issue #30 nu se reaproba. Vision/Error Log existent pe #19/#21 se reutilizează în etapa dedicată, fără implementare nouă în #28.
+
+
+## MOD-HOME-BACKUP-BATCH-FIXTURES-20261014 — lot 22
+
+Reluare exactă din GitHub/local c794c5d6d0252b4e9180ce6bbf16cd2aa455951d, CI 38511071554 5/5 deja încheiat. Loturile 10–21 nu se repetă. Checkout nou curat; checkouturile istorice, inclusiv modificările nesalvate, sunt păstrate intacte.
+
+Patru teste Flutter noi cu State Home real/rendering substituit, strict sintetice: backup 17 documente users/teams cu ID-uri repetate între colecții, payload nested/Timestamp/null și batches 8/8/1; eșecul celui de-al doilea batch păstrează primul batch și nu marchează automatizarea ca reușită; retenție 601 notifications și 301 backup items cu batches 300/300/1 și 300/1, items înainte de parent inclusiv backup gol; failure retention păstrează parent și nu citește următorul backup/nu face retry. Fake separă commitAttempts de commits reușite și permite eroare controlată înainte de commit; fără schimbare runtime lib/.
+
+KNOWN DEFECT nou caracterizat: documentCount al backupului failed numără documente încercate (16) deși numai 8 sunt confirmate în fixture; primele items rămân fără rollback. Este comportament preexistent, NU reparat și nu dovadă de integritate a restaurării. Eșecul retenției poate lăsa un backup parțial purjat, cu parent păstrat. Fixture-ul simulează reject înainte de commit; nu certifică ambiguitatea network/SDK după commit server.
+
+Local: 155 Python PASS, inventar 193 Dart/59 part/134 biblioteci totale/76 independente lib fără missing/orphan/duplicates/cycles. Flutter/Dart indisponibil local; CI standard plus identity emulator pe SHA lot se verifică înainte de următorul lot. AuthGate P1 și riscurile GPS/FCM/post-frame/settings/badge_v2 rămân NEREPARATE în #28. Fără modificări de producție, merge/deploy/APK/versiune, migrări reale sau PR-uri protejate.

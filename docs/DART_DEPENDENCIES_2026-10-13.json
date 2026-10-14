@@ -7048,8 +7048,8 @@
     },
     {
       "path": "test/home_admin_maintenance_characterization_test.dart",
-      "bytes": 12827,
-      "sha256": "79753cb670e29ba5dc5fe1f930ffe956f401663bd5707b857a97888d3e39fe13",
+      "bytes": 20649,
+      "sha256": "6c964042635bd62ba6967068e7ef444de2c0f6ad91c4f6482c7fcca80b23c551",
       "owner": "test/home_admin_maintenance_characterization_test.dart",
       "directives": [
         {
@@ -8883,8 +8883,8 @@
     },
     {
       "path": "test/support/home_maintenance_fixture.dart",
-      "bytes": 5591,
-      "sha256": "030bc25237480f106f213c0aefa019535c635fc7473a0f43c7ee83abf0d88190",
+      "bytes": 5865,
+      "sha256": "c345e935039a7de386de46ddbe14dee8111c3e451375020424580e18143759d0",
       "owner": "test/support/home_maintenance_fixture.dart",
       "directives": [
         {

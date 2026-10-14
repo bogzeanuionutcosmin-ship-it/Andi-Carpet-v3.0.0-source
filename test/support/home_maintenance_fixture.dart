@@ -30,6 +30,8 @@ class HomeMaintenanceFixture extends Fake implements FirebaseFirestore {
   final trace = <String>[];
   final unexpected = <String>[];
   final commits = <List<MaintenanceWrite>>[];
+  final commitAttempts = <List<MaintenanceWrite>>[];
+  Future<void> Function(List<MaintenanceWrite>)? beforeCommit;
   final directWrites = <MaintenanceWrite>[];
   final queryReads = <String, Future<QuerySnapshot<Map<String, dynamic>>> Function()>{};
   final documentReads = <String, Future<DocumentSnapshot<Map<String, dynamic>>> Function()>{};
@@ -122,8 +124,13 @@ class _MaintenanceBatch extends Fake implements WriteBatch {
     }
     if (invocation.memberName == #commit) {
       db.trace.add('commit:${writes.length}');
-      db.commits.add(List<MaintenanceWrite>.from(writes));
-      return Future<void>.value();
+      final attempt = List<MaintenanceWrite>.from(writes);
+      db.commitAttempts.add(attempt);
+      return (() async {
+        final hook = db.beforeCommit;
+        if (hook != null) await hook(attempt);
+        db.commits.add(attempt);
+      })();
     }
     return db.reject('batch:${invocation.memberName}');
   }
