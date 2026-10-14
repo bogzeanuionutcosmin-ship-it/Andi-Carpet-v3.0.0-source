@@ -2184,3 +2184,14 @@ HomeRetentionQueries este bibliotecă SDK independentă query-only: notification
 Trei teste Flutter noi pentru lazy query/no I/O, Timestamp exact/filtru strict, două DB independente/re-read fără cache și eroare propagată fără retry/write. Fixture strict înregistrează și cutoff-ul. Cele 11 teste State Home Admin/maintenance validează wiringul real și limitele 8/300, inclusiv caracterizările KNOWN DEFECT păstrate.
 
 Local 155 Python PASS, diff/equivalence/inventar PASS. Inventar 195 Dart = 136 lib + 58 test/support + 1 script; 59 part, 136 biblioteci totale, 77 independente lib; fără missing/orphan/duplicate/cycles. CI standard plus identity pe SHA lot urmează; nu se avansează până la verde. AuthGate P1, GPS/FCM și riscurile de backup/migration existente sunt NEREPARATE. Nicio producție, merge/deploy/versiune sau PR protejat modificat.
+
+
+## MOD-HOME-SEED-MIGRATION-PERMISSION-FIXTURES-20261014 — lot 24
+
+Lot 23 dce2a41be8e0af0a37aead184c57203a64c6cbcc validat: CI standard 38525369939 5/5 SUCCESS plus identity 38525369895 SUCCESS; 195 Flutter, smoke Dart/build web PASS.
+
+Trei teste Flutter noi, runtime lib/ byte-identic lotului 23: colecții goale la startup → 103 locații în ordinea catalogului, cu suprafețe/categorii/active păstrate, și cele 4 categorii + funcția admin; migrare badge_v2 sintetică cu 350 definiții și 351 membri → batches350/350/3, toate delete înainte de admin/users și markerul de versiune ultimul; permission snapshot 501 membri → un singur batch501, rejection controlat vizibil în coreSyncError, fără retry automat și reluare numai la snapshot de funcții ulterior.
+
+Migrarea rămâne KNOWN DEFECT: șterge definițiile și golește atribuiri/drepturi ale membrilor inclusiv între batchuri. Nu este executată real și nu este reparată. Testul de permission501 caracterizează clientul și eroarea injectată, NU certifică acceptarea unui asemenea batch de server/SDK real sau limita backend; fake-ul permite succesul la reluare exclusiv pentru a verifica eliberarea guardului in-flight. Riscurile de migrare failure/parțial și batch mare rămân pentru PR funcțional distinct.
+
+Local 155 Python PASS, diff/inventar PASS; 195 Dart/59 part/136 biblioteci totale/77 independente lib. CI standard plus identity pe SHA lot obligatoriu înainte de checkpoint. GPS/FCM plugin/hardware real, AdminPanel account/function UI și cache SDK rămân neacoperite integral; nu se confundă Home State fixture cu acestea. AuthGate P1 rămâne NEREPARAT în #28. Fără migrări reale, producție, main/merge/deploy/APK/versiune, rules/config/billing ori PR-uri protejate.

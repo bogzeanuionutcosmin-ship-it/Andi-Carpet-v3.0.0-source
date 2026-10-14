@@ -3,6 +3,7 @@ import 'package:andi_carpeta/main.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:andi_carpeta/home/seed_operational_locations.dart';
 import 'support/auth_gate_fixture.dart';
 import 'support/home_sync_fixture.dart';
 import 'support/home_maintenance_fixture.dart';
@@ -346,6 +347,101 @@ void main() {
     expect(maintenance.directWrites, isEmpty);
     expect(maintenance.trace.contains('get:backups/later/items'), isFalse);
     expect(maintenance.trace.contains('get:meta/backupAutomation'), isFalse);
+    expect(maintenance.unexpected, isEmpty);
+    await tester.pumpWidget(const SizedBox()); expect(sync.activeCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('empty startup collections seed full location and definition catalogs without a badge migration', (tester) async {
+    final sync = HomeSyncFixture(); final maintenance = HomeMaintenanceFixture()..primeExisting();
+    addTearDown(sync.close);
+    maintenance.setQuery('locations[limit:1]', []);
+    maintenance.setQuery('locationCategories[limit:1]', []);
+    maintenance.setQuery('functions[limit:1]', []);
+    await _mount(tester, sync, maintenance);
+    expect(maintenance.commits.map((batch) => batch.length).toList(), [103, 5]);
+    final locations = maintenance.commits.first;
+    final seed = seedOperationalLocations();
+    expect(locations.map((w) => w.path).toList(), seed.map((l) => 'locations/${l.id}').toList());
+    for (var i = 0; i < locations.length; i++) {
+      expect(locations[i].operation, 'set'); expect(locations[i].merge, isFalse);
+      expect(locations[i].data!['name'], seed[i].name);
+      expect(locations[i].data!['surfaceM2'], seed[i].surfaceM2);
+      expect(locations[i].data!['facadeM2'], seed[i].facadeM2);
+      expect(locations[i].data!['categoryId'], seed[i].categoryId);
+      expect(locations[i].data!['active'], seed[i].active);
+    }
+    final definitions = maintenance.commits.last;
+    expect(definitions.map((w) => w.path).toList(), [
+      'locationCategories/million', 'locationCategories/magic',
+      'locationCategories/horeca', 'locationCategories/cazari', 'functions/admin',
+    ]);
+    expect(definitions.every((w) => w.operation == 'set' && !w.merge), isTrue);
+    expect(definitions.last.data!['permissions'], FunctionPermission.values.map((p) => p.name).toList()..sort());
+    expect(maintenance.directWrites, isEmpty);
+    expect(maintenance.trace.where((e) => e.startsWith('get:')).toList(), [
+      'get:locations[limit:1]', 'get:locationCategories[limit:1]',
+      'get:meta/uiSettings', 'get:functions[limit:1]',
+    ]);
+    expect(maintenance.unexpected, isEmpty);
+    await tester.pumpWidget(const SizedBox()); expect(sync.activeCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('KNOWN DEFECT: badge migration preserves destructive order across 350-write batches and marks version last', (tester) async {
+    final sync = HomeSyncFixture(); final maintenance = HomeMaintenanceFixture()..primeExisting(migrated: false);
+    addTearDown(sync.close);
+    maintenance.setQuery('functions', List.generate(350, (i) =>
+      MaintenanceDoc(maintenance, 'functions/legacy$i', {'active': true})));
+    maintenance.setQuery('users', List.generate(351, (i) =>
+      MaintenanceDoc(maintenance, 'users/member$i', {'role': 'member', 'functionIds': ['legacy0']})));
+    await _mount(tester, sync, maintenance);
+    expect(maintenance.commits.map((batch) => batch.length).toList(), [350, 350, 3]);
+    final writes = maintenance.commits.expand((batch) => batch).toList();
+    expect(writes.map((w) => w.path).toList(), [
+      ...List.generate(350, (i) => 'functions/legacy$i'), 'functions/admin',
+      ...List.generate(351, (i) => 'users/member$i'), 'meta/uiSettings',
+    ]);
+    expect(writes.take(350).every((w) => w.operation == 'delete'), isTrue);
+    expect(writes[350].operation, 'set'); expect(writes[350].merge, isFalse);
+    for (final member in writes.skip(351).take(351)) {
+      expect(member.operation, 'set'); expect(member.merge, isTrue);
+      expect(member.data!['functionIds'], isEmpty);
+      expect(member.data!['effectivePermissions'], isEmpty);
+      expect(member.data!['function'], '');
+    }
+    expect(writes.last.data!['functionSystemVersion'], 'badge_v2');
+    expect(writes.last.merge, isTrue);
+    expect(maintenance.directWrites, isEmpty); expect(maintenance.unexpected, isEmpty);
+    await tester.pumpWidget(const SizedBox()); expect(sync.activeCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('permission sync submits one 501-write batch, surfaces rejection and retries only on a new function snapshot', (tester) async {
+    final sync = HomeSyncFixture(); final maintenance = HomeMaintenanceFixture()..primeExisting();
+    addTearDown(sync.close);
+    maintenance.setQuery('users', List.generate(501, (i) =>
+      MaintenanceDoc(maintenance, 'users/member$i', {'functionIds': ['active'], 'effectivePermissions': []})));
+    maintenance.beforeCommit = (_) async { throw StateError('synthetic permission batch rejection'); };
+    await _mount(tester, sync, maintenance);
+    sync.emit('functions', 'active', {'name': 'Active', 'active': true, 'permissions': ['viewMap']});
+    await flushHomeFixture(tester);
+    final dynamic state = tester.state(find.byType(FixtureHomePage));
+    expect(maintenance.commitAttempts.single.length, 501);
+    expect(maintenance.commits, isEmpty);
+    expect(state.coreSyncError, contains('synthetic permission batch rejection'));
+    await flushHomeFixture(tester);
+    expect(maintenance.commitAttempts.length, 1); // No automatic retry/polling.
+    maintenance.beforeCommit = null;
+    sync.emit('functions', 'active', {'name': 'Active', 'active': true, 'permissions': ['viewMap']});
+    await flushHomeFixture(tester);
+    expect(maintenance.commitAttempts.length, 2);
+    expect(maintenance.commits.single.length, 501);
+    for (final write in maintenance.commits.single) {
+      expect(write.data!['effectivePermissions'], ['viewMap']);
+      expect(write.data!.containsKey('functionIds'), isFalse); expect(write.merge, isTrue);
+    }
+    expect(maintenance.trace.where((e) => e == 'get:users').length, 2);
     expect(maintenance.unexpected, isEmpty);
     await tester.pumpWidget(const SizedBox()); expect(sync.activeCount, 0);
     expect(tester.takeException(), isNull);

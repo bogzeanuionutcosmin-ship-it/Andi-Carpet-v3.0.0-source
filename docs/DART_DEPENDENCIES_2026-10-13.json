@@ -299,6 +299,7 @@
       "lib/models/app_enums.dart"
     ],
     "test/home_admin_maintenance_characterization_test.dart": [
+      "lib/home/seed_operational_locations.dart",
       "lib/main.dart",
       "test/support/auth_gate_fixture.dart",
       "test/support/home_maintenance_fixture.dart",
@@ -7101,8 +7102,8 @@
     },
     {
       "path": "test/home_admin_maintenance_characterization_test.dart",
-      "bytes": 20649,
-      "sha256": "6c964042635bd62ba6967068e7ef444de2c0f6ad91c4f6482c7fcca80b23c551",
+      "bytes": 26385,
+      "sha256": "94c8d2113eb1895326b20c144245637e2af0c8bd551d1715e11d15c6be3eb5c0",
       "owner": "test/home_admin_maintenance_characterization_test.dart",
       "directives": [
         {
@@ -7146,6 +7147,16 @@
             "package:flutter_test/flutter_test.dart"
           ],
           "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/home/seed_operational_locations.dart';",
+          "uris": [
+            "package:andi_carpeta/home/seed_operational_locations.dart"
+          ],
+          "local_targets": [
+            "lib/home/seed_operational_locations.dart"
+          ]
         },
         {
           "kind": "import",
