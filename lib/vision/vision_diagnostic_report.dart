@@ -9,7 +9,17 @@ class VisionDiagnosticReport {
   static const int maxCharacters = 16000;
 
   static String build(VisionErrorLog log, {DateTime? generatedAt}) {
-    final entries = log.entries;
+    // A human handoff must not bury an older critical open incident below
+    // 100 recent warnings. Sort a copy: the local journal is never mutated.
+    final entries = log.entries.toList()
+      ..sort((a, b) {
+        if (a.resolved != b.resolved) return a.resolved ? 1 : -1;
+        final severity = b.severity.index.compareTo(a.severity.index);
+        if (severity != 0) return severity;
+        final lastSeen = b.lastSeen.compareTo(a.lastSeen);
+        if (lastSeen != 0) return lastSeen;
+        return a.fingerprint.compareTo(b.fingerprint);
+      });
     final at = (generatedAt ?? DateTime.now()).toUtc();
     final report = StringBuffer()
       ..writeln('AndiCarpet Vision - raport tehnic local')
