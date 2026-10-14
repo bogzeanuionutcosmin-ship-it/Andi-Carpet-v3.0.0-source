@@ -36,6 +36,18 @@ class VisionDiagnosticReport {
     final probeOccurrences =
         probes.fold<int>(0, (total, entry) => total + entry.count);
     final incidentCount = entries.length - probeCount;
+    // Use fingerprint counts for state and severity, not occurrence totals.
+    // A single repeated event remains one incident in the summary.
+    final realIncidents = entries.where((entry) => !_isPersistenceProbe(entry));
+    final openIncidents = realIncidents.where((entry) => !entry.resolved);
+    final openCritical = openIncidents
+        .where((entry) => entry.severity == VisionErrorSeverity.critical).length;
+    final openErrors = openIncidents
+        .where((entry) => entry.severity == VisionErrorSeverity.error).length;
+    final openWarnings = openIncidents
+        .where((entry) => entry.severity == VisionErrorSeverity.warning).length;
+    final openCount = openCritical + openErrors + openWarnings;
+    final resolvedCount = incidentCount - openCount;
     // Counts are already bounded by the log; report all occurrences even
     // when individual lines are omitted from the limited export.
     final incidentOccurrences = entries
@@ -48,7 +60,11 @@ class VisionDiagnosticReport {
       ..writeln('Sursa: exclusiv acest dispozitiv; fara upload automat.')
       ..writeln('Continut: doar coduri tehnice validate, fara date personale.')
       ..writeln('Incidente locale: $incidentCount')
-      ..writeln('Aparitii ale incidentelor: $incidentOccurrences');
+      ..writeln('Aparitii ale incidentelor: $incidentOccurrences')
+      ..writeln('Incidente deschise: $openCount '
+          '(critice: $openCritical, erori: $openErrors, '
+          'avertizari: $openWarnings)')
+      ..writeln('Incidente rezolvate: $resolvedCount');
     if (probeCount > 0) {
       report.writeln('Probe locale (nu sunt erori): $probeCount tipuri');
       report.writeln('Aparitii ale probelor locale: $probeOccurrences');
