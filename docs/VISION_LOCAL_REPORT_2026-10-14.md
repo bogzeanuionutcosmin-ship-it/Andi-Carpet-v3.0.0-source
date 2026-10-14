@@ -52,3 +52,11 @@ Vision tratează o singură înregistrare ca **observație izolată** și două 
 Un panou local „**Ce monitorizează Vision**” afișează un **inventar static și sincer** pentru cele cinci zone parțial instrumentate (Flutter/Dart, GPS, FCM, OCR, diurne/finanțe) și două domenii încă neconectate (Firebase Functions/cloud și verificarea izolării identității). Fiecare intrare descrie atât semnalele deja colectabile în ramura de probă, cât și ce NU poate verifica Vision încă. Acesta NU este un test de sănătate sau o garanție că instrumentarea funcționează în toate scenariile/OS; necesită execuția reală a fluxurilor.
 
 Implementarea folosește exclusiv șiruri fixe locale, nu colectează date, nu pornește ascultători noi, nu creează trafic și nu schimbă permisiuni. UI este deschis doar la cerere din butonul cu informații. Testele acoperă inventarul fără dubluri, etichetele explicite, zonele lipsite de diagnostic și vizibilitatea panoului. La integrarea codului peste #28/#33, inventarul trebuie revizuit și sincronizat cu instrumentarea reală; nu se extrapolează acoperirea de pe ramura experimentală.
+
+## Ajustare după proba reală Android — 14.10.2026
+
+Utilizatorul a instalat APK-ul de test offline și a furnizat capturi care confirmă vizual înregistrarea `vision_test / persistence_probe` de două ori, feedbackul «Copiat» la raport și deschiderea panoului de acoperire. Aceste capturi **nu demonstrează singure** persistența după repornire (nu se vede înainte/după), ci confirmă afișarea și reacțiile locale.
+
+Au fost identificate două îmbunătățiri neintruzive: titlul lung `Vision · Error Log` era trunchiat pe telefon, iar evenimentul sintetic era prezentat de advisor ca incident real, cu starea «Deschisă». Corecția din acest lot folosește titlul scurt `Vision`, afișează evenimentul `vision_test/persistence_probe` ca `Test de persistență · fără eroare` / `Probă locală` și **îl exclude numai din recomandările de erori**, păstrându-l în jurnal și în raportul copiat. Alte coduri reale, inclusiv OCR, GPS și FCM, rămân în recomandări. Zero impact asupra autentificării, datelor, permisiunilor sau accesului la rețea.
+
+Testele adăugate acoperă dimensiunea redusă a ecranului, lipsa avertizării false, păstrarea contorului și vizibilitatea incidentelor reale. Rezultatul CI și compilarea APK-ului se verifică exclusiv pe ultimul commit al acestei ramuri.
