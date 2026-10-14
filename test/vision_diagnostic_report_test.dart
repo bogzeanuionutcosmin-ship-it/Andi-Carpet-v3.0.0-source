@@ -69,6 +69,57 @@ void main() {
     expect(output, isNot(contains('company.test')));
   });
 
+  test('synthetic probe remains visible but is not a real incident', () {
+    final log = create();
+    log.record(area: 'vision_test', code: 'persistence_probe',
+        platform: 'android', severity: VisionErrorSeverity.warning);
+    log.record(area: 'vision_test', code: 'persistence_probe',
+        platform: 'android', severity: VisionErrorSeverity.warning);
+    final before = log.encode();
+    final report = VisionDiagnosticReport.build(log, generatedAt: timestamp);
+    expect(report, contains('Incidente locale: 0'));
+    expect(report, contains('Probe locale (nu sunt erori): 1'));
+    expect(report, contains('vision_test/persistence_probe | android | test'));
+    expect(report, contains('repetari=2 | proba_locala'));
+    expect(report, isNot(contains('persistence_probe | android | warning')));
+    expect(report, contains('Absenta incidentelor nu dovedeste lipsa defectelor.'));
+    expect(log.encode(), before);
+  });
+
+  test('real warning precedes synthetic probe even if probe is critical', () {
+    final log = create();
+    log.record(area: 'vision_test', code: 'persistence_probe',
+        platform: 'android', severity: VisionErrorSeverity.critical);
+    log.record(area: 'ocr', code: 'document_save_failed',
+        platform: 'android', severity: VisionErrorSeverity.warning);
+    final report = VisionDiagnosticReport.build(log, generatedAt: timestamp);
+    expect(report, contains('Incidente locale: 1'));
+    expect(report, contains('Probe locale (nu sunt erori): 1'));
+    expect(report.indexOf('ocr/document_save_failed'),
+        lessThan(report.indexOf('vision_test/persistence_probe')));
+    expect(report, contains('ocr/document_save_failed | android | warning'));
+    expect(report, contains('persistence_probe | android | test'));
+  });
+
+  test('synthetic probe cannot crowd real incidents out of bounded export', () {
+    final log = VisionErrorLog(
+        maxEntries: 200, maxBytes: 1024 * 1024, clock: () => timestamp);
+    log.record(area: 'vision_test', code: 'persistence_probe',
+        platform: 'android', severity: VisionErrorSeverity.critical);
+    for (var i = 0; i < 110; i++) {
+      log.record(area: 'system', code: 'warning_$i',
+          platform: 'web', severity: VisionErrorSeverity.warning);
+    }
+    final output = VisionDiagnosticReport.build(log, generatedAt: timestamp);
+    expect(output, contains('Incidente locale: 110'));
+    expect(output, contains('Probe locale (nu sunt erori): 1'));
+    expect(output, contains('system/warning_99'));
+    expect(output, isNot(contains('vision_test/persistence_probe |')));
+    expect(output, contains('raport limitat'));
+    expect(output.length,
+        lessThanOrEqualTo(VisionDiagnosticReport.maxCharacters));
+  });
+
   test('older open critical is not lost among 140 newer warnings', () {
     var clock = timestamp;
     final log = VisionErrorLog(
