@@ -103,62 +103,15 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _AppBackdrop(
-        settings: widget.settings,
-        child: Container(
-          color: Colors.black.withValues(alpha: 0.22),
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 470),
-                  child: Card(
-                    elevation: 12,
-                    child: Padding(
-                      padding: const EdgeInsets.all(26),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        appBrandLogo(widget.settings, width: 520, height: 130),
-                        const SizedBox(height: 12),
-                        _InstallAppButtons(settings:widget.settings),
-                        const SizedBox(height: 20),
-                        Text(createMode ? 'Creează cont' : 'Autentificare', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
-                        Text(createMode ? 'Contul nou va aștepta aprobarea Administratorului.' : 'Andi Carpetă · acces securizat'),
-                        const SizedBox(height: 20),
-                        if (createMode) ...[
-                          TextField(controller: name, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Nume și prenume', prefixIcon: Icon(Icons.person_outline))),
-                          const SizedBox(height: 12),
-                          TextField(controller: username, autocorrect: false, textCapitalization: TextCapitalization.none, decoration: const InputDecoration(labelText: 'Username', hintText: 'ex: timi', prefixIcon: Icon(Icons.alternate_email))),
-                          const SizedBox(height: 12),
-                          TextField(controller: phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Telefon (opțional)', prefixIcon: Icon(Icons.phone_outlined))),
-                          const SizedBox(height: 12),
-                        ],
-                        TextField(controller: email, keyboardType: createMode ? TextInputType.emailAddress : TextInputType.text, autocorrect: false, textCapitalization: TextCapitalization.none, autofillHints: const [AutofillHints.username, AutofillHints.email], decoration: InputDecoration(labelText: createMode ? 'Email' : 'Email / username / telefon', prefixIcon: Icon(createMode ? Icons.email_outlined : Icons.account_circle_outlined))),
-                        const SizedBox(height: 12),
-                        TextField(controller: password, obscureText: obscure, autofillHints: const [AutofillHints.password], onSubmitted: (_) => createMode ? null : _submit(), decoration: InputDecoration(labelText: 'Parolă', prefixIcon: const Icon(Icons.lock_outline), suffixIcon: IconButton(onPressed: () => setState(() => obscure = !obscure), icon: Icon(obscure ? Icons.visibility : Icons.visibility_off)))),
-                        if (createMode) ...[
-                          const SizedBox(height: 12),
-                          TextField(controller: confirmPassword, obscureText: obscure, onSubmitted: (_) => _submit(), decoration: const InputDecoration(labelText: 'Confirmă parola', prefixIcon: Icon(Icons.lock_reset))),
-                        ],
-                        if (error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error), textAlign: TextAlign.center)),
-                        const SizedBox(height: 18),
-                        SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: busy ? null : _submit, icon: busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(createMode ? Icons.person_add_alt_1 : Icons.login), label: Text(createMode ? 'Creează contul' : 'Intră în cont'))),
-                        if (!createMode) TextButton(onPressed: busy ? null : _resetPassword, child: const Text('Am uitat parola')),
-                        const Divider(height: 28),
-                        TextButton(onPressed: busy ? null : () => setState(() { createMode = !createMode; error = null; }), child: Text(createMode ? 'Am deja cont · Autentificare' : 'Nu am cont · Creează cont')),
-                      ]),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => LoginPageView(
+    controllers: LoginFormControllers(email: email, password: password,
+      confirmPassword: confirmPassword, name: name, username: username, phone: phone),
+    backdrop: (child) => _AppBackdrop(settings: widget.settings, child: child),
+    logo: appBrandLogo(widget.settings, width: 520, height: 130),
+    installButtons: _InstallAppButtons(settings: widget.settings),
+    createMode: createMode, busy: busy, obscure: obscure, error: error,
+    onSubmit: _submit, onResetPassword: _resetPassword,
+    onToggleObscure: () => setState(() => obscure = !obscure),
+    onToggleMode: () => setState(() { createMode = !createMode; error = null; }),
+  );
 }
-

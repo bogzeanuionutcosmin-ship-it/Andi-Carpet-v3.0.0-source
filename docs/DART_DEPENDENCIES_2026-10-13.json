@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 179,
-  "lib_dart_files": 130,
-  "test_dart_files": 48,
+  "dart_files": 181,
+  "lib_dart_files": 131,
+  "test_dart_files": 49,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 120,
+  "libraries": 122,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -21,6 +21,7 @@
     "lib/auth/login_actions.dart": [],
     "lib/auth/login_alias_resolver.dart": [],
     "lib/auth/login_input_helpers.dart": [],
+    "lib/auth/login_page_view.dart": [],
     "lib/auth/quick_accounts.dart": [],
     "lib/bootstrap/firebase_bootstrap_error_app.dart": [],
     "lib/bootstrap/firebase_initialization.dart": [],
@@ -80,6 +81,7 @@
       "lib/auth/login_actions.dart",
       "lib/auth/login_alias_resolver.dart",
       "lib/auth/login_input_helpers.dart",
+      "lib/auth/login_page_view.dart",
       "lib/auth/quick_accounts.dart",
       "lib/bootstrap/firebase_bootstrap_error_app.dart",
       "lib/bootstrap/firebase_initialization.dart",
@@ -327,6 +329,9 @@
     ],
     "test/login_input_helpers_test.dart": [
       "lib/auth/login_input_helpers.dart"
+    ],
+    "test/login_page_view_test.dart": [
+      "lib/auth/login_page_view.dart"
     ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
@@ -1049,9 +1054,36 @@
       ]
     },
     {
+      "path": "lib/auth/login_page_view.dart",
+      "bytes": 5762,
+      "sha256": "d82268d1646a91862a5949c9de2f27ac49670f7218b7a19e5d1052b858c6dfa3",
+      "owner": "lib/auth/login_page_view.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "LoginFormControllers"
+        },
+        {
+          "kind": "class",
+          "name": "LoginPageView"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/auth/login_registration_page.dart",
-      "bytes": 8671,
-      "sha256": "9548908f779ec45210b33e6029b346fcdf4707e431aee23788c3946c34745c38",
+      "bytes": 4717,
+      "sha256": "56478c61bc7091292f1fc4a3e93638b566c4462aae97f17b1e0a4443a66e9015",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2432,8 +2464,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 29891,
-      "sha256": "1be5d27ad9cb244f10010a37dea486b34a381378f2d136dd7e7bbd76635f4e3f",
+      "bytes": 29927,
+      "sha256": "59e5eec9bce0ca9b4bbdf2b066bcfaeea8c0df9e6f22bc6920816066e2ff6cc7",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -3194,6 +3226,16 @@
           ],
           "local_targets": [
             "lib/auth/login_alias_resolver.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'auth/login_page_view.dart';",
+          "uris": [
+            "auth/login_page_view.dart"
+          ],
+          "local_targets": [
+            "lib/auth/login_page_view.dart"
           ]
         },
         {
@@ -7366,6 +7408,44 @@
           "text": "import 'package:firebase_auth/firebase_auth.dart';",
           "uris": [
             "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/login_page_view_test.dart",
+      "bytes": 3817,
+      "sha256": "00534fd5023a50bb7c52990ad1f3bb94f1664650a51f88fc9ba5b5a585b51de8",
+      "owner": "test/login_page_view_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/auth/login_page_view.dart';",
+          "uris": [
+            "package:andi_carpeta/auth/login_page_view.dart"
+          ],
+          "local_targets": [
+            "lib/auth/login_page_view.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
           ],
           "local_targets": []
         },

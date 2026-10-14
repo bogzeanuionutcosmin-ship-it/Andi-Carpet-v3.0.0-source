@@ -80,6 +80,7 @@ import 'ui/dashboard_map_components.dart' as dashboard_components;
 import 'auth/account_access_views.dart' as account_access_views;
 import 'auth/quick_accounts.dart' as quick_accounts;
 import 'auth/login_alias_resolver.dart';
+import 'auth/login_page_view.dart';
 import 'auth/login_input_helpers.dart';
 import 'auth/login_actions.dart';
 export 'auth/login_actions.dart';
