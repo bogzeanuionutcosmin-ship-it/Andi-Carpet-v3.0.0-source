@@ -4,7 +4,13 @@ class HomePage extends StatefulWidget {
   final AppSettings settings;
   final VoidCallback onSettingsChanged;
   final FirebaseUserProfile profile;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile});
+  final FirebaseFirestore? firestore;
+  final FirebaseMessaging? messaging;
+  final Stream<RemoteMessage>? messageOpenedApp;
+  final VoidCallback? startLocation;
+  final Future<void> Function()? initializePush;
+  final bool Function()? sessionIsCurrent;
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.firestore, this.messaging, this.messageOpenedApp, this.startLocation, this.initializePush, this.sessionIsCurrent});
   @override State<HomePage> createState() => _HomePageState();
 }
 
@@ -86,8 +92,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     categories.addAll(defaultLocationCategories());
     functionDefinitions.addAll(defaultFunctionDefinitions());
     _startCoreSync();
-    _startAdaptiveLiveLocation();
-    unawaited(_initPushNotifications());
+    (widget.startLocation ?? _startAdaptiveLiveLocation)();
+    unawaited((widget.initializePush ?? _initPushNotifications)());
   }
 
   void _showIncomingPopup({required String title, required String body, VoidCallback? onView}) {
@@ -138,7 +144,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   Future<void> _savePushToken(String token) async {
     if (token.trim().isEmpty) return;
     final platform = kIsWeb ? 'web' : defaultTargetPlatform.name;
-    await FirebaseFirestore.instance
+    await (widget.firestore ?? FirebaseFirestore.instance)
         .collection('users').doc(currentUserId)
         .collection('pushTokens').doc(_pushTokenDocId(token))
         .set({
@@ -194,7 +200,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (_pushInitializationInFlight) return;
     _pushInitializationInFlight = true;
     try {
-      final messaging = FirebaseMessaging.instance;
+      final messaging = widget.messaging ?? FirebaseMessaging.instance;
 
       NotificationSettings permission;
       if (kIsWeb && fromUserGesture) {
@@ -250,7 +256,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           (value) => unawaited(_savePushToken(value)),
           onError: (Object error) => debugPrint('[push] onTokenRefresh: $error'),
         ));
-        _coreSubscriptions.add(FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _coreSubscriptions.add((widget.messageOpenedApp ?? FirebaseMessaging.onMessageOpenedApp).listen((message) {
           final type = (message.data['type'] ?? '').toString();
           if (type == 'chat') {
             final senderId = (message.data['senderId'] ?? '').toString();
@@ -759,7 +765,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       if (mounted) setState(() {});
       return;
     }
-    final db=FirebaseFirestore.instance;
+    final db=widget.firestore ?? FirebaseFirestore.instance;
     final Query<Map<String,dynamic>> expensesQuery = canViewAll ? db.collection('expenses') : db.collection('expenses').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> perDiemQuery = canViewAll ? db.collection('perDiems') : db.collection('perDiems').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> financeQuery = canViewAll ? db.collection('finance') : db.collection('finance').where('teamId',isEqualTo:scope);
@@ -1292,7 +1298,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _startCoreSync() {
-    final db = FirebaseFirestore.instance;
+    final db = widget.firestore ?? FirebaseFirestore.instance;
 
     _startDefinitionsSync(db);
 
