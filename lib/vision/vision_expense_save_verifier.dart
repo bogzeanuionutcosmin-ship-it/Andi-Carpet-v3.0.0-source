@@ -9,6 +9,7 @@
 enum VisionExpenseSaveStatus {
   invalidExpectedAmount,
   awaitingServerEvidence,
+  inconsistentServerEvidence,
   verified,
   documentMissing,
   amountMismatch,
@@ -56,6 +57,14 @@ class VisionExpenseSaveVerifier {
     if (!serverConfirmed) {
       return const VisionExpenseSaveCheck(
         VisionExpenseSaveStatus.awaitingServerEvidence,
+      );
+    }
+    // Contradictory/incomplete payloads are not evidence of a mismatch.
+    // Do not emit a false error code when data was only partially parsed.
+    if ((!documentExists && savedBani != null) ||
+        (documentExists && savedBani == null)) {
+      return const VisionExpenseSaveCheck(
+        VisionExpenseSaveStatus.inconsistentServerEvidence,
       );
     }
     if (!documentExists) {
