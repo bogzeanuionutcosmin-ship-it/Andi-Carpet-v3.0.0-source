@@ -29,6 +29,15 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('injected log never claims local persistence',
+      (WidgetTester tester) async {
+    final log = VisionErrorLog();
+    log.record(area: 'ocr', code: 'save_failed', platform: 'android');
+    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
+    expect(find.textContaining('Jurnal de probă'), findsOneWidget);
+    expect(find.textContaining('salvată local'), findsNothing);
+  });
+
   testWidgets('Vision shows local summarized events without raw messages',
       (WidgetTester tester) async {
     final log = VisionErrorLog();
