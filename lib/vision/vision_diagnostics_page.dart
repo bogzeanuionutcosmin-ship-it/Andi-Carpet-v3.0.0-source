@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'vision_error_log.dart';
 import 'vision_diagnostic_report.dart';
+import 'vision_diagnostic_advisor.dart';
 import 'vision_error_telemetry.dart';
 
 /// Read-only diagnostics from THIS device only; no remote-user data queries.
@@ -20,7 +21,9 @@ class VisionDiagnosticsPage extends StatefulWidget {
 class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
   @override
   Widget build(BuildContext context) {
-    final entries = (widget.log ?? VisionErrorTelemetry.log).entries;
+    final currentLog = widget.log ?? VisionErrorTelemetry.log;
+    final entries = currentLog.entries;
+    final insights = VisionDiagnosticAdvisor.assess(currentLog, maxInsights: 1);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vision · Error Log'),
@@ -86,6 +89,30 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
               'toate funcțiile au fost verificate.',
             ),
           ),
+          if (insights.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Vision observă: ${insights.first.title}',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        insights.first.explanation,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           Expanded(
             child: entries.isEmpty
                 ? const Center(
