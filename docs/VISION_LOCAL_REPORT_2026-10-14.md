@@ -246,3 +246,5 @@ Jurnalul Vision deduplică evenimente, dar versiunea anterioară a `VisionLocalP
 **Limită:** evenimentele istorice deja scrise sub un cod de tip de excepție pot rămâne în cache-ul criptat local până la expirarea TTL; nu ștergem sau migrăm retroactiv jurnalul și nu presupunem că acestea sunt incidente financiare. Integrarea #38 folosea deja coduri constante la bootstrap, deci nu este necesară modificarea ramurii sale. Nu se schimbă costuri, rețea, Firebase, APK, permisiuni sau decizii business.
 
 **Cod:** `ae2b74665d83df57cd3a31699ecae9e8392d15f9`. Rezultatul complet CI standard și Android offline se validează numai pe HEAD final.
+
+**Completare Firebase startup:** în același lot, apelul de bootstrap din `lib/main.dart` folosește `startup/firebase_initialization_failed`, în locul tipului dinamic `e.runtimeType.toString()`. Acesta este deja codul constant din PR #38, astfel încât sursa #34 și integrarea rămân coerente. Contractul Python exclude explicit codul dinamic din bootstrap și verifică semnalul fix. Fluxul de ecran de eroare Firebase și handlerii rămân neschimbați. Commit: `abfd3c6f49f8c0159ea331943bcf1c762867d470`.
