@@ -67,6 +67,45 @@ void main() {
       expect(log.entries.map((e) => e.code), isNot(contains('second')));
     });
 
+    test('critical incidents survive storage pressure ahead of newer warnings', () {
+      final log = create(maxEntries: 2);
+      log.record(area: 'system', code: 'critical_first', platform: 'android',
+        severity: VisionErrorSeverity.critical);
+      now = now.add(const Duration(minutes: 1));
+      log.record(area: 'system', code: 'warning_second', platform: 'android',
+        severity: VisionErrorSeverity.warning);
+      now = now.add(const Duration(minutes: 1));
+      log.record(area: 'system', code: 'error_third', platform: 'android',
+        severity: VisionErrorSeverity.error);
+      expect(log.entries.map((e) => e.code),
+        containsAll(<String>['critical_first', 'error_third']));
+      expect(log.entries.map((e) => e.code),
+        isNot(contains('warning_second')));
+    });
+
+    test('resolved critical incident is evicted before an open warning', () {
+      final log = create(maxEntries: 1);
+      log.record(area: 'system', code: 'critical_done', platform: 'android',
+        severity: VisionErrorSeverity.critical);
+      expect(log.resolve('system/critical_done/android'), isTrue);
+      now = now.add(const Duration(minutes: 1));
+      log.record(area: 'system', code: 'warning_open', platform: 'android',
+        severity: VisionErrorSeverity.warning);
+      expect(log.entries.single.code, 'warning_open');
+    });
+
+    test('critical incident still expires by TTL and does not bypass hard cap', () {
+      final log = create(maxEntries: 1, retention: const Duration(days: 7));
+      log.record(area: 'system', code: 'one', platform: 'android',
+        severity: VisionErrorSeverity.critical);
+      now = now.add(const Duration(minutes: 1));
+      log.record(area: 'system', code: 'two', platform: 'android',
+        severity: VisionErrorSeverity.critical);
+      expect(log.entries.single.code, 'two');
+      now = now.add(const Duration(days: 8));
+      expect(log.length, 0);
+    });
+
     test('byte limit is enforced independent of entry count', () {
       final log = create(maxEntries: 500, maxBytes: 450);
       for (var i = 0; i < 10; i++) {
