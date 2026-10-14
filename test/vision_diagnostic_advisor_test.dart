@@ -11,6 +11,27 @@ void main() {
     log = VisionErrorLog(clock: () => clock);
   });
 
+  test('synthetic persistence probe does not create an active incident', () {
+    log.record(area: 'vision_test', code: 'persistence_probe',
+      platform: 'android', severity: VisionErrorSeverity.warning);
+    log.record(area: 'vision_test', code: 'persistence_probe',
+      platform: 'android', severity: VisionErrorSeverity.warning);
+    expect(log.entries.single.count, 2);
+    final before = log.encode();
+    expect(VisionDiagnosticAdvisor.assess(log), isEmpty);
+    expect(log.encode(), before);
+  });
+
+  test('real incidents remain visible even alongside the synthetic probe', () {
+    log.record(area: 'vision_test', code: 'persistence_probe',
+      platform: 'android');
+    log.record(area: 'ocr', code: 'document_save_failed',
+      platform: 'android');
+    final insight = VisionDiagnosticAdvisor.assess(log).single;
+    expect(insight.title, 'Document nesalvat');
+    expect(log.entries, hasLength(2));
+  });
+
   test('no events means no recommendation and no false health claim', () {
     final insights = VisionDiagnosticAdvisor.assess(log);
     expect(insights, isEmpty);
