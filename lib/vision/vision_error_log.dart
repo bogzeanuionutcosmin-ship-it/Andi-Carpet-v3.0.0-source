@@ -110,7 +110,12 @@ class VisionErrorLog {
             ? severity
             : previous.severity,
         firstSeen: previous.firstSeen,
-        lastSeen: now,
+        // Wall clocks can move backward briefly after a network time fix.
+        // Preserve a valid firstSeen <= lastSeen interval so this summary
+        // survives the next encrypted-cache restore without dropping counts.
+        lastSeen: now.isAfter(previous.lastSeen)
+            ? now
+            : previous.lastSeen,
         count: previous.count == 0x7fffffff ? previous.count : previous.count + 1,
         resolved: false, // A new occurrence reopens a resolved incident.
       );
