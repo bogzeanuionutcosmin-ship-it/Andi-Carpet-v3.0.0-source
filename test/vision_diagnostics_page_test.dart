@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:andi_carpeta/vision/vision_diagnostics_page.dart';
 import 'package:andi_carpeta/vision/vision_error_log.dart';
+import 'package:andi_carpeta/vision/vision_error_telemetry.dart';
 
 void main() {
   testWidgets('authenticated device-wide journal stays closed without a '
@@ -19,6 +20,15 @@ void main() {
     expect(find.byTooltip('Actualizează'), findsNothing);
     expect(find.byTooltip('Test local · salvare jurnal'), findsNothing);
     expect(find.textContaining('Incidente locale:'), findsNothing);
+
+    // Passing the same installation-wide singleton explicitly must not
+    // bypass the closed production view.
+    await tester.pumpWidget(MaterialApp(
+      home: VisionDiagnosticsPage(log: VisionErrorTelemetry.log),
+    ));
+    expect(find.textContaining('istoricul poate fi izolat sigur'),
+        findsOneWidget);
+    expect(find.byTooltip('Copiază raport tehnic anonimizat'), findsNothing);
   });
 
   testWidgets('small screen keeps full Vision title and test is not an alert',
