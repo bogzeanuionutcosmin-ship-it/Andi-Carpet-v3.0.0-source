@@ -98,7 +98,7 @@ class _MaintenanceDocument extends Fake implements DocumentReference<Map<String,
     if (invocation.memberName == #set) {
       db.trace.add('set:$path');
       db.directWrites.add(MaintenanceWrite('set', path, Map<String, dynamic>.from(args.first as Map),
-        args.length > 1 && (args[1] as SetOptions).merge == true));
+        args.length > 1 && args[1] is SetOptions && (args[1] as SetOptions).merge == true));
       return Future<void>.value();
     }
     return db.reject('$path:${invocation.memberName}');
@@ -117,7 +117,7 @@ class _MaintenanceBatch extends Fake implements WriteBatch {
       final deleting = invocation.memberName == #delete;
       writes.add(MaintenanceWrite(deleting ? 'delete' : 'set', ref.path,
         deleting ? null : Map<String, dynamic>.from(args[1] as Map),
-        !deleting && args.length > 2 && (args[2] as SetOptions).merge == true));
+        !deleting && args.length > 2 && args[2] is SetOptions && (args[2] as SetOptions).merge == true));
       return this;
     }
     if (invocation.memberName == #commit) {

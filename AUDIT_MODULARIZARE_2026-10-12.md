@@ -881,3 +881,8 @@ HomePage primește maintenanceFirestore opțional, cu getter lazy care foloseșt
 Cinci teste noi cu State Home real/rendering substituit: Admin cu 18 listeners (audit + global finance), ordinea citirilor seed/migration și badge_v2 fără scrieri; audit error/reconnect/cancel; backup dezactivat dar retenție încă activă cu item-delete înainte de parent-delete; KNOWN DEFECT badge legacy șterge funcțiile și golește functionIds/effectivePermissions member; snapshot funcții active recalculează numai permisiunile schimbate; KNOWN DEFECT maintenance in-flight continuă o ștergere sintetică după dispose, fără duplicate la două evenimente pending. Fiecare citire este scriptată; apelurile neașteptate sunt înregistrate chiar dacă runtime le prinde. Aceste teste nu certifică backend, Android/FCM/GPS ori AdminPanel UI de editare a conturilor.
 
 Riscurile de retenție AppSettings/post-frame și badge_v2/maintenance sunt caracterizate, nu reparate. AuthGate P1 rămâne NEREPARAT și cere PR separat autorizat. Fișierele financiare/GPS/FCM, rules/config, date reale și PR-urile #19/#20/#21/#29 nu se modifică. CI pe SHA lot urmează înainte de orice extragere query-only.
+
+
+### Lot 18 — corecție fake WriteBatch pentru opțiuni absente
+
+5dd9b007fc1134546f4e4dacbfeca31cd5066876 / CI 38509312314: 181 Flutter PASS / 1 FAIL; celelalte 4 joburi SUCCESS. Fake WriteBatch interpreta parametrul opțional null ca SetOptions la set fără merge, provocând TypeError în migrarea sintetică. Corecția fake distinge null de SetOptions, fără schimbare runtime sau reducerea aserțiunilor destructive badge_v2. Toate efectele și verificările KNOWN DEFECT rămân. CI corectiv complet înainte de extragere.
