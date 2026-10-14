@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'vision_error_log.dart';
-import 'vision_persistence_status.dart';
+import 'vision_local_persistence.dart';
 
 /// Device-only error collection. No Firebase writes, no network AI, no secrets.
 ///
@@ -23,32 +23,22 @@ class VisionErrorTelemetry {
     retention: const Duration(days: 7),
   );
 
-  static final VisionPersistenceTracker _persistence =
-      VisionPersistenceTracker();
+  static final VisionLocalPersistence _local = VisionLocalPersistence(
+    log: log,
+    read: () => _storage.read(key: _storageKey),
+    write: (snapshot) => _storage.write(key: _storageKey, value: snapshot),
+  );
 
-  /// This describes only locally observed read/write results. It does not
-  /// attest to Android keystore health, Firebase or data on another device.
-  static String get persistenceMessage => _persistence.displayMessage;
+  /// Only describes locally observed reads and completed writes; not Firebase.
+  static String get persistenceMessage => _local.status.displayMessage;
 
-  static Future<void>? _loading;
-  static Future<void> _lastWrite = Future<void>.value();
   static Timer? _writeTimer;
   static bool _installed = false;
 
   static String get _platform =>
       kIsWeb ? 'web' : defaultTargetPlatform.name;
 
-  static Future<void> initialize() => _loading ??= _restore();
-
-  static Future<void> _restore() async {
-    try {
-      log.restore(await _storage.read(key: _storageKey));
-      _persistence.readSucceeded();
-    } catch (_) {
-      // Never claim that data was saved if protected storage is inaccessible.
-      _persistence.readFailed();
-    }
-  }
+  static Future<void> initialize() => _local.initialize();
 
   static void installFlutterHandlers() {
     if (_installed) return;
@@ -91,7 +81,7 @@ class VisionErrorTelemetry {
   }) {
     try {
       log.record(area: area, code: code, platform: _platform, severity: severity);
-      _persistence.changed();
+      _local.changed();
       if (severity == VisionErrorSeverity.critical) {
         unawaited(flush());
       } else {
@@ -109,17 +99,6 @@ class VisionErrorTelemetry {
   static Future<void> flush() {
     _writeTimer?.cancel();
     _writeTimer = null;
-    final snapshot = log.encode();
-    final snapshotRevision = _persistence.revision;
-    _lastWrite = _lastWrite.then((_) async {
-      try {
-        await _storage.write(key: _storageKey, value: snapshot);
-        _persistence.writeSucceeded(snapshotRevision);
-      } catch (_) {
-        // Keep diagnostics in RAM without pretending persistence succeeded.
-        _persistence.writeFailed(snapshotRevision);
-      }
-    });
-    return _lastWrite;
+    return _local.flush();
   }
 }
