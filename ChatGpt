@@ -2195,3 +2195,52 @@ Trei teste Flutter noi, runtime lib/ byte-identic lotului 23: colecții goale la
 Migrarea rămâne KNOWN DEFECT: șterge definițiile și golește atribuiri/drepturi ale membrilor inclusiv între batchuri. Nu este executată real și nu este reparată. Testul de permission501 caracterizează clientul și eroarea injectată, NU certifică acceptarea unui asemenea batch de server/SDK real sau limita backend; fake-ul permite succesul la reluare exclusiv pentru a verifica eliberarea guardului in-flight. Riscurile de migrare failure/parțial și batch mare rămân pentru PR funcțional distinct.
 
 Local 155 Python PASS, diff/inventar PASS; 195 Dart/59 part/136 biblioteci totale/77 independente lib. CI standard plus identity pe SHA lot obligatoriu înainte de checkpoint. GPS/FCM plugin/hardware real, AdminPanel account/function UI și cache SDK rămân neacoperite integral; nu se confundă Home State fixture cu acestea. AuthGate P1 rămâne NEREPARAT în #28. Fără migrări reale, producție, main/merge/deploy/APK/versiune, rules/config/billing ori PR-uri protejate.
+
+
+## CHECKPOINT-HOME-RETENTION-BATCHES-VALIDATED-20261014 — loturi 22–24
+
+**Reluare reală c794c5d6d0252b4e9180ce6bbf16cd2aa455951d → cod validat 61e517cc031c44bf45b65839a0537419a4898922.** Checkpointul d9795f4 transmis de proprietar era mai vechi; GitHub și Personal Context au confirmat loturile 17–21 deja încheiate. Loturile 10–21 și CI-urile lor nu au fost repetate. Checkout nou curat; checkouturile istorice și modificările lor nesalvate au fost păstrate intacte.
+
+| Lot | SHA validat | CI standard | Identity emulator | Flutter | Rezultat |
+|---|---|---|---|---|---|
+| 22 — backup8/retention300/failures | 38eeae632f676442a4ff829d079fbf6982ed721a | 38524869964 | 38524869959 | 192 | 5/5 + identity SUCCESS |
+| 23 — HomeRetentionQueries | dce2a41be8e0af0a37aead184c57203a64c6cbcc | 38525369939 | 38525369895 | 195 | 5/5 + identity SUCCESS |
+| 24 — seed empty/badge350/permission failure | 61e517cc031c44bf45b65839a0537419a4898922 | 38525907269 | 38525907278 | 198 | 5/5 + identity SUCCESS |
+
+**10 teste Flutter noi; 198 Flutter, 155 Python, 3 Node, 10 financial + 5 identity emulator PASS**, smoke Dart și build web PASS pe fiecare lot. Fără eșecuri CI sau corecții necesare în aceste trei loturi. Local: 155 Python/3 Node, Functions și identity syntax, diff, echivalență și inventar PASS; Flutter/Dart nu sunt instalate local. Testele folosesc date sintetice/SDK fake și State Home real cu rendering substituit; nu sunt teste Android/GPS/FCM/Firebase live sau restaurare end-to-end.
+
+### Schimbare structurală și echivalență
+
+HomeRetentionQueries este singura bibliotecă runtime nouă: două selecții notifications/backups where createdAt isLessThan cutoff Timestamp explicit. Fără ceas/clamps/query filters noi/order/limit/read/listen/write/retry/cache. Home păstrează calculul cutoff la același punct, get, ordinea notifications→backups, batches300, delete parent după items, startup/guard/in-flight/error handling. Cele două substituții și directivele main inversate reconstruiesc byte-exact fișierele bazei. API HomePage neschimbat. Loturile 22 și 24 nu modifică lib/.
+
+Backup non-empty verificat la batches8/8/1, ID identic în colecții distincte, payload nested/null/Timestamp păstrat, status/owner marker după succes. Failure după primul batch păstrează items și status failed fără marker de succes/retry/rollback. Retenție verificată cu 601 notificări, 301 items și parent gol; failure păstrează parent și oprește următoarele citiri. Seed startup gol verifică 103 locații și 4 categorii + admin. Badge migration350/350/3 păstrează ordinea și markerul ultimul, inclusiv ștergerea/golirea preexistentă. Permission501 caracterizează un batch unic, error și guard eliberat numai pentru un eveniment ulterior.
+
+### Inventar și integritate
+
+**195 Dart = 136 lib + 58 test/support + 1 script; 59 part, 136 biblioteci totale, 77 independente în lib.** Snapshot regenerat și comparat byte-identic, fără missing targets/orphan parts/duplicate declarations/cycles detectate. Audit lexical, nu dovadă de cod mort. Nu s-a forțat conversia part.
+
+**116 hashuri protejate PASS.** Zero schimbări în auth/GPS/FCM/financiar/PDF/OCR/map/assets/Functions/workflows/pubspec/Firebase rules/config/teste financiare protejate. Singurele schimbări lib sunt adaptorul, două expresii în home_backup_maintenance și import/export main. Main 377f1fd5e73ae78a0df5cab58b09770c873cd167; PR #19 d4da2872a566eba258e82b8597c023e03ceb9b56, #20 8ae220b41b5e9c1648151606f9443ba8fa68a90a, #21 d18b2523a31ead7eb65a04fe92a21276a4155c97, #29 545e0202755a8ee86a7b3406adccd469aac84f9e — HEAD-uri verificate neschimbate în sesiune.
+
+Publicare numai ramura #28, cu expected_sha și fără force. Arborele Git local a fost comparat cu arborele remote înainte de sincronizare; checkout curat și sincronizat după fiecare lot. Checkpointul de documentație final are SHA/run propriu verificat separat; descrierea PR va conține valorile exacte, evitând autoreferința imposibilă.
+
+### Riscuri confirmate/caracterizate, NEREPARATE
+
+- AuthGate P1: profil/Home/listeners/Navigator A pot supraviețui schimbării în B; niciun remediu aplicat în #28. Verdele KNOWN DEFECT nu certifică izolarea.
+- AppSettings comun și callbackuri post-frame după dispose/mount B; maintenance in-flight după dispose; GPS/FCM fără reverificări suficiente după await, nevalidate hardware/SDK real.
+- Badge_v2 șterge definiții și golește atribuiri; noul test confirmă și ordinea între batches350. Eșecul migrației și concurența dintre seed/migration rămân fără acoperire dinamică completă.
+- Backup failed păstrează items deja confirmate și documentCount include documente încercate, nu numai cele confirmate (fixture16/8); retention poate lăsa parent cu items parțial purjate. Eroarea injectată este înainte de commit; ambiguitatea network după commit server nu este testată. Restaurarea non-atomică rămâne.
+- Permission snapshot trimite toate cele 501 writes într-un singur batch în fixture. Rejection/retry pe eveniment nou sunt caracterizate; fake-success nu certifică acceptarea backend/SDK sau limita reală.
+- START concurent, OCR/financiar, scope/generații și riscurile istorice rămân.
+
+**Remediate în această continuare: niciun defect funcțional/de securitate preexistent.** Nu au existat erori de refactor/fixture care să necesite corecții; doar infrastructură de test și separare structurală. Nu se slăbesc teste sau contracte pentru a masca defecte.
+
+### Pas exact de reluare
+
+1. Verifică HEAD real și CI final din PR; nu repeta loturile 10–24.
+2. GPS/FCM: fixture SDK/platformă pentru serviceEnabled/checkPermission/requestPermission/getPositionStream, respectiv notificationSettings/getToken/saveToken/onTokenRefresh/getInitialMessage. Blochează fiecare await controlat, comută UID/dispose/logout și înregistrează owner, atașările, write paths și cancel. HomePlatformEffects injectat NU înlocuiește această validare. Delayed proximity250 și Web700 trebuie caracterizate; păstrează defectele ca atare în #28.
+3. AdminPanel UI real: edit/disable/assign/delete/failure pentru conturi/funcții; fixture Home permission/seed nu îl certifică. Seed/migration concurente și migration failure/parțial, backup retry/restore/ambiguitate commit și cache SDK/reconnect rămân.
+4. Home are 14 parts, Admin13, auth3, expenses4/map4/schedule3 și celelalte ecrane dependente de main/private state. Extrage numai componente independente/adaptoare după fixture-uri, fără schimbări de comportament.
+5. Plan remediere P1 separat: invalidare atomică la UID diferit, fallback numai same UID, graniță Navigator, ownership/generații post-await/settings. Acceptanță ZERO date A înainte de profil B și la error/null/logout/late callbacks. Nicio implementare în #28; PR distinct și autorizare expresă sunt necesare pentru schimbarea funcțională.
+6. Issue #30 și Vision/Error Log #19/#21 rămân pentru etapa ulterioară, fără implementare duplicată.
+
+PR #28 rămâne Draft/Open. Fără merge/main/deploy/APK/publicare web/modificare versiune/date/rules/config Firebase producție/billing/migrări reale sau modificări ale PR-urilor protejate.
