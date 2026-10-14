@@ -162,6 +162,11 @@ class VisionErrorLog {
       final ordered = _entries.values.toList()
         ..sort((a, b) {
           if (a.resolved != b.resolved) return a.resolved ? -1 : 1;
+          // Among equally resolved items, evict lower severity first.
+          // This is storage prioritization, not an incident diagnosis.
+          // Retention and hard byte/entry caps still apply to critical items.
+          final severity = a.severity.index.compareTo(b.severity.index);
+          if (severity != 0) return severity;
           return a.lastSeen.compareTo(b.lastSeen);
         });
       _entries.remove(ordered.first.fingerprint);
