@@ -2046,3 +2046,8 @@ Reluare GitHub/local d9795f4f4f26630969009cfd1fa803052558f4b1, checkout sursă c
 Testele de retenție și callback sunt KNOWN DEFECT de caracterizare, nu acceptanță a izolării. Testul startup dovedește doar lipsa anulării la granița HomePlatformEffects injectată, nu comportamentul hardware GPS/FCM. State Home real cu rendering substituit; date strict sintetice. Admin/seed/maintenance și token ownership reale urmează. AuthGate P1 rămâne confirmat și NEREPARAT, separat de aceste observații; remedierea se face numai pe PR distinct autorizat.
 
 Runtime lib/ este byte-identic bazei. FixtureHomePage permite doar alegerea efectelor deja injectabile. CI pe SHA lot obligatoriu înainte de lotul următor; rezultatul și inventarul se actualizează în checkpoint. Fără main/merge/deploy/APK/versiune/rules/config/date Firebase producție/migrări/billing sau PR-uri protejate.
+
+
+### Lot 17 — corecție așteptare normalizare font
+
+b1bea4b132317ff0ee9bd10f51498635faf06b0a / CI 38508637600: 176 Flutter PASS / 1 FAIL; celelalte 4 joburi SUCCESS, inclusiv 10 emulator. Fixture-ul cerea Roboto literal, dar normalizarea runtime existentă îl convertește la Sans. Corecția cere Sans după profil A și după fallback B; nicio schimbare runtime sau slăbire a verificărilor retenției între conturi, callbackurilor după dispose ori KNOWN DEFECT. Revalidare integrală obligatorie înainte de lot 18.

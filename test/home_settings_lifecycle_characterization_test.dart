@@ -21,7 +21,7 @@ void main() {
     expect(state.currentUserId, 'b');
     expect(identical(state.settings, shared), isTrue);
     expect(shared.theme, AppThemeChoice.dark);
-    expect(shared.fontFamily, 'Roboto');
+    expect(shared.fontFamily, 'Sans');
     expect(shared.defaultPerDiem, 87);
     db.document('users/b').add(GateFixtureSnapshot(null));
     db.document('users/b').addError('B unavailable');
@@ -33,7 +33,7 @@ void main() {
     db.document('users/a').add(GateFixtureSnapshot({'theme': 'light'}));
     await flushHomeFixture(tester);
     expect(shared.theme, AppThemeChoice.dark);
-    expect(shared.fontFamily, 'Roboto');
+    expect(shared.fontFamily, 'Sans');
     db.document('users/b').add(GateFixtureSnapshot({'theme': 'light', 'fontFamily': 'System'}));
     await flushHomeFixture(tester);
     expect(shared.theme, AppThemeChoice.light);

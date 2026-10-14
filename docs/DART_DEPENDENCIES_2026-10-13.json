@@ -7303,8 +7303,8 @@
     },
     {
       "path": "test/home_settings_lifecycle_characterization_test.dart",
-      "bytes": 8679,
-      "sha256": "2fc5ba9020fd68087fd9b5f9e3ca988e07bfb5f901f8381f0b88cdc9ba203a0e",
+      "bytes": 8675,
+      "sha256": "95a45d43586a7a910e2d1f2b526eaad8e6275a3f73a913307c61bc9e34a223a0",
       "owner": "test/home_settings_lifecycle_characterization_test.dart",
       "directives": [
         {
