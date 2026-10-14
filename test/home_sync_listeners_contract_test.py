@@ -60,7 +60,7 @@ class HomeSyncListenersContracts(unittest.TestCase):
     def test_listener_payloads_still_use_original_collections_and_errors(self):
         listeners = (ROOT / "lib/home/home_sync_listeners.dart").read_text(encoding="utf-8")
         for expected in (
-            "collection('users').doc(currentUserId)",
+            "sources.ownProfile(currentUserId)",
             "collection('teams')", "collection('cars')", "collection('locations')",
             "collection('schedules')", "collection('records')",
             "sources.notifications(isAdmin: isAdmin, uid: currentUserId)",

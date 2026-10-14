@@ -29,7 +29,7 @@ class HomeDirectorySyncContracts(unittest.TestCase):
         module=(ROOT/"lib/home/home_directory_definitions_audit_sync.dart").read_text()
         for fragment in ("if (!isAdmin) return;", "collection('audit').orderBy('at', descending: true).limit(500)",
                          "sources.categories().listen(","sources.backgrounds().listen(",
-                         "sources.functions().listen(", "db.collection('users') : db.collection('memberDirectory')",
+                         "sources.functions().listen(", "sources.directory(isAdmin: isAdmin)",
                          "_syncUserPermissionSnapshots()", "_applyTeamMembership()",
                          "_startFinancialSync()", "coreSyncError = 'Audit: $e'",
                          "coreSyncError = 'Conturi: $e'"):
@@ -42,7 +42,10 @@ class HomeDirectorySyncContracts(unittest.TestCase):
         directory = module.split("  void _startDirectorySync(", 1)[1]
         self.assertIn("if (!isAdmin) return;", audit)
         self.assertIn("_seedDefinitionsIfNeeded()", definitions)
-        self.assertIn("isAdmin ? db.collection('users') : db.collection('memberDirectory')", directory)
+        self.assertIn("sources.directory(isAdmin: isAdmin)", directory)
+        adapter = (ROOT / "lib/home/home_identity_queries.dart").read_text(encoding="utf-8")
+        self.assertIn("isAdmin ? db.collection('users') : db.collection('memberDirectory')", adapter)
+        self.assertIn("db.collection('users').doc(uid)", adapter)
         for symbol in ("hiddenFromMembers", "_hiddenUserIds", "_userTeamCache",
                        "_personalNotificationPreferences", "_lastGroupChatSeenAt"):
             with self.subTest(symbol=symbol):

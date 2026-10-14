@@ -1098,7 +1098,7 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_home_sync_groups_preserve_visibility_limits_and_errors(self):
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
-        groups = [("_startOwnProfileSync", "_startOperationsSync", ["if (!isAdmin)", "doc(currentUserId)", "Profil propriu: $e"]),
+        groups = [("_startOwnProfileSync", "_startOperationsSync", ["if (!isAdmin)", "sources.ownProfile(currentUserId)", "Profil propriu: $e"]),
                   ("_startOperationsSync", "_startNotificationSync", ["collection('teams')", "collection('cars')", "collection('locations')", "collection('schedules')", "collection('records')", "_applyTeamMembership();", "_startFinancialSync();", "_maybeAutoCloseResolvedSchedules"]),
                   ("_startNotificationSync", "_startChatSync", ["sources.notifications(isAdmin: isAdmin, uid: currentUserId)", "_notificationsPrimed", "_knownNotificationIds", "_allowPersonalAlert", "Notificări: $e"]),
                   ("_startChatSync", "_startSettingsSync", ["sources.privateMessages(currentUserId)", "sources.groupMessages()", "mandatoryChatAlert", "_hiddenUserIds", "_recomputeGroupUnread();", "Chat comun: $e"]),
@@ -1118,7 +1118,9 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("void _startDirectorySync(FirebaseFirestore db)", module)
         self.assertIn("_startDirectorySync(db);", home)
         directory = module.split("void _startDirectorySync(FirebaseFirestore db)", 1)[1]
-        self.assertIn("db.collection('users') : db.collection('memberDirectory')", directory)
+        self.assertIn("sources.directory(isAdmin: isAdmin)", directory)
+        adapter = (ROOT / "lib/home/home_identity_queries.dart").read_text(encoding="utf-8")
+        self.assertIn("isAdmin ? db.collection('users') : db.collection('memberDirectory')", adapter)
         self.assertIn("_applyTeamMembership()", directory)
         self.assertIn("_startFinancialSync()", directory)
         self.assertIn("coreSyncError = 'Conturi: $e'", directory)

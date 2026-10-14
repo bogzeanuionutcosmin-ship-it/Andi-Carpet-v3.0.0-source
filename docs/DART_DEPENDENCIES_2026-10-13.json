@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 184,
-  "lib_dart_files": 132,
-  "test_dart_files": 51,
+  "dart_files": 186,
+  "lib_dart_files": 133,
+  "test_dart_files": 52,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 125,
+  "libraries": 127,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -62,6 +62,7 @@
     ],
     "lib/firebase_options.dart": [],
     "lib/home/home_definition_sources.dart": [],
+    "lib/home/home_identity_queries.dart": [],
     "lib/home/home_message_queries.dart": [],
     "lib/home/home_platform_effects.dart": [],
     "lib/home/seed_operational_locations.dart": [
@@ -89,6 +90,7 @@
       "lib/download_file.dart",
       "lib/firebase_options.dart",
       "lib/home/home_definition_sources.dart",
+      "lib/home/home_identity_queries.dart",
       "lib/home/home_message_queries.dart",
       "lib/home/home_platform_effects.dart",
       "lib/home/seed_operational_locations.dart",
@@ -292,6 +294,10 @@
     ],
     "test/home_definition_sources_test.dart": [
       "lib/home/home_definition_sources.dart"
+    ],
+    "test/home_identity_queries_test.dart": [
+      "lib/main.dart",
+      "test/support/home_sync_fixture.dart"
     ],
     "test/home_identity_sources_characterization_test.dart": [
       "lib/main.dart",
@@ -2077,8 +2083,8 @@
     },
     {
       "path": "lib/home/home_directory_definitions_audit_sync.dart",
-      "bytes": 7855,
-      "sha256": "2c16cd2c20d855e41b07e4ea3c0a3802f564b99489dff8c42e570e93278126b4",
+      "bytes": 7906,
+      "sha256": "f51df29f6bd71dce9400298fd3f278b0eb2fa91237ee285332e362d64673f739",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2171,6 +2177,33 @@
         {
           "kind": "extension",
           "name": "_HomeFinancialWriteActions"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
+      "path": "lib/home/home_identity_queries.dart",
+      "bytes": 885,
+      "sha256": "9525523dc736dbff412d8097f04dae4a1b70ccf082923b8ac528fde5fc1ad6b2",
+      "owner": "lib/home/home_identity_queries.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "HomeIdentityQueries"
+        },
+        {
+          "kind": "class",
+          "name": "_FirestoreHomeIdentityQueries"
         }
       ],
       "top_level_functions": []
@@ -2279,8 +2312,8 @@
     },
     {
       "path": "lib/home/home_page.dart",
-      "bytes": 22906,
-      "sha256": "c5347de9332444e5c10341df886c7451afd46ab2afc147d30645f1ee9ea369af",
+      "bytes": 22974,
+      "sha256": "36cc786d9f57ffe86c12c1282b4ad6ddff7be0e4f525c5839c1d1b1fbc299940",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2372,8 +2405,8 @@
     },
     {
       "path": "lib/home/home_sync_listeners.dart",
-      "bytes": 15086,
-      "sha256": "509b5078f8d62b657ad958ee63529b99f20cbbebb4d177507425d0b75166cdf4",
+      "bytes": 15163,
+      "sha256": "6d86524a4e3666fbe6dac0a1db99f03a6bb8c721bb54c1f0e567bfd67ee0cc05",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2502,8 +2535,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 30009,
-      "sha256": "8399e891a7c499ec943540c86b94fd4c41bea5f2a42c4bae71f56e14260e93ac",
+      "bytes": 30093,
+      "sha256": "943dcb5a3fbd777c934c1ac919441319a53cc6709b6913b418e5e20e86ae4927",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -3024,6 +3057,26 @@
           ],
           "local_targets": [
             "lib/home/home_message_queries.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'home/home_identity_queries.dart';",
+          "uris": [
+            "home/home_identity_queries.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_identity_queries.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'home/home_identity_queries.dart';",
+          "uris": [
+            "home/home_identity_queries.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_identity_queries.dart"
           ]
         },
         {
@@ -6931,6 +6984,67 @@
       ]
     },
     {
+      "path": "test/home_identity_queries_test.dart",
+      "bytes": 3147,
+      "sha256": "13761abc4046561b59fb39ebb1fa321bbf87ef2ae1226a721b2af98e36193460",
+      "owner": "test/home_identity_queries_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "_RecordingIdentityQueries"
+        }
+      ],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
       "path": "test/home_identity_sources_characterization_test.dart",
       "bytes": 6632,
       "sha256": "07d4001df8a6cfd748ef69d17016f271d055f11e1219b388a97c378273676d1f",
@@ -8353,8 +8467,8 @@
     },
     {
       "path": "test/support/home_sync_fixture.dart",
-      "bytes": 6599,
-      "sha256": "4e8a7470db138c74dcb6f09ca4417e468769ebba0ac32bde3d82a7bab0b52e8c",
+      "bytes": 6675,
+      "sha256": "a12772c46b08e47f4e90bc9acca716762638a7a6aa2fba3f254e0fe5c56e3715",
       "owner": "test/support/home_sync_fixture.dart",
       "directives": [
         {

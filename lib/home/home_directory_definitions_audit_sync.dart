@@ -83,8 +83,9 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
   }
 
   void _startDirectorySync(FirebaseFirestore db) {
+    final sources = widget.identityQueries ?? HomeIdentityQueries.fromFirestore(db);
     _coreSubscriptions.add(
-      (isAdmin ? db.collection('users') : db.collection('memberDirectory')).snapshots().listen((snap) {
+      sources.directory(isAdmin: isAdmin).snapshots().listen((snap) {
         final list = snap.docs.map((doc) {
           final d = doc.data();
           final roleText = (d['role'] ?? 'member').toString();

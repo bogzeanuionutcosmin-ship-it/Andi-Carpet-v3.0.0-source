@@ -4,9 +4,10 @@ part of '../main.dart';
 // Etapă intermediară de modularizare: aceeași bibliotecă Dart și același lifecycle.
 extension _HomeSyncListeners on _HomePageState {
   void _startOwnProfileSync(FirebaseFirestore db) {
+    final sources = widget.identityQueries ?? HomeIdentityQueries.fromFirestore(db);
     // Datele private ale contului propriu nu sunt in directorul public.
     if (!isAdmin) _coreSubscriptions.add(
-      db.collection('users').doc(currentUserId).snapshots().listen((snap) {
+      sources.ownProfile(currentUserId).snapshots().listen((snap) {
         final d = snap.data();
         if (d == null || !mounted) return;
         _personalLocationMode = (d['locationMode'] ?? 'economic').toString();

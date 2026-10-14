@@ -186,3 +186,14 @@ Nicio schimbare runtime, permisiune, finanțe, query, listener ori cache. Prefer
 ### Lot 14 — rezultat inițial și corecție fixture
 
 a2ba14055dc7a6f561e35cdb446fd55737a86d12 / CI 38494525784: **165 Flutter PASS / 1 FAIL**, celelalte 4 joburi SUCCESS. Testul profilului propriu presupunea callback onSettingsChanged imediat după două pump-uri. Codul existent folosește addPostFrameCallback fără a solicita singur un cadru; tema este actualizată, callbackul rămâne amânat până la un cadru ulterior. Fixture-ul cere explicit 0 callbacks înainte de scheduleFrame/pump și 1 după; aceeași caracterizare la reconectare. Nicio schimbare runtime sau slăbire a verificărilor UID/cancel/late events; defectele KNOWN DEFECT existente rămân intacte. Riscul callbackurilor post-frame după dispose rămâne deschis. CI corectiv complet obligatoriu înainte de următorul lot.
+
+
+## MOD-HOME-IDENTITY-QUERIES-20261014 — lot 15
+
+Lot 14 validat **fa6541042d9a14135dfd7ed7f6b756f0ee377b05 / CI 38494771474 5/5 SUCCESS**, 166 Flutter PASS. Inițial a2ba140 / 38494525784: 165 pass/1 fail exclusiv timing post-frame în fixture; corectat cu verificarea explicită amânare/cadru, fără schimbare runtime ori slăbire UID/cancel.
+
+HomeIdentityQueries este bibliotecă SDK independentă cu două selecții lazy: ownProfile(uid) -> users/uid și directory(isAdmin) -> users sau memberDirectory. Portul nu face snapshots/listen/read/write/retry/polling și nu reține UID, profil ori rezultate. Constructor HomePage compatibil, identityQueries opțional; default db deja existent. Home păstrează guard-ul !isAdmin pentru profil propriu, filtrele de vizibilitate, fallback, cache-uri, setări/post-frame, membership/financial, ordinea și toate cancel-urile. Reconstrucția celor două fișiere anterioare după substituția expresiilor query este byte-exactă; nicio editare în callbackuri. Starea financiară, GPS/FCM, seed/migrare/maintenance rămân nemodificate.
+
+Trei teste noi: căi own/member/admin și lipsa listenerelor; A/B independente cu cancel separat și re-query fără cache; wiring port injectat pe State Home real în ordinea director/profil, o singură abonare și dispose. Cele 7 teste State Home și testele AuthGate KNOWN DEFECT rămân regresii. Testele structurale caută expresiile SDK în noul adapter și ownership/filtre în Home, fără pierderea controalelor de securitate. Local 155 Python + 3 Node, syntax/equivalence/diff/inventar PASS. Inventar **186 Dart / 59 parts / 127 biblioteci totale / 74 independente lib**. CI pe lot urmează înainte de checkpoint final.
+
+P1 AuthGate/Home/Navigator este prioritar, confirmat în harness și nereparat; corecția necesită aprobare pe PR separat. Admin/seed/maintenance, callbackurile post-frame deja programate după dispose, preferințele root între conturi, GPS/FCM hardware/token ownership și Firebase live rămân limite. Fără merge/deploy/APK/web publicat/rules/config/date producție/billing/migrări/versiune ori Vision duplicat. PR #19/#20/#21/#29 neatinse.

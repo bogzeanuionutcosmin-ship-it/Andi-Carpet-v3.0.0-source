@@ -136,11 +136,12 @@ class HomeSyncFixture extends Fake implements FirebaseFirestore {
 // avoiding unrelated Dashboard/Documents SDK accesses in lifecycle tests.
 class FixtureHomePage extends HomePage {
   FixtureHomePage({required Key key, required FirebaseUserProfile profile,
-    required HomeSyncFixture fixture, AppSettings? settings, VoidCallback? onSettingsChanged})
+    required HomeSyncFixture fixture, AppSettings? settings, VoidCallback? onSettingsChanged,
+    HomeIdentityQueries? identityQueries})
       : super(key: key, profile: profile,
           settings: settings ?? (AppSettings()..autoCloseWhenAllDone = false),
           onSettingsChanged: onSettingsChanged ?? () {},
-          syncFirestore: fixture, platformEffects: fixture.effects);
+          syncFirestore: fixture, platformEffects: fixture.effects, identityQueries: identityQueries);
   @override
   StatefulElement createElement() => _FixtureHomeElement(this);
 }
