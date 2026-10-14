@@ -2314,3 +2314,12 @@ Opt widget tests noi în AdminPanel real: picker cancel, futureV2 refuz, V1 fina
 157 Python local PASS, protected116 hashes și inversion PASS. 213 Dart /59 parts /154 libraries /81 independente lib. CI pe SHA lot urmează; nu se începe următorul lot de cod înainte de verde. Fără main/merge/deploy/APK/Firebase producție/PR33/34/29 sau reparații funcționale.
 
 Lot 34 inițial 76522cb / CI 38577042832: 242 teste Flutter existente PASS, noul fișier nu compilează; celelalte 4 joburi și identity 38577042721 SUCCESS. Două erori proprii de fixture: câmpul String parent suprapunea getterul DocumentReference.parent și lipsea importul Material pentru SizedBox. Corecție numai în fixture: parentPath și import Material. Nicio aserțiune sau sursă runtime schimbată. CI corectiv pe SHA propriu urmează.
+
+
+## Lot 35 — execuție restore, eșecuri și concurență în fake store
+
+Lot 34 corectiv a1c3dc341e86e4901d743730718b54270fc4757b: standard 38577689381 5/5 SUCCESS și identity 38577689350 SUCCESS; 250 Flutter. Nu se repetă scenariile lotului 34.
+
+Opt widget tests noi folosesc aceleași porturi, cu un model durabil strict sintetic pentru batch commands (rejection înainte de aplicare, nu ambiguitate de rețea). Runtime lib/ neschimbat: snapshot automat parțial înlocuiește numai expenses, păstrează perDiems/locations/users omise; duplicate-ID preflight refuză înainte de get/delete operațional; unknown-only manual accept scrie marker de succes fără date operaționale (KNOWN DEFECT); manual insert reject după delete păstrează golirea, eroare unawaited, fără rollback/retry automat, iar retry manual recreează 400+1; JSON invalid scapă din catch înainte de DB (KNOWN DEFECT); automatic last insert reject după delete și primele 8 replacements păstrează stare parțială fără marker; două handler calls concurente înainte de modal frame trec ambele, repetă comenzile și scriu două marker/logs (KNOWN DEFECT); automatic complete ignoră metadata cu format/schema viitoare și înlocuiește grupul valid (KNOWN DEFECT).
+
+Număr exact reads/commits/deletes/markers și store final asserted; nicio restaurare sau I/O real, fără roluri/finanțe mutate în producție. Original snapshots/payloads sunt păstrate în fixture; comenzile simulate pot șterge date din grupurile allowlisted doar după accept. Nu se confundă acestea cu garanția că datele reale ar fi sigure. 157 Python local PASS; inventar 215 Dart /59 parts /156 libraries /81 independente lib. CI pe SHA lot urmează.

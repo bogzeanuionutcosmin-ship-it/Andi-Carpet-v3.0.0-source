@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 213,
+  "dart_files": 215,
   "lib_dart_files": 140,
-  "test_dart_files": 72,
+  "test_dart_files": 74,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 154,
+  "libraries": 156,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -255,6 +255,12 @@
     ],
     "test/admin_account_projections_test.dart": [
       "lib/admin/admin_account_projections.dart"
+    ],
+    "test/admin_backup_execution_characterization_test.dart": [
+      "test/support/admin_backup_fixture.dart",
+      "test/support/admin_ui_fixture.dart",
+      "test/support/home_maintenance_fixture.dart",
+      "test/support/synthetic_backup_store.dart"
     ],
     "test/admin_backup_preflight_characterization_test.dart": [
       "test/support/admin_backup_fixture.dart",
@@ -528,6 +534,11 @@
     ],
     "test/support/home_sync_fixture.dart": [
       "lib/main.dart"
+    ],
+    "test/support/synthetic_backup_store.dart": [
+      "test/support/admin_backup_fixture.dart",
+      "test/support/home_maintenance_fixture.dart",
+      "test/support/home_sync_fixture.dart"
     ],
     "test/team_selector_library_test.dart": [
       "lib/models/app_data_models.dart",
@@ -6630,6 +6641,98 @@
       ]
     },
     {
+      "path": "test/admin_backup_execution_characterization_test.dart",
+      "bytes": 10900,
+      "sha256": "bfa5822c38a13b78cd72e47eb6b7aeb134409dcdd8d09b23165f228f9661d4c0",
+      "owner": "test/admin_backup_execution_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'dart:convert';",
+          "uris": [
+            "dart:convert"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';",
+          "uris": [
+            "package:firebase_core_platform_interface/firebase_core_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/admin_ui_fixture.dart';",
+          "uris": [
+            "support/admin_ui_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/admin_ui_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/admin_backup_fixture.dart';",
+          "uris": [
+            "support/admin_backup_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/admin_backup_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_maintenance_fixture.dart';",
+          "uris": [
+            "support/home_maintenance_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_maintenance_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/synthetic_backup_store.dart';",
+          "uris": [
+            "support/synthetic_backup_store.dart"
+          ],
+          "local_targets": [
+            "test/support/synthetic_backup_store.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
       "path": "test/admin_backup_preflight_characterization_test.dart",
       "bytes": 6260,
       "sha256": "dc1e00d0354e5b5431f24fe3749f6e2c2311ce0f191624d427766bffcdbbd44a",
@@ -10576,6 +10679,67 @@
         "fixtureHomeProfile",
         "flushHomeFixture"
       ]
+    },
+    {
+      "path": "test/support/synthetic_backup_store.dart",
+      "bytes": 1525,
+      "sha256": "8b82ef2df8f4aad55f22c7da2bd566c15c86d1bd5b52b4049cdbffc012e0838b",
+      "owner": "test/support/synthetic_backup_store.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:convert';",
+          "uris": [
+            "dart:convert"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'admin_backup_fixture.dart';",
+          "uris": [
+            "admin_backup_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/admin_backup_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'home_maintenance_fixture.dart';",
+          "uris": [
+            "home_maintenance_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_maintenance_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'home_sync_fixture.dart';",
+          "uris": [
+            "home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "SyntheticBackupStore"
+        }
+      ],
+      "top_level_functions": []
     },
     {
       "path": "test/team_selector_library_test.dart",
