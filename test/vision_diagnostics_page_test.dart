@@ -92,6 +92,20 @@ void main() {
     expect(find.text('×2'), findsOneWidget);
   });
 
+  testWidgets('Vision explains which areas are instrumented and which are not',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: VisionDiagnosticsPage(log: VisionErrorLog())),
+    );
+    expect(find.text('Acoperirea diagnosticului Vision'), findsNothing);
+    await tester.tap(find.byTooltip('Ce monitorizează Vision'));
+    await tester.pumpAndSettle();
+    expect(find.text('Acoperirea diagnosticului Vision'), findsOneWidget);
+    expect(find.text('Flutter / Dart'), findsOneWidget);
+    expect(find.text('Parțial instrumentat'), findsWidgets);
+    expect(find.textContaining('nu certifică lipsa erorilor'), findsOneWidget);
+  });
+
   testWidgets('Vision does not invent health advice without active incidents',
       (WidgetTester tester) async {
     final log = VisionErrorLog();
