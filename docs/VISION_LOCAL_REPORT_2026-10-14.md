@@ -113,3 +113,15 @@ Teste noi acoperă: păstrarea criticelor deschise sub presiunea limitei, elimin
 Noua ordine a copiei de raport: **incidente deschise înaintea celor rezolvate; critical > error > warning; apoi ultima apariție descrescător; în caz de egalitate, fingerprint stabil**. Aceasta este doar o selecție pentru raportul de diagnostic la copiere manuală, nu modifică ordinea/sintezele jurnalului local, datele păstrate sau prioritizarea la stocare. Nu adaugă rețea, upload ori acces la date personale.
 
 Teste: critică deschisă veche plus 140 warning-uri recente, critică rezolvată după warnings active, limitele de volum/caractere, conservarea snapshot-ului local și absența mutațiilor. Raportați verdictul final CI doar pe SHA efectiv validat.
+
+
+## Jurnal rezistent la corecții mici ale ceasului și cache cu metadate deteriorate
+
+**Lot de hardening local, fără rețea/Firebase și fără schimbări de business.**
+
+- La repetarea aceleiași erori, `lastSeen` nu mai scade când ceasul sistemului este ajustat puțin înapoi (de ex. sincronizare NTP de 20–30 secunde). `firstSeen` rămâne neschimbat, contorul crește și intervalul serializat `firstSeen <= lastSeen` rămâne valid la restaurare. Validarea existentă elimină în continuare evenimentele care sunt prea mult în viitor (>1 minut), deci **nu garantăm continuitatea la schimbări mari ale ceasului**.
+- În `restore()`, un câmp `resolved` prezent, dar de tip greșit (String, număr etc.), duce la ignorarea acelei intrări corupte; nu mai este interpretat implicit ca `false`, ceea ce ar crea un incident activ fals. Lipsa câmpului continuă să fie acceptată ca format v1 vechi, pentru compatibilitate, iar `true`/`false` reale sunt păstrate.
+
+Teste sintetice: eveniment repetat după ora mutată înapoi 30 s și apoi redeschiderea jurnalului, ora care avansează ulterior, metadate `resolved` corupte împreună cu intrări valide, compatibilitate cache v1 fără indicator. Nu sunt mutate, trimise, logate sau accesate date de utilizator. Nicio schimbare APK necesară pentru verificările pe telefon în această etapă.
+
+**Verificarea finală a lotului este CI pe SHA exact; această descriere nu este un rezultat de test în sine.**
