@@ -142,6 +142,38 @@ void main() {
       expect(log.encode(), isNot(contains('45.12')));
     });
 
+    test('short backward clock correction preserves timestamps and count', () {
+      final before = create();
+      before.record(area: 'gps', code: 'stream_failed', platform: 'android');
+      final first = now;
+      now = now.subtract(const Duration(seconds: 30));
+      before.record(area: 'gps', code: 'stream_failed', platform: 'android');
+      expect(before.entries.single.count, 2);
+      expect(before.entries.single.firstSeen, first);
+      expect(before.entries.single.lastSeen, first);
+
+      final snapshot = before.encode();
+      final reloaded = create();
+      reloaded.restore(snapshot);
+      expect(reloaded.length, 1);
+      expect(reloaded.entries.single.count, 2);
+      expect(reloaded.entries.single.firstSeen, first);
+      expect(reloaded.entries.single.lastSeen, first);
+    });
+
+    test('new later observation advances lastSeen after a short clock rollback', () {
+      final log = create();
+      final first = now;
+      log.record(area: 'ocr', code: 'document_save_failed', platform: 'web');
+      now = now.subtract(const Duration(seconds: 20));
+      log.record(area: 'ocr', code: 'document_save_failed', platform: 'web');
+      now = first.add(const Duration(minutes: 2));
+      log.record(area: 'ocr', code: 'document_save_failed', platform: 'web');
+      expect(log.entries.single.firstSeen, first);
+      expect(log.entries.single.lastSeen, now);
+      expect(log.entries.single.count, 3);
+    });
+
     test('serialized summaries survive local restart', () {
       final before = create();
       before.record(area: 'ocr', code: 'save_failed', platform: 'android');
