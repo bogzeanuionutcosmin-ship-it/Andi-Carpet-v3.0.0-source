@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 183,
+  "dart_files": 184,
   "lib_dart_files": 132,
-  "test_dart_files": 50,
+  "test_dart_files": 51,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 124,
+  "libraries": 125,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -292,6 +292,11 @@
     ],
     "test/home_definition_sources_test.dart": [
       "lib/home/home_definition_sources.dart"
+    ],
+    "test/home_identity_sources_characterization_test.dart": [
+      "lib/main.dart",
+      "test/support/auth_gate_fixture.dart",
+      "test/support/home_sync_fixture.dart"
     ],
     "test/home_location_seed_test.dart": [
       "lib/home/seed_operational_locations.dart",
@@ -6921,6 +6926,64 @@
           "name": "_DefinitionFirestore"
         }
       ],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/home_identity_sources_characterization_test.dart",
+      "bytes": 6398,
+      "sha256": "41a08525bd3e693d148cae3971a56e485aecd31379a8ade1998240ebdcf26cd9",
+      "owner": "test/home_identity_sources_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/auth_gate_fixture.dart';",
+          "uris": [
+            "support/auth_gate_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/auth_gate_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [],
       "top_level_functions": [
         "main"
       ]
