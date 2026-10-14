@@ -144,4 +144,24 @@ void main() {
     // Rejected fake write avoids leaked late listeners. This is not a full
     // AuthGate A->B, backend authorization or successful late-attach test.
   });
+  testWidgets('KNOWN DEFECT: refresh write rejection escapes unawaited callback; only a new event retries', (tester) async {
+    final errors = <Object>[];
+    await runZonedGuarded<Future<void>>(() async {
+      await mount(tester);
+      db.beforeSet = (_) async { throw StateError('synthetic refresh write rejection'); };
+      fcm.refresh.add('synthetic-rejected-refresh');
+      await flushHomeFixture(tester);
+    }, (error, stack) { errors.add(error); });
+    expect(errors, hasLength(1)); expect(errors.single, isA<StateError>());
+    expect(errors.single.toString(), contains('synthetic refresh write rejection'));
+    expect(db.attempts, hasLength(2)); expect(db.writes, hasLength(1));
+    await flushHomeFixture(tester); expect(db.attempts, hasLength(2));
+    db.beforeSet = null; fcm.refresh.add('synthetic-new-refresh');
+    await flushHomeFixture(tester);
+    expect(db.attempts, hasLength(3)); expect(db.writes, hasLength(2));
+    expect(db.writes.last.data['deviceOwnerUid'], 'a');
+    expect(fcm.trace.where((e) => e == 'refresh'), hasLength(1));
+    await finish(tester); expect(fcm.refreshCancels, 1);
+  });
+
 }

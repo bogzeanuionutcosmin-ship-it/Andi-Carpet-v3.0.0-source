@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 215,
+  "dart_files": 218,
   "lib_dart_files": 140,
-  "test_dart_files": 74,
+  "test_dart_files": 77,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 156,
+  "libraries": 159,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -356,9 +356,18 @@
     "test/home_definition_sources_test.dart": [
       "lib/home/home_definition_sources.dart"
     ],
+    "test/home_fcm_late_success_isolated_test.dart": [
+      "test/support/home_fcm_write_fixture.dart",
+      "test/support/home_platform_sdk_fixture.dart",
+      "test/support/home_sync_fixture.dart"
+    ],
     "test/home_fcm_valid_token_characterization_test.dart": [
       "test/support/auth_gate_fixture.dart",
       "test/support/home_fcm_write_fixture.dart",
+      "test/support/home_platform_sdk_fixture.dart",
+      "test/support/home_sync_fixture.dart"
+    ],
+    "test/home_gps_permission_delay_characterization_test.dart": [
       "test/support/home_platform_sdk_fixture.dart",
       "test/support/home_sync_fixture.dart"
     ],
@@ -377,6 +386,12 @@
     ],
     "test/home_message_queries_test.dart": [
       "lib/home/home_message_queries.dart",
+      "test/support/home_sync_fixture.dart"
+    ],
+    "test/home_migration_concurrency_characterization_test.dart": [
+      "lib/main.dart",
+      "test/support/auth_gate_fixture.dart",
+      "test/support/home_maintenance_fixture.dart",
       "test/support/home_sync_fixture.dart"
     ],
     "test/home_migration_failure_characterization_test.dart": [
@@ -8004,9 +8019,115 @@
       ]
     },
     {
+      "path": "test/home_fcm_late_success_isolated_test.dart",
+      "bytes": 3249,
+      "sha256": "85a30c60973777e8c4e3fe49920e0334d6c00177acc83e1aded6bcff8b29715f",
+      "owner": "test/home_fcm_late_success_isolated_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core/firebase_core.dart';",
+          "uris": [
+            "package:firebase_core/firebase_core.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core_platform_interface/test.dart';",
+          "uris": [
+            "package:firebase_core_platform_interface/test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_messaging/firebase_messaging.dart';",
+          "uris": [
+            "package:firebase_messaging/firebase_messaging.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_messaging_platform_interface/firebase_messaging_platform_interface.dart';",
+          "uris": [
+            "package:firebase_messaging_platform_interface/firebase_messaging_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';",
+          "uris": [
+            "package:geolocator_platform_interface/geolocator_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_fcm_write_fixture.dart';",
+          "uris": [
+            "support/home_fcm_write_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_fcm_write_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_platform_sdk_fixture.dart';",
+          "uris": [
+            "support/home_platform_sdk_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_platform_sdk_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
       "path": "test/home_fcm_valid_token_characterization_test.dart",
-      "bytes": 7190,
-      "sha256": "974fd7e3deb634633b3a55e25dd7ebda5f40547da39acdd221464669e2c7753a",
+      "bytes": 8318,
+      "sha256": "c0550ddd3303396197634e9a20049754767cbe89319d34912faebe78476640ae",
       "owner": "test/home_fcm_valid_token_characterization_test.dart",
       "directives": [
         {
@@ -8131,6 +8252,107 @@
         }
       ],
       "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/home_gps_permission_delay_characterization_test.dart",
+      "bytes": 2401,
+      "sha256": "1ee199870addd5c540b85fdb702db634cf626cce0aa17ef6677fb5eb864ea953",
+      "owner": "test/home_gps_permission_delay_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core/firebase_core.dart';",
+          "uris": [
+            "package:firebase_core/firebase_core.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core_platform_interface/test.dart';",
+          "uris": [
+            "package:firebase_core_platform_interface/test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_messaging_platform_interface/firebase_messaging_platform_interface.dart';",
+          "uris": [
+            "package:firebase_messaging_platform_interface/firebase_messaging_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/foundation.dart';",
+          "uris": [
+            "package:flutter/foundation.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';",
+          "uris": [
+            "package:geolocator_platform_interface/geolocator_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_platform_sdk_fixture.dart';",
+          "uris": [
+            "support/home_platform_sdk_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_platform_sdk_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "PermissionGateGps"
+        }
+      ],
       "top_level_functions": [
         "main"
       ]
@@ -8317,6 +8539,90 @@
             "package:flutter_test/flutter_test.dart"
           ],
           "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/home_migration_concurrency_characterization_test.dart",
+      "bytes": 2970,
+      "sha256": "3322d00a4576e9ee5e43ef9043566fb6ee059f4d4a52de66b842404d55e090ce",
+      "owner": "test/home_migration_concurrency_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/auth_gate_fixture.dart';",
+          "uris": [
+            "support/auth_gate_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/auth_gate_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_maintenance_fixture.dart';",
+          "uris": [
+            "support/home_maintenance_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_maintenance_fixture.dart"
+          ]
         },
         {
           "kind": "import",

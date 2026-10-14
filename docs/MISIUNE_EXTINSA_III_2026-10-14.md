@@ -48,3 +48,16 @@ Lot 34 corectiv a1c3dc341e86e4901d743730718b54270fc4757b: standard 38577689381 5
 Opt widget tests noi folosesc aceleași porturi, cu un model durabil strict sintetic pentru batch commands (rejection înainte de aplicare, nu ambiguitate de rețea). Runtime lib/ neschimbat: snapshot automat parțial înlocuiește numai expenses, păstrează perDiems/locations/users omise; duplicate-ID preflight refuză înainte de get/delete operațional; unknown-only manual accept scrie marker de succes fără date operaționale (KNOWN DEFECT); manual insert reject după delete păstrează golirea, eroare unawaited, fără rollback/retry automat, iar retry manual recreează 400+1; JSON invalid scapă din catch înainte de DB (KNOWN DEFECT); automatic last insert reject după delete și primele 8 replacements păstrează stare parțială fără marker; două handler calls concurente înainte de modal frame trec ambele, repetă comenzile și scriu două marker/logs (KNOWN DEFECT); automatic complete ignoră metadata cu format/schema viitoare și înlocuiește grupul valid (KNOWN DEFECT).
 
 Număr exact reads/commits/deletes/markers și store final asserted; nicio restaurare sau I/O real, fără roluri/finanțe mutate în producție. Original snapshots/payloads sunt păstrate în fixture; comenzile simulate pot șterge date din grupurile allowlisted doar după accept. Nu se confundă acestea cu garanția că datele reale ar fi sigure. 157 Python local PASS; inventar 215 Dart /59 parts /156 libraries /81 independente lib. CI pe SHA lot urmează.
+
+## Lot 36 — callbackuri SDK și două migrări concurente
+
+Lot 35 e2a71369fa527c29e17cb29b504feae5ed80ce8b: standard 38578844848 5/5 SUCCESS, identity 38578844948 SUCCESS; 258 Flutter.
+
+Patru probe noi, fără schimbări runtime sau porturi noi:
+
+1. FCM refresh-write reject scapă din callback-ul unawaited. Zone de test cere un singur StateError exact; niciun retry automat. Un nou eveniment refresh poate scrie din nou fără reatașare de listener.
+2. Token A întârziat reușește după Home keyed B și atașează ambele listeners după dispose A. După dispose B, refresh încă scrie A. Este o singură probă într-un fișier/isolate separat; cleanup închide sursele sintetice refresh/opened și livrează done prin pump, fără a susține că runtime a anulat listenerul A. Nu se închide niciun SDK real sau bus utilizat de alte teste.
+3. GPS service check reușit, dar checkPermission este blocat: permisiunea completată după dispose atașează stream. Dovada diferă de service-enabled gate din lot25. Aserțiunea starts1/cancels0 înainte de cleanup rămâne; fixture-ul anulează manual subscription. Fără poziții/HTTP/liveLocations.
+4. Două State Home Admin distincte, aceeași metadata legacy blocată și același DB fake: ambele pregătesc delete/functions/admin/users/marker înainte de primul commit. Două commits execută aceeași ștergere și golire a atribuiri. Snapshoturile sursă nemutate, fără pretenția de integritate DB. Nu repetă badge_v3 sau failure350.
+
+Toate sunt KNOWN DEFECT, nu remedieri sau acceptanță #33. Timeout60s pentru probele de cleanup/concurență. 157 Python local PASS; 218 Dart /59 parts /159 biblioteci /81 independente lib. CI pe SHA lot urmează. Rută chat live, Web700, GPS poziție/geocoding/boost250 și backend real rămân NEEXECUTATE; nu adăugăm guards funcționale.
