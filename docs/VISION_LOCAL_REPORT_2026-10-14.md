@@ -141,3 +141,10 @@ Teste: cod valid exact 48, cod invalid 49, normalizarea constantelor majuscule, 
 Raportul rămâne limitat la 100 de evenimente și 16.000 de caractere; incidentele reale au întâietate față de probe, astfel încât ultimele să nu ascundă o eroare serioasă. Dacă limita exclude linia unei probe, sumarul distinct rămâne vizibil, cu nota de trunchiere. Numai această combinație exactă este considerată sintetică; alte evenimente reale din aceeași zonă nu sunt ascunse.
 
 Teste unitare: numai probe repetate (0 incidente, 1 fingerprint test și contor 2), eroare reală + probă cu severitate critică, raport cu 110 erori plus probă și limita 100; verificare că exportul nu modifică datele jurnalului. Nu adaugă upload, Firebase ori instrumentare operațională. CI pe SHA exact este obligatoriu înainte de a marca lotul validat.
+
+
+## Contor clar pentru probele manuale Vision
+
+În raportul copiat, `Probe locale (nu sunt erori): N tipuri` exprimă numărul de fingerprinturi de probă, iar `Aparitii ale probelor locale: M` însumează apăsările testului înregistrate. Exemplu: dacă proba de persistență Android apare ca `×4`, raportul explică **1 tip, 4 apariții, 0 incidente reale**. Acest sumar există chiar dacă liniile de probă sunt excluse de limita de export de 100 evenimente sau 16.000 caractere; incidentele reale au prioritate.
+
+Teste noi: o probă Android repetată de patru ori; două platforme simulate (4+2 apariții, 2 fingerprinturi); raport trunchiat cu 110 incidente reale și două apariții ale probei; jurnalul și exportul rămân nemutate și fără upload. Nu se adaugă scrieri Firebase și nu se schimbă semnificația categoriei de incident. Validarea de închidere se face numai pe CI aferent HEAD final.
