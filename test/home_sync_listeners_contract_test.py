@@ -62,13 +62,15 @@ class HomeSyncListenersContracts(unittest.TestCase):
         adapter = (ROOT / "lib/home/home_operational_queries.dart").read_text(encoding="utf-8")
         for collection in ("teams", "cars", "locations", "schedules", "records"):
             self.assertIn(f"{collection}() => db.collection('{collection}')", adapter)
+        system_adapter = (ROOT / "lib/home/home_system_queries.dart").read_text(encoding="utf-8")
+        self.assertIn("db.collection('meta').doc('uiSettings')", system_adapter)
         for expected in (
             "sources.ownProfile(currentUserId)",
             "sources.teams()", "sources.cars()", "sources.locations()",
             "sources.schedules()", "sources.records()",
             "sources.notifications(isAdmin: isAdmin, uid: currentUserId)",
             "sources.privateMessages(currentUserId)", "sources.groupMessages()",
-            "collection('meta').doc('uiSettings')",
+            "sources.uiSettings()",
             "Profil propriu: $e", "Echipe: $e", "Mașini: $e",
             "Locații: $e", "Grafice de lucru: $e", "Execuții: $e",
             "Notificări: $e", "Mesaje: $e", "Chat comun: $e", "Setări UI: $e",

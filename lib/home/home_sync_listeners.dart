@@ -276,8 +276,9 @@ extension _HomeSyncListeners on _HomePageState {
   }
 
   void _startSettingsSync(FirebaseFirestore db) {
+    final sources = widget.systemQueries ?? HomeSystemQueries.fromFirestore(db);
     _coreSubscriptions.add(
-      db.collection('meta').doc('uiSettings').snapshots().listen((snap) {
+      sources.uiSettings().snapshots().listen((snap) {
         final d = snap.data();
         if (!mounted) return;
         if (d == null) { if (isAdmin) unawaited(_runAutomaticMaintenance()); return; }

@@ -26,8 +26,10 @@ class HomeDirectorySyncContracts(unittest.TestCase):
         self.assertIn("for (final sub in _coreSubscriptions) { sub.cancel(); }",home)
 
     def test_safety_boundaries_and_side_effects_remain(self):
+        adapter=(ROOT/"lib/home/home_system_queries.dart").read_text()
+        self.assertIn("db.collection('audit').orderBy('at', descending: true).limit(500)", adapter)
         module=(ROOT/"lib/home/home_directory_definitions_audit_sync.dart").read_text()
-        for fragment in ("if (!isAdmin) return;", "collection('audit').orderBy('at', descending: true).limit(500)",
+        for fragment in ("if (!isAdmin) return;", "sources.audit()",
                          "sources.categories().listen(","sources.backgrounds().listen(",
                          "sources.functions().listen(", "sources.directory(isAdmin: isAdmin)",
                          "_syncUserPermissionSnapshots()", "_applyTeamMembership()",

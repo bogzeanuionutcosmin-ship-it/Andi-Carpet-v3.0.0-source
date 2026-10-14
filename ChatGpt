@@ -2067,3 +2067,14 @@ Riscurile de retenție AppSettings/post-frame și badge_v2/maintenance sunt cara
 ### Lot 18 — corecție fake WriteBatch pentru opțiuni absente
 
 5dd9b007fc1134546f4e4dacbfeca31cd5066876 / CI 38509312314: 181 Flutter PASS / 1 FAIL; celelalte 4 joburi SUCCESS. Fake WriteBatch interpreta parametrul opțional null ca SetOptions la set fără merge, provocând TypeError în migrarea sintetică. Corecția fake distinge null de SetOptions, fără schimbare runtime sau reducerea aserțiunilor destructive badge_v2. Toate efectele și verificările KNOWN DEFECT rămân. CI corectiv complet înainte de extragere.
+
+
+## MOD-HOME-SYSTEM-QUERIES-20261014 — lot 19
+
+Lot 18 corectiv **bb8a756670b45a4fe8b73cd5a1ecdb653982b9bd / CI 38509542005 5/5 SUCCESS**, **182 Flutter PASS**, smoke Dart/build web PASS. Eșecul fake SetOptions este documentat; runtime și aserțiunile riscurilor nu au fost schimbate.
+
+HomeSystemQueries, bibliotecă SDK independentă query-only: meta/uiSettings și audit orderBy at descending limit500 exact. Fără snapshots/listen/get/write/retry/polling sau cache/state/UID în port. Home păstrează guard !isAdmin înainte de audit, ordinea settings→audit, toate callbacks/efectele maintenance, setările mutate, fallback/error/cancel și cele 18 listeners Admin / 14 member. Două module listeners se reconstruiesc byte-exact după inversarea substituțiilor; constructor opțional compatibil.
+
+Patru teste noi: căi/laziness/lipsa listenerelor; surse DB independente/cancel; member wiring fără audit, reconnect/errors păstrând settings; admin wiring cu audit și maintenance reale în fake strict. Testele structurale mută numai verificarea expresiilor SDK în adapter, păstrând guard/ownership/callback checks în Home. Un contract local căuta încă doc(uiSettings) în Home; relocat în adapter înainte de commit, cu toate cele 155 Python PASS apoi.
+
+Riscurile AuthGate P1, AppSettings comun, post-frame după dispose, badge_v2 și maintenance după dispose sunt confirmate/caracterizate și NEREPARATE. GPS/FCM ownership hardware nu este validat. CI pe SHA lot obligatoriu înaintea următorului lot. Fără migrare reală, merge/deploy/producție/versiune sau PR-uri protejate.

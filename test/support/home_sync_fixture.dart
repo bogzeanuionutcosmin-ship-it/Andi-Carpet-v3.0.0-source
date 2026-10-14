@@ -138,11 +138,11 @@ class FixtureHomePage extends HomePage {
   FixtureHomePage({required Key key, required FirebaseUserProfile profile,
     required HomeSyncFixture fixture, AppSettings? settings, VoidCallback? onSettingsChanged,
     HomeIdentityQueries? identityQueries, HomeOperationalQueries? operationalQueries,
-    HomePlatformEffects? platformEffects, FirebaseFirestore? maintenanceFirestore})
+    HomePlatformEffects? platformEffects, FirebaseFirestore? maintenanceFirestore, HomeSystemQueries? systemQueries})
       : super(key: key, profile: profile,
           settings: settings ?? (AppSettings()..autoCloseWhenAllDone = false),
           onSettingsChanged: onSettingsChanged ?? () {},
-          syncFirestore: fixture, maintenanceFirestore: maintenanceFirestore, platformEffects: platformEffects ?? fixture.effects, identityQueries: identityQueries, operationalQueries: operationalQueries);
+          syncFirestore: fixture, maintenanceFirestore: maintenanceFirestore, platformEffects: platformEffects ?? fixture.effects, identityQueries: identityQueries, operationalQueries: operationalQueries, systemQueries: systemQueries);
   @override
   StatefulElement createElement() => _FixtureHomeElement(this);
 }

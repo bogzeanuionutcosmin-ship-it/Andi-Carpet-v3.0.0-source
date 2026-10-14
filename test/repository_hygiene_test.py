@@ -1097,12 +1097,14 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("_startFinancialSync();", core)
 
     def test_home_sync_groups_preserve_visibility_limits_and_errors(self):
+        adapter = (ROOT / "lib/home/home_system_queries.dart").read_text(encoding="utf-8")
+        self.assertIn("db.collection('meta').doc('uiSettings')", adapter)
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
         groups = [("_startOwnProfileSync", "_startOperationsSync", ["if (!isAdmin)", "sources.ownProfile(currentUserId)", "Profil propriu: $e"]),
                   ("_startOperationsSync", "_startNotificationSync", ["sources.teams()", "sources.cars()", "sources.locations()", "sources.schedules()", "sources.records()", "_applyTeamMembership();", "_startFinancialSync();", "_maybeAutoCloseResolvedSchedules"]),
                   ("_startNotificationSync", "_startChatSync", ["sources.notifications(isAdmin: isAdmin, uid: currentUserId)", "_notificationsPrimed", "_knownNotificationIds", "_allowPersonalAlert", "Notificări: $e"]),
                   ("_startChatSync", "_startSettingsSync", ["sources.privateMessages(currentUserId)", "sources.groupMessages()", "mandatoryChatAlert", "_hiddenUserIds", "_recomputeGroupUnread();", "Chat comun: $e"]),
-                  ("_startSettingsSync", "_startCoreSync", ["doc('uiSettings')", "_runAutomaticMaintenance()", "Setări UI: $e"])]
+                  ("_startSettingsSync", "_startCoreSync", ["sources.uiSettings()", "_runAutomaticMaintenance()", "Setări UI: $e"])]
         listeners = (ROOT / "lib/home/home_sync_listeners.dart").read_text(encoding="utf-8")
         for name, following, contracts in groups:
             group = listeners.split("  void " + name + "(FirebaseFirestore db) {", 1)[1]
@@ -1148,7 +1150,9 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("_startAuditSync(db);", home)
         audit = module.split("void _startAuditSync(FirebaseFirestore db)", 1)[1].split("void _startDefinitionsSync(FirebaseFirestore db)", 1)[0]
         self.assertIn("if (!isAdmin) return;", audit)
-        self.assertIn("db.collection('audit').orderBy('at', descending: true).limit(500)", audit)
+        adapter = (ROOT / "lib/home/home_system_queries.dart").read_text(encoding="utf-8")
+        self.assertIn("db.collection('audit').orderBy('at', descending: true).limit(500)", adapter)
+        self.assertIn("sources.audit()", audit)
         self.assertIn("_coreSubscriptions.add(", audit)
         self.assertIn("coreSyncError = 'Audit: $e'", audit)
 

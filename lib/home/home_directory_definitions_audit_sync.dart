@@ -4,8 +4,9 @@ part of '../main.dart';
 extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
   void _startAuditSync(FirebaseFirestore db) {
     if (!isAdmin) return;
+    final sources = widget.systemQueries ?? HomeSystemQueries.fromFirestore(db);
     _coreSubscriptions.add(
-      db.collection('audit').orderBy('at', descending: true).limit(500).snapshots().listen((snap) {
+      sources.audit().snapshots().listen((snap) {
         final list = snap.docs.map((doc) {
           final d = doc.data();
           return AuditEntry(
