@@ -25,6 +25,7 @@ void main() {
     expect(find.textContaining('Vision observă:'), findsNothing);
     expect(find.textContaining('Test de persistență'), findsOneWidget);
     expect(find.text('×2'), findsOneWidget);
+    expect(find.textContaining('Probă locală'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -36,7 +37,7 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
 
-    expect(find.text('Vision · Error Log'), findsOneWidget);
+    expect(find.text('Vision'), findsOneWidget);
     expect(find.text('ocr / save_failed'), findsOneWidget);
     expect(find.text('×2'), findsOneWidget);
     expect(find.textContaining('Nu trimitem'), findsOneWidget);
