@@ -132,3 +132,12 @@ Teste sintetice: eveniment repetat după ora mutată înapoi 30 s și apoi redes
 `VisionErrorLog.safeCode` verifică acum mai întâi limita strictă de **48 caractere** și respinge instant șirurile goale ori mai lungi, înainte de `toLowerCase()`. Evităm crearea inutilă a unei copii de sute de KB dacă un apelant trimite accidental un mesaj brut sau un fragment OCR în loc de un cod constant. Intrarea devine doar `unknown`, nu este introdusă în log ca text sensibil; nu apare un nou transport sau API.
 
 Teste: cod valid exact 48, cod invalid 49, normalizarea constantelor majuscule, respingerea e-mailurilor/șirurilor goale și a unui payload sintetic de 200.000 caractere fără exportarea lui. Aceasta este o măsură defensivă locală, nu un înlocuitor pentru auditul fiecărui adaptor altele decât coduri fixe.
+
+
+## Proba de persistență nu este incident în raportul copiat
+
+`VisionDiagnosticReport.build` separă acum exclusiv evenimentul sintetic cu perechea fixă `vision_test/persistence_probe` de incidentele efective, identic cu interpretarea din ecran și advisor. Linia `Incidente locale` exclude aceste probe, iar `Probe locale (nu sunt erori)` le inventariază separat; fiecare probă inclusă în export este etichetată `test` / `proba_locala`, nu `warning`/`deschis`.
+
+Raportul rămâne limitat la 100 de evenimente și 16.000 de caractere; incidentele reale au întâietate față de probe, astfel încât ultimele să nu ascundă o eroare serioasă. Dacă limita exclude linia unei probe, sumarul distinct rămâne vizibil, cu nota de trunchiere. Numai această combinație exactă este considerată sintetică; alte evenimente reale din aceeași zonă nu sunt ascunse.
+
+Teste unitare: numai probe repetate (0 incidente, 1 fingerprint test și contor 2), eroare reală + probă cu severitate critică, raport cu 110 erori plus probă și limita 100; verificare că exportul nu modifică datele jurnalului. Nu adaugă upload, Firebase ori instrumentare operațională. CI pe SHA exact este obligatoriu înainte de a marca lotul validat.
