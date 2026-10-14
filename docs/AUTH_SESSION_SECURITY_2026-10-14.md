@@ -60,3 +60,10 @@ Nu se revocă retroactiv documentele pushTokens A deja stocate pe server și nu 
 **58724b34efb382dcd77a3875e02a0b3a2f0ab57f / CI 38516742854:** 58 Flutter PASS / **1 FAIL** exact SnackBar privacy assertion; alte 4 joburi SUCCESS. Textul «Private snackbar a» rămânea vizibil în loading B după resetarea Navigatorului. ScafoldMessenger aparține MaterialApp deasupra Navigatorului și păstra coada/mesajul curent.
 
 Se înlocuiește și cheia ScaffoldMessenger pe același UID transition/logout, fără schimbarea mesagerului la same UID. Nu se folosește doar hideCurrentSnackBar cu animație/coadă reziduală. Mesajele și bannerele messenger sunt state ale sesiunii, spre deosebire de brandingul global. Testul SnackBar și acceptanțele originale sunt neschimbate. GREEN pe noul SHA urmează; până atunci izolarea întregii suprafețe testate nu este declarată finală.
+
+
+## ScaffoldMessenger GREEN și auth stream error ownership
+
+**72aca0102294c3938a8581ffcbbe9218906064c1 / CI 38516940394 5/5 SUCCESS**, **59 Flutter PASS**, build web PASS. Testul SnackBar anterior FAIL este PASS fără editarea testului; core acceptance file neschimbat.
+
+Review-ul final verifică și calea auth stream onError: SDK currentUser poate indica UID B în timp ce streamul livrează o eroare; fallbackul profilului A nu este legitim în această situație. Se adaugă acceptanță pentru ruta A și control pozitiv pentru auth stream error cu SDK UID A neschimbat, fără modificare runtime în acest lot.

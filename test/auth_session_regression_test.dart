@@ -41,6 +41,36 @@ class _ActiveLocation extends GeolocatorPlatform {
 }
 
 void main() {
+  testWidgets('acceptance: changed SDK UID plus auth stream error cannot retain A route', (tester) async {
+    final auth = SessionAuth(); final db = SessionFirestore();
+    addTearDown(auth.events.close); addTearDown(db.close);
+    await harness.mount(tester, auth, db, homeBuilder: (key, profile, current) => Builder(key: key,
+      builder: (context) => Scaffold(body: FilledButton(child: Text('Identity ${profile.uid}'),
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => Scaffold(body: Text('Auth error private ${profile.uid}'))))))));
+    db.profile('a'); await harness.flush(tester);
+    await tester.tap(find.text('Identity a')); await tester.pumpAndSettle();
+    auth.user = SessionUser('b');
+    auth.events.addError('synthetic auth stream error'); await harness.flush(tester);
+    expect(find.text('Auth error private a'), findsNothing);
+    db.profile('b'); await harness.flush(tester);
+    expect(find.text('Identity b'), findsOneWidget);
+    expect(db.requests.where((p) => p == 'users/b').length, 1);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('same SDK UID auth stream error keeps the legitimate profile fallback', (tester) async {
+    final auth = SessionAuth(); final db = SessionFirestore();
+    addTearDown(auth.events.close); addTearDown(db.close);
+    await harness.mount(tester, auth, db, homeBuilder: (key, profile, current) => Text('Valid ${profile.uid}'));
+    db.profile('a'); await harness.flush(tester);
+    auth.events.addError('same UID offline'); await harness.flush(tester);
+    expect(find.text('Valid a'), findsOneWidget);
+    expect(db.requests.where((p) => p == 'users/a').length, 1);
+    expect(db.cancels['users/a'], isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('acceptance: private root SnackBar cannot transfer from A to B loading or Home', (tester) async {
     final auth = SessionAuth(); final db = SessionFirestore();
     addTearDown(auth.events.close); addTearDown(db.close);
