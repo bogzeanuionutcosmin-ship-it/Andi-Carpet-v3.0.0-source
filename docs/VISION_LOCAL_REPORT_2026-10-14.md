@@ -86,3 +86,14 @@ IMPORTANT: noul APK de test **se instalează separat de cele vechi**; contorul l
 - **Condiții pentru integrarea viitoare:** validarea rolurilor financiare din Issue #32, izolare UID și generație AuthGate din PR #33, selecția exactă a documentului/team/settlement, citire server reală (nu cache sau pending writes), tratarea offline/timing/idempotentă, protecție împotriva dublurilor și teste emulator + Android/web. Nu crea citiri/scrieri Firestore în acest lot.
 
 **Statut:** verificator și teste separate, nu remediere încă a salvării OCR și nu detector activ în aplicația instalată. Buildul Android de probă nu are Firebase prin proiectare. Rezultatele CI trebuie confirmate pe ultimul commit înainte de a marca lotul validat.
+
+
+## Lot nou — dovadă locală de persistență și fallback fără alarme false
+
+În auditul manual al codului, `VisionErrorTelemetry` absorbea în mod intenționat erorile `flutter_secure_storage` (pentru a nu bloca aplicația), dar ecranul nu comunica dacă datele erau doar în RAM. `lib/vision/vision_persistence_status.dart` introduce un tracker **pur Dart, fără date personale**, care distinge: neverificat, doar citire confirmată, scriere în așteptare, stocare indisponibilă (doar RAM) și ultima scriere confirmată.
+
+- `VisionErrorTelemetry` marchează schimbările după `log.record`, captează revizia fiecărui snapshot înaintea scrierii și marchează succes **numai după `await _storage.write`**, respectiv eșec după catch. Scrierile rămân serializate și debounce-ul deja implementat rămâne la 3 secunde. Nicio citire/scriere suplimentară, niciun listener/network nou.
+- Confirmarea unei scrieri vechi în timp ce există evenimente noi **NU** certifică revizia curentă. Eșecul stocării este semnalat în interfață ca *posibil jurnal doar în memorie*, fără salvare automată pe server; revenirea unei scrieri reușite reabilitează statusul. Citirea de cache la startup nu certifică o nouă scriere.
+- În `VisionDiagnosticsPage`, statusul este afișat informativ; pentru jurnale injectate din test se spune explicit că persistența nu a fost verificată, fără a folosi statusul global al dispozitivului.
+- Teste pure pentru scriere întârziată, eșec citire/scriere, recuperare, callback-uri invalide și capturi vechi, plus test widget pentru jurnal injectat. Workflow-ul Android offline rulează testul nou; orice verdict final se comunică numai după CI pe HEAD.
+- **Limitare:** indicatorul este o observație de runtime despre succesul apelurilor de stocare, **nu o garanție fizică de integritate a discului**, nici verificarea după restart. Testul manual Build #22 pentru un singur eveniment `×1` rămâne valid independent; nu trebuie instalat alt APK pentru acest lot.
