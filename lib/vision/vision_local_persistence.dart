@@ -21,7 +21,8 @@ class VisionLocalPersistence {
   final VisionPersistenceTracker status = VisionPersistenceTracker();
 
   Future<void>? _loading;
-  Future<void> _lastWrite = Future<void>.value();
+  Future<void>? _draining;
+  int _requestedRevision = -1;
 
   Future<void> initialize() => _loading ??= _restore();
 
@@ -40,25 +41,38 @@ class VisionLocalPersistence {
   /// Called when a new event enters the bounded log.
   void changed() => status.changed();
 
-  /// Await all earlier writes and the initial restore before taking a snapshot.
-  ///
-  /// Errors are recorded in the status; diagnostic failures never prevent
-  /// normal app operation or trigger recursive error reports.
+  /// Coalesce overlapping flush requests instead of queueing a disk write for
+  /// every occurrence in a burst of critical errors. Each call still awaits
+  /// the latest revision requested while this drain is active.
   Future<void> flush() {
-    _lastWrite = _lastWrite.then((_) async {
+    final revision = status.revision;
+    if (revision > _requestedRevision) _requestedRevision = revision;
+    final active = _draining;
+    if (active != null) return active;
+    return _draining = _drain();
+  }
+
+  Future<void> _drain() async {
+    try {
+      // A pending secure-storage restore always completes before any write.
       await initialize();
-      final revision = status.revision;
-      try {
-        // Snapshot encoding can fail too (e.g. unexpected clock errors).
-        // Catching it inside the queue prevents one bad attempt from
-        // poisoning every future flush.
-        final snapshot = log.encode();
-        await _write(snapshot);
-        status.writeSucceeded(revision);
-      } catch (_) {
-        status.writeFailed(revision);
+      while (true) {
+        // Encode only after all earlier platform writes are complete.
+        final revision = status.revision;
+        try {
+          final snapshot = log.encode();
+          await _write(snapshot);
+          status.writeSucceeded(revision);
+        } catch (_) {
+          // A failed encode/write never poisons subsequent flush requests.
+          status.writeFailed(revision);
+        }
+        // Newer requested events need one fresh snapshot, not N stale writes.
+        if (_requestedRevision <= revision) break;
       }
-    });
-    return _lastWrite;
+    } finally {
+      _requestedRevision = -1;
+      _draining = null;
+    }
   }
 }

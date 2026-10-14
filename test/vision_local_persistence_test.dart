@@ -260,4 +260,98 @@ void main() {
     regularRestore.restore(duplicateCache);
     expect(regularRestore.entries.single.count, 1);
   });
+
+  test('critical error burst coalesces 1200 overlapping flushes into two writes',
+      () async {
+    final firstWrite = Completer<void>();
+    final snapshots = <String>[];
+    final log = freshLog();
+    final persistence = VisionLocalPersistence(
+      log: log,
+      read: () async => null,
+      write: (snapshot) async {
+        snapshots.add(snapshot);
+        if (snapshots.length == 1) await firstWrite.future;
+      },
+    );
+    await persistence.initialize();
+    log.record(area: 'system', code: 'critical_burst', platform: 'android',
+        severity: VisionErrorSeverity.critical);
+    persistence.changed();
+    final pending = <Future<void>>[persistence.flush()];
+    await Future<void>.delayed(Duration.zero);
+    expect(snapshots, hasLength(1));
+    for (var i = 0; i < 1200; i++) {
+      log.record(area: 'system', code: 'critical_burst', platform: 'android',
+          severity: VisionErrorSeverity.critical);
+      persistence.changed();
+      pending.add(persistence.flush());
+    }
+    expect(snapshots, hasLength(1));
+    expect(persistence.status.state, VisionPersistenceState.pending);
+    firstWrite.complete();
+    await Future.wait(pending);
+    expect(snapshots, hasLength(2));
+    expect((freshLog()..restore(snapshots.first)).entries.single.count, 1);
+    expect((freshLog()..restore(snapshots.last)).entries.single.count, 1201);
+    expect(persistence.status.state, VisionPersistenceState.saved);
+  });
+
+  test('duplicate flush requests without new events do not add disk writes',
+      () async {
+    final held = Completer<void>();
+    var writes = 0;
+    final log = freshLog();
+    final persistence = VisionLocalPersistence(
+      log: log,
+      read: () async => null,
+      write: (_) async {
+        writes++;
+        await held.future;
+      },
+    );
+    log.record(area: 'gps', code: 'startup_error', platform: 'android');
+    persistence.changed();
+    final pending = <Future<void>>[persistence.flush()];
+    await Future<void>.delayed(Duration.zero);
+    for (var i = 0; i < 40; i++) {
+      pending.add(persistence.flush());
+    }
+    held.complete();
+    await Future.wait(pending);
+    expect(writes, 1);
+    expect(persistence.status.state, VisionPersistenceState.saved);
+  });
+
+  test('a failed first burst write permits a newer coalesced revision',
+      () async {
+    final held = Completer<void>();
+    var attempts = 0;
+    String? saved;
+    final log = freshLog();
+    final persistence = VisionLocalPersistence(
+      log: log,
+      read: () async => null,
+      write: (snapshot) async {
+        attempts++;
+        if (attempts == 1) {
+          await held.future;
+          throw StateError('synthetic storage failure');
+        }
+        saved = snapshot;
+      },
+    );
+    log.record(area: 'ocr', code: 'first_failure', platform: 'android');
+    persistence.changed();
+    final first = persistence.flush();
+    await Future<void>.delayed(Duration.zero);
+    log.record(area: 'ocr', code: 'second_failure', platform: 'android');
+    persistence.changed();
+    final later = persistence.flush();
+    held.complete();
+    await Future.wait([first, later]);
+    expect(attempts, 2);
+    expect((freshLog()..restore(saved)).length, 2);
+    expect(persistence.status.state, VisionPersistenceState.saved);
+  });
 }
