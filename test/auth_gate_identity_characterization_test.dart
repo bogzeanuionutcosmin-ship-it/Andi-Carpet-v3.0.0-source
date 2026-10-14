@@ -81,7 +81,7 @@ void main() {
     h.profile('b').add(GateFixtureSnapshot({'name': 'Bob', 'active': true}));
     await flushFixtureGate(tester);
     expect(find.text('identity:b:tab:0'), findsOneWidget);
-    expect(lifecycle, ['mount:a', 'dispose:a', 'mount:b']);
+    expect(lifecycle, ['mount:a', 'mount:b', 'dispose:a']);
     await tester.pumpWidget(const SizedBox());
     expect(lifecycle.last, 'dispose:b');
   });
