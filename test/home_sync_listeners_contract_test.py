@@ -59,10 +59,13 @@ class HomeSyncListenersContracts(unittest.TestCase):
 
     def test_listener_payloads_still_use_original_collections_and_errors(self):
         listeners = (ROOT / "lib/home/home_sync_listeners.dart").read_text(encoding="utf-8")
+        adapter = (ROOT / "lib/home/home_operational_queries.dart").read_text(encoding="utf-8")
+        for collection in ("teams", "cars", "locations", "schedules", "records"):
+            self.assertIn(f"{collection}() => db.collection('{collection}')", adapter)
         for expected in (
             "sources.ownProfile(currentUserId)",
-            "collection('teams')", "collection('cars')", "collection('locations')",
-            "collection('schedules')", "collection('records')",
+            "sources.teams()", "sources.cars()", "sources.locations()",
+            "sources.schedules()", "sources.records()",
             "sources.notifications(isAdmin: isAdmin, uid: currentUserId)",
             "sources.privateMessages(currentUserId)", "sources.groupMessages()",
             "collection('meta').doc('uiSettings')",

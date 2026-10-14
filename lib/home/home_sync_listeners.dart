@@ -37,8 +37,9 @@ extension _HomeSyncListeners on _HomePageState {
   }
 
   void _startOperationsSync(FirebaseFirestore db) {
+    final sources = widget.operationalQueries ?? HomeOperationalQueries.fromFirestore(db);
     _coreSubscriptions.add(
-      db.collection('teams').snapshots().listen((snap) {
+      sources.teams().snapshots().listen((snap) {
         final list = snap.docs.map(_teamFromDoc).toList()..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         for (final doc in snap.docs) {
           final t = _teamFromDoc(doc);
@@ -58,7 +59,7 @@ extension _HomeSyncListeners on _HomePageState {
     );
 
     _coreSubscriptions.add(
-      db.collection('cars').snapshots().listen((snap) {
+      sources.cars().snapshots().listen((snap) {
         final list = snap.docs.map(_carFromDoc).toList()..sort((a, b) => a.plate.compareTo(b.plate));
         for (final doc in snap.docs) {
           final c = _carFromDoc(doc);
@@ -76,7 +77,7 @@ extension _HomeSyncListeners on _HomePageState {
     );
 
     _coreSubscriptions.add(
-      db.collection('locations').snapshots().listen((snap) {
+      sources.locations().snapshots().listen((snap) {
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedLocationsIfNeeded());
           return;
@@ -98,7 +99,7 @@ extension _HomeSyncListeners on _HomePageState {
     );
 
     _coreSubscriptions.add(
-      db.collection('schedules').snapshots().listen((snap) {
+      sources.schedules().snapshots().listen((snap) {
         final list = snap.docs.map(_scheduleFromDoc).toList()
           ..sort((a, b) => a.date.compareTo(b.date));
         for (final doc in snap.docs) {
@@ -117,7 +118,7 @@ extension _HomeSyncListeners on _HomePageState {
     );
 
     _coreSubscriptions.add(
-      db.collection('records').snapshots().listen((snap) {
+      sources.records().snapshots().listen((snap) {
         final list = snap.docs.map(_recordFromDoc).toList()
           ..sort((a, b) => (a.startedAt ?? DateTime(2000)).compareTo(b.startedAt ?? DateTime(2000)));
         for (final doc in snap.docs) {

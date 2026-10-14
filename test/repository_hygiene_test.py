@@ -1099,7 +1099,7 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_home_sync_groups_preserve_visibility_limits_and_errors(self):
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
         groups = [("_startOwnProfileSync", "_startOperationsSync", ["if (!isAdmin)", "sources.ownProfile(currentUserId)", "Profil propriu: $e"]),
-                  ("_startOperationsSync", "_startNotificationSync", ["collection('teams')", "collection('cars')", "collection('locations')", "collection('schedules')", "collection('records')", "_applyTeamMembership();", "_startFinancialSync();", "_maybeAutoCloseResolvedSchedules"]),
+                  ("_startOperationsSync", "_startNotificationSync", ["sources.teams()", "sources.cars()", "sources.locations()", "sources.schedules()", "sources.records()", "_applyTeamMembership();", "_startFinancialSync();", "_maybeAutoCloseResolvedSchedules"]),
                   ("_startNotificationSync", "_startChatSync", ["sources.notifications(isAdmin: isAdmin, uid: currentUserId)", "_notificationsPrimed", "_knownNotificationIds", "_allowPersonalAlert", "Notificări: $e"]),
                   ("_startChatSync", "_startSettingsSync", ["sources.privateMessages(currentUserId)", "sources.groupMessages()", "mandatoryChatAlert", "_hiddenUserIds", "_recomputeGroupUnread();", "Chat comun: $e"]),
                   ("_startSettingsSync", "_startCoreSync", ["doc('uiSettings')", "_runAutomaticMaintenance()", "Setări UI: $e"])]

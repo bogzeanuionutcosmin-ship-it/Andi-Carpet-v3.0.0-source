@@ -9,7 +9,8 @@ class HomePage extends StatefulWidget {
   final HomePlatformEffects? platformEffects;
   final HomeMessageQueries? messageQueries;
   final HomeIdentityQueries? identityQueries;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.platformEffects, this.messageQueries, this.identityQueries});
+  final HomeOperationalQueries? operationalQueries;
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.platformEffects, this.messageQueries, this.identityQueries, this.operationalQueries});
   @override State<HomePage> createState() => _HomePageState();
 }
 
