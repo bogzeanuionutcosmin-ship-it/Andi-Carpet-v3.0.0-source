@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 181,
-  "lib_dart_files": 131,
-  "test_dart_files": 49,
+  "dart_files": 183,
+  "lib_dart_files": 132,
+  "test_dart_files": 50,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 122,
+  "libraries": 124,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -62,6 +62,7 @@
     ],
     "lib/firebase_options.dart": [],
     "lib/home/home_definition_sources.dart": [],
+    "lib/home/home_message_queries.dart": [],
     "lib/home/home_platform_effects.dart": [],
     "lib/home/seed_operational_locations.dart": [
       "lib/models/app_data_models.dart",
@@ -88,6 +89,7 @@
       "lib/download_file.dart",
       "lib/firebase_options.dart",
       "lib/home/home_definition_sources.dart",
+      "lib/home/home_message_queries.dart",
       "lib/home/home_platform_effects.dart",
       "lib/home/seed_operational_locations.dart",
       "lib/learning/duration_estimates.dart",
@@ -294,6 +296,10 @@
     "test/home_location_seed_test.dart": [
       "lib/home/seed_operational_locations.dart",
       "lib/models/app_enums.dart"
+    ],
+    "test/home_message_queries_test.dart": [
+      "lib/home/home_message_queries.dart",
+      "test/support/home_sync_fixture.dart"
     ],
     "test/home_sync_lifecycle_characterization_test.dart": [
       "lib/main.dart",
@@ -2190,6 +2196,33 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/home/home_message_queries.dart",
+      "bytes": 1136,
+      "sha256": "85864a09a335fc38d6dda7548a0ad02f8410c8684492f787394904034e8cc227",
+      "owner": "lib/home/home_message_queries.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "HomeMessageQueries"
+        },
+        {
+          "kind": "class",
+          "name": "_FirestoreHomeMessageQueries"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/home/home_navigation.dart",
       "bytes": 4690,
       "sha256": "a9e999e898dba6849a084cd9d951e12110c2b1632d8804226ed6096db13764b6",
@@ -2241,8 +2274,8 @@
     },
     {
       "path": "lib/home/home_page.dart",
-      "bytes": 22841,
-      "sha256": "0c823680b1be9d50dbdd8f252bc19480960a716663835350eaee967856d0e9be",
+      "bytes": 22906,
+      "sha256": "c5347de9332444e5c10341df886c7451afd46ab2afc147d30645f1ee9ea369af",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2334,8 +2367,8 @@
     },
     {
       "path": "lib/home/home_sync_listeners.dart",
-      "bytes": 15082,
-      "sha256": "0ea8d28e360a6e6d7c64e4f54b7565643dd8b9545b85a18f6476586208c755a7",
+      "bytes": 15086,
+      "sha256": "509b5078f8d62b657ad958ee63529b99f20cbbebb4d177507425d0b75166cdf4",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2464,8 +2497,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 29927,
-      "sha256": "59e5eec9bce0ca9b4bbdf2b066bcfaeea8c0df9e6f22bc6920816066e2ff6cc7",
+      "bytes": 30009,
+      "sha256": "8399e891a7c499ec943540c86b94fd4c41bea5f2a42c4bae71f56e14260e93ac",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2966,6 +2999,26 @@
           ],
           "local_targets": [
             "lib/home/home_platform_effects.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'home/home_message_queries.dart';",
+          "uris": [
+            "home/home_message_queries.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_message_queries.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'home/home_message_queries.dart';",
+          "uris": [
+            "home/home_message_queries.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_message_queries.dart"
           ]
         },
         {
@@ -6904,6 +6957,46 @@
           ],
           "local_targets": [
             "lib/models/app_enums.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/home_message_queries_test.dart",
+      "bytes": 1540,
+      "sha256": "f08fb6ecede40a0f92e465d2ea014b571207c48e9de3237e1e4da7df78a84354",
+      "owner": "test/home_message_queries_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/home/home_message_queries.dart';",
+          "uris": [
+            "package:andi_carpeta/home/home_message_queries.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_message_queries.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
           ]
         }
       ],

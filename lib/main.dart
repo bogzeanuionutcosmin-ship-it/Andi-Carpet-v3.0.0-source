@@ -53,6 +53,8 @@ import 'home/home_definition_sources.dart';
 export 'home/home_definition_sources.dart';
 import 'home/home_platform_effects.dart';
 export 'home/home_platform_effects.dart';
+import 'home/home_message_queries.dart';
+export 'home/home_message_queries.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
 import 'ui/icon_badge_catalog.dart';

@@ -139,9 +139,9 @@ extension _HomeSyncListeners on _HomePageState {
   }
 
   void _startNotificationSync(FirebaseFirestore db) {
-    final Query<Map<String, dynamic>> notificationQuery = isAdmin
-        ? db.collection('notifications')
-        : db.collection('notifications').where('userId', isEqualTo: currentUserId);
+    final sources = widget.messageQueries ?? HomeMessageQueries.fromFirestore(db);
+    final Query<Map<String, dynamic>> notificationQuery =
+        sources.notifications(isAdmin: isAdmin, uid: currentUserId);
     _coreSubscriptions.add(
       notificationQuery.snapshots().listen((snap) {
         final list = snap.docs.map(_notificationFromDoc).toList()
@@ -186,6 +186,7 @@ extension _HomeSyncListeners on _HomePageState {
   }
 
   void _startChatSync(FirebaseFirestore db) {
+    final sources = widget.messageQueries ?? HomeMessageQueries.fromFirestore(db);
     String visibleSenderName(Map<String, dynamic> data) {
       final senderId = (data['senderId'] ?? '').toString();
       if (!isAdmin && _hiddenUserIds.contains(senderId)) return 'Sistem';
@@ -199,7 +200,7 @@ extension _HomeSyncListeners on _HomePageState {
     }
 
     _coreSubscriptions.add(
-      db.collection('chatMessages').where('recipientId', isEqualTo: currentUserId).snapshots().listen((snap) {
+      sources.privateMessages(currentUserId).snapshots().listen((snap) {
         final unread = snap.docs.where((d) {
           final data = d.data();
           final deletedFor = data['deletedFor'];
@@ -241,7 +242,7 @@ extension _HomeSyncListeners on _HomePageState {
     );
 
     _coreSubscriptions.add(
-      db.collection('groupChatMessages').orderBy('createdAt', descending: true).limit(20).snapshots().listen((snap) {
+      sources.groupMessages().snapshots().listen((snap) {
         final docs = snap.docs;
         _recentGroupDocs = docs;
         _recomputeGroupUnread();

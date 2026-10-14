@@ -1100,8 +1100,8 @@ class RepositoryHygieneTests(unittest.TestCase):
         home = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
         groups = [("_startOwnProfileSync", "_startOperationsSync", ["if (!isAdmin)", "doc(currentUserId)", "Profil propriu: $e"]),
                   ("_startOperationsSync", "_startNotificationSync", ["collection('teams')", "collection('cars')", "collection('locations')", "collection('schedules')", "collection('records')", "_applyTeamMembership();", "_startFinancialSync();", "_maybeAutoCloseResolvedSchedules"]),
-                  ("_startNotificationSync", "_startChatSync", ["where('userId', isEqualTo: currentUserId)", "_notificationsPrimed", "_knownNotificationIds", "_allowPersonalAlert", "Notificări: $e"]),
-                  ("_startChatSync", "_startSettingsSync", ["where('recipientId', isEqualTo: currentUserId)", "orderBy('createdAt', descending: true).limit(20)", "mandatoryChatAlert", "_hiddenUserIds", "_recomputeGroupUnread();", "Chat comun: $e"]),
+                  ("_startNotificationSync", "_startChatSync", ["sources.notifications(isAdmin: isAdmin, uid: currentUserId)", "_notificationsPrimed", "_knownNotificationIds", "_allowPersonalAlert", "Notificări: $e"]),
+                  ("_startChatSync", "_startSettingsSync", ["sources.privateMessages(currentUserId)", "sources.groupMessages()", "mandatoryChatAlert", "_hiddenUserIds", "_recomputeGroupUnread();", "Chat comun: $e"]),
                   ("_startSettingsSync", "_startCoreSync", ["doc('uiSettings')", "_runAutomaticMaintenance()", "Setări UI: $e"])]
         listeners = (ROOT / "lib/home/home_sync_listeners.dart").read_text(encoding="utf-8")
         for name, following, contracts in groups:

@@ -7,7 +7,8 @@ class HomePage extends StatefulWidget {
   final HomeDefinitionSources? definitionSources;
   final FirebaseFirestore? syncFirestore;
   final HomePlatformEffects? platformEffects;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.platformEffects});
+  final HomeMessageQueries? messageQueries;
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.platformEffects, this.messageQueries});
   @override State<HomePage> createState() => _HomePageState();
 }
 
