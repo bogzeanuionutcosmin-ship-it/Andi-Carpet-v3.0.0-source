@@ -38,6 +38,24 @@ void main() {
     expect(log.length, 0);
   });
 
+  test('verified silent OCR mismatch gets fixed safe advisory without amount',
+      () {
+    log.record(area: 'ocr', code: 'saved_amount_mismatch',
+      platform: 'android');
+    final item = VisionDiagnosticAdvisor.assess(log).single;
+    expect(item.title, 'Suma salvată necesită verificare');
+    expect(item.explanation, contains('Nu retrimite automat'));
+    expect(item.explanation, isNot(contains('123456')));
+  });
+
+  test('confirmed missing OCR document advises checking duplicates', () {
+    log.record(area: 'ocr', code: 'saved_document_missing',
+      platform: 'android');
+    final item = VisionDiagnosticAdvisor.assess(log).single;
+    expect(item.title, 'Documentul nu a fost regăsit');
+    expect(item.explanation, contains('nu crea duplicate'));
+  });
+
   test('real OCR save error shows safe manual verification, no retry', () {
     log.record(area: 'ocr', code: 'document_save_failed',
       platform: 'android');
