@@ -71,6 +71,9 @@ class VisionOperationalDiagnosticsContracts(unittest.TestCase):
         # Preserve error visibility for previous framework/async handlers.
         self.assertIn("previousFlutterHandler(details)", TELEMETRY)
         self.assertIn("previousAsyncHandler?.call(error, stack) ?? false", TELEMETRY)
+        self.assertIn("code: 'firebase_initialization_failed'", MAIN)
+        # No dynamically generated diagnostic codes in the bootstrap either.
+        self.assertNotIn("e.runtimeType.toString()", MAIN)
         self.assertIn("VisionErrorTelemetry.installFlutterHandlers()", MAIN)
 
     def test_user_facing_behavior_is_preserved(self):

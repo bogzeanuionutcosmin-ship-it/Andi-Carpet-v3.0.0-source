@@ -126,7 +126,7 @@ Future<void> main() async {
   } catch (e) {
     VisionErrorTelemetry.report(
       area: 'startup',
-      code: e.runtimeType.toString(),
+      code: 'firebase_initialization_failed',
       severity: VisionErrorSeverity.critical,
     );
     runApp(_FirebaseBootstrapErrorApp(message: e.toString()));
