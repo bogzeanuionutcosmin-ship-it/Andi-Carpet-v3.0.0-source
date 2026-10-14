@@ -200,7 +200,10 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
                           subtitle: Text(
                             'Platformă: ' + item.platform +
                             ' · Ultima apariție: ' + dateLabel +
-                            ' · ' + (item.resolved ? 'Rezolvată' : 'Deschisă'),
+                            ' · ' + (item.area == 'vision_test' &&
+                            item.code == 'persistence_probe'
+                                ? 'Probă locală'
+                                : (item.resolved ? 'Rezolvată' : 'Deschisă')),
                           ),
                           trailing: Text('×' + item.count.toString()),
                         ),
