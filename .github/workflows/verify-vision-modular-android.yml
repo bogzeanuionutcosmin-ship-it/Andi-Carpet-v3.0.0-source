@@ -1,0 +1,40 @@
+name: Verify integrated Vision modular Android (compile only)
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vision-modular-android-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  integrated-android:
+    if: github.head_ref == 'integration/vision-authgate-modular-20261014'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show exact checkout tree
+        run: git rev-parse HEAD HEAD^{tree}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: AuthGate and integrated Vision regression tests
+        run: flutter test test/auth_session_acceptance_test.dart test/auth_session_regression_test.dart test/vision_*_test.dart
+      - name: Compile actual integrated app entrypoint without install or publication
+        run: flutter build apk --debug --target lib/main.dart
+      - name: Verify build exists without uploading it
+        run: test -s build/app/outputs/flutter-apk/app-debug.apk
+      # Deliberately no upload-artifact, install, deploy, signing change or secrets.
