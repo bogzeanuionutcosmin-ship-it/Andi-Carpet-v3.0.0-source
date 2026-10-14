@@ -2078,3 +2078,12 @@ HomeSystemQueries, bibliotecă SDK independentă query-only: meta/uiSettings și
 Patru teste noi: căi/laziness/lipsa listenerelor; surse DB independente/cancel; member wiring fără audit, reconnect/errors păstrând settings; admin wiring cu audit și maintenance reale în fake strict. Testele structurale mută numai verificarea expresiilor SDK în adapter, păstrând guard/ownership/callback checks în Home. Un contract local căuta încă doc(uiSettings) în Home; relocat în adapter înainte de commit, cu toate cele 155 Python PASS apoi.
 
 Riscurile AuthGate P1, AppSettings comun, post-frame după dispose, badge_v2 și maintenance după dispose sunt confirmate/caracterizate și NEREPARATE. GPS/FCM ownership hardware nu este validat. CI pe SHA lot obligatoriu înaintea următorului lot. Fără migrare reală, merge/deploy/producție/versiune sau PR-uri protejate.
+
+
+## MOD-IDENTITY-EMULATOR-CONTRACTS-20261014 — lot 20
+
+Lot 19 **2744054f260024c2a6717eed024f422d326a63f3 / CI 38509919885 5/5 SUCCESS**, smoke Dart/build web și suitele existente PASS. Cinci teste emulator noi în entrypointul existent, fără schimbarea workflow-ului/regulilor: profil privat own/foreign/list/admin/inactive-admin; B nu poate citi/scrie pushTokens A; audit admin-only și actorUid propriu; self-escalation rol/active/functionIds/effectivePermissions/funcții interzisă; uiSettings public/global read caracterizat expres inclusiv unauth, writes member interzise.
+
+Date strict sintetice în demo-andi-carpet, seed numai cu security rules disabled în fixture; assertion-urile folosesc regulile reale ale repository-ului. Cele 10 teste financiare anterioare și regula avansului sunt păstrate. Nu se modifică date/reguli/config Firebase reale, Functions sau billing. Aceste teste sunt contracte backend simulate, nu remediere AuthGate și nu validare cache/Android/FCM/GPS live.
+
+P1 retenție UI/profile/Home/Navigator rămâne confirmat și NEREPARAT. Rezultatele backend nu pot fi extrapolate la orice colecție sau la efectele async vechi; UI deja încărcat nu este șters de un denial server. CI integral pe SHA lot obligatoriu înainte de checkpoint.
