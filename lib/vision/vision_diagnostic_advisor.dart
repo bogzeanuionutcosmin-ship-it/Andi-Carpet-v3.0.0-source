@@ -11,6 +11,7 @@ class VisionDiagnosticInsight {
     required this.severity,
     required this.occurrences,
     required this.lastSeen,
+    required this.repeated,
   });
 
   final String title;
@@ -18,6 +19,13 @@ class VisionDiagnosticInsight {
   final VisionErrorSeverity severity;
   final int occurrences;
   final DateTime lastSeen;
+
+  /// At least two occurrences in this local aggregate; not a time-window rate.
+  final bool repeated;
+
+  String get occurrenceLabel => repeated
+      ? 'Repetată: $occurrences apariții în jurnalul local'
+      : 'Observată o singură dată';
 }
 
 class VisionDiagnosticAdvisor {
@@ -31,6 +39,11 @@ class VisionDiagnosticAdvisor {
       ..sort((a, b) {
         final severity = b.severity.index.compareTo(a.severity.index);
         if (severity != 0) return severity;
+        // At equal severity, repeat observations merit inspection before
+        // one-off incidents. This is not a measured per-minute error rate.
+        final repeated = (b.count > 1 ? 1 : 0)
+            .compareTo(a.count > 1 ? 1 : 0);
+        if (repeated != 0) return repeated;
         final when = b.lastSeen.compareTo(a.lastSeen);
         if (when != 0) return when;
         return b.count.compareTo(a.count);
@@ -45,6 +58,7 @@ class VisionDiagnosticAdvisor {
           severity: item.severity,
           occurrences: item.count,
           lastSeen: item.lastSeen,
+          repeated: item.count > 1,
         );
       }),
     );
