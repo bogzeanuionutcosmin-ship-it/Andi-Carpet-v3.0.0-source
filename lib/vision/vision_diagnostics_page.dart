@@ -154,6 +154,18 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
               'toate funcțiile au fost verificate.',
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                widget.log == null
+                    ? VisionErrorTelemetry.persistenceMessage
+                    : 'Jurnal de probă: salvarea pe dispozitiv nu este testată.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ),
           if (insights.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
