@@ -78,12 +78,42 @@ void main() {
     final before = log.encode();
     final report = VisionDiagnosticReport.build(log, generatedAt: timestamp);
     expect(report, contains('Incidente locale: 0'));
-    expect(report, contains('Probe locale (nu sunt erori): 1'));
+    expect(report, contains('Probe locale (nu sunt erori): 1 tipuri'));
+    expect(report, contains('Aparitii ale probelor locale: 2'));
     expect(report, contains('vision_test/persistence_probe | android | test'));
     expect(report, contains('repetari=2 | proba_locala'));
     expect(report, isNot(contains('persistence_probe | android | warning')));
     expect(report, contains('Absenta incidentelor nu dovedeste lipsa defectelor.'));
     expect(log.encode(), before);
+  });
+
+  test('probe summary distinguishes fingerprints from four taps', () {
+    final log = create();
+    for (var i = 0; i < 4; i++) {
+      log.record(area: 'vision_test', code: 'persistence_probe',
+          platform: 'android', severity: VisionErrorSeverity.warning);
+    }
+    final report = VisionDiagnosticReport.build(log, generatedAt: timestamp);
+    expect(report, contains('Incidente locale: 0'));
+    expect(report, contains('Probe locale (nu sunt erori): 1 tipuri'));
+    expect(report, contains('Aparitii ale probelor locale: 4'));
+    expect(report, contains('repetari=4 | proba_locala'));
+  });
+
+  test('test repetitions are counted across device platforms', () {
+    final log = create();
+    for (var i = 0; i < 4; i++) {
+      log.record(area: 'vision_test', code: 'persistence_probe',
+          platform: 'android');
+    }
+    for (var i = 0; i < 2; i++) {
+      log.record(area: 'vision_test', code: 'persistence_probe',
+          platform: 'web');
+    }
+    final report = VisionDiagnosticReport.build(log, generatedAt: timestamp);
+    expect(report, contains('Probe locale (nu sunt erori): 2 tipuri'));
+    expect(report, contains('Aparitii ale probelor locale: 6'));
+    expect(report, contains('Incidente locale: 0'));
   });
 
   test('real warning precedes synthetic probe even if probe is critical', () {
@@ -110,9 +140,14 @@ void main() {
       log.record(area: 'system', code: 'warning_$i',
           platform: 'web', severity: VisionErrorSeverity.warning);
     }
+    // Even after another manual tap, the probe line can be truncated,
+    // but the full occurrence count must remain in the summary.
+    log.record(area: 'vision_test', code: 'persistence_probe',
+        platform: 'android', severity: VisionErrorSeverity.warning);
     final output = VisionDiagnosticReport.build(log, generatedAt: timestamp);
     expect(output, contains('Incidente locale: 110'));
-    expect(output, contains('Probe locale (nu sunt erori): 1'));
+    expect(output, contains('Probe locale (nu sunt erori): 1 tipuri'));
+    expect(output, contains('Aparitii ale probelor locale: 2'));
     // At equal timestamps ties are ordered by fingerprint, so warning_0
     // is guaranteed to survive the 100-event export cap.
     expect(output, contains('system/warning_0'));
