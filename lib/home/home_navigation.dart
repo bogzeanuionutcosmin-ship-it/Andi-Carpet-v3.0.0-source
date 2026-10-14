@@ -2,6 +2,7 @@ part of '../main.dart';
 
 extension _HomeNavigation on _HomePageState {
   void _recomputeGroupUnread() {
+    if (!_sessionActive) return;
     final seenAt = _lastGroupChatSeenAt ?? DateTime.fromMillisecondsSinceEpoch(0);
     _unreadGroupMessageCount = _recentGroupDocs.where((doc) {
       final data = doc.data();
@@ -14,18 +15,22 @@ extension _HomeNavigation on _HomePageState {
   }
 
   void _refreshUnreadMessageCount() {
-    if (!mounted) return;
+    if (!_sessionActive) return;
+    if (!_sessionActive) return;
     setState(() => _unreadMessageCount = _unreadPrivateMessageCount + _unreadGroupMessageCount);
   }
 
   void _openGroupChat() {
+    if (!_sessionActive) return;
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => GroupChatPage(currentUser: me, users: users, functionDefinitions: functionDefinitions))).then((_) {
+      if (!_sessionActive) return;
       _unreadGroupMessageCount = 0;
       _refreshUnreadMessageCount();
     });
   }
 
   void _openMembersDirectory({bool chatMode=false}) {
+    if (!_sessionActive) return;
     // Directorul membrilor este disponibil tuturor utilizatorilor autentificați.
     // Documentele sunt proiectate în memberDirectory fără date private.
     Navigator.of(context).push(MaterialPageRoute(
@@ -34,6 +39,7 @@ extension _HomeNavigation on _HomePageState {
   }
 
   void _openProfile() {
+    if (!_sessionActive) return;
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProfilePage(
       user: me,
       teams: teams,
@@ -44,6 +50,7 @@ extension _HomeNavigation on _HomePageState {
   }
 
   Future<void> _openNotificationsSheet() async {
+    if (!_sessionActive) return;
     final mine = notifications.where((n) => n.userId == currentUserId).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     await showModalBottomSheet<void>(
       context: context,
@@ -77,9 +84,10 @@ extension _HomeNavigation on _HomePageState {
                             subtitle: Text('${n.message}\n${formatDate(n.createdAt)} · ${timeText(n.createdAt)}'),
                             isThreeLine: true,
                             onTap: n.read ? null : () async {
+                              if (!_sessionActive) return;
                               n.read = true;
                               await FirebaseFirestore.instance.collection('notifications').doc(n.id).set({'read': true, 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
-                              if (mounted) setState(() {});
+                              if (_sessionActive) setState(() {});
                             },
                           ),
                         )).toList(),
@@ -93,10 +101,12 @@ extension _HomeNavigation on _HomePageState {
   }
 
   void _openAbout() {
+    if (!_sessionActive) return;
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => AppInformationPage(settings: settings, isAdmin: isAdmin)));
   }
 
   void _openAdmin() {
+    if (!_sessionActive) return;
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => AdminPanelPage(users: users, teams: teams, cars: cars, locations: locations, categories: categories, functionDefinitions: functionDefinitions, schedules: schedules, records: records, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, notifications: notifications, audit: audit, settings: settings, userName: userName, onChanged: refresh, log: log, saveLocation: _saveLocationDirect, deleteLocation: _deleteLocationDirect)));
   }
 }

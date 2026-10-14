@@ -19,7 +19,7 @@ class PermissionGateGps extends HomeGpsSdkFixture {
 }
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  testWidgets('KNOWN DEFECT: native permission await can attach after dispose even when service check already succeeded', (tester) async {
+  testWidgets('native permission await cannot attach after dispose even when service check already succeeded', (tester) async {
     final originalFcm = FirebaseMessagingPlatform.instance;
     final originalGps = GeolocatorPlatform.instance;
     setupFirebaseCoreMocks(); await Firebase.initializeApp();
@@ -34,9 +34,8 @@ void main() {
       await tester.pumpWidget(const SizedBox()); expect(sync.activeCount, 0);
       gps.nativePermission.complete(LocationPermission.whileInUse);
       await flushHomeFixture(tester);
-      expect(gps.starts, 1); expect(gps.cancels, 0);
-      unawaited(gps.lastSubscription!.cancel()); await flushHomeFixture(tester);
-      expect(gps.cancels, 1); // explicit fixture cleanup, not Home cancellation
+      expect(gps.starts, 0); expect(gps.cancels, 0);
+      expect(gps.lastSubscription, isNull);
       await gps.positions.close(); await sync.close(); expect(tester.takeException(), isNull);
     } finally {
       debugDefaultTargetPlatformOverride = null;

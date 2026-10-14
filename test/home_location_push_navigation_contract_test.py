@@ -48,8 +48,8 @@ class HomeLocationPushNavigationContracts(unittest.TestCase):
 
     def test_lifecycle_keeps_start_and_disposal_of_existing_resources(self):
         for item in ('void initState()', 'void dispose()', 'Widget build(BuildContext context)',
-                     '_startCoreSync();', '(widget.platformEffects?.startLocation ?? _startAdaptiveLiveLocation)();',
-                     'unawaited((widget.platformEffects?.initializePush ?? _initPushNotifications)());',
+                     '_startCoreSync();', '(widget.platformEffects?.startLocation ?? widget.startLocation ?? _startAdaptiveLiveLocation)();',
+                     'unawaited((widget.platformEffects?.initializePush ?? widget.initializePush ?? _initPushNotifications)());',
                      'for (final sub in _coreSubscriptions) { sub.cancel(); }',
                      'for (final sub in _financialSubscriptions) { sub.cancel(); }',
                      '_liveLocationTimer?.cancel();', '_backgroundLocationSubscription?.cancel();'):
@@ -62,7 +62,7 @@ class HomeLocationPushNavigationContracts(unittest.TestCase):
                      'messaging.requestPermission(alert: true, badge: true, sound: true)',
                      "'deviceOwnerUid': currentUserId", ".collection('pushTokens').doc(_pushTokenDocId(token))",
                      'getToken(vapidKey: _webPushVapidKey)', 'finally {\n      _pushInitializationInFlight = false;',
-                     'FirebaseMessaging.onMessageOpenedApp.listen', 'messaging.getInitialMessage()'):
+                     '(widget.messageOpenedApp ?? FirebaseMessaging.onMessageOpenedApp).listen', 'messaging.getInitialMessage()'):
             self.assertIn(item, push)
         self.assertEqual(push.count('_coreSubscriptions.add('), 2)
         self.assertLess(push.index('await _savePushToken(token);'), push.index('if (!_pushListenersAttached)'))

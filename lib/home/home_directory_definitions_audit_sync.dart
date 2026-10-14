@@ -3,10 +3,12 @@ part of '../main.dart';
 // Abonări administrative/definiții/director: extrase textual, fără schimbarea fluxului.
 extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
   void _startAuditSync(FirebaseFirestore db) {
+    if (!_sessionActive) return;
     if (!isAdmin) return;
     final sources = widget.systemQueries ?? HomeSystemQueries.fromFirestore(db);
     _coreSubscriptions.add(
       sources.audit().snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map((doc) {
           final d = doc.data();
           return AuditEntry(
@@ -17,22 +19,24 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
             at: _dateFrom(d['at']) ?? DateTime.now(),
           );
         }).toList();
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           audit
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Audit: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Audit: $e');
       }),
     );
   }
 
   void _startDefinitionsSync(FirebaseFirestore db) {
+    if (!_sessionActive) return;
     final sources = widget.definitionSources ?? HomeDefinitionSources.fromFirestore(db);
     _coreSubscriptions.add(
       sources.categories().listen((snap) {
+        if (!_sessionActive) return;
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedDefinitionsIfNeeded());
           return;
@@ -42,13 +46,14 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
           final item = _categoryFromDoc(doc);
           _categoryCache[item.id] = _encoded(_categoryMap(item));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() { categories..clear()..addAll(list); });
-      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Categorii: $e'); }),
+      }, onError: (Object e) { if (_sessionActive) setState(() => coreSyncError = 'Categorii: $e'); }),
     );
 
     _coreSubscriptions.add(
       sources.backgrounds().listen((snap) {
+        if (!_sessionActive) return;
         final next=<String,Map<String,String>>{};
         for(final doc in snap.docs){
           final d=doc.data();
@@ -57,14 +62,15 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
           if(image.isEmpty)continue;
           next[doc.id]={'name':(d['name']??doc.id).toString(),'imageBase64':image};
         }
-        if(!mounted)return;
+        if(!_sessionActive)return;
         setState((){settings.customBackgrounds..clear()..addAll(next);});
-        WidgetsBinding.instance.addPostFrameCallback((_)=>widget.onSettingsChanged());
-      },onError:(Object e){if(mounted)setState(()=>coreSyncError='Fundaluri: $e');}),
+        _scheduleSettingsChanged();
+      },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Fundaluri: $e');}),
     );
 
     _coreSubscriptions.add(
       sources.functions().listen((snap) {
+        if (!_sessionActive) return;
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedDefinitionsIfNeeded());
           return;
@@ -74,19 +80,21 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
           final item = _functionFromDoc(doc);
           _functionCache[item.id] = _encoded(_functionMap(item));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() { functionDefinitions..clear()..addAll(list); });
         _startFinancialSync();
         if (isAdmin) unawaited(_syncUserPermissionSnapshots());
-      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Funcții: $e'); }),
+      }, onError: (Object e) { if (_sessionActive) setState(() => coreSyncError = 'Funcții: $e'); }),
     );
 
   }
 
   void _startDirectorySync(FirebaseFirestore db) {
+    if (!_sessionActive) return;
     final sources = widget.identityQueries ?? HomeIdentityQueries.fromFirestore(db);
     _coreSubscriptions.add(
       sources.directory(isAdmin: isAdmin).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map((doc) {
           final d = doc.data();
           final roleText = (d['role'] ?? 'member').toString();
@@ -113,7 +121,7 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
             // Fundalul este global și este controlat exclusiv de Admin.
             settings.personalBackgroundId = 'global';
             settings.fontFamily = personalFont;
-            if (visualChanged) WidgetsBinding.instance.addPostFrameCallback((_) => widget.onSettingsChanged());
+            if (visualChanged) _scheduleSettingsChanged();
           }
           final functionIds = d['functionIds'] is List
               ? (d['functionIds'] as List).map((e) => e.toString()).where((e) => e.isNotEmpty).toList()
@@ -139,7 +147,7 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
           if (a.role != b.role) return a.role == UserRole.director ? -1 : 1;
           return a.name.toLowerCase().compareTo(b.name.toLowerCase());
         });
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           _hiddenUserIds
             ..clear()
@@ -162,7 +170,7 @@ extension _HomeDirectoryDefinitionsAuditSync on _HomePageState {
         });
         _startFinancialSync();
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Conturi: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Conturi: $e');
       }),
     );
 

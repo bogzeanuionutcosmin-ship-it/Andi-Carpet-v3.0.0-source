@@ -4,12 +4,14 @@ part of '../main.dart';
 // Etapă intermediară de modularizare: aceeași bibliotecă Dart și același lifecycle.
 extension _HomeSyncListeners on _HomePageState {
   void _startOwnProfileSync(FirebaseFirestore db) {
+    if (!_sessionActive) return;
     final sources = widget.identityQueries ?? HomeIdentityQueries.fromFirestore(db);
     // Datele private ale contului propriu nu sunt in directorul public.
     if (!isAdmin) _coreSubscriptions.add(
       sources.ownProfile(currentUserId).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final d = snap.data();
-        if (d == null || !mounted) return;
+        if (d == null || !_sessionActive) return;
         _personalLocationMode = (d['locationMode'] ?? 'economic').toString();
         _personalLocationIntervalMinutes = (d['locationIntervalMinutes'] is num)
             ? (d['locationIntervalMinutes'] as num).toInt().clamp(1, 60).toInt() : 10;
@@ -30,22 +32,24 @@ extension _HomeSyncListeners on _HomePageState {
         settings.theme = personalTheme;
         settings.personalBackgroundId = 'global';
         settings.fontFamily = personalFont;
-        if (visualChanged) WidgetsBinding.instance.addPostFrameCallback((_) => widget.onSettingsChanged());
-      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Profil propriu: $e'); }),
+        if (visualChanged) _scheduleSettingsChanged();
+      }, onError: (Object e) { if (_sessionActive) setState(() => coreSyncError = 'Profil propriu: $e'); }),
     );
 
   }
 
   void _startOperationsSync(FirebaseFirestore db) {
+    if (!_sessionActive) return;
     final sources = widget.operationalQueries ?? HomeOperationalQueries.fromFirestore(db);
     _coreSubscriptions.add(
       sources.teams().snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_teamFromDoc).toList()..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         for (final doc in snap.docs) {
           final t = _teamFromDoc(doc);
           _teamCache[doc.id] = _encoded(_teamMap(t));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           teams
             ..clear()
@@ -54,30 +58,32 @@ extension _HomeSyncListeners on _HomePageState {
         });
         _startFinancialSync();
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Echipe: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Echipe: $e');
       }),
     );
 
     _coreSubscriptions.add(
       sources.cars().snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_carFromDoc).toList()..sort((a, b) => a.plate.compareTo(b.plate));
         for (final doc in snap.docs) {
           final c = _carFromDoc(doc);
           _carCache[doc.id] = _encoded(_carMap(c));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           cars
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Mașini: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Mașini: $e');
       }),
     );
 
     _coreSubscriptions.add(
       sources.locations().snapshots().listen((snap) {
+        if (!_sessionActive) return;
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedLocationsIfNeeded());
           return;
@@ -87,45 +93,47 @@ extension _HomeSyncListeners on _HomePageState {
           final l = _locationFromDoc(doc);
           _locationCache[doc.id] = _encoded(_locationMap(l));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           locations
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Locații: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Locații: $e');
       }),
     );
 
     _coreSubscriptions.add(
       sources.schedules().snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_scheduleFromDoc).toList()
           ..sort((a, b) => a.date.compareTo(b.date));
         for (final doc in snap.docs) {
           final item = _scheduleFromDoc(doc);
           _scheduleCache[doc.id] = _encoded(_scheduleMap(item));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           schedules
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Grafice de lucru: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Grafice de lucru: $e');
       }),
     );
 
     _coreSubscriptions.add(
       sources.records().snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_recordFromDoc).toList()
           ..sort((a, b) => (a.startedAt ?? DateTime(2000)).compareTo(b.startedAt ?? DateTime(2000)));
         for (final doc in snap.docs) {
           final item = _recordFromDoc(doc);
           _recordCache[doc.id] = _encoded(_recordMap(item));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           records
             ..clear()
@@ -133,7 +141,7 @@ extension _HomeSyncListeners on _HomePageState {
         });
         unawaited(_maybeAutoCloseResolvedSchedules(operationalWorkDate(DateTime.now())));
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Execuții: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Execuții: $e');
       }),
     );
 
@@ -141,11 +149,13 @@ extension _HomeSyncListeners on _HomePageState {
   }
 
   void _startNotificationSync(FirebaseFirestore db) {
+    if (!_sessionActive) return;
     final sources = widget.messageQueries ?? HomeMessageQueries.fromFirestore(db);
     final Query<Map<String, dynamic>> notificationQuery =
         sources.notifications(isAdmin: isAdmin, uid: currentUserId);
     _coreSubscriptions.add(
       notificationQuery.snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_notificationFromDoc).toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         final ownUnread = snap.docs.where((d) {
@@ -174,20 +184,21 @@ extension _HomeSyncListeners on _HomePageState {
           }
           _knownNotificationIds.addAll(snap.docs.map((d) => d.id));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           notifications
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Notificări: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Notificări: $e');
       }),
     );
 
   }
 
   void _startChatSync(FirebaseFirestore db) {
+    if (!_sessionActive) return;
     final sources = widget.messageQueries ?? HomeMessageQueries.fromFirestore(db);
     String visibleSenderName(Map<String, dynamic> data) {
       final senderId = (data['senderId'] ?? '').toString();
@@ -203,6 +214,7 @@ extension _HomeSyncListeners on _HomePageState {
 
     _coreSubscriptions.add(
       sources.privateMessages(currentUserId).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final unread = snap.docs.where((d) {
           final data = d.data();
           final deletedFor = data['deletedFor'];
@@ -239,12 +251,13 @@ extension _HomeSyncListeners on _HomePageState {
         _unreadPrivateMessageCount = unread.length;
         _refreshUnreadMessageCount();
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Mesaje: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Mesaje: $e');
       }),
     );
 
     _coreSubscriptions.add(
       sources.groupMessages().snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final docs = snap.docs;
         _recentGroupDocs = docs;
         _recomputeGroupUnread();
@@ -269,18 +282,20 @@ extension _HomeSyncListeners on _HomePageState {
           _knownGroupMessageIds.addAll(docs.map((d) => d.id));
         }
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Chat comun: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Chat comun: $e');
       }),
     );
 
   }
 
   void _startSettingsSync(FirebaseFirestore db) {
+    if (!_sessionActive) return;
     final sources = widget.systemQueries ?? HomeSystemQueries.fromFirestore(db);
     _coreSubscriptions.add(
       sources.uiSettings().snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final d = snap.data();
-        if (!mounted) return;
+        if (!_sessionActive) return;
         if (d == null) { if (isAdmin) unawaited(_runAutomaticMaintenance()); return; }
         setState(() {
           settings.background = (d['background'] ?? settings.background).toString();
@@ -321,7 +336,7 @@ extension _HomeSyncListeners on _HomePageState {
         });
         if (isAdmin) unawaited(_runAutomaticMaintenance());
       }, onError: (Object e) {
-        if (mounted && isAdmin) setState(() => coreSyncError = 'Setări UI: $e');
+        if (_sessionActive && isAdmin) setState(() => coreSyncError = 'Setări UI: $e');
       }),
     );
 
