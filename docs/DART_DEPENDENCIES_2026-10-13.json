@@ -243,6 +243,7 @@
     ],
     "scripts/verify_pure_models.dart": [
       "lib/admin/admin_account_projections.dart",
+      "lib/admin/admin_backup_files.dart",
       "lib/learning/duration_estimates.dart",
       "lib/models/app_data_models.dart",
       "lib/models/app_enums.dart",
@@ -260,6 +261,7 @@
       "test/support/admin_backup_fixture.dart",
       "test/support/admin_ui_fixture.dart",
       "test/support/home_maintenance_fixture.dart",
+      "test/support/home_sync_fixture.dart",
       "test/support/synthetic_backup_store.dart"
     ],
     "test/admin_backup_preflight_characterization_test.dart": [
@@ -6511,10 +6513,36 @@
     },
     {
       "path": "scripts/verify_pure_models.dart",
-      "bytes": 1951,
-      "sha256": "0fcb83a3683830ff17a0bb3d4a0aa2d24bd93f4db78a5a78a561a528f34ef6a1",
+      "bytes": 2564,
+      "sha256": "698df21d61b93b108f8d0b504121ee9ed4dd135905c74f061601233f87bc7198",
       "owner": "scripts/verify_pure_models.dart",
       "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'dart:typed_data';",
+          "uris": [
+            "dart:typed_data"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../lib/admin/admin_backup_files.dart';",
+          "uris": [
+            "../lib/admin/admin_backup_files.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_backup_files.dart"
+          ]
+        },
         {
           "kind": "import",
           "text": "import '../lib/models/app_data_models.dart';",
@@ -6662,8 +6690,8 @@
     },
     {
       "path": "test/admin_backup_execution_characterization_test.dart",
-      "bytes": 10900,
-      "sha256": "bfa5822c38a13b78cd72e47eb6b7aeb134409dcdd8d09b23165f228f9661d4c0",
+      "bytes": 13614,
+      "sha256": "82336ee7116ed4630e86ae1b9bb0c2b629848b8a08014822b2907b3247639012",
       "owner": "test/admin_backup_execution_characterization_test.dart",
       "directives": [
         {
@@ -6735,6 +6763,24 @@
           "local_targets": [
             "test/support/home_maintenance_fixture.dart"
           ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
         },
         {
           "kind": "import",

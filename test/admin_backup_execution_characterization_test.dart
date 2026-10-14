@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/admin_ui_fixture.dart';
 import 'support/admin_backup_fixture.dart';
 import 'support/home_maintenance_fixture.dart';
+import 'support/home_sync_fixture.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'support/synthetic_backup_store.dart';
 
 void main() {
@@ -151,4 +153,40 @@ void main() {
     expect(store.data, {'expenses/restored0': {'amount': 200}}); expect(jsonEncode(meta), originalMeta);
     await h.finish(t);
   });
+  testWidgets('KNOWN DEFECT: automatic items timeout escapes before preflight with zero destructive command', (t) async {
+    final h = AdminBackupHarness(); final store = SyntheticBackupStore(h.db);
+    store.seed('expenses/old', {'amount': 999}); store.allowRead('expenses');
+    h.db.setDocument('backups/snapshot', {'status': 'complete'});
+    h.db.queryReads['backups/snapshot/items'] = () => Future<QuerySnapshot<Map<String, dynamic>>>.error(TimeoutException('synthetic item read timeout'));
+    final errors = <Object>[];
+    await runZonedGuarded<Future<void>>(() async {
+      await h.mount(t, latest: {'status': 'complete'}); await openAutomatic(t); await accept(t);
+    }, (error, stack) { errors.add(error); });
+    expect(errors, hasLength(1)); expect(errors.single, isA<TimeoutException>());
+    expect(errors.single.toString(), contains('synthetic item read timeout'));
+    expect(h.db.trace, ['get:backups/snapshot', 'get:backups/snapshot/items']);
+    expect(h.db.commitAttempts, isEmpty); expect(h.db.directWrites, isEmpty); expect(h.ui.logs, isEmpty);
+    store.expectUnchanged('expenses/old', {'amount': 999}); await h.finish(t);
+  });
+
+  testWidgets('KNOWN DEFECT: automatic restore continues deletes writes and marker after Admin page disposal', (t) async {
+    final h = AdminBackupHarness(); final store = SyntheticBackupStore(h.db);
+    store.seed('expenses/old', {'amount': 999}); store.seed('perDiems/keep', {'amount': 50}); store.allowRead('expenses');
+    h.db.setDocument('backups/snapshot', {'status': 'complete'});
+    final items = Completer<QuerySnapshot<Map<String, dynamic>>>();
+    h.db.queryReads['backups/snapshot/items'] = () => items.future;
+    await h.mount(t, latest: {'status': 'complete'}); await openAutomatic(t); await accept(t);
+    expect(h.db.commitAttempts, isEmpty); expect(h.db.trace, ['get:backups/snapshot', 'get:backups/snapshot/items']);
+    await t.pumpWidget(const SizedBox()); expect(h.db.streams.activeCount, 0);
+    items.complete(HomeFixtureSnapshot([MaintenanceDoc(h.db, 'backups/snapshot/items/e',
+      {'collection': 'expenses', 'documentId': 'new', 'data': {'amount': 200}})]));
+    await t.pumpAndSettle();
+    expect(h.db.commits.map((b) => b.length), [1, 1]);
+    expect(store.data['expenses/old'], isNull); expect(store.data['expenses/new'], {'amount': 200});
+    store.expectUnchanged('perDiems/keep', {'amount': 50});
+    expect(h.db.directWrites.single.path, 'meta/backup'); expect(h.ui.logs, hasLength(1));
+    expect(find.text('Backup-ul automat a fost restaurat. Datele se resincronizează.'), findsNothing);
+    await h.finish(t);
+  });
+
 }

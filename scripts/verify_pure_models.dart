@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:typed_data';
+import '../lib/admin/admin_backup_files.dart';
 // Run with `dart run scripts/verify_pure_models.dart`, without a Flutter engine.
 import '../lib/models/app_data_models.dart';
 import '../lib/admin/admin_account_projections.dart';
@@ -11,7 +14,7 @@ void check(bool condition, String contract) {
   if (!condition) throw StateError(contract);
 }
 
-void main() {
+Future<void> main() async {
   final schedule = WorkSchedule(
     id: 'schedule', teamId: 'team', date: DateTime(2027, 1, 1), items: [],
   );
@@ -32,5 +35,15 @@ void main() {
       'Admin pending-first projection without Flutter engine');
   check(adminAssignedFunctionIds({'functionIds': [], 'function': 'admin'}).isEmpty,
       'Empty-list assignment precedence without Flutter engine');
-  print('PURE_MODEL_SMOKE PASS: defaults, mapping, operational boundary, duration learning, admin account projections');
+  final bytes = Completer<Uint8List>();
+  var reads = 0;
+  final backupFile = AdminBackupFile(name: 'synthetic.json', readAsBytes: () {
+    reads++; return bytes.future;
+  });
+  check(reads == 0, 'Backup file construction does not read bytes');
+  final pendingRead = backupFile.readAsBytes();
+  check(reads == 1, 'Backup byte read starts only on request');
+  bytes.complete(Uint8List.fromList([1, 2]));
+  check((await pendingRead).length == 2, 'Backup file port without Flutter engine');
+  print('PURE_MODEL_SMOKE PASS: defaults, mapping, operational boundary, duration learning, admin account projections, admin file port');
 }

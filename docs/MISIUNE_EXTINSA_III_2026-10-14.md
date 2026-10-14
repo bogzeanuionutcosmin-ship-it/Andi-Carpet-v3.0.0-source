@@ -84,3 +84,43 @@ Zece probe noi prin parser/form/Expense reale și save fake, fără runtime chan
 Fixture-ul primește numai imageOverride și updateLocallyBeforeFailure opționale, implicit identic; snapshot mutate-after-failure este model sintetic de efect optimist, nu Firestore persistence. Cele două grouping tests din lot31 nu se repetă. Parserul, business flow ExpensePage, drepturile și comparatorul Vision nu sunt modificate/importate.
 
 157 Python local PASS, 219 Dart /59 parts /160 biblioteci /81 independente lib; CI exact urmează. Camera/MLKit, server evidence, drepturile Issue32 și integrarea UID #33 rămân NEEXECUTATE.
+
+## Lot 38 — read boundaries și quality gates; checkpoint final
+
+Lot 37 535f3c52fccb75a9ed79fc4b7d8e0951047e1117: standard 38581225548 5/5 SUCCESS, identity 38581225528 SUCCESS; 272 Flutter.
+
+Două probe Admin suplimentare: items TimeoutException scapă înainte de preflight fără comenzi destructivе; items resolve după page dispose continuă delete/set/marker/log, fără success UI (KNOWN DEFECT). Fake store păstrează grupurile omise, nu pretinde anulare/rollback. Contractul file are closure Python fără Flutter/SDK/main și smoke Dart execută citirea lazy/await bytes fără motor Flutter. 158 Python local PASS; 219 Dart =140 lib+78 test/support+1 script, 59 parts, 160 biblioteci totale, 81 independente lib. 116 protected hashes intacte, inventar regenerat fără missing/orphan/duplicate/cycles. Audit lexical, nu dovadă de cod mort.
+
+### Loturi validate până la checkpoint
+
+| Lot | SHA final | Standard CI | Identity CI | Flutter |
+|---|---|---|---|---|
+|34 porturi/preflight|a1c3dc341e86e4901d743730718b54270fc4757b|38577689381 SUCCESS5/5|38577689350 SUCCESS|250|
+|35 execuție restore|e2a71369fa527c29e17cb29b504feae5ed80ce8b|38578844848 SUCCESS5/5|38578844948 SUCCESS|258|
+|36 SDK/concurență|b9a99f89d7542973c29604a056de1be769a57a21|38580073519 SUCCESS5/5|38580073605 SUCCESS|262|
+|37 OCR suplimentar|535f3c52fccb75a9ed79fc4b7d8e0951047e1117|38581225548 SUCCESS5/5|38581225528 SUCCESS|272|
+
+Checkpointul lot38 are SHA/CI propriu raportat în PR după completare. Totalul final așteptat este274 Flutter (32noi față de242) și158 Python (1nou); nu se declară validate înainte de logul final. 3Node, Functions syntax, financial10+identity5 emulator, smokeDart și web se reconfirmă pe SHA final prin CI, fără rerularea HEAD-urilor vechi.
+
+Singurul eșec intermediar: lot34 inițial76522cb/38577042832 compile fixture, cele242teste existentePASS și4altejoburiSUCCESS; identity38577042721SUCCESS. Corectivul parentPath/import Material nu modifică runtime sau assertions. Celelalte loturi au trecut fără corecții.
+
+## Starea celor șase etape
+
+| Etapă | Executat efectiv | NEEXECUTAT / limită |
+|---|---|---|
+|A Admin ports/restore|porturi minimale,8preflight/cancel/export +8execuție/race/retry +2read/dispose widget tests|FilePicker/hardware și Firestore live; preview UX nou nu există |
+|B backup/migration|partial commits și retry manual în fake store; două migrări concurente/stale metadata; propunere de protecții|network ambiguity, recovery/compensation, server idempotency/ACL și rollback |
+|C FCM/GPS|unawaited refresh reject, late-success attach/orphan refresh, permission await după dispose|chat route live/Web700/GPS position/geocoding/boost250; current harness nu izolează DB/HTTP pe GPS success |
+|D OCR|10noi widget cases, total/subtotal/TVA/space/compact/dot/mixed docs/quantities/two invoices/local failure/manual Back|MLKit/camera/Firestore persistence/rights Issue32/UID integrare |
+|E security overlap|SHAs și4perechi conflicts; plan12acceptance+8controls, PDFhash, Vision diffs|zero portare/testare/CI arbore combinat |
+|F quality gates|port closure, plainDart smoke, inventory/hashuri/source inversion, checkpoint și documente separate|59partsState păstrate; fără conversii forțate sau ștergere presupus codmort |
+
+Noile biblioteci runtime sunt numai AdminBackupFiles și adaptorul SDK, plus optionals/getters/substituții Admin/main; în total6fișiere lib modificate față de baseline. Algorithm/preflight/order/batches/rights sunt identice prin inversion. Finanțe, parser, AuthGate, SDK guards, assets, Functions, rules/config, versiune și workflow-urile protejate rămân intacte.
+
+## Riscuri și reluare precisă
+
+Known defects demonstrate nu sunt remediate: restore/migrare destructive non-atomice, markers/commands duplicate, timeout/JSON uncaught și continuare după dispose; token/listener A tardiv, GPS attach tardiv; OCR totaluri/date amestecate sau trunchiate și local evidence după save failure; AuthGate P1/controller Admin istorice. Fake errors sunt înainte de commit, iar un rând local nu dovedește server persistence.
+
+La reluare verificăHEADreal/CI/checkout, citește acest checkpoint și PR description; nu repeta1–37. Următoarea infrastructură posibilă: fake low-level chat route/Firestore read și GPS DB/locality seams strict limitate, ori teste emulator pentru operation identity numai cu scope clar. Remediile funcționale se propun separat conform docs/PROTECTII_BACKUP_MIGRARE_PROPUNERE_2026-10-14.md. Portarea securității are planul docs/PLAN_PORTARE_TESTE_SECURITATE_PR33_2026-10-14.md; niciun scope de integrare primit aici.
+
+Fără main/merge/rebase/deploy/APK/restaurare reală/producție/billing/versiune sau editări PR33/34/29. Checkout final curat/sync după publicare; PR rămâne Draft/Open. Nicio acțiune promisă în fundal.

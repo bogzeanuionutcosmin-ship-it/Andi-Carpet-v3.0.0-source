@@ -88,3 +88,15 @@ Avans Vision4fea0e8→becf552: report prioritizează faults reale înaintea pers
 - Migration failure după350confirmed deletions et unknown futurebadge_v3 sunt KNOWN DEFECT distincte de root session; zero financiare/diurne/săli în probe nu înseamnă că atribuiri/definitions DB sunt sigure. Remedierea este funcțională separată.
 
 Ordine viitoare#33→#28→#34 păstrată, fără cherry-pick/merge/APK/staging/producție. Full Admin restore și hardware/cacheSDK rămân NEEXECUTATE; checkpointul exact et testele sunt în docs/MISIUNE_EXTINSA_II_2026-10-14.md et descriereaPR.
+
+## Refresh read-only — misiunea III
+
+Snapshot #28 cod 535f3c52fccb75a9ed79fc4b7d8e0951047e1117; #33 a5f43ef9ce0bfedaf59766aafe18732fef7f8f47; #34 264610624b26d0718c80c49c599e9451f858fcab; #29 545e0202755a8ee86a7b3406adccd469aac84f9e; main 377f1fd5e73ae78a0df5cab58b09770c873cd167. #34 a avansat extern de la becf552 prin ff56d35; nimic din acea ramură nu a fost modificat de Luna.
+
+Simulările merge-tree păstrează conflictele: #28/#33 ChatGpt/AuthGate/Home; #28/#34 ChatGpt/Expense/Home/main; #33/#34 ChatGpt/Home; #29/#34 OCR parser. Sunt obiecte temporare read-only, fără integrare/ref de integrare sau CI combinat. Porturile Admin nu adaugă un conflict nou, însă constructorii/callbackurile necesită reconciliere explicită.
+
+Avans Vision inspectat: ff56d35 adaugă numărul aparițiilor incidentelor și protejează statusul de persistență la failure mai nou față de success vechi; 2646106 adaugă summary open/resolved/severity, tie-break determinist după fingerprint și mesaj prudent OCR save_failed (documentul poate fi deja înregistrat, verificare înainte de retry). Nu echivalează evidența locală cu server persistence. Million SHA256 original reverificat identic.
+
+Plan complet pentru cele 12 acceptanțe +8 controale #33: docs/PLAN_PORTARE_TESTE_SECURITATE_PR33_2026-10-14.md. Noile Admin backupFirestore/backupFiles și file contract se păstrează; #33 root reset nu anulează automat restore în curs. Testul nou Admin restore-after-dispose cere viitoare decizie de ownership/operation policy, nu este automat reparat la merge. Callbackurile OCR fake/default și pushFirestore rămân în API, cu guards #33 și handlers Vision doar în modulele reale.
+
+Funcționale rămase: AuthGate P1/SDK ownership, migration future schema/concurență, restore partial/timeout/dispose/idempotency, OCR totals/grouping și rights Issue32, controller Admin. Planul de protecții backup/migrare este separat, doar propunere. Nicio portare, merge/cherry-pick/rebase, APK/deploy sau modificare Firebase.
