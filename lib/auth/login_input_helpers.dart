@@ -17,4 +17,3 @@ String friendlyLoginError(Object e) {
   }
 
 String normalizeLoginPhone(String value) => value.replaceAll(RegExp(r'[^0-9]'), '');
-
