@@ -146,6 +146,33 @@ void main() {
     expect(restored.length, 2);
   });
 
+  test('snapshot encode failure does not poison later queued writes',
+      () async {
+    var failClock = false;
+    final live = VisionErrorLog(clock: () {
+      if (failClock) throw StateError('synthetic transient clock failure');
+      return clock;
+    });
+    final saved = <String>[];
+    final local = VisionLocalPersistence(
+      log: live,
+      read: () async => null,
+      write: (snapshot) async { saved.add(snapshot); },
+    );
+    await local.initialize();
+    live.record(area: 'system', code: 'prior_issue', platform: 'android');
+    local.changed();
+    failClock = true;
+    await local.flush();
+    expect(local.status.state, VisionPersistenceState.memoryOnly);
+    expect(saved, isEmpty);
+    failClock = false;
+    await local.flush();
+    expect(local.status.state, VisionPersistenceState.saved);
+    expect(saved, hasLength(1));
+    expect(saved.single, contains('prior_issue'));
+  });
+
   test('reject raw incident details without leaking them through persistence',
       () async {
     final writes = <String>[];
