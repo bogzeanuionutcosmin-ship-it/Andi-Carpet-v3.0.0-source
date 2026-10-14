@@ -27,7 +27,9 @@ class VisionLocalPersistence {
 
   Future<void> _restore() async {
     try {
-      log.restore(await _read());
+      // Only the initial read combines earlier persisted occurrences with
+      // same-code incidents collected before secure storage became ready.
+      log.restore(await _read(), mergeExisting: true);
       status.readSucceeded();
     } catch (_) {
       // A corrupt/unavailable store must not block the application startup.

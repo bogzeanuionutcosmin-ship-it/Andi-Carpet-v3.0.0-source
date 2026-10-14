@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:andi_carpeta/vision/vision_error_log.dart';
@@ -189,5 +190,74 @@ void main() {
     expect(writes.single, isNot(contains('secret')));
     expect(writes.single, isNot(contains('customer@test.example')));
     expect(writes.single, contains('"code":"unknown"'));
+  });
+
+  test('early same-code event keeps older occurrences after delayed restore',
+      () async {
+    final historicClock = DateTime.utc(2026, 10, 13, 10);
+    final historic = VisionErrorLog(clock: () => historicClock);
+    for (var i = 0; i < 3; i++) {
+      historic.record(area: 'gps', code: 'signal_lost', platform: 'android',
+          severity: VisionErrorSeverity.critical);
+    }
+    expect(historic.resolve('gps/signal_lost/android'), isTrue);
+    final loading = Completer<String?>();
+    final saved = <String>[];
+    final live = freshLog();
+    final persistence = VisionLocalPersistence(
+      log: live,
+      read: () => loading.future,
+      write: (snapshot) async { saved.add(snapshot); },
+    );
+    final initialization = persistence.initialize();
+    live.record(area: 'gps', code: 'signal_lost', platform: 'android',
+        severity: VisionErrorSeverity.warning);
+    persistence.changed();
+    final flush = persistence.flush();
+    await Future<void>.delayed(Duration.zero);
+    expect(saved, isEmpty);
+    loading.complete(historic.encode());
+    await Future.wait([initialization, flush]);
+
+    final incident = live.entries.single;
+    expect(incident.count, 4);
+    expect(incident.firstSeen, historicClock);
+    expect(incident.lastSeen, clock);
+    expect(incident.severity, VisionErrorSeverity.critical);
+    expect(incident.resolved, isFalse);
+    expect(persistence.status.state, VisionPersistenceState.saved);
+    final recovered = freshLog()..restore(saved.single);
+    expect(recovered.entries.single.count, 4);
+    expect(recovered.entries.single.resolved, isFalse);
+  });
+
+  test('initial merge ignores duplicate cache rows and default stays idempotent',
+      () async {
+    final seed = freshLog()
+      ..record(area: 'fcm', code: 'refresh_failed', platform: 'android');
+    final payload = jsonDecode(seed.encode()) as Map<String, dynamic>;
+    final row = (payload['items'] as List).single;
+    final duplicateCache = jsonEncode({
+      'version': 1,
+      'items': [row, row],
+    });
+    final live = freshLog();
+    live.record(area: 'fcm', code: 'refresh_failed', platform: 'android');
+    final saved = <String>[];
+    final persistence = VisionLocalPersistence(
+      log: live,
+      read: () async => duplicateCache,
+      write: (snapshot) async { saved.add(snapshot); },
+    );
+    persistence.changed();
+    await persistence.flush();
+    expect(live.entries.single.count, 2);
+    expect((freshLog()..restore(saved.single)).entries.single.count, 2);
+
+    final regularRestore = freshLog()
+      ..record(area: 'fcm', code: 'refresh_failed', platform: 'android');
+    regularRestore.restore(duplicateCache);
+    regularRestore.restore(duplicateCache);
+    expect(regularRestore.entries.single.count, 1);
   });
 }

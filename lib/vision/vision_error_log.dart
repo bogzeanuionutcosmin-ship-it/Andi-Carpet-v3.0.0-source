@@ -196,7 +196,10 @@ class VisionErrorLog {
 
   /// Imports only validated summaries. Malformed or untrusted cached content
   /// cannot become a diagnostic message. Values outside the cap are ignored.
-  void restore(String? raw) {
+  /// Restore a bounded snapshot. Existing fingerprints are unchanged unless
+  /// [mergeExisting] is explicitly enabled for the one initial storage read.
+  /// This prevents duplicate history imports from inflating event counters.
+  void restore(String? raw, {bool mergeExisting = false}) {
     if (raw == null || raw.isEmpty || raw.length > maxBytes * 4) return;
     try {
       final decoded = jsonDecode(raw);
@@ -206,6 +209,7 @@ class VisionErrorLog {
       }
       final items = decoded['items'] as List;
       final now = _clock().toUtc();
+      final importedKeys = <String>{};
       for (final value in items.take(maxEntries * 2)) {
         if (value is! Map) continue;
         final area = value['area'];
@@ -244,7 +248,32 @@ class VisionErrorLog {
         );
         if (severity.isEmpty) continue;
         final key = _fingerprint(area, code, platform);
-        if (_entries.containsKey(key)) continue;
+        // Import at most one valid cached row per fingerprint.
+        if (!importedKeys.add(key)) continue;
+        final current = _entries[key];
+        if (current != null) {
+          if (!mergeExisting) continue;
+          // The local event happened after this cached snapshot. Merge its
+          // earlier count and severity, without undoing a local resolution.
+          final total = current.count > 0x7fffffff - count
+              ? 0x7fffffff
+              : current.count + count;
+          _entries[key] = VisionErrorEntry(
+            fingerprint: key,
+            area: area,
+            code: code,
+            platform: platform,
+            severity: current.severity.index >= severity.first.index
+                ? current.severity : severity.first,
+            firstSeen: current.firstSeen.isBefore(firstTime)
+                ? current.firstSeen : firstTime,
+            lastSeen: current.lastSeen.isAfter(lastTime)
+                ? current.lastSeen : lastTime,
+            count: total,
+            resolved: current.resolved,
+          );
+          continue;
+        }
         _entries[key] = VisionErrorEntry(
           fingerprint: key,
           area: area,
