@@ -27,6 +27,29 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // The persistent telemetry key is shared by the entire installation,
+    // not partitioned by authenticated UID. A newly signed-in user must not
+    // be able to inspect the prior user's diagnostic history. Until an
+    // authenticated session-scoped projection exists, deny access to the
+    // device-wide journal in the real app. Injected logs are for isolated
+    // tests/explicitly scoped integrations; the offline smoke app is separate
+    // from login and Firebase.
+    if (widget.log == null && !_offlineTestBuild) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Vision')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Text(
+              'Diagnosticul local nu este disponibil aici până când '
+              'istoricul poate fi izolat sigur pentru sesiunea curentă. '
+              'Nu au fost șterse date și nu a fost trimis niciun raport.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
     final currentLog = widget.log ?? VisionErrorTelemetry.log;
     final entries = currentLog.entries;
     final insights = VisionDiagnosticAdvisor.assess(currentLog, maxInsights: 1);
