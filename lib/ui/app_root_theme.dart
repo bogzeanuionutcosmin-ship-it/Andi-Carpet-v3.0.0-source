@@ -10,17 +10,38 @@ class AndiCarpetaApp extends StatefulWidget {
 
 class _AndiCarpetaAppState extends State<AndiCarpetaApp> {
   late final settings = widget.settings ?? AppSettings();
+  GlobalKey<NavigatorState> _sessionNavigatorKey = GlobalKey<NavigatorState>();
+  GlobalKey<ScaffoldMessengerState> _sessionMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  String? _navigationUid;
+
+  @override
+  void initState() {
+    super.initState();
+    _navigationUid = (widget.authSources ?? _firebaseAuthGateSources()).currentUser()?.uid;
+  }
+
+  bool _replaceSessionNavigator(String? uid) {
+    if (_navigationUid == uid) return false;
+    setState(() {
+      _navigationUid = uid;
+      _sessionNavigatorKey = GlobalKey<NavigatorState>();
+      _sessionMessengerKey = GlobalKey<ScaffoldMessengerState>();
+    });
+    return true;
+  }
   @override
   Widget build(BuildContext context) {
     _activeAppSettingsForBranding = settings;
     final mode = switch (settings.theme) { AppThemeChoice.light => ThemeMode.light, AppThemeChoice.dark => ThemeMode.dark, AppThemeChoice.system => ThemeMode.system };
     return MaterialApp(
+      navigatorKey: _sessionNavigatorKey,
+      scaffoldMessengerKey: _sessionMessengerKey,
       title: 'Andi Carpetă',
       debugShowCheckedModeBanner: false,
       themeMode: mode,
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
-      home: AuthGate(settings: settings, sources: widget.authSources, activeSessionPageBuilder: widget.homeBuilder, onSettingsChanged: () => setState(() {})),
+      home: AuthGate(settings: settings, sources: widget.authSources, activeSessionPageBuilder: widget.homeBuilder, onSessionChanged: _replaceSessionNavigator, onSettingsChanged: () => setState(() {})),
     );
   }
   ThemeData _theme(Brightness b) {
