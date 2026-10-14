@@ -913,3 +913,12 @@ P1 retenție UI/profile/Home/Navigator rămâne confirmat și NEREPARAT. Rezulta
 5eee1b758be752c7cdb532dd0e384095a5f9b82d / CI 38510201809 a fost trimis înainte de verificarea integrală a rezultatului local. Python local 154 PASS / 1 FAIL: hashul tests/firestore/diurna.test.cjs este protejat de contractul PDF/routing. Fără slăbirea testului sau schimbarea manifestului, entrypointul financiar este restaurat byte-exact. Cele cinci teste de identitate sunt mutate în tests/firestore/identity-lifecycle.test.cjs cu workflow NOU dedicat test-identity-lifecycle.yml (PR/manual, demo emulator, contents:read); workflow-urile existente și configurațiile sunt intacte.
 
 Corecția trebuie validată în toate cele 5 joburi standard PLUS jobul dedicat identity emulator. Total emulator final 10 financiar + 5 identitate, numai după rezultate verificate separat. Acest addendum corectează mențiunea anterioară de folosire a entrypointului existent: acesta rămâne integral protejat. Nicio regulă Firebase/producție/migrare/deploy modificată.
+
+
+## MOD-HOME-AUTOMATIC-BACKUP-FIXTURE-20261014 — lot 21
+
+Lot 20 corectiv **1bf882e8222c067162951a63d61e8903f5945e2d**: **CI 38510323578 5/5 SUCCESS** + **38510323665 identity emulator 1/1 SUCCESS (5 tests)**. Suite standard 186 Flutter/155 Python/3 Node/10 financial emulator, smoke Dart/build web PASS. Inițial 5eee1b7 / 38510201809: Python failure hash protejat, Flutter cancelled de noul commit, celelalte 3 joburi SUCCESS; nu se confundă cancelled cu build eșuat.
+
+Două teste Flutter noi, fără modificare runtime: backup automat cu cele 15 citiri originale, status running→complete și marcarea meta/backupAutomation doar după succes, actorUid/merge/order; eroare de citire cars→failed cu mesaj controlat, fără citiri ulterioare/retry/marcaj de succes. Date complet sintetice, zero documente copiate, fără producție. Testele de rollback după scrieri parțiale sau batches de 8/300/350 nu sunt acoperite de aceste două cazuri.
+
+Fixture strict respinge SDK neprevăzut; toate caracterele de defect preexistente rămân. P1 AuthGate/Home/Navigator și ownership GPS/FCM nu sunt remediate. CI complet standard plus workflow identitate rămân obligatorii. Numărul part nu se forțează.

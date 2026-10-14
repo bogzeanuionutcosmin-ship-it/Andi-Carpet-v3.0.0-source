@@ -153,4 +153,76 @@ void main() {
     expect(maintenance.unexpected, isEmpty);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('automatic backup runs all fifteen reads, records completed status and then marks automation owner', (tester) async {
+    final sync = HomeSyncFixture(); final maintenance = HomeMaintenanceFixture()..primeExisting();
+    addTearDown(sync.close);
+    maintenance.setQuery('notifications[before:createdAt]', []);
+    maintenance.setQuery('backups[before:createdAt]', []);
+    maintenance.setDocument('meta/backupAutomation', {});
+    const names = ['users','teams','cars','locations','locationCategories','functions',
+      'schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit'];
+    for (final name in names) { maintenance.setQuery(name, []); }
+    await _mount(tester, sync, maintenance,
+      settings: AppSettings()..automaticBackup = true..autoCloseWhenAllDone = false);
+    sync.document('meta/uiSettings').add(GateFixtureSnapshot({}));
+    await flushHomeFixture(tester);
+    expect(maintenance.directWrites.length, 3);
+    final running = maintenance.directWrites[0];
+    final complete = maintenance.directWrites[1];
+    final automation = maintenance.directWrites[2];
+    expect(running.path, startsWith('backups/'));
+    expect(running.data!['status'], 'running');
+    expect(running.data!['createdBy'], 'admin');
+    expect(running.data!['collections'], names);
+    expect(running.data!['uiSettings'], {'functionSystemVersion': 'badge_v2'});
+    expect(running.merge, isFalse);
+    expect(complete.path, running.path);
+    expect(complete.data!['status'], 'complete');
+    expect(complete.data!['documentCount'], 0);
+    expect(complete.merge, isTrue);
+    expect(automation.path, 'meta/backupAutomation');
+    expect(automation.data!['lastRunBy'], 'admin');
+    expect(automation.merge, isTrue);
+    final start = maintenance.trace.indexOf('set:${running.path}');
+    expect(maintenance.trace.skip(start + 1).where((e) => e.startsWith('get:')).toList(),
+      names.map((name) => 'get:$name').toList());
+    expect(maintenance.commits, isEmpty);
+    expect(maintenance.unexpected, isEmpty);
+    await tester.pumpWidget(const SizedBox());
+    expect(sync.activeCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('automatic backup read failure records failed status without successful automation marker', (tester) async {
+    final sync = HomeSyncFixture(); final maintenance = HomeMaintenanceFixture()..primeExisting();
+    addTearDown(sync.close);
+    maintenance.setQuery('notifications[before:createdAt]', []);
+    maintenance.setQuery('backups[before:createdAt]', []);
+    maintenance.setDocument('meta/backupAutomation', {});
+    maintenance.setQuery('users', []);
+    maintenance.setQuery('teams', []);
+    maintenance.queryReads['cars'] = () => Future<QuerySnapshot<Map<String, dynamic>>>.error(StateError('synthetic backup failure'));
+    await _mount(tester, sync, maintenance,
+      settings: AppSettings()..automaticBackup = true..autoCloseWhenAllDone = false);
+    sync.document('meta/uiSettings').add(GateFixtureSnapshot({}));
+    await flushHomeFixture(tester);
+    expect(maintenance.directWrites.length, 2);
+    final running = maintenance.directWrites.first;
+    final failed = maintenance.directWrites.last;
+    expect(failed.path, running.path);
+    expect(failed.data!['status'], 'failed');
+    expect(failed.data!['error'], contains('synthetic backup failure'));
+    expect(failed.data!['documentCount'], 0);
+    expect(failed.merge, isTrue);
+    expect(maintenance.trace.where((e) => e == 'get:cars').length, 1);
+    expect(maintenance.trace.contains('get:locations'), isFalse);
+    expect(maintenance.trace.contains('set:meta/backupAutomation'), isFalse);
+    expect(maintenance.commits, isEmpty);
+    expect(maintenance.unexpected, isEmpty);
+    await tester.pumpWidget(const SizedBox());
+    expect(sync.activeCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
 }

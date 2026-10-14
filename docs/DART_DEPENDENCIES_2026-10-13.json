@@ -7048,8 +7048,8 @@
     },
     {
       "path": "test/home_admin_maintenance_characterization_test.dart",
-      "bytes": 8930,
-      "sha256": "2272e90243b62442bd3d9c7217bb0af65baae6d21fe066d2e8eda232400555db",
+      "bytes": 12827,
+      "sha256": "79753cb670e29ba5dc5fe1f930ffe956f401663bd5707b857a97888d3e39fe13",
       "owner": "test/home_admin_maintenance_characterization_test.dart",
       "directives": [
         {
