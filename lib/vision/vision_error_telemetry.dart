@@ -55,11 +55,12 @@ class VisionErrorTelemetry {
     _installed = true;
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
 
+    // Fixed identifiers only: exception class names are not diagnostic data.
     final previousFlutterHandler = FlutterError.onError;
     FlutterError.onError = (details) {
       report(
         area: 'flutter_framework',
-        code: details.exception.runtimeType.toString(),
+        code: 'framework_error',
         severity: VisionErrorSeverity.error,
       );
       // Preserve Flutter's previous reporting behavior.
@@ -74,7 +75,7 @@ class VisionErrorTelemetry {
     ui.PlatformDispatcher.instance.onError = (error, stack) {
       report(
         area: 'dart_async',
-        code: error.runtimeType.toString(),
+        code: 'uncaught_error',
         severity: VisionErrorSeverity.critical,
       );
       // Returning false when there was no handler preserves uncaught errors;

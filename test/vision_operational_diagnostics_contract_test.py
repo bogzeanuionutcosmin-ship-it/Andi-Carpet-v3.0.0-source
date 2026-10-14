@@ -64,6 +64,13 @@ class VisionOperationalDiagnosticsContracts(unittest.TestCase):
                 self.assertNotIn("$", call)
         self.assertNotIn("FirebaseFirestore.instance", TELEMETRY)
         self.assertNotIn("exception.toString()", TELEMETRY)
+        # Even exception class names are dynamic inputs, not approved codes.
+        self.assertNotIn("runtimeType.toString()", TELEMETRY)
+        self.assertEqual(TELEMETRY.count("code: 'framework_error'"), 1)
+        self.assertEqual(TELEMETRY.count("code: 'uncaught_error'"), 1)
+        # Preserve error visibility for previous framework/async handlers.
+        self.assertIn("previousFlutterHandler(details)", TELEMETRY)
+        self.assertIn("previousAsyncHandler?.call(error, stack) ?? false", TELEMETRY)
         self.assertIn("VisionErrorTelemetry.installFlutterHandlers()", MAIN)
 
     def test_user_facing_behavior_is_preserved(self):
