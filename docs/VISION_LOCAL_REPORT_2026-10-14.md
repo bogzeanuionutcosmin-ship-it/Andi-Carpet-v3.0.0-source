@@ -40,3 +40,9 @@ Proprietarul a confirmat că avatarul (salut, dans, gesturi amuzante) se decide 
 **Limită esențială:** un incident din jurnal poate declanșa o recomandare de verificare, dar nu confirmă că respectiva operațiune a eșuat definitiv sau că lipsesc alte buguri. Nu se efectuează reîncercări automate financiare, START/STOP, modificări de permisiuni sau sincronizare suplimentară. Observațiile silențioase fără excepții necesită integrare explicită ulterioară cu fluxurile reale.
 
 **CI pentru lotul nou:** rezultatele se vor trece în PR după validare. Nu confundați validarea precedentă pentru SHA `2995637e` (5/5 standard + Android offline SUCCESS) cu verificarea commiturilor suplimentare.
+
+## Lot nou — clasificarea repetițiilor fără estimări false
+
+Vision tratează o singură înregistrare ca **observație izolată** și două sau mai multe observații cu același cod/platformă ca **repetate**. În panoul de diagnostic afișează numărul exact din sumarul local; la severitate egală, incidentele repetate sunt prioritizate înaintea celor izolate, iar un incident critic singular are totuși prioritate față de o avertizare repetată. Incidentele marcate rezolvate nu produc recomandări active.
+
+**Limitare tehnică importantă:** contorul este agregat pe durata rezumatului păstrat local, nu o rată pe minut/oră și nu dovedește că defectul s-a repetat într-un interval calendaristic fix. Nu sunt generate notificări, alerte server, cereri de rețea, retry-uri sau scrieri operaționale. Teste unitare/widget pentru prag 1→2, sortare, severitate, resolved și lipsa efectelor secundare; rezultatele ultimului SHA se validează separat în CI.
