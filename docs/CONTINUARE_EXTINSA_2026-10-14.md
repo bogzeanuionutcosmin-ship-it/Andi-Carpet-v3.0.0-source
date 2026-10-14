@@ -47,3 +47,24 @@ Lot26 extrage exclusiv proiecția destinatarilor activi în admin_member_project
 Lot27 adaugă șapte teste Flutter și un contract Python: 12 rebuilds same UID/key păstrează State/tab/date/listeners/efectele; pierderea echipei anulează patru listeners și golește finanțele; parserul v2 pentru 200/200.00/200,00 și respingerea grupărilor de mii (comportamentul actual), precizie1ban/avans fără pending-as-paid; codec backup cu marker necunoscut/container independent și marker cunoscut invalid; două query reads simultane se încheie în ordine inversă fără cache/write. Proiecția Admin are dependency closure Dart pur fără SDK/Flutter/main/part. lib/ este byte-identic lotului26. Nu se modifică politica financiară, parserul OCR sau restore.
 
 Etapa3 lifecycle și etapa4 dependențe sunt avansate prin probele de mai sus; matricea de portare se livrează în checkpoint. Etapa5 este PARȚIALĂ: codec și query race, fără restore UI/commit ambiguu/concurență migrare/backend cache live. Etapa6 este PARȚIALĂ: helper monetar v2, nu dialogul privat Expense și nu certificare OCR→Firestore. Unknown schema păstrată în codec nu înseamnă acceptarea ei la restore. Caracterizările AuthGate P1, settings tardive, maintenance și badge destructive rămân intacte.
+
+## Checkpoint final de cod și starea celor opt etape
+
+| Etapă misiune | Rezultat efectiv | Rămâne explicit NEEXECUTAT |
+|---|---|---|
+|1 GPS/FCM|8 platform SDK tests, inclusiv GPS tardiv KNOWN DEFECT; CI verde lot25|token util/save/refresh/initial/opened success, GPS write/geocoding/proximity250/Web700/hardware|
+|2 Admin|proiecție pure +3unit/1dialog real cancel; CI verde lot26|edit/disable/delete/assign conturi/funcții, writes și erori UI reale|
+|3 Lifecycle|sameUID12rebuilds +team-loss/cancel; registry și matrice transplant|cache SDK persistent, context/rute și fiecare await pe toate paginile; #33 neportat|
+|4 Dependențe|closure pur proiecție, inventar complet fără cicluri/directive duplicate,78independente|cod mort neconfirmat nu este șters;59parts State păstrate|
+|5 Backup|unknown/invalid marker și deep containers; overlapping read order|restore UI/parțial/timeout/commit ambiguu/migration concurrency/rollback/backend live|
+|6 Contracte/teste|200 variante/grouping rejet/1ban/avans/pending,156Python și protected hashes|dialog privat Expense și OCR→Firestore cap-coadă|
+|7 Integrare read-only|4perechi merge-tree, SHA-uri și audit distinct/matrice completă|arbore combinat și CI de integrare, orice merge|
+|8 Continuity|ChatGpt/audit/inventar/checkpoint și PR la SHA final|niciun lucru promis în fundal|
+
+Lot25 final2f24245/38535788487 +identity38535788576:206 Flutter. Lot26 7e4ed07/38536190848 +identity38536190871:210 Flutter. Lot27 **8ae3b4c4f51c7d2385a72a0ef9bbe6ab9aadd342 /38536842858 +identity38536843047:217 Flutter**,156Python,3Node,smoke Dart/build web PASS. Emulator counts se raportează după citirea logurilor. Sunt19Flutter și1Python noi față de b8ad0f87. Checkpointul de documentație se validează pe SHA propriu și se raportează în PR.
+
+200Dart=137lib+62test/support+1script;59parts,141libraries totale,78independente lib. Regenerarea inventarului și116 hashes PASS. Runtime diff față de b8ad0f87 numai admin_member_projections.dart, o expresie recipients în communications și directive main; restul lib byte-identic. Testele financiare protejate/fișierele OCR/PDF/assets/rules/config sunt intacte.
+
+**Pas precis de reluare:** citește SHA/CI actual și acest raport, nu repeta loturile25–27. Extinde AdminPanel UI read-only/cancel/projections cu porturile existente; pentru token-write FCM, restore și mutații private documentează ce seam suplimentar ar fi necesar înainte de schimbare. Nu adăuga sessionIsCurrent/protecțiile #33 sau hook-urile Vision fără mandat de integrare separat. Prioritizează noi fixture-uri fără live I/O, apoi biblioteci clar independente; dacă private State blochează, treci la următoarea componentă sigură. Reconfirmă #34 aflat în lucru în altă sesiune.
+
+Main rămâne377f1fd;#33 a5f43ef și#29 545e020 neschimbate;#34 a avansat extern, auditul este pinned4fea0e8. Checkout #28 curat/sincronizat la finalul codului; documentația are CI propriu înaintea încheierii. Fără merge/deploy/APK/main/PR33/34/29/producție/Firebase rules/data/config/billing/versiune.

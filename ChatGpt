@@ -2244,3 +2244,15 @@ Publicare numai ramura #28, cu expected_sha și fără force. Arborele Git local
 6. Issue #30 și Vision/Error Log #19/#21 rămân pentru etapa ulterioară, fără implementare duplicată.
 
 PR #28 rămâne Draft/Open. Fără merge/main/deploy/APK/publicare web/modificare versiune/date/rules/config Firebase producție/billing/migrări reale sau modificări ale PR-urilor protejate.
+
+## CHECKPOINT-EXTENDED-MISSION-20261014 — loturi 25–27
+
+Misiune autorizată comentariul 6163825575; bază b8ad0f87, fără repetarea loturilor10–24. Cod final validat **8ae3b4c4f51c7d2385a72a0ef9bbe6ab9aadd342**: standard38536842858 **5/5 SUCCESS**, identity38536843047 SUCCESS; **217 Flutter**, **156 Python**, 3 Node, smoke Dart/build web PASS. Emulator counts se verifică în raportul PR. Trei loturi: platforme GPS/FCM reale cu SDK fakes (+8), proiecția Admin pură și dialog select-all/cancel (+4), lifecycle sameUID/team-loss, bani/avans și codec/query backup (+7), plus boundary Python (+1). **19 Flutter noi**, nu suma execuțiilor repetate.
+
+Runtime schimbat numai proiecția destinatarilor Admin într-o bibliotecă și o substituție/import-export main. Reconstrucție byte-exactă a sursei anterioare PASS; 116 protected hashes PASS. GPS/FCM/AuthGate/Vision/financiar/OCR/assets/Functions/rules/config/versiune sunt neschimbate. **200 Dart =137 lib+62 test/support+1 script; 59 parts,141 biblioteci totale,78 independente în lib**; fără missing/orphan/duplicate/cycles/directive duplicates detectate. Inventar lexical, nu dovadă de cod mort.
+
+Erori proprii de fixture păstrate: 3c8b930 și 6cdd4b8 standard CANCELLED; primul log are patru foundation-invariant failures și scenariul GPS întârziat blocat. 47159c8/38534896652 și 34f9b65/38535367840: 205 Flutter PASS/1 timeout, celelalte4 joburi SUCCESS. Corecții numai fixture: reset Android override în finally înainte de invariants, subscription sintetic capturat și cancel inițiat cu pump. Final2f24245/38535788487:206 Flutter/5of5+identity; lot26 7e4ed07/38536190848:210 Flutter/5of5+identity; lot27 8ae3b4c:217/5of5+identity. Assertions de late attach nu au fost slăbite.
+
+KNOWN DEFECT GPS confirmat sintetic: stream poate atașa după dispose la service-enabled întârziat. Nicio remediere P1 în #28. Blocaje FCM token util/write și GPS live/proximity/Web delays, Admin actions/restore/migration failures, cache SDK/hardware și OCR→Firestore rămân explicite. Integrarea #33→#28→#34 rămâne numai recomandare, fără portare. Audit actualizat pinned #34 4fea0e8; #29×#34 are conflict OCR confirmat, iar Million există numai în #34 cu hash original.
+
+Raport de execuție, starea celor8 etape și pasul următor: **docs/CONTINUARE_EXTINSA_2026-10-14.md**. Matricea de portare, registrul KNOWN DEFECT și snapshoturile: **docs/INTEGRARE_PR28_PR33_PR34_2026-10-14.md**. Nu există decizii funcționale noi pentru REGULI. Documentația finală are CI propriu, SHA/run se publică în PR fără autoreferință. Fără main/merge/deploy/APK/producție/billing/PR33/34/29.

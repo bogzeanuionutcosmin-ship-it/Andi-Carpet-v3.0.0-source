@@ -1063,3 +1063,7 @@ Publicare numai ramura #28, cu expected_sha și fără force. Arborele Git local
 6. Issue #30 și Vision/Error Log #19/#21 rămân pentru etapa ulterioară, fără implementare duplicată.
 
 PR #28 rămâne Draft/Open. Fără merge/main/deploy/APK/publicare web/modificare versiune/date/rules/config Firebase producție/billing/migrări reale sau modificări ale PR-urilor protejate.
+
+## Misiune extinsă 14.10.2026 — loturi25–27 validate
+
+19 Flutter și1 Python noi, proiecție Admin pură (fără mutație/autorizare), fixture-uri GPS/FCM platform, lifecycle/monetary/backup query. Cod8ae3b4c CI38536842858 5/5+identity38536843047;217 Flutter/156 Python/3 Node,smoke Dart/web PASS. 200 Dart/59parts/141libraries/78lib independente;116 hashes protejate PASS. Erorile/cancel/timeout ale fixture-urilor și toate limitele sunt păstrate în docs/CONTINUARE_EXTINSA_2026-10-14.md; auditul de integrare actualizat este docs/INTEGRARE_PR28_PR33_PR34_2026-10-14.md. Nu s-a remediat P1, nu s-au mutat bani/drepturi/date live și nu s-a portat #33/#34. Nu se forțează mixinurile State.
