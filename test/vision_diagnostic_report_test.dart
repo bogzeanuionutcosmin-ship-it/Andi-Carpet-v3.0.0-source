@@ -88,6 +88,59 @@ void main() {
     expect(log.encode(), before);
   });
 
+  test('summarizes open severity and resolved counts without probe pollution', () {
+    final log = create();
+    for (var i = 0; i < 3; i++) {
+      log.record(area: 'ocr', code: 'save_failed',
+          platform: 'android', severity: VisionErrorSeverity.critical);
+    }
+    log.record(area: 'fcm', code: 'token_refresh_failed',
+        platform: 'android', severity: VisionErrorSeverity.error);
+    log.record(area: 'gps', code: 'location_denied',
+        platform: 'android', severity: VisionErrorSeverity.warning);
+    expect(log.resolve('gps/location_denied/android'), isTrue);
+    for (var i = 0; i < 2; i++) {
+      log.record(area: 'vision_test', code: 'persistence_probe',
+          platform: 'android', severity: VisionErrorSeverity.critical);
+    }
+    final before = log.encode();
+    final output = VisionDiagnosticReport.build(log, generatedAt: timestamp);
+    expect(output, contains('Incidente locale: 3'));
+    expect(output, contains('Aparitii ale incidentelor: 5'));
+    expect(output, contains(
+        'Incidente deschise: 2 (critice: 1, erori: 1, avertizari: 0)'));
+    expect(output, contains('Incidente rezolvate: 1'));
+    expect(output, contains('Probe locale (nu sunt erori): 1 tipuri'));
+    expect(output, contains('Aparitii ale probelor locale: 2'));
+    expect(log.encode(), before);
+  });
+
+  test('severity totals include records truncated from bounded export', () {
+    final log = VisionErrorLog(
+        maxEntries: 200, maxBytes: 1024 * 1024, clock: () => timestamp);
+    for (var i = 0; i < 120; i++) {
+      log.record(area: 'system', code: 'warning_$i',
+          platform: 'android', severity: VisionErrorSeverity.warning);
+    }
+    log.record(area: 'gps', code: 'resolved_critical',
+        platform: 'android', severity: VisionErrorSeverity.critical);
+    expect(log.resolve('gps/resolved_critical/android'), isTrue);
+    log.record(area: 'vision_test', code: 'persistence_probe',
+        platform: 'android', severity: VisionErrorSeverity.critical);
+    final before = log.encode();
+    final output = VisionDiagnosticReport.build(log, generatedAt: timestamp);
+    expect(output, contains('Incidente locale: 121'));
+    expect(output, contains(
+        'Incidente deschise: 120 (critice: 0, erori: 0, avertizari: 120)'));
+    expect(output, contains('Incidente rezolvate: 1'));
+    expect(output, contains('Probe locale (nu sunt erori): 1 tipuri'));
+    expect(output, contains('raport limitat'));
+    expect(output, isNot(contains('gps/resolved_critical |')));
+    expect(output.length,
+        lessThanOrEqualTo(VisionDiagnosticReport.maxCharacters));
+    expect(log.encode(), before);
+  });
+
   test('synthetic probe remains visible but is not a real incident', () {
     final log = create();
     log.record(area: 'vision_test', code: 'persistence_probe',
