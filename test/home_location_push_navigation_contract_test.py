@@ -48,8 +48,8 @@ class HomeLocationPushNavigationContracts(unittest.TestCase):
 
     def test_lifecycle_keeps_start_and_disposal_of_existing_resources(self):
         for item in ('void initState()', 'void dispose()', 'Widget build(BuildContext context)',
-                     '_startCoreSync();', '_startAdaptiveLiveLocation();',
-                     'unawaited(_initPushNotifications());',
+                     '_startCoreSync();', '(widget.platformEffects?.startLocation ?? _startAdaptiveLiveLocation)();',
+                     'unawaited((widget.platformEffects?.initializePush ?? _initPushNotifications)());',
                      'for (final sub in _coreSubscriptions) { sub.cancel(); }',
                      'for (final sub in _financialSubscriptions) { sub.cancel(); }',
                      '_liveLocationTimer?.cancel();', '_backgroundLocationSubscription?.cancel();'):

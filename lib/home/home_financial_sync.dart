@@ -14,7 +14,7 @@ extension _HomeFinancialSync on _HomePageState {
       if (mounted) setState(() {});
       return;
     }
-    final db=FirebaseFirestore.instance;
+    final db=_syncDb;
     final Query<Map<String,dynamic>> expensesQuery = canViewAll ? db.collection('expenses') : db.collection('expenses').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> perDiemQuery = canViewAll ? db.collection('perDiems') : db.collection('perDiems').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> financeQuery = canViewAll ? db.collection('finance') : db.collection('finance').where('teamId',isEqualTo:scope);

@@ -31,3 +31,12 @@ CI pe SHA lot urmează. După validare: Home fixture cu Firestore și efecte pla
 ## Rezultat CI inițial și corecție fixture
 
 93da9d66ed1e5139f27dfbb1cf8f639e226cfe56 / run 38491865687: 153 teste Flutter PASS / 1 FAIL, celelalte 4 joburi SUCCESS. Eșecul este exclusiv presupunerea ordinii lifecycle: Flutter montează B înainte de dispose A, nu invers. Testul este corectat să ceară exact secvența observată mount A / mount B / dispose A. Verificările de profil A păstrat, starea A în intervalul UID și route A persistentă rămân neschimbate; CI le-a trecut și confirmă defectele în harness. Corecția nu ascunde defectele și nu modifică runtime. Run final corectiv urmează.
+
+
+## MOD-HOME-LIFECYCLE-FIXTURE-20261014 — lot 11
+
+AuthGate lot 10 validat: dee55c97690fe06fcd286541d390f466457cdc93 / CI 38492063377 **5/5 SUCCESS** (154 Flutter). Inițial 93da9d6 / 38491865687: 153 pass/1 fail numai din ordinea Flutter mount B înainte de dispose A; fixture corectat, verificările defectelor păstrate. P1 UID/profile/Navigator confirmate în harness; necesită aprobare de remediere funcțională separată, nu sunt reparate în #28.
+
+HomePage primește syncFirestore opțional și HomePlatformEffects (startLocation/initializePush), cu fallbackurile originale. Numai selecția DB core/financial și apelarea efectelor startup se adaptează; query-uri/condiții/cache-uri/ordinea/cancel și logica financiară rămân identice. Fixture Firestore local strict înregistrează fiecare listen/cancel și respinge operații neașteptate. FixtureHomePage folosește State-ul real Home prin createState moștenit; numai element.build este înlocuit cu SizedBox, pentru a nu porni I/O Dashboard/Documents. Nu este test complet UI/Android/live Firebase.
+
+Patru scenarii noi: 14 abonări member în ordinea exactă înainte de efecte, cancel/dispose; toate grupurile core member + profil/chat/notificări/settings și reconectare/error fără noi abonări; scope team financiar 4 cancel/clear/late events/dedup fără scrieri; AuthGate cu State Home real A păstrat în tranziție și B nou după snapshot. Audit admin/maintenance/seed/GPS/FCM hardware încă necesită fixture-uri distincte: nu se suprimă ori mută aceste efecte nesigure. Cache-urile private nu sunt expuse sau modificate. CI pe SHA lot urmează; înainte de verde nu se avansează. Urmează porturi read-only limitate ori LoginPageView.

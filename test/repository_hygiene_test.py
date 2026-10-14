@@ -875,8 +875,8 @@ class RepositoryHygieneTests(unittest.TestCase):
                        "class _HomePageState extends State<HomePage>"):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
-        for feature in ("_startAdaptiveLiveLocation(",
-                        "_initPushNotifications(", "_startCoreSync(",
+        for feature in ("widget.platformEffects?.startLocation ?? _startAdaptiveLiveLocation",
+                        "widget.platformEffects?.initializePush ?? _initPushNotifications", "_startCoreSync(",
                         "_openAdmin(",
                         "NavigationBar("):
             self.assertIn(feature, module)

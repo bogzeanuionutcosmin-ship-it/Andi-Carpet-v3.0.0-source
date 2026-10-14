@@ -5,7 +5,9 @@ class HomePage extends StatefulWidget {
   final VoidCallback onSettingsChanged;
   final FirebaseUserProfile profile;
   final HomeDefinitionSources? definitionSources;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources});
+  final FirebaseFirestore? syncFirestore;
+  final HomePlatformEffects? platformEffects;
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.platformEffects});
   @override State<HomePage> createState() => _HomePageState();
 }
 
@@ -13,6 +15,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   int tab = 0;
   late final String currentUserId;
   AppSettings get settings => widget.settings;
+  FirebaseFirestore get _syncDb => widget.syncFirestore ?? FirebaseFirestore.instance;
   late final List<AppUser> users;
   late final List<Team> teams;
   late final List<Car> cars;
@@ -90,8 +93,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     categories.addAll(defaultLocationCategories());
     functionDefinitions.addAll(defaultFunctionDefinitions());
     _startCoreSync();
-    _startAdaptiveLiveLocation();
-    unawaited(_initPushNotifications());
+    (widget.platformEffects?.startLocation ?? _startAdaptiveLiveLocation)();
+    unawaited((widget.platformEffects?.initializePush ?? _initPushNotifications)());
   }
 
   final List<StreamSubscription<dynamic>> _coreSubscriptions = [];
@@ -150,7 +153,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _startCoreSync() {
-    final db = FirebaseFirestore.instance;
+    final db = _syncDb;
 
     _startDefinitionsSync(db);
 
