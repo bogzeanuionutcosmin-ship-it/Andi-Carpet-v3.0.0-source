@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'tests/firestore/identity-lifecycle.test.cjs'
+      - 'test/home_platform_sdk_characterization_test.dart'
+      - 'test/support/home_platform_sdk_fixture.dart'
       - 'firestore.rules'
       - 'firebase.rules-test.json'
       - '.github/workflows/test-identity-lifecycle.yml'

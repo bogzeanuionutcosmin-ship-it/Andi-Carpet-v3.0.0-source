@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 195,
+  "dart_files": 197,
   "lib_dart_files": 136,
-  "test_dart_files": 58,
+  "test_dart_files": 60,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 136,
+  "libraries": 138,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -329,6 +329,10 @@
       "lib/main.dart",
       "test/support/home_sync_fixture.dart"
     ],
+    "test/home_platform_sdk_characterization_test.dart": [
+      "test/support/home_platform_sdk_fixture.dart",
+      "test/support/home_sync_fixture.dart"
+    ],
     "test/home_retention_queries_test.dart": [
       "lib/home/home_retention_queries.dart",
       "test/support/home_maintenance_fixture.dart"
@@ -445,6 +449,10 @@
       "lib/main.dart"
     ],
     "test/support/home_maintenance_fixture.dart": [
+      "test/support/home_sync_fixture.dart"
+    ],
+    "test/support/home_platform_sdk_fixture.dart": [
+      "lib/main.dart",
       "test/support/home_sync_fixture.dart"
     ],
     "test/support/home_sync_fixture.dart": [
@@ -7516,6 +7524,118 @@
       ]
     },
     {
+      "path": "test/home_platform_sdk_characterization_test.dart",
+      "bytes": 5655,
+      "sha256": "da801ad1ca9a87d554757c7ae3bfd98dd4c0b6ad6ee70eed3d6d886d7c83e1e7",
+      "owner": "test/home_platform_sdk_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core/firebase_core.dart';",
+          "uris": [
+            "package:firebase_core/firebase_core.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core_platform_interface/test.dart';",
+          "uris": [
+            "package:firebase_core_platform_interface/test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_messaging/firebase_messaging.dart';",
+          "uris": [
+            "package:firebase_messaging/firebase_messaging.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_messaging_platform_interface/firebase_messaging_platform_interface.dart';",
+          "uris": [
+            "package:firebase_messaging_platform_interface/firebase_messaging_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/foundation.dart';",
+          "uris": [
+            "package:flutter/foundation.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:geolocator/geolocator.dart';",
+          "uris": [
+            "package:geolocator/geolocator.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';",
+          "uris": [
+            "package:geolocator_platform_interface/geolocator_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_platform_sdk_fixture.dart';",
+          "uris": [
+            "support/home_platform_sdk_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_platform_sdk_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
       "path": "test/home_retention_queries_test.dart",
       "bytes": 3090,
       "sha256": "4dc886d87bc09fe645263efa9487f18cc58c62ca0474af225d094bc05d33fcc2",
@@ -9050,6 +9170,113 @@
         {
           "kind": "class",
           "name": "_MaintenanceBatch"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
+      "path": "test/support/home_platform_sdk_fixture.dart",
+      "bytes": 4631,
+      "sha256": "2b015a3b943946bf23d4e6da29b79a042e0758a5f0ab59f2776bb75530f2273f",
+      "owner": "test/support/home_platform_sdk_fixture.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core/firebase_core.dart';",
+          "uris": [
+            "package:firebase_core/firebase_core.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_messaging/firebase_messaging.dart';",
+          "uris": [
+            "package:firebase_messaging/firebase_messaging.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_messaging_platform_interface/firebase_messaging_platform_interface.dart';",
+          "uris": [
+            "package:firebase_messaging_platform_interface/firebase_messaging_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';",
+          "uris": [
+            "package:geolocator_platform_interface/geolocator_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'home_sync_fixture.dart';",
+          "uris": [
+            "home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "HomeGpsSdkFixture"
+        },
+        {
+          "kind": "class",
+          "name": "_FixtureNotificationSettings"
+        },
+        {
+          "kind": "class",
+          "name": "HomeFcmSdkFixture"
+        },
+        {
+          "kind": "class",
+          "name": "PlatformSdkHomePage"
+        },
+        {
+          "kind": "class",
+          "name": "_PlatformSdkHomeElement"
         }
       ],
       "top_level_functions": []
