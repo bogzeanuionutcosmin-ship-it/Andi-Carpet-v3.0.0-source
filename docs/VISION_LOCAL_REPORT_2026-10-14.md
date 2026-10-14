@@ -196,3 +196,13 @@ S-a identificat o fereastră de cursă în `VisionErrorTelemetry`: dacă un inci
 
 
 **Completare verificare de reziliență:** serializarea `log.encode()` este inclusă în granița `try/catch` a fiecărei scrieri. Dacă serializarea eșuează înainte de a ajunge la stocare (de exemplu, un clock provider temporar defect într-o simulare), coada nu rămâne permanent blocată; statusul devine `memoryOnly`, iar următorul `flush` poate reuși. Testul nou induce o eroare temporară a clock-ului și verifică recuperarea fără date pierdute. Total **7 teste noi** pentru acest lot de persistență. CI pe HEAD final, nu pe SHA-uri intermediare, stabilește verdictul.
+
+## Lot izolat — reconcilierea contorului la restore întârziat
+
+**Motiv:** fixul anterior „restore înainte de write” proteja istoricul de suprascriere, dar când un incident cu același fingerprint era primit înainte de finalizarea citirii, `VisionErrorLog.restore()` păstra intrarea RAM și ignora numărul de apariții din cache. Exemplu: `×3` istoric + o apariție la pornire se afișa `×1`, nu `×4`. Acesta este un defect de sumar local, nu o pierdere constatată de date financiare.
+
+**Fix local:** `VisionErrorLog.restore(raw, mergeExisting: true)` este folosit *numai la citirea inițială* de `VisionLocalPersistence`. Pentru intrările deja în RAM se cumulează numerele de apariții (cu plafonul int existent), se păstrează prima/ultima apariție cronologică și severitatea maximă, iar starea locală curentă de `resolved` prevalează asupra cache-ului istoric. Importul obișnuit rămâne idempotent (`mergeExisting: false` implicit). Un set de fingerprinturi importate împiedică dublarea numărătorilor chiar dacă snapshotul conține două rânduri valide identice.
+
+**Teste noi (fără I/O live):** restore blocat, eveniment nou cu același cod, cache `×3` rezolvat anterior și severitate critical → sumar activ `×4` cu cele două timestampuri corecte, serializare după write; plus două rânduri duplicate din cache care nu măresc de două ori contorul și două importuri obișnuite care rămân idempotente.
+
+**Limite:** nu se modifică politica de retenție `150/48KiB/7 zile`, structura JSON v1, tehnologia de stocare, API-uri AI, finanțe, GPS, FCM, AuthGate, permisiuni ori date reale. Nu se susține test Android Keystore fizic, multi-proces sau sincronizare multi-dispozitiv. Commitul de cod este `a8e80a5fe1e44cb64d31eda3de118b53ea75b61e`. Validarea CI oficială se raportează separat pe HEAD final al PR #34; documentarea nu reprezintă dovadă GREEN.
