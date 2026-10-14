@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'vision_error_log.dart';
+import 'vision_diagnostic_report.dart';
 import 'vision_error_telemetry.dart';
 
 /// Read-only diagnostics from THIS device only; no remote-user data queries.
@@ -40,6 +42,31 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
               },
             ),
           IconButton(
+            tooltip: 'Copiază raport tehnic anonimizat',
+            icon: const Icon(Icons.copy_all_outlined),
+            onPressed: () async {
+              final report = VisionDiagnosticReport.build(
+                widget.log ?? VisionErrorTelemetry.log,
+              );
+              try {
+                await Clipboard.setData(ClipboardData(text: report));
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text(
+                    'Raportul tehnic a fost copiat. Verifică-l înainte de distribuire.',
+                  )),
+                );
+              } catch (_) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text(
+                    'Nu s-a putut copia raportul pe acest dispozitiv.',
+                  )),
+                );
+              }
+            },
+          ),
+          IconButton(
             tooltip: 'Actualizează',
             onPressed: () => setState(() {}),
             icon: const Icon(Icons.refresh),
@@ -54,6 +81,7 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
               'Diagnostic local al acestui dispozitiv. Nu trimitem '
               'erorile la Firebase sau către un AI online. '
               'Rezumatele vechi se curăță automat după 7 zile. '
+              'Raportul se copiază doar la cerere; nu se trimite automat. '
               'Dacă nu există erori în listă, nu înseamnă că '
               'toate funcțiile au fost verificate.',
             ),
