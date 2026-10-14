@@ -104,9 +104,10 @@ void main() {
     enabled.complete(true); await flushHomeFixture(tester);
     expect(gps.starts, 1, reason: 'Historical characterization, NOT isolation acceptance');
     expect(gps.cancels, 0);
-    // Close the synthetic stream ourselves; Home already disposed before attach.
-    unawaited(gps.positions.close());
-    await flushHomeFixture(tester); // Deliver done in the widget fake-async zone.
+    // Cancel the exact late synthetic subscription explicitly. Closing an
+    // active controller in this fake-async zone can leave its done Future stuck.
+    await gps.lastSubscription!.cancel();
+    expect(gps.cancels, 1); // Fixture cleanup, not a cancellation by disposed Home.
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(seconds: 60)));
 

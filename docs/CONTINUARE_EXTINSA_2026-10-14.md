@@ -29,3 +29,5 @@ Fără merge/deploy/APK/main/PR #33/#34/#29/producție/Firebase rules/data/confi
 ### Corecție izolarea platformei în fixture
 
 Logul Flutter disponibil după anularea primei rulări arată patru eșecuri de invariants: debugDefaultTargetPlatformOverride era resetat numai în tearDown, după verificarea bindingului. Resetarea este mutată în finally al fiecărui callback testWidgets, înainte de invariants. Prima rulare standard este CANCELLED (4/5 joburi SUCCESS, Flutter CANCELLED cu cele patru failures); identity SUCCESS. Corectivul 6cdd4b8 se înlocuiește cu acest corectiv înainte de verdict final. Sunt erori de fixture proprii, fără modificare lib/ sau slăbirea aserțiunilor.
+
+47159c8 / 38534896652: standard 4/5 SUCCESS, Flutter FAILURE (timeout60s numai în scenariul de stream tardiv); celelalte șapte teste noi PASS. Resetarea platformei este validată. Curățarea este schimbată la anularea explicită a subscriptionului sintetic capturat; starts1/cancels0 înainte de această curățare rămân cerute. Nu se modifică Home sau presupune anulare runtime corectă.

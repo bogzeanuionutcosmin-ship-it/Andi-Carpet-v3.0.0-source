@@ -19,6 +19,7 @@ class HomeGpsSdkFixture extends GeolocatorPlatform {
   bool enabled = true;
   int checks = 0, starts = 0, cancels = 0;
   LocationSettings? streamSettings;
+  StreamSubscription<Position>? lastSubscription;
   late final positions = StreamController<Position>.broadcast(
     onListen: () { starts++; trace.add('listen'); },
     onCancel: () { cancels++; trace.add('cancel'); },
@@ -43,12 +44,25 @@ class HomeGpsSdkFixture extends GeolocatorPlatform {
   Stream<Position> getPositionStream({LocationSettings? locationSettings}) {
     trace.add('stream');
     streamSettings = locationSettings;
-    return positions.stream;
+    return _FixtureGpsStream(this);
   }
   @override
   Future<Position> getCurrentPosition({LocationSettings? locationSettings}) {
     trace.add('UNEXPECTED current position');
     throw StateError('Live location path must remain blocked in this fixture');
+  }
+}
+
+class _FixtureGpsStream extends Stream<Position> {
+  final HomeGpsSdkFixture owner;
+  _FixtureGpsStream(this.owner);
+  @override
+  StreamSubscription<Position> listen(void Function(Position)? onData,
+      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+    final subscription = owner.positions.stream.listen(onData,
+      onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+    owner.lastSubscription = subscription;
+    return subscription;
   }
 }
 
