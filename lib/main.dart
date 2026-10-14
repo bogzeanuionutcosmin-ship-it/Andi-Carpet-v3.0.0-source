@@ -28,33 +28,92 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'map/graph_route_calculations.dart';
+export 'map/graph_route_calculations.dart';
+import 'map/graph_road_distance.dart' as graph_routing;
+import 'reports/pdf_report_format.dart' as pdf_format;
+import 'utils/graph_names.dart';
+export 'utils/graph_names.dart';
+import 'models/app_data_models.dart';
+export 'models/app_data_models.dart';
+import 'utils/operational_dates.dart';
+export 'utils/operational_dates.dart';
+import 'learning/duration_estimates.dart';
+export 'learning/duration_estimates.dart';
+import 'models/app_enums_permissions.dart';
+export 'models/app_enums_permissions.dart';
+import 'models/location_status_and_functions.dart';
+export 'models/location_status_and_functions.dart';
+import 'models/default_categories_functions.dart';
+export 'models/default_categories_functions.dart';
+import 'models/location_category_helpers.dart';
+export 'models/location_category_helpers.dart';
+import 'models/permission_status_labels.dart';
+import 'home/home_definition_sources.dart';
+export 'home/home_definition_sources.dart';
+import 'home/home_platform_effects.dart';
+export 'home/home_platform_effects.dart';
+import 'home/home_message_queries.dart';
+export 'home/home_message_queries.dart';
+import 'home/home_identity_queries.dart';
+export 'home/home_identity_queries.dart';
+import 'home/home_system_queries.dart';
+export 'home/home_system_queries.dart';
+import 'home/home_retention_queries.dart';
+export 'home/home_retention_queries.dart';
+import 'home/home_operational_queries.dart';
+export 'home/home_operational_queries.dart';
+import 'home/seed_operational_locations.dart' as operational_location_seed;
+import 'admin/admin_navigation_catalog.dart' as admin_navigation;
+import 'admin/admin_member_projections.dart';
+import 'admin/admin_account_projections.dart';
+import 'admin/admin_backup_files.dart';
+import 'admin/file_picker_admin_backup_files.dart';
+export 'admin/admin_backup_files.dart';
+export 'admin/admin_member_projections.dart';
+export 'admin/admin_account_projections.dart';
+import 'ui/icon_badge_catalog.dart';
+import 'teams/team_selector.dart' as team_selector;
+import 'schedule/schedule_card_full.dart' as schedule_card;
+import 'ui/branding_theme_helpers.dart' as branding_helpers;
+import 'admin/backup_codec.dart' as backup_codec;
+export 'ui/branding_theme_helpers.dart' show appBrandLogo;
+import 'ui/section_visual_helpers.dart';
+export 'ui/section_visual_helpers.dart'
+    show sectionAccent, showSuccessMessage, showErrorMessage;
+import 'ui/empty_state.dart' as empty_state;
+import 'ui/money_card.dart' as money_card;
+import 'ui/info_card.dart' as info_card;
+import 'ui/stat_card.dart' as stat_card;
+import 'ui/app_backdrop.dart' as app_backdrop;
+import 'ui/install_app_buttons.dart' as install_flows;
+import 'ui/install_app_buttons_view.dart' as install_buttons;
+import 'ui/interactive_member_badges.dart' as member_badges;
+import 'ui/auth_status_views.dart' as auth_status;
+import 'bootstrap/firebase_bootstrap_error_app.dart' as bootstrap_error;
+import 'bootstrap/firebase_initialization.dart' as firebase_initialization;
+import 'map/verified_location_fix.dart' as verified_fix;
+import 'ui/dashboard_map_components.dart' as dashboard_components;
+import 'auth/account_access_views.dart' as account_access_views;
+import 'auth/quick_accounts.dart' as quick_accounts;
+import 'auth/login_alias_resolver.dart';
+import 'auth/login_page_view.dart';
+import 'auth/login_input_helpers.dart';
+import 'auth/login_actions.dart';
+export 'auth/login_actions.dart';
+import 'auth/auth_gate_sources.dart';
+export 'auth/auth_gate_sources.dart';
+import 'auth/firebase_user_profile.dart';
+export 'auth/firebase_user_profile.dart';
+import 'ui/app_capabilities_view.dart' as app_capabilities;
+export 'ui/icon_badge_catalog.dart';
+export 'models/permission_status_labels.dart';
 
-part 'ui/dashboard_map_components.dart';
-part 'ui/auth_status_components.dart';
-part 'auth/quick_accounts.dart';
-part 'ui/branding_theme_helpers.dart';
-part 'ui/install_app_buttons.dart';
-part 'bootstrap/firebase_initialization.dart';
-part 'bootstrap/firebase_bootstrap_error_app.dart';
-part 'utils/operational_dates.dart';
-part 'map/verified_location_fix.dart';
-part 'map/graph_route_calculations.dart';
+
 part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
-part 'models/app_data_models.dart';
-part 'models/app_enums_permissions.dart';
-part 'models/permission_status_labels.dart';
-part 'learning/duration_estimates.dart';
-part 'ui/section_visual_helpers.dart';
-part 'ui/app_backdrop.dart';
-part 'ui/icon_badge_catalog.dart';
-part 'ui/interactive_member_badges.dart';
-part 'models/location_category_helpers.dart';
-part 'models/default_categories_functions.dart';
-part 'models/location_status_and_functions.dart';
-part 'reports/pdf_format_helpers.dart';
 part 'ui/app_root_theme.dart';
 part 'ui/app_information_page.dart';
 part 'notifications/sms_gateway_card.dart';
@@ -64,19 +123,19 @@ part 'chat/group_chat_page.dart';
 part 'members/member_profile_page.dart';
 part 'members/members_directory_page.dart';
 part 'feedback/feedback_page.dart';
-part 'schedule/schedule_card_full.dart';
-part 'teams/team_selector.dart';
 part 'ui/page_shell.dart';
-part 'ui/summary_cards.dart';
-part 'ui/empty_state.dart';
 part 'settings/settings_page.dart';
 part 'profile/profile_page.dart';
 part 'centralizer/centralizer_page.dart';
 part 'dashboard/dashboard_page.dart';
+part 'dashboard/dashboard_work_actions.dart';
 part 'map/map_page.dart';
+part 'map/map_verified_import_actions.dart';
+part 'map/map_location_actions.dart';
 part 'expenses/expense_page.dart';
-part 'admin/admin_navigation_catalog.dart';
-part 'admin/backup_codec.dart';
+part 'expenses/expense_settlement_actions.dart';
+part 'expenses/expense_per_diem_actions.dart';
+part 'expenses/expense_document_actions.dart';
 part 'admin/admin_backup_actions.dart';
 part 'admin/admin_team_actions.dart';
 part 'admin/admin_member_actions.dart';
@@ -91,15 +150,394 @@ part 'admin/admin_settings_actions.dart';
 part 'admin/admin_backup_panel_actions.dart';
 part 'admin/admin_panel_page.dart';
 part 'schedule/program_page.dart';
-part 'auth/firebase_user_profile.dart';
+part 'schedule/program_route_learning_actions.dart';
+part 'schedule/program_graph_actions.dart';
 part 'auth/auth_gate.dart';
 part 'auth/login_registration_page.dart';
 part 'auth/account_access_pages.dart';
 part 'home/home_backup_maintenance.dart';
 part 'home/home_permission_maintenance.dart';
 part 'home/home_page.dart';
+part 'home/home_push_notifications.dart';
+part 'home/home_live_location.dart';
+part 'home/home_work_automation.dart';
+part 'home/home_navigation.dart';
+part 'home/home_sync_listeners.dart';
+part 'home/home_directory_definitions_audit_sync.dart';
+part 'home/home_financial_sync.dart';
+part 'home/home_financial_write_actions.dart';
+part 'home/home_operational_write_actions.dart';
+part 'home/home_audit_persistence.dart';
 part 'home/home_document_codecs.dart';
-part 'home/home_location_seed.dart';
+
+const String _webPushVapidKey = String.fromEnvironment(
+  'FCM_WEB_VAPID_KEY',
+  defaultValue: 'BMJikC3fON4-4uwRuMOzZRXYjQCbp2ftRsSt_PcBOpf9sTCv4VkwEkzxerxSZCMd5dyooMtHhU6hvLDeqWUkFHw',
+);
+
+Future<void> _initializeFirebaseForPlatform() async {
+  await firebase_initialization.initializeFirebaseForPlatform(
+    useNativeIosConfiguration: () => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS && !DefaultFirebaseOptions.hasIosDartConfig,
+    // Pe iOS acceptăm configurația nativă standard GoogleService-Info.plist.
+    initializeNative: () async { await Firebase.initializeApp(); },
+    initializeConfigured: () async {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    },
+  );
+}
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (Firebase.apps.isEmpty) await _initializeFirebaseForPlatform();
+}
+
+
+// Operation adapters stay lazy; LoginPage owns validation and ordering.
+LoginActions _firebaseLoginActions() => LoginActions(
+  resolveIdentifier: (identifier, password) =>
+      LoginAliasResolver(post: http.post).resolve(identifier, password),
+  createUser: ({required email, required password}) => FirebaseAuth.instance
+      .createUserWithEmailAndPassword(email: email, password: password),
+  signIn: ({required email, required password}) => FirebaseAuth.instance
+      .signInWithEmailAndPassword(email: email, password: password),
+  resetPassword: ({required email}) => FirebaseAuth.instance
+      .sendPasswordResetEmail(email: email),
+  writeProfile: (uid, data) => FirebaseFirestore.instance
+      .collection('users').doc(uid).set(data),
+);
+
+// Read-only SDK/query access stays lazy and ordered by AuthGate.
+AuthGateSources _firebaseAuthGateSources() => AuthGateSources(
+  currentUser: () => FirebaseAuth.instance.currentUser,
+  authStateChanges: () => FirebaseAuth.instance.authStateChanges(),
+  uiSettingsSnapshots: () => FirebaseFirestore.instance
+      .collection('meta').doc('uiSettings').snapshots(),
+  profileSnapshots: (uid) => FirebaseFirestore.instance
+      .collection('users').doc(uid).snapshots(includeMetadataChanges: true),
+);
+
+// Application adapter: retain the secure-storage instance, key and options.
+const FlutterSecureStorage _quickAccountStorage = FlutterSecureStorage();
+const String _quickAccountsStorageKey = 'andi_carpeta_quick_accounts_v1';
+final quick_accounts.QuickAccountStore _quickAccountStore =
+    quick_accounts.QuickAccountStore(
+  read: () => _quickAccountStorage.read(key: _quickAccountsStorageKey),
+  write: (value) => _quickAccountStorage.write(
+    key: _quickAccountsStorageKey,
+    value: value,
+  ),
+  delete: () => _quickAccountStorage.delete(key: _quickAccountsStorageKey),
+);
+
+Future<List<quick_accounts.QuickAccount>> _loadQuickAccounts() =>
+    _quickAccountStore.load();
+Future<void> _saveQuickAccounts(List<quick_accounts.QuickAccount> accounts) =>
+    _quickAccountStore.save(accounts);
+
+// Application adapter: retain the singleton and lazy initialization in main.
+/// Distanța rutieră în kilometri, pe drumuri practicabile cu automobilul.
+/// Null înseamnă că serviciul de rutare nu a putut confirma traseul.
+/// Serviciul public OSRM este destinat utilizării moderate, nu garantează SLA.
+/// Public Mapbox token supplied at build time. Never embed an sk.* secret here.
+const String kMapboxPublicToken = String.fromEnvironment('MAPBOX_ACCESS_TOKEN');
+
+String get kMapTileUrl => !kMapboxEnabled
+    ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+    : 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}?access_token=$kMapboxPublicToken';
+
+bool get kMapboxEnabled => kMapboxPublicToken.startsWith('pk.');
+final MapboxServices _mapboxServices = MapboxServices(kMapboxPublicToken);
+
+
+Future<double?> estimateGraphRoadDistanceKm(
+    List<WorkSchedule> days, List<Location> locations) async {
+  return graph_routing.calculateGraphRoadDistanceKm(
+    days, locations,
+    mapboxEnabled: kMapboxEnabled,
+    drivingKm: (points) => _mapboxServices.drivingKm(points),
+    get: (uri) => http.get(uri),
+  );
+}
+
+// Keep the existing private adapter name for callers in main.dart parts.
+Color _plainBackgroundColor(AppSettings settings, Brightness brightness) =>
+    plainBackgroundColor(settings, brightness);
+
+String _normalizeFontChoice(String? raw) =>
+    branding_helpers.normalizeFontChoice(raw);
+String? _resolvedFontFamily(String choice) =>
+    branding_helpers.resolvedFontFamily(choice);
+const Map<String, String> _bundledBackgroundAssets =
+    branding_helpers.bundledBackgroundAssets;
+const Map<String, String> _bundledBackgroundLabels =
+    branding_helpers.bundledBackgroundLabels;
+const Map<String, String> _bundledLogoAssets =
+    branding_helpers.bundledLogoAssets;
+const Map<String, String> _bundledLogoLabels =
+    branding_helpers.bundledLogoLabels;
+String _activeLogoAsset(AppSettings settings) =>
+    branding_helpers.activeLogoAsset(settings);
+Widget appBrandLogo(AppSettings settings, {double width = 520, double height = 130}) =>
+    branding_helpers.appBrandLogo(settings, width: width, height: height);
+
+dynamic _backupEncode(dynamic value) => backup_codec.encodeBackupValue(value);
+dynamic _backupDecode(dynamic value) => backup_codec.decodeBackupValue(value);
+
+Widget functionKeyWidget(String key, {double size = 32, Color? color}) =>
+    member_badges.functionKeyWidget(key, size: size, color: color);
+List<String> effectiveBadgeKeysForFunctionIds(
+        List<FunctionDefinition> defs, Iterable<String> ids) =>
+    member_badges.effectiveBadgeKeysForFunctionIds(defs, ids);
+Widget badgeStripWidget(Iterable<String> keys, {double size = 32, Color? color}) =>
+    member_badges.badgeStripWidget(keys, size: size, color: color);
+Widget memberBadgeStripWidget(
+        List<FunctionDefinition> defs, Iterable<String> functionIds,
+        {double size = 32}) =>
+    member_badges.memberBadgeStripWidget(defs, functionIds, size: size);
+
+class _TeamSelector extends StatelessWidget {
+  final List<Team> teams;
+  final int selected;
+  final ValueChanged<int> onChanged;
+  const _TeamSelector({required this.teams, required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) => team_selector.TeamSelector(
+        teams: teams,
+        selected: selected,
+        onChanged: onChanged,
+        accent: sectionAccent('Echipe'),
+      );
+}
+
+class _ScheduleCardFull extends StatelessWidget {
+  final WorkSchedule schedule;
+  final List<Location> locations;
+  final List<LocationCategory> categories;
+  final List<CentralizerRecord> records;
+  final bool canEdit;
+  final VoidCallback onAdd;
+  final void Function(ScheduleItem) onRemove;
+  final void Function(int, int) onReorder;
+
+  const _ScheduleCardFull({
+    required this.schedule,
+    required this.locations,
+    required this.categories,
+    required this.records,
+    required this.canEdit,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onReorder,
+  });
+
+  @override
+  Widget build(BuildContext context) => schedule_card.ScheduleCardFull(
+        schedule: schedule,
+        locations: locations,
+        categories: categories,
+        records: records,
+        canEdit: canEdit,
+        onAdd: onAdd,
+        onRemove: onRemove,
+        onReorder: onReorder,
+      );
+}
+
+IconData _adminSectionIcon(int index) => admin_navigation.adminSectionIcon(index);
+String _adminSectionGroup(int index) => admin_navigation.adminSectionGroup(index);
+String? _adminSectionAsset(int index) => admin_navigation.adminSectionAsset(index);
+Widget _badgeGraphic(String asset, {required double size, Color? color}) =>
+    badgeGraphic(asset, size: size, color: color);
+
+class _MoneyCard extends StatelessWidget {
+  final String title;
+  final double value;
+  final VoidCallback? onTap;
+  const _MoneyCard({required this.title, required this.value, this.onTap});
+  @override
+  Widget build(BuildContext context) =>
+      money_card.MoneyCard(title: title, value: value, onTap: onTap);
+}
+
+class _StatCard extends StatelessWidget {
+  final String title, value;
+  final IconData? icon;
+  final String? asset;
+  const _StatCard({required this.title, required this.value, this.icon, this.asset})
+      : assert(icon != null || asset != null);
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = sectionAccent(title);
+    final leading = asset != null
+        ? appAssetIcon(asset!, size: 24, accent: accent, selected: true)
+        : CircleAvatar(
+            backgroundColor: accent.withValues(alpha: .16),
+            child: Icon(icon, color: accent),
+          );
+    return stat_card.StatCard(
+      title: title,
+      value: value,
+      accent: accent,
+      leading: leading,
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title, text;
+  const _InfoCard({required this.icon, required this.title, required this.text});
+  @override
+  Widget build(BuildContext context) => info_card.InfoCard(
+        icon: icon,
+        title: title,
+        text: text,
+        accent: sectionAccent(title),
+      );
+}
+
+class _AppBackdrop extends StatelessWidget {
+  final AppSettings settings;
+  final Widget child;
+  const _AppBackdrop({required this.settings, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final selected = settings.brandingBackgroundId;
+    final bundledAsset = _bundledBackgroundAssets[selected];
+    final customId =
+        selected.startsWith('custom:') ? selected.substring('custom:'.length) : '';
+    final customData =
+        customId.isEmpty ? null : settings.customBackgrounds[customId];
+    return app_backdrop.AppBackdrop(
+      plainBackground: _plainBackgroundColor(settings, brightness),
+      bundledAsset: bundledAsset,
+      customBackgroundBase64:
+          customData == null ? null : customData['imageBase64'] ?? '',
+      backgroundOpacity: settings.backgroundOpacity,
+      child: child,
+    );
+  }
+}
+
+class _FirebaseLoading extends StatelessWidget {
+  final String text;
+  final AppSettings settings;
+  const _FirebaseLoading({required this.text, required this.settings});
+
+  @override
+  Widget build(BuildContext context) => auth_status.FirebaseLoadingView(
+        text: text,
+        logo: appBrandLogo(settings, width: 520, height: 130),
+      );
+}
+
+class _FirebaseError extends StatelessWidget {
+  final String message;
+  const _FirebaseError({required this.message});
+
+  @override
+  Widget build(BuildContext context) => auth_status.FirebaseErrorView(
+        message: message,
+        onSignOut: () => FirebaseAuth.instance.signOut(),
+      );
+}
+
+class _FirebaseBootstrapErrorApp extends StatelessWidget {
+  final String message;
+  const _FirebaseBootstrapErrorApp({required this.message});
+
+  @override
+  Widget build(BuildContext context) =>
+      bootstrap_error.FirebaseBootstrapErrorView(message: message);
+}
+
+class _VerifiedLocationFix extends verified_fix.VerifiedLocationFix {
+  const _VerifiedLocationFix({
+    required super.id,
+    super.latitude,
+    super.longitude,
+    super.status,
+    required super.verifiedAddress,
+    super.confidence = 'ridicată',
+    super.note = '',
+  });
+}
+
+
+class _StatMini extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _StatMini({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) =>
+      dashboard_components.StatMini(label: label, value: value, icon: icon);
+}
+
+class _MapStatusLegend extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _MapStatusLegend({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) =>
+      dashboard_components.MapStatusLegend(color: color, label: label);
+}
+
+Future<void> _showAndroidInstallFlow(BuildContext context, AppSettings settings) =>
+    install_flows.showAndroidInstallFlow(context, settings);
+
+Future<void> _showAppleInstallFlow(BuildContext context) =>
+    install_flows.showAppleInstallFlow(context);
+
+class _InstallAppButtons extends StatelessWidget {
+  final AppSettings settings;
+  final bool compact;
+  const _InstallAppButtons({required this.settings, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) => install_buttons.InstallAppButtonsView(
+        compact: compact,
+        onAndroidPressed: () => _showAndroidInstallFlow(context, settings),
+        onApplePressed: () => _showAppleInstallFlow(context),
+      );
+}
+
+class _Empty extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _Empty({required this.icon, required this.text});
+  @override
+  Widget build(BuildContext context) => empty_state.EmptyState(icon: icon, text: text);
+}
+
+// PDF composition adapters preserve existing private callers in PDF and JPEG exports.
+class _ApplicationPdfFonts implements pdf_format.PdfFontProvider {
+  @override
+  Future<pw.Font> regular() => PdfGoogleFonts.openSansRegular();
+
+  @override
+  Future<pw.Font> bold() => PdfGoogleFonts.openSansBold();
+
+  @override
+  Future<pw.Font> italic() => PdfGoogleFonts.openSansItalic();
+}
+
+Future<pw.ThemeData> _buildPdfTheme() =>
+    pdf_format.buildPdfTheme(_ApplicationPdfFonts());
+
+String _safeFilePart(String text) => pdf_format.safePdfFilePart(text);
+
+String _pdfDate(DateTime date) => pdf_format.formatPdfDate(date, two);
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';
@@ -128,7 +566,6 @@ Future<void> main() async {
 // PDF-urile, funcțiile dinamice și administrarea sunt integrate aici.
 // ============================================================
 
-String graphDefaultName(DateTime d) => 'Grafic ${d.month.toString().padLeft(2, '0')}/${d.year}';
 
 String idNow() => DateTime.now().microsecondsSinceEpoch.toString();
 
