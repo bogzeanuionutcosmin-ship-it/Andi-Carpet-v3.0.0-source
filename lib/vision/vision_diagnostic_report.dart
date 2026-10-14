@@ -36,13 +36,19 @@ class VisionDiagnosticReport {
     final probeOccurrences =
         probes.fold<int>(0, (total, entry) => total + entry.count);
     final incidentCount = entries.length - probeCount;
+    // Counts are already bounded by the log; report all occurrences even
+    // when individual lines are omitted from the limited export.
+    final incidentOccurrences = entries
+        .where((entry) => !_isPersistenceProbe(entry))
+        .fold<int>(0, (total, entry) => total + entry.count);
     final at = (generatedAt ?? DateTime.now()).toUtc();
     final report = StringBuffer()
       ..writeln('AndiCarpet Vision - raport tehnic local')
       ..writeln('Generat UTC: ${at.toIso8601String()}')
       ..writeln('Sursa: exclusiv acest dispozitiv; fara upload automat.')
       ..writeln('Continut: doar coduri tehnice validate, fara date personale.')
-      ..writeln('Incidente locale: $incidentCount');
+      ..writeln('Incidente locale: $incidentCount')
+      ..writeln('Aparitii ale incidentelor: $incidentOccurrences');
     if (probeCount > 0) {
       report.writeln('Probe locale (nu sunt erori): $probeCount tipuri');
       report.writeln('Aparitii ale probelor locale: $probeOccurrences');
