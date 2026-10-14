@@ -13,3 +13,8 @@ Testele sunt acceptanță pozitivă (nu KNOWN DEFECT): A→B pending/profile err
 Se folosește State Home real cu rendering substituit pentru a evita SDK acces secundar Dashboard/Documents. Profile UI pending și pagina Login sunt reale. FCM și GPS rulează metodele reale Home, cu SDK fake injectat/platform fake. Callbackul profil vechi este livrat adversarial după cancel pentru verificarea generației, nu presupunere despre livrarea normală a unui stream Dart.
 
 Local: 107 Python, 3 Node și Functions syntax PASS; Flutter/Dart indisponibile. CI RED va trebui să demonstreze assertion failures relevante, cu toate testele compilabile și controlul same UID trecut. Nu se implementează corecția înainte de citirea rezultatului RED.
+
+
+### Corecție fixture înainte de RED demonstrat
+
+39398af4579afe39e6940901e28957121b7aa8c6 / CI 38515092462: patru joburi SUCCESS, Flutter compile failure (fake FirebaseMessaging.getToken omite serviceWorkerScriptPath), 41 pass/2 load failures. NU este dovada RED pentru P1. Semnătura fake este corectată; testele AuthGate rulează acum în AndiCarpetaApp reală, cu intrări SDK opționale și aceeași navigare/temă default. Adăugat dialog implicit root Navigator pentru a evita o reparație incompletă prin Navigator numai local. Corecția funcțională încă NU este aplicată.

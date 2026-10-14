@@ -11,9 +11,9 @@ Future<void> flush(WidgetTester t) async { await t.pump(); await t.pump(); }
 
 Future<void> mount(WidgetTester tester, SessionAuth auth, SessionFirestore db,
     {AppSettings? settings, Widget Function(Key, FirebaseUserProfile, bool Function())? homeBuilder}) async {
-  await tester.pumpWidget(MaterialApp(home: AuthGate(auth: auth, firestore: db,
+  await tester.pumpWidget(AndiCarpetaApp(auth: auth, firestore: db,
     settings: settings ?? (AppSettings()..brandingBackgroundId = 'none'),
-    onSettingsChanged: () {}, homeBuilder: homeBuilder)));
+    homeBuilder: homeBuilder));
   await flush(tester);
 }
 
@@ -29,6 +29,8 @@ class _PrivatePageState extends State<_PrivatePage> {
     Text('private:${widget.profile.uid}:${widget.profile.name}'),
     FilledButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => Scaffold(body: Text('route:${widget.profile.uid}')))), child: const Text('Open private route')),
+    FilledButton(onPressed: () => showDialog<void>(context: context, builder: (_) =>
+      AlertDialog(content: Text('dialog:${widget.profile.uid}'))), child: const Text('Open private dialog')),
   ]));
 }
 
@@ -44,7 +46,7 @@ class _Push extends Fake implements FirebaseMessaging {
   @override
   Future<NotificationSettings> getNotificationSettings() async => _Permission();
   @override
-  Future<String?> getToken({String? vapidKey}) => token.future;
+  Future<String?> getToken({String? vapidKey, String? serviceWorkerScriptPath}) => token.future;
   @override
   Stream<String> get onTokenRefresh => refresh.stream;
   @override
@@ -137,6 +139,20 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('acceptance: default root dialog from A is removed at UID B', (tester) async {
+    final auth = SessionAuth(); final db = SessionFirestore();
+    addTearDown(auth.events.close); addTearDown(db.close);
+    await mount(tester, auth, db, homeBuilder: (key, profile, current) => _PrivatePage(key: key, profile: profile));
+    db.profile('a'); await flush(tester);
+    await tester.tap(find.text('Open private dialog')); await tester.pumpAndSettle();
+    expect(find.text('dialog:a'), findsOneWidget);
+    auth.switchTo('b'); await flush(tester);
+    expect(find.text('dialog:a'), findsNothing);
+    db.profile('b'); await flush(tester);
+    expect(find.text('private:b:Private b'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('acceptance: logout removes private route and login cannot revive it', (tester) async {
     final auth = SessionAuth(); final db = SessionFirestore();
     addTearDown(auth.events.close); addTearDown(db.close);
@@ -146,7 +162,7 @@ void main() {
     auth.switchTo(null); await flush(tester);
     expect(find.text('route:a'), findsNothing);
     expect(find.byType(LoginPage), findsOneWidget);
-    auth.switchTo('b'); db.profile('b'); await flush(tester);
+    auth.switchTo('b'); await flush(tester); db.profile('b'); await flush(tester);
     expect(find.text('route:a'), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
