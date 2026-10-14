@@ -41,6 +41,24 @@ class _ActiveLocation extends GeolocatorPlatform {
 }
 
 void main() {
+  testWidgets('acceptance: private root SnackBar cannot transfer from A to B loading or Home', (tester) async {
+    final auth = SessionAuth(); final db = SessionFirestore();
+    addTearDown(auth.events.close); addTearDown(db.close);
+    await harness.mount(tester, auth, db, homeBuilder: (key, profile, current) => Builder(key: key,
+      builder: (context) => Scaffold(body: FilledButton(child: Text('Show private message ${profile.uid}'),
+        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: const Duration(minutes: 1), content: Text('Private snackbar ${profile.uid}')))))));
+    db.profile('a'); await harness.flush(tester);
+    await tester.tap(find.text('Show private message a')); await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Private snackbar a'), findsOneWidget);
+    auth.switchTo('b'); await harness.flush(tester);
+    expect(find.text('Private snackbar a'), findsNothing);
+    db.profile('b'); await harness.flush(tester);
+    expect(find.text('Private snackbar a'), findsNothing);
+    expect(find.text('Show private message b'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('same UID keeps personal preferences; B resets only personal fields and preserves global settings', (tester) async {
     final auth = SessionAuth(); final db = SessionFirestore(); final homeDb = HomeSyncFixture();
     addTearDown(auth.events.close); addTearDown(db.close); addTearDown(homeDb.close);

@@ -48,3 +48,8 @@ Nu se revocă retroactiv documentele pushTokens A deja stocate pe server și nu 
 ## Lot regresii suplimentare
 
 Șase teste noi fără schimbare runtime: same UID păstrează tema/fontul dar B resetează exclusiv personal și păstrează global; State Home echipă/decont A→B cu cache nou și cancel scope financiar A; sesiunea se invalidează înainte de frame/dispose și respinge snapshot personal vechi; FCM activ scrie owner corect/refresh apoi cancel; GPS activ se atașează normal și cancel; system Back funcționează normal în aceeași sesiune. Noul fișier importă doar helperii publici din suita de acceptanță, fără a modifica testele RED/GREEN. CI pe noul SHA urmează.
+
+
+## Regresii validate și control suplimentar root chrome
+
+4a770da00364c5a0eafff4f91a27070ff2c7f3f2 / CI **38516475803 5/5 SUCCESS**, **58 Flutter PASS**, build web PASS; toate cele șase regresii noi trec. Navigator root reset nu garantează singur că ScaffoldMessenger din MaterialApp pierde mesajele SnackBar private. Se adaugă un test de acceptanță suplimentar pentru SnackBar A→B, înainte de eventuala corecție a ownership-ului messenger. Nu este schimbat runtime în acest lot.
