@@ -30,7 +30,7 @@ extension _HomePushNotifications on _HomePageState {
     if (!mounted || otherUserId.trim().isEmpty || otherUserId == currentUserId) return;
     if (!isAdmin && _hiddenUserIds.contains(otherUserId)) return;
     try {
-      final snap = await FirebaseFirestore.instance.collection(isAdmin ? 'users' : 'memberDirectory').doc(otherUserId).get();
+      final snap = await _pushDb.collection(isAdmin ? 'users' : 'memberDirectory').doc(otherUserId).get();
       if (!mounted) return;
       final d = snap.data() ?? <String, dynamic>{};
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => PrivateChatPage(
@@ -49,7 +49,7 @@ extension _HomePushNotifications on _HomePageState {
   Future<void> _savePushToken(String token) async {
     if (token.trim().isEmpty) return;
     final platform = kIsWeb ? 'web' : defaultTargetPlatform.name;
-    await FirebaseFirestore.instance
+    await _pushDb
         .collection('users').doc(currentUserId)
         .collection('pushTokens').doc(_pushTokenDocId(token))
         .set({

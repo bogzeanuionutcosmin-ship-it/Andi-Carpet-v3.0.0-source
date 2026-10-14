@@ -7,12 +7,13 @@ class HomePage extends StatefulWidget {
   final HomeDefinitionSources? definitionSources;
   final FirebaseFirestore? syncFirestore;
   final FirebaseFirestore? maintenanceFirestore;
+  final FirebaseFirestore? pushFirestore;
   final HomePlatformEffects? platformEffects;
   final HomeMessageQueries? messageQueries;
   final HomeIdentityQueries? identityQueries;
   final HomeOperationalQueries? operationalQueries;
   final HomeSystemQueries? systemQueries;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.maintenanceFirestore, this.platformEffects, this.messageQueries, this.identityQueries, this.operationalQueries, this.systemQueries});
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.maintenanceFirestore, this.pushFirestore, this.platformEffects, this.messageQueries, this.identityQueries, this.operationalQueries, this.systemQueries});
   @override State<HomePage> createState() => _HomePageState();
 }
 
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   AppSettings get settings => widget.settings;
   FirebaseFirestore get _syncDb => widget.syncFirestore ?? FirebaseFirestore.instance;
   FirebaseFirestore get _maintenanceDb => widget.maintenanceFirestore ?? FirebaseFirestore.instance;
+  FirebaseFirestore get _pushDb => widget.pushFirestore ?? FirebaseFirestore.instance;
   late final List<AppUser> users;
   late final List<Team> teams;
   late final List<Car> cars;

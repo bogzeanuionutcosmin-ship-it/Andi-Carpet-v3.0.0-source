@@ -6,6 +6,8 @@ on:
     paths:
       - 'tests/firestore/identity-lifecycle.test.cjs'
       - 'test/home_platform_sdk_characterization_test.dart'
+      - 'test/home_fcm_valid_token_characterization_test.dart'
+      - 'test/support/home_fcm_write_fixture.dart'
       - 'test/support/home_platform_sdk_fixture.dart'
       - 'firestore.rules'
       - 'firebase.rules-test.json'

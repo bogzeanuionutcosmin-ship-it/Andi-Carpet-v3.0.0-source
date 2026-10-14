@@ -22,3 +22,19 @@ Fără merge/deploy/APK/main/PR33/34/29/Firebase production/rules/config/billing
 
 ### Eșec inițial păstrat
 20675e1/38541395111:223FlutterPASS/1FAIL,4alte standardSUCCESS;identity38541395031SUCCESS. Focused function editor cancel dispose controller înainte de reverse animation (runtime nemodificat). Testul cere eroarea exactă et whitelist numai cascade framework observate; zeroFirebase et drepturi intacte rămân obligatorii. Nu este remediere; KNOWN DEFECT explicit. CI corectiv urmează.
+
+## B — FCM (lot30)
+
+A finalc42a5b5e/38541891674 5/5SUCCESS+identity38541892239SUCCESS,224Flutter. Nu remediem controller cancel.
+
+Seam minim propus înainte de schimbare: pushFirestore optional în Home, default FirebaseFirestore.instance, numai două puncte DB (token set et open-chat get). Source inversion byte-exact PASS. Șase SDK/State tests noi, fără rendering Home sau hardware: usable-token path payload/owner/ID/merge, refresh/cancel, await write gate, refresh-stream error fără retry, initial/opened delayed-dispose, tokenA după Home keyB (KNOWN DEFECT). Fake rejectA evită successful late attach necurățabil; nicio afirmație de acceptanță AuthGate sau server ownership.
+
+| Await/eveniment | UID/efect actual | Probe efectivă |
+|---|---|---|
+| permission/getToken | currentUserId final din State la init; fără post-await ownership guard | tokenA întârziat după B încearcă pathA; reject fake, nu write live |
+| savePushToken | users/UID/pushTokens/base64URL, merge payload, serverTimestamp | write gate blochează attach et initial; rejection nu retry |
+| onTokenRefresh | closure din State, unawaited savePushToken | success/update/cancel et stream error; write error NEEXECUTAT |
+| getInitialMessage | chat programează post-frame openChat | după dispose guard mounted oprește DB read |
+| onMessageOpenedApp/openChat get | memberDirectory pentru member, guard înainte et după get | opened citește o dată; dispose înainte de rezultat oprește route |
+
+FCM initial/live route success, unawaited refresh write failure, late success attach/cancel ownership, Web700 et GPS live rămân NEEXECUTATE. Cele116hashuri intacte;156PythonlocalPASS;206Dart/59parts/147libraries/79independent lib. CI exact urmează.
