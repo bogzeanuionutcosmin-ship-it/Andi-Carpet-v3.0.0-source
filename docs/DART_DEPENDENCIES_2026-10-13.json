@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 208,
+  "dart_files": 209,
   "lib_dart_files": 138,
-  "test_dart_files": 69,
+  "test_dart_files": 70,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 149,
+  "libraries": 150,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -360,6 +360,11 @@
     ],
     "test/home_message_queries_test.dart": [
       "lib/home/home_message_queries.dart",
+      "test/support/home_sync_fixture.dart"
+    ],
+    "test/home_migration_failure_characterization_test.dart": [
+      "lib/main.dart",
+      "test/support/home_maintenance_fixture.dart",
       "test/support/home_sync_fixture.dart"
     ],
     "test/home_operational_queries_test.dart": [
@@ -8037,6 +8042,73 @@
       ],
       "declarations": [],
       "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/home_migration_failure_characterization_test.dart",
+      "bytes": 5022,
+      "sha256": "5e079c769cfef456eeaf6b53199679f1e618aad5b5e67bacfb399aacb459c0fc",
+      "owner": "test/home_migration_failure_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_maintenance_fixture.dart';",
+          "uris": [
+            "support/home_maintenance_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_maintenance_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "mountMigration",
         "main"
       ]
     },

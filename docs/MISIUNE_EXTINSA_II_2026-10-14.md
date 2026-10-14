@@ -56,3 +56,17 @@ Două callbackuri opționale numai pentru selecție imagine et recunoaștere; de
 |OCR throw/save throw|manual fallback, error et zero retry/evidence/success|
 
 Initial local Python contract1FAIL căuta literal apel fără seam; adaptat să ceară fallback recognizer original de exact2ori, păstrând checks dedup/amount/await.156PythonPASS ulterior;116hashuri intacte.208Dart/59parts/149libraries/79independent lib. CI exact urmează; grouped amounts nu sunt declarate corecte, parserul nu este schimbat. Server rights Issue32/PR29 et hardware/cache SDK rămân în afara probelor.
+
+## C — migration partial/future-schema (lot32); restore blocat
+
+Două teste noi prin maintenanceFirestore existent; runtime lib/byte-identic lot31. Rejection al batch2 după350deletions confirmate, unawaited StateError observat exact în zone de test, zero marker/retry/rollback et snapshots nemutate; versiune necunoscutăbadge_v3 declanșează ștergerea definiției, golirea atribuirilor et markerbadge_v2 (KNOWN DEFECT). Nu se certifică integritatea drepturilor finale DB. Niciun delete financiar/diurnă/sală în aceste scenarii. Rejection fake înainte de commit, nu network ambiguity.
+
+### Restore audit, fără probă dinamică
+
+- AdminPanel.backup UI folosește singleton Firestore pentru două snapshots; actions folosesc singleton/FilePicker. Home maintenanceFirestore nu se propagă aici. Nu există port Admin read/write/file existent pentru full-restore; no new seam conform scopeC.
+- Automatic cancel return precede DB access; dialogul prezintă ID et avertisment general, nu preview al documentelor. Afirmație din sursă, NEEXECUTAT widget.
+- Automatic accept verifică statuscomplete/items și preflight ID/duplicates/data; metadata schema version necunoscută nu are guard dedicat. Collection absent nu e golită; valid group este înlocuit prin delete300/set8, non-atomic. Nu pretindem păstrarea documentelor existente după accept.
+- Manual formatV1/preflight/allowed groups înainte de confirmation/deletion400. File decode/JSON parse sunt în afara preflight try; unknown groups ignorate, empty validated poate tot ajunge la marker-success. Save/partial failure/timeout/concurrent restore fără dinamica seam-ului rămân NEEXECUTATE.
+- Nicio modificare de schema, drepturi, finanțe, jurnal Vision/offline operations sau rollback. Backup retention/codec/race lot27 și22–24 nu se repetă.
+
+210Dart/59parts/151libraries/79independent lib;156PythonPASSlocal et116hashuri intacte. CI exact urmează.
