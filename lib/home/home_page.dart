@@ -4,7 +4,13 @@ class HomePage extends StatefulWidget {
   final AppSettings settings;
   final VoidCallback onSettingsChanged;
   final FirebaseUserProfile profile;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile});
+  final FirebaseFirestore? firestore;
+  final FirebaseMessaging? messaging;
+  final Stream<RemoteMessage>? messageOpenedApp;
+  final VoidCallback? startLocation;
+  final Future<void> Function()? initializePush;
+  final bool Function()? sessionIsCurrent;
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.firestore, this.messaging, this.messageOpenedApp, this.startLocation, this.initializePush, this.sessionIsCurrent});
   @override State<HomePage> createState() => _HomePageState();
 }
 
@@ -12,6 +18,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   int tab = 0;
   late final String currentUserId;
   AppSettings get settings => widget.settings;
+  bool get _sessionActive => mounted && (widget.sessionIsCurrent?.call() ?? true);
+
+  void _scheduleSettingsChanged() {
+    if (!_sessionActive) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_sessionActive) widget.onSettingsChanged();
+    });
+  }
   late final List<AppUser> users;
   late final List<Team> teams;
   late final List<Car> cars;
@@ -86,14 +100,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     categories.addAll(defaultLocationCategories());
     functionDefinitions.addAll(defaultFunctionDefinitions());
     _startCoreSync();
-    _startAdaptiveLiveLocation();
-    unawaited(_initPushNotifications());
+    (widget.startLocation ?? _startAdaptiveLiveLocation)();
+    unawaited((widget.initializePush ?? _initPushNotifications)());
   }
 
   void _showIncomingPopup({required String title, required String body, VoidCallback? onView}) {
-    if (!mounted) return;
+    if (!_sessionActive) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_sessionActive) return;
       final messenger = ScaffoldMessenger.maybeOf(context);
       if (messenger == null) return;
       messenger
@@ -116,11 +130,11 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   Future<void> _openChatFromAlert(String otherUserId) async {
-    if (!mounted || otherUserId.trim().isEmpty || otherUserId == currentUserId) return;
+    if (!_sessionActive || otherUserId.trim().isEmpty || otherUserId == currentUserId) return;
     if (!isAdmin && _hiddenUserIds.contains(otherUserId)) return;
     try {
       final snap = await FirebaseFirestore.instance.collection(isAdmin ? 'users' : 'memberDirectory').doc(otherUserId).get();
-      if (!mounted) return;
+      if (!_sessionActive) return;
       final d = snap.data() ?? <String, dynamic>{};
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => PrivateChatPage(
         currentUser: me,
@@ -129,16 +143,16 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         otherPhotoBase64: (d['photoBase64'] ?? '').toString(),
       )));
     } catch (_) {
-      if (mounted) _openMembersDirectory();
+      if (_sessionActive) _openMembersDirectory();
     }
   }
 
   String _pushTokenDocId(String token) => base64UrlEncode(utf8.encode(token)).replaceAll('=', '');
 
   Future<void> _savePushToken(String token) async {
-    if (token.trim().isEmpty) return;
+    if (!_sessionActive || token.trim().isEmpty) return;
     final platform = kIsWeb ? 'web' : defaultTargetPlatform.name;
-    await FirebaseFirestore.instance
+    await (widget.firestore ?? FirebaseFirestore.instance)
         .collection('users').doc(currentUserId)
         .collection('pushTokens').doc(_pushTokenDocId(token))
         .set({
@@ -152,10 +166,10 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _offerPushPermissionAutomatically() {
-    if (_pushPermissionDialogShown || !mounted) return;
+    if (_pushPermissionDialogShown || !_sessionActive) return;
     _pushPermissionDialogShown = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_sessionActive) return;
       showDialog<void>(
         context: context,
         barrierDismissible: true,
@@ -191,18 +205,20 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   Future<void> _initPushNotifications({bool fromUserGesture = false}) async {
-    if (_pushInitializationInFlight) return;
+    if (!_sessionActive || _pushInitializationInFlight) return;
     _pushInitializationInFlight = true;
     try {
-      final messaging = FirebaseMessaging.instance;
+      final messaging = widget.messaging ?? FirebaseMessaging.instance;
 
       NotificationSettings permission;
       if (kIsWeb && fromUserGesture) {
         // Pe Web (inclusiv PWA iPhone), cererea trebuie lansată direct dintr-un
         // gest al utilizatorului. Nu facem niciun await înainte de apelul acesta.
         permission = await messaging.requestPermission(alert: true, badge: true, sound: true);
+        if (!_sessionActive) return;
       } else {
         permission = await messaging.getNotificationSettings();
+        if (!_sessionActive) return;
         if (permission.authorizationStatus == AuthorizationStatus.notDetermined) {
           if (kIsWeb) {
             // Nu cerem utilizatorului să intre în Profil. Afișăm automat dialogul
@@ -211,6 +227,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
             return;
           }
           permission = await messaging.requestPermission(alert: true, badge: true, sound: true);
+          if (!_sessionActive) return;
         }
       }
 
@@ -231,17 +248,20 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         }
         // După acordarea permisiunii, dăm service worker-ului o clipă să fie gata.
         await Future<void>.delayed(const Duration(milliseconds: 700));
+        if (!_sessionActive) return;
       }
 
       final token = kIsWeb
           ? await messaging.getToken(vapidKey: _webPushVapidKey)
           : await messaging.getToken();
+      if (!_sessionActive) return;
       if (token == null || token.trim().isEmpty) {
         debugPrint('[push] Firebase Messaging nu a returnat un token.');
         return;
       }
 
       await _savePushToken(token);
+      if (!_sessionActive) return;
       debugPrint('[push] Token FCM înregistrat AUTOMAT și salvat pentru $currentUserId.');
 
       if (!_pushListenersAttached) {
@@ -250,7 +270,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           (value) => unawaited(_savePushToken(value)),
           onError: (Object error) => debugPrint('[push] onTokenRefresh: $error'),
         ));
-        _coreSubscriptions.add(FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _coreSubscriptions.add((widget.messageOpenedApp ?? FirebaseMessaging.onMessageOpenedApp).listen((message) {
           final type = (message.data['type'] ?? '').toString();
           if (type == 'chat') {
             final senderId = (message.data['senderId'] ?? '').toString();
@@ -260,6 +280,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       }
 
       final initial = await messaging.getInitialMessage();
+      if (!_sessionActive) return;
       if (initial != null && (initial.data['type'] ?? '').toString() == 'chat') {
         final senderId = (initial.data['senderId'] ?? '').toString();
         if (senderId.isNotEmpty) {
@@ -277,6 +298,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _startAdaptiveLiveLocation() {
+    if (!_sessionActive) return;
     _liveLocationTimer?.cancel();
     _liveLocationTimer = null;
     _backgroundLocationSubscription?.cancel();
@@ -292,13 +314,18 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   Future<void> _startNativeBackgroundLocationStream() async {
+    if (!_sessionActive) return;
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return;
+      if (!_sessionActive) return;
       var permission = await Geolocator.checkPermission();
+      if (!_sessionActive) return;
       if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+      if (!_sessionActive) return;
       if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
 
       await _backgroundLocationSubscription?.cancel();
+      if (!_sessionActive) return;
       _backgroundLocationSubscription = null;
 
       // Mod economic: cât timp suntem departe de următoarea sală folosim mai puține
@@ -414,10 +441,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   Future<void> _shareLiveLocationIfAllowed([Position? suppliedPosition]) async {
+    if (!_sessionActive) return;
     try {
       final permission = await Geolocator.checkPermission();
+      if (!_sessionActive) return;
       if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
       if (!await Geolocator.isLocationServiceEnabled()) return;
+      if (!_sessionActive) return;
       final now = DateTime.now();
       final workDate = operationalWorkDate(now);
       final inWork = isInsideWorkWindow(now, workDate);
@@ -447,6 +477,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
       final accuracy = effectiveMode == 'live' || inWork ? LocationAccuracy.high : LocationAccuracy.medium;
       final p = suppliedPosition ?? await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: accuracy));
+      if (!_sessionActive) return;
       _updateNativeLocationProximityBoost(p, workDate);
       var moved = true;
       if (_lastSharedPosition != null) {
@@ -458,6 +489,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       if (!moved && !heartbeatDue) return;
       final myTeam = me.teamId;
       final localityLabel = await _resolveLiveLocality(p);
+      if (!_sessionActive) return;
       await FirebaseFirestore.instance.collection('liveLocations').doc(currentUserId).set({
         'userId': currentUserId,
         'name': me.name,
@@ -471,6 +503,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         'localityLabel': localityLabel,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+      if (!_sessionActive) return;
       _lastSharedPosition = p;
       _lastSharedAt = now;
       await _applyWorkAutomationFromPosition(p, now, workDate);
@@ -598,7 +631,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       'Ai ajuns la ${item.locationNameSnapshot}',
       'Ești la aproximativ ${meters.round()} m. Ai început lucrul sau ești în așteptare?',
     );
-    if (!mounted || _arrivalDialogOpen) return;
+    if (!_sessionActive || _arrivalDialogOpen) return;
 
     _arrivalDialogOpen = true;
     _arrivalPromptCounts[key] = (_arrivalPromptCounts[key] ?? 0) + 1;
@@ -622,7 +655,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       ),
     );
     _arrivalDialogOpen = false;
-    if (!mounted) return;
+    if (!_sessionActive) return;
 
     if (choice == 'later') {
       _arrivalSnoozedUntil[key] = DateTime.now().add(const Duration(minutes: 10));
@@ -657,9 +690,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     try {
       await _saveRecordDirect(started);
       log('INTRĂ confirmat la sosire', '${item.locationNameSnapshot} · ${timeText(now)}');
-      if (mounted) showSuccessMessage(context, 'Lucrarea a început la ${item.locationNameSnapshot}.');
+      if (_sessionActive) showSuccessMessage(context, 'Lucrarea a început la ${item.locationNameSnapshot}.');
     } catch (e) {
-      if (mounted) showErrorMessage(context, 'Pornirea lucrării nu a putut fi salvată: $e');
+      if (_sessionActive) showErrorMessage(context, 'Pornirea lucrării nu a putut fi salvată: $e');
     }
   }
 
@@ -679,9 +712,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     try {
       await _saveRecordDirect(waiting);
       log('Așteptare confirmată la sosire', '${item.locationNameSnapshot} · ${timeText(now)}');
-      if (mounted) showSuccessMessage(context, 'Așteptarea a fost pornită la ${item.locationNameSnapshot}.');
+      if (_sessionActive) showSuccessMessage(context, 'Așteptarea a fost pornită la ${item.locationNameSnapshot}.');
     } catch (e) {
-      if (mounted) showErrorMessage(context, 'Așteptarea nu a putut fi salvată: $e');
+      if (_sessionActive) showErrorMessage(context, 'Așteptarea nu a putut fi salvată: $e');
     }
   }
 
@@ -756,30 +789,34 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     _financialSubscriptions.clear();
     expenses.clear(); perDiems.clear(); finances.clear(); settlements.clear();
     if (scope == null || scope.isEmpty) {
-      if (mounted) setState(() {});
+      if (_sessionActive) setState(() {});
       return;
     }
-    final db=FirebaseFirestore.instance;
+    final db=widget.firestore ?? FirebaseFirestore.instance;
     final Query<Map<String,dynamic>> expensesQuery = canViewAll ? db.collection('expenses') : db.collection('expenses').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> perDiemQuery = canViewAll ? db.collection('perDiems') : db.collection('perDiems').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> financeQuery = canViewAll ? db.collection('finance') : db.collection('finance').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> settlementQuery = canViewAll ? db.collection('settlements') : db.collection('settlements').where('teamId',isEqualTo:scope);
     _financialSubscriptions.add(expensesQuery.snapshots().listen((snap){
+        if (!_sessionActive) return;
       final list=snap.docs.map(_expenseFromDoc).toList()..sort((a,b)=>a.date.compareTo(b.date));
-      if(!mounted)return;setState((){expenses..clear()..addAll(list);});
-    },onError:(Object e){if(mounted)setState(()=>coreSyncError='Cheltuieli: $e');}));
+      if(!_sessionActive)return;setState((){expenses..clear()..addAll(list);});
+    },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Cheltuieli: $e');}));
     _financialSubscriptions.add(perDiemQuery.snapshots().listen((snap){
+        if (!_sessionActive) return;
       final list=snap.docs.map(_perDiemFromDoc).toList()..sort((a,b)=>a.date.compareTo(b.date));
-      if(!mounted)return;setState((){perDiems..clear()..addAll(list);});
-    },onError:(Object e){if(mounted)setState(()=>coreSyncError='Diurne: $e');}));
+      if(!_sessionActive)return;setState((){perDiems..clear()..addAll(list);});
+    },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Diurne: $e');}));
     _financialSubscriptions.add(financeQuery.snapshots().listen((snap){
+        if (!_sessionActive) return;
       final list=snap.docs.map(_financeFromDoc).toList();
-      if(!mounted)return;setState((){finances..clear()..addAll(list);});
-    },onError:(Object e){if(mounted)setState(()=>coreSyncError='Financiar: $e');}));
+      if(!_sessionActive)return;setState((){finances..clear()..addAll(list);});
+    },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Financiar: $e');}));
     _financialSubscriptions.add(settlementQuery.snapshots().listen((snap){
+        if (!_sessionActive) return;
       final list=snap.docs.map(_settlementFromDoc).toList()..sort((a,b)=>b.startDate.compareTo(a.startDate));
-      if(!mounted)return;setState((){settlements..clear()..addAll(list);});
-    },onError:(Object e){if(mounted)setState(()=>coreSyncError='Deplasări: $e');}));
+      if(!_sessionActive)return;setState((){settlements..clear()..addAll(list);});
+    },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Deplasări: $e');}));
   }
 
   Future<void> _runAutomaticMaintenance() async {
@@ -812,6 +849,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (!isAdmin) return;
     _coreSubscriptions.add(
       db.collection('audit').orderBy('at', descending: true).limit(500).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map((doc) {
           final d = doc.data();
           return AuditEntry(
@@ -822,14 +860,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
             at: _dateFrom(d['at']) ?? DateTime.now(),
           );
         }).toList();
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           audit
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Audit: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Audit: $e');
       }),
     );
   }
@@ -837,6 +875,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void _startDefinitionsSync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       db.collection('locationCategories').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedDefinitionsIfNeeded());
           return;
@@ -846,13 +885,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           final item = _categoryFromDoc(doc);
           _categoryCache[item.id] = _encoded(_categoryMap(item));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() { categories..clear()..addAll(list); });
-      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Categorii: $e'); }),
+      }, onError: (Object e) { if (_sessionActive) setState(() => coreSyncError = 'Categorii: $e'); }),
     );
 
     _coreSubscriptions.add(
       db.collection('backgrounds').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final next=<String,Map<String,String>>{};
         for(final doc in snap.docs){
           final d=doc.data();
@@ -861,14 +901,15 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           if(image.isEmpty)continue;
           next[doc.id]={'name':(d['name']??doc.id).toString(),'imageBase64':image};
         }
-        if(!mounted)return;
+        if(!_sessionActive)return;
         setState((){settings.customBackgrounds..clear()..addAll(next);});
-        WidgetsBinding.instance.addPostFrameCallback((_)=>widget.onSettingsChanged());
-      },onError:(Object e){if(mounted)setState(()=>coreSyncError='Fundaluri: $e');}),
+        _scheduleSettingsChanged();
+      },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Fundaluri: $e');}),
     );
 
     _coreSubscriptions.add(
       db.collection('functions').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedDefinitionsIfNeeded());
           return;
@@ -878,11 +919,11 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           final item = _functionFromDoc(doc);
           _functionCache[item.id] = _encoded(_functionMap(item));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() { functionDefinitions..clear()..addAll(list); });
         _startFinancialSync();
         if (isAdmin) unawaited(_syncUserPermissionSnapshots());
-      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Funcții: $e'); }),
+      }, onError: (Object e) { if (_sessionActive) setState(() => coreSyncError = 'Funcții: $e'); }),
     );
 
   }
@@ -890,6 +931,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void _startDirectorySync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       (isAdmin ? db.collection('users') : db.collection('memberDirectory')).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map((doc) {
           final d = doc.data();
           final roleText = (d['role'] ?? 'member').toString();
@@ -916,7 +958,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
             // Fundalul este global și este controlat exclusiv de Admin.
             settings.personalBackgroundId = 'global';
             settings.fontFamily = personalFont;
-            if (visualChanged) WidgetsBinding.instance.addPostFrameCallback((_) => widget.onSettingsChanged());
+            if (visualChanged) _scheduleSettingsChanged();
           }
           final functionIds = d['functionIds'] is List
               ? (d['functionIds'] as List).map((e) => e.toString()).where((e) => e.isNotEmpty).toList()
@@ -942,7 +984,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           if (a.role != b.role) return a.role == UserRole.director ? -1 : 1;
           return a.name.toLowerCase().compareTo(b.name.toLowerCase());
         });
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           _hiddenUserIds
             ..clear()
@@ -965,7 +1007,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         });
         _startFinancialSync();
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Conturi: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Conturi: $e');
       }),
     );
 
@@ -975,8 +1017,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     // Datele private ale contului propriu nu sunt in directorul public.
     if (!isAdmin) _coreSubscriptions.add(
       db.collection('users').doc(currentUserId).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final d = snap.data();
-        if (d == null || !mounted) return;
+        if (d == null || !_sessionActive) return;
         _personalLocationMode = (d['locationMode'] ?? 'economic').toString();
         _personalLocationIntervalMinutes = (d['locationIntervalMinutes'] is num)
             ? (d['locationIntervalMinutes'] as num).toInt().clamp(1, 60).toInt() : 10;
@@ -997,8 +1040,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         settings.theme = personalTheme;
         settings.personalBackgroundId = 'global';
         settings.fontFamily = personalFont;
-        if (visualChanged) WidgetsBinding.instance.addPostFrameCallback((_) => widget.onSettingsChanged());
-      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Profil propriu: $e'); }),
+        if (visualChanged) _scheduleSettingsChanged();
+      }, onError: (Object e) { if (_sessionActive) setState(() => coreSyncError = 'Profil propriu: $e'); }),
     );
 
   }
@@ -1006,12 +1049,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void _startOperationsSync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       db.collection('teams').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_teamFromDoc).toList()..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         for (final doc in snap.docs) {
           final t = _teamFromDoc(doc);
           _teamCache[doc.id] = _encoded(_teamMap(t));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           teams
             ..clear()
@@ -1020,30 +1064,32 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         });
         _startFinancialSync();
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Echipe: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Echipe: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('cars').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_carFromDoc).toList()..sort((a, b) => a.plate.compareTo(b.plate));
         for (final doc in snap.docs) {
           final c = _carFromDoc(doc);
           _carCache[doc.id] = _encoded(_carMap(c));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           cars
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Mașini: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Mașini: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('locations').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedLocationsIfNeeded());
           return;
@@ -1053,45 +1099,47 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           final l = _locationFromDoc(doc);
           _locationCache[doc.id] = _encoded(_locationMap(l));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           locations
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Locații: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Locații: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('schedules').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_scheduleFromDoc).toList()
           ..sort((a, b) => a.date.compareTo(b.date));
         for (final doc in snap.docs) {
           final item = _scheduleFromDoc(doc);
           _scheduleCache[doc.id] = _encoded(_scheduleMap(item));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           schedules
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Grafice de lucru: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Grafice de lucru: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('records').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_recordFromDoc).toList()
           ..sort((a, b) => (a.startedAt ?? DateTime(2000)).compareTo(b.startedAt ?? DateTime(2000)));
         for (final doc in snap.docs) {
           final item = _recordFromDoc(doc);
           _recordCache[doc.id] = _encoded(_recordMap(item));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           records
             ..clear()
@@ -1099,7 +1147,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         });
         unawaited(_maybeAutoCloseResolvedSchedules(operationalWorkDate(DateTime.now())));
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Execuții: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Execuții: $e');
       }),
     );
 
@@ -1112,6 +1160,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         : db.collection('notifications').where('userId', isEqualTo: currentUserId);
     _coreSubscriptions.add(
       notificationQuery.snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_notificationFromDoc).toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         final ownUnread = snap.docs.where((d) {
@@ -1140,14 +1189,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           }
           _knownNotificationIds.addAll(snap.docs.map((d) => d.id));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           notifications
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Notificări: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Notificări: $e');
       }),
     );
 
@@ -1168,6 +1217,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
     _coreSubscriptions.add(
       db.collection('chatMessages').where('recipientId', isEqualTo: currentUserId).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final unread = snap.docs.where((d) {
           final data = d.data();
           final deletedFor = data['deletedFor'];
@@ -1204,12 +1254,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         _unreadPrivateMessageCount = unread.length;
         _refreshUnreadMessageCount();
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Mesaje: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Mesaje: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('groupChatMessages').orderBy('createdAt', descending: true).limit(20).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final docs = snap.docs;
         _recentGroupDocs = docs;
         _recomputeGroupUnread();
@@ -1234,7 +1285,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           _knownGroupMessageIds.addAll(docs.map((d) => d.id));
         }
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Chat comun: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Chat comun: $e');
       }),
     );
 
@@ -1243,8 +1294,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void _startSettingsSync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       db.collection('meta').doc('uiSettings').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final d = snap.data();
-        if (!mounted) return;
+        if (!_sessionActive) return;
         if (d == null) { if (isAdmin) unawaited(_runAutomaticMaintenance()); return; }
         setState(() {
           settings.background = (d['background'] ?? settings.background).toString();
@@ -1285,14 +1337,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         });
         if (isAdmin) unawaited(_runAutomaticMaintenance());
       }, onError: (Object e) {
-        if (mounted && isAdmin) setState(() => coreSyncError = 'Setări UI: $e');
+        if (_sessionActive && isAdmin) setState(() => coreSyncError = 'Setări UI: $e');
       }),
     );
 
   }
 
   void _startCoreSync() {
-    final db = FirebaseFirestore.instance;
+    final db = widget.firestore ?? FirebaseFirestore.instance;
 
     _startDefinitionsSync(db);
 
@@ -1347,7 +1399,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     await FirebaseFirestore.instance.collection('locations').doc(id).delete();
     unawaited(_writeLearningEvent(category: 'operations', event: 'location_deleted', locationId: id));
     _locationCache.remove(id);
-    if (!mounted) return;
+    if (!_sessionActive) return;
     setState(() => locations.removeWhere((x) => x.id == id));
   }
 
@@ -1359,7 +1411,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       'name': l.name, 'status': l.status.name, 'active': l.active, 'hasGps': l.latitude != null && l.longitude != null,
     }));
     _locationCache[l.id] = _encoded(data);
-    if (!mounted) return;
+    if (!_sessionActive) return;
     setState(() {
       final index = locations.indexWhere((x) => x.id == l.id);
       if (index >= 0) {
@@ -1383,7 +1435,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       'autoProposed': schedule.autoProposed, 'learningConfidence': schedule.learningConfidence,
     }));
     _scheduleCache[schedule.id] = _encoded(data);
-    if (!mounted) return;
+    if (!_sessionActive) return;
     setState(() {
       final index = schedules.indexWhere((x) => x.id == schedule.id);
       if (index >= 0) {
@@ -1407,7 +1459,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       'refusalReason': record.refusalReason ?? '', 'keptForLearning': record.keptForLearning,
     }));
     _recordCache[record.id] = _encoded(data);
-    if (!mounted) return;
+    if (!_sessionActive) return;
     setState(() {
       final index = records.indexWhere((x) => x.id == record.id);
       if (index >= 0) {
@@ -1545,7 +1597,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
   Future<void> _writeAuditRemote(String action, String target) async {
     final entry = AuditEntry(id: idNow(), actor: me.name, action: action, target: target, at: DateTime.now());
-    if (isAdmin && mounted) {
+    if (isAdmin && _sessionActive) {
       setState(() => audit.insert(0, entry));
     }
     try {
@@ -1666,9 +1718,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void notifyUser(String uid, String title, String msg) {
     if (!settings.pushNotifications) return;
     final n = AppNotification(id: idNow(), userId: uid, title: title, message: msg, createdAt: DateTime.now());
-    if (mounted && (isAdmin || uid == currentUserId)) setState(() => notifications.insert(0, n));
+    if (_sessionActive && (isAdmin || uid == currentUserId)) setState(() => notifications.insert(0, n));
     unawaited(FirebaseFirestore.instance.collection('notifications').doc(n.id).set(_notificationMap(n)).catchError((Object e) {
-      if (mounted) setState(() => coreSyncError = 'Notificare: $e');
+      if (_sessionActive) setState(() => coreSyncError = 'Notificare: $e');
     }));
   }
   void notifyTeam(String teamId, String title, String msg) {
@@ -1684,7 +1736,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     setState(() {});
     if (isAdmin) {
       unawaited(_persistCoreData().catchError((Object e) {
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() => coreSyncError = 'Salvare Firestore: $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvarea nu a reușit: $e')));
       }));
@@ -1720,7 +1772,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _refreshUnreadMessageCount() {
-    if (!mounted) return;
+    if (!_sessionActive) return;
     setState(() => _unreadMessageCount = _unreadPrivateMessageCount + _unreadGroupMessageCount);
   }
 
@@ -1785,7 +1837,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
                             onTap: n.read ? null : () async {
                               n.read = true;
                               await FirebaseFirestore.instance.collection('notifications').doc(n.id).set({'read': true, 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
-                              if (mounted) setState(() {});
+                              if (_sessionActive) setState(() {});
                             },
                           ),
                         )).toList(),

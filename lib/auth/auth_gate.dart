@@ -3,7 +3,11 @@ part of '../main.dart';
 class AuthGate extends StatefulWidget {
   final AppSettings settings;
   final VoidCallback onSettingsChanged;
-  const AuthGate({super.key, required this.settings, required this.onSettingsChanged});
+  final bool Function(String?)? onSessionChanged;
+  final FirebaseAuth? auth;
+  final FirebaseFirestore? firestore;
+  final Widget Function(Key, FirebaseUserProfile, bool Function())? homeBuilder;
+  const AuthGate({super.key, required this.settings, required this.onSettingsChanged, this.auth, this.firestore, this.homeBuilder, this.onSessionChanged});
 
   @override
   State<AuthGate> createState() => _AuthGateState();
@@ -20,12 +24,18 @@ class _AuthGateState extends State<AuthGate> {
   String? _error;
   bool _authInitialized = false;
   bool _profileInitialized = false;
+  int _sessionGeneration = 0;
+  int _profileGeneration = 0;
+
+  User? get _currentUser => widget.auth == null
+      ? FirebaseAuth.instance.currentUser : widget.auth!.currentUser;
+  FirebaseFirestore get _db => widget.firestore ?? FirebaseFirestore.instance;
 
   @override
   void initState() {
     super.initState();
 
-    _uiSettingsSubscription = FirebaseFirestore.instance.collection('meta').doc('uiSettings').snapshots().listen((snap) {
+    _uiSettingsSubscription = _db.collection('meta').doc('uiSettings').snapshots().listen((snap) {
       final d = snap.data();
       if (d == null || !mounted) return;
       var changed = false;
@@ -47,30 +57,47 @@ class _AuthGateState extends State<AuthGate> {
 
     // Folosim currentUser imediat, astfel încât Chrome/PWA să nu afișeze
     // splash-ul între refaceri de widget / reconectări scurte ale streamului.
-    _user = FirebaseAuth.instance.currentUser;
+    _user = _currentUser;
     _authInitialized = true;
     if (_user != null) {
       _listenProfile(_user!);
     }
 
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen(
+    _authSubscription = (widget.auth ?? FirebaseAuth.instance).authStateChanges().listen(
       _handleAuthChange,
       onError: (Object e) {
         if (!mounted) return;
+        // Stream errors do not authorize fallback across a changed SDK UID.
+        final current = _currentUser;
+        if (_user?.uid != current?.uid) {
+          _handleAuthChange(current);
+          return;
+        }
         setState(() => _error = 'Autentificare: $e');
       },
     );
   }
 
+  void _resetPersonalPreferences() {
+    final defaults = AppSettings();
+    final changed = widget.settings.theme != defaults.theme ||
+        widget.settings.fontFamily != defaults.fontFamily ||
+        widget.settings.personalBackgroundId != defaults.personalBackgroundId;
+    widget.settings.theme = defaults.theme;
+    widget.settings.fontFamily = defaults.fontFamily;
+    widget.settings.personalBackgroundId = defaults.personalBackgroundId;
+    // Branding, global backgrounds, templates and business settings are shared.
+    if (changed && mounted) widget.onSettingsChanged();
+  }
+
   void _handleAuthChange(User? eventUser) {
     if (!mounted) return;
-
-    // Unele versiuni Chrome/PWA pot emite o stare intermediară în timp ce
-    // Firebase își reface persistența. Dacă Firebase încă are currentUser,
-    // păstrăm sesiunea activă și NU revenim la splash/login.
-    final effectiveUser = eventUser ?? FirebaseAuth.instance.currentUser;
-
+    // Preserve transient same-UID reconnects while SDK currentUser is valid.
+    final effectiveUser = eventUser ?? _currentUser;
     if (effectiveUser == null) {
+      final hadSession = _user != null;
+      if (hadSession) _sessionGeneration++;
+      _profileGeneration++;
       _profileSubscription?.cancel();
       _profileSubscription = null;
       setState(() {
@@ -81,19 +108,41 @@ class _AuthGateState extends State<AuthGate> {
         _profileInitialized = false;
         _error = null;
       });
+      if (hadSession) _resetPersonalPreferences();
+      widget.onSessionChanged?.call(null);
       return;
     }
 
     final changedUser = _user?.uid != effectiveUser.uid;
+    if (changedUser) {
+      // Invalidate ownership synchronously, before the next frame/dispose.
+      _sessionGeneration++;
+      _profileGeneration++;
+      _profileSubscription?.cancel();
+      _profileSubscription = null;
+      setState(() {
+        _user = effectiveUser;
+        _authInitialized = true;
+        _profile = null;
+        _profileUid = null;
+        _profileInitialized = false;
+        _error = null;
+      });
+      _resetPersonalPreferences();
+      // A replacing root will create its own listener; avoid a duplicate read.
+      if (widget.onSessionChanged?.call(effectiveUser.uid) != true) {
+        _listenProfile(effectiveUser);
+      }
+      return;
+    }
+
     _user = effectiveUser;
     _authInitialized = true;
     _error = null;
-
-    if (changedUser || _profileUid != effectiveUser.uid || _profileSubscription == null) {
+    if (_profileUid != effectiveUser.uid || _profileSubscription == null) {
       _listenProfile(effectiveUser);
-    } else {
-      // Nu chemăm setState inutil dacă avem deja profilul activ.
-      if (_profile == null && mounted) setState(() {});
+    } else if (_profile == null) {
+      setState(() {});
     }
   }
 
@@ -102,13 +151,18 @@ class _AuthGateState extends State<AuthGate> {
     _profileSubscription = null;
     _profileUid = user.uid;
     _profileInitialized = false;
+    final generation = ++_profileGeneration;
+    final session = _sessionGeneration;
+    bool ownsProfile() => mounted && generation == _profileGeneration &&
+        session == _sessionGeneration && _user?.uid == user.uid &&
+        _currentUser?.uid == user.uid;
 
-    _profileSubscription = FirebaseFirestore.instance
+    _profileSubscription = _db
         .collection('users')
         .doc(user.uid)
         .snapshots(includeMetadataChanges: true)
         .listen((snap) {
-      if (!mounted || _user?.uid != user.uid) return;
+      if (!ownsProfile()) return;
 
       // Snapshot-urile din cache sunt perfect valide pentru UI. Nu revenim
       // la ecranul de încărcare cât timp avem deja un profil bun memorat.
@@ -128,11 +182,11 @@ class _AuthGateState extends State<AuthGate> {
         _error = null;
       });
     }, onError: (Object e) {
-      if (!mounted || _user?.uid != user.uid) return;
+      if (!ownsProfile()) return;
       // Dacă aveam deja profil valid, păstrăm interfața și nu pâlpâim spre
       // pagina de eroare la o reconectare scurtă. Arătăm eroarea doar la
       // încărcarea inițială când nu avem nimic utilizabil.
-      if (_profile != null) return;
+      if (_profile?.uid == user.uid) return;
       setState(() {
         _profileInitialized = true;
         _error = 'Nu am putut citi profilul: $e';
@@ -142,6 +196,8 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   void dispose() {
+    _sessionGeneration++;
+    _profileGeneration++;
     _authSubscription?.cancel();
     _profileSubscription?.cancel();
     _uiSettingsSubscription?.cancel();
@@ -154,30 +210,37 @@ class _AuthGateState extends State<AuthGate> {
       return _FirebaseLoading(text: 'Se verifică autentificarea...', settings: widget.settings);
     }
 
-    final user = _user ?? FirebaseAuth.instance.currentUser;
+    final user = _user ?? _currentUser;
     if (user == null) return LoginPage(settings: widget.settings);
 
-    if (_error != null && _profile == null) {
+    final profile = _profile?.uid == user.uid ? _profile : null;
+    if (_error != null && profile == null) {
       return _FirebaseError(message: _error!);
     }
 
     // Profilul este singura încărcare pentru care acceptăm splash, și doar
     // la prima deschidere reală a sesiunii. După aceea UI-ul rămâne montat.
-    if (!_profileInitialized && _profile == null) {
+    if (!_profileInitialized && profile == null) {
       return _FirebaseLoading(text: 'Se încarcă profilul...', settings: widget.settings);
     }
 
-    final profile = _profile;
     if (profile == null) {
       return MissingProfilePage(email: user.email ?? '');
     }
     if (!profile.active) return PendingApprovalPage(profile: profile, settings: widget.settings);
 
+    final generation = _sessionGeneration;
+    bool sessionIsCurrent() => mounted && generation == _sessionGeneration &&
+        _user?.uid == profile.uid && _currentUser?.uid == profile.uid;
+    if (widget.homeBuilder != null) {
+      return widget.homeBuilder!(ValueKey(profile.uid), profile, sessionIsCurrent);
+    }
     return HomePage(
       key: ValueKey(profile.uid),
       settings: widget.settings,
       onSettingsChanged: widget.onSettingsChanged,
       profile: profile,
+      sessionIsCurrent: sessionIsCurrent,
     );
   }
 }
