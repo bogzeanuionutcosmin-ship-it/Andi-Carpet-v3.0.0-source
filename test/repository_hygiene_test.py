@@ -136,14 +136,18 @@ class RepositoryHygieneTests(unittest.TestCase):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         flows = (ROOT / "lib/ui/install_app_buttons.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/install_app_buttons_view.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'ui/install_app_buttons.dart';", main)
-        self.assertIn("part of '../main.dart';", flows)
+        self.assertNotIn("part 'ui/install_app_buttons.dart';", main)
+        self.assertIn("import 'ui/install_app_buttons.dart' as install_flows;", main)
+        self.assertNotIn("part of '../main.dart';", flows)
+        self.assertIn("import '../models/app_data_models.dart';", flows)
+        self.assertIn("install_flows.showAndroidInstallFlow(context, settings)", main)
+        self.assertIn("install_flows.showAppleInstallFlow(context)", main)
         self.assertIn("import 'ui/install_app_buttons_view.dart' as install_buttons;", main)
         self.assertEqual(main.count("class _InstallAppButtons extends StatelessWidget"), 1)
         self.assertIn("onAndroidPressed: () => _showAndroidInstallFlow(context, settings)", main)
         self.assertIn("onApplePressed: () => _showAppleInstallFlow(context)", main)
-        for symbol in ("Future<void> _showAndroidInstallFlow(",
-                       "Future<void> _showAppleInstallFlow("):
+        for symbol in ("Future<void> showAndroidInstallFlow(",
+                       "Future<void> showAppleInstallFlow("):
             self.assertEqual(flows.count(symbol), 1)
         self.assertIn("launchUrl(uri,mode:LaunchMode.externalApplication)", flows)
         self.assertIn("Auto Blocker", flows)

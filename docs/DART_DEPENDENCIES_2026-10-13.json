@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 173,
+  "dart_files": 174,
   "lib_dart_files": 129,
-  "test_dart_files": 43,
+  "test_dart_files": 44,
   "script_dart_files": 1,
-  "parts": 60,
-  "libraries": 113,
+  "parts": 59,
+  "libraries": 115,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -110,6 +110,7 @@
       "lib/ui/empty_state.dart",
       "lib/ui/icon_badge_catalog.dart",
       "lib/ui/info_card.dart",
+      "lib/ui/install_app_buttons.dart",
       "lib/ui/install_app_buttons_view.dart",
       "lib/ui/interactive_member_badges.dart",
       "lib/ui/money_card.dart",
@@ -192,6 +193,10 @@
     "lib/ui/empty_state.dart": [],
     "lib/ui/icon_badge_catalog.dart": [],
     "lib/ui/info_card.dart": [],
+    "lib/ui/install_app_buttons.dart": [
+      "lib/models/app_data_models.dart",
+      "lib/ui/section_visual_helpers.dart"
+    ],
     "lib/ui/install_app_buttons_view.dart": [],
     "lib/ui/interactive_badge_preview.dart": [],
     "lib/ui/interactive_member_badges.dart": [
@@ -290,6 +295,10 @@
     ],
     "test/install_app_buttons_view_test.dart": [
       "lib/ui/install_app_buttons_view.dart"
+    ],
+    "test/install_app_flows_test.dart": [
+      "lib/models/app_data_models.dart",
+      "lib/ui/install_app_buttons.dart"
     ],
     "test/interactive_badge_preview_test.dart": [
       "lib/ui/interactive_badge_preview.dart"
@@ -2391,8 +2400,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 29531,
-      "sha256": "89121c30be800a1e8b7c1affed7ef4a24fa6d51c2c117685d4a95012b286efd7",
+      "bytes": 29807,
+      "sha256": "d822a28acbef73648f10df7edc7c4f3ff182a7a7e05d9dbfd79d12d8fdf06400",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -3027,6 +3036,16 @@
         },
         {
           "kind": "import",
+          "text": "import 'ui/install_app_buttons.dart' as install_flows;",
+          "uris": [
+            "ui/install_app_buttons.dart"
+          ],
+          "local_targets": [
+            "lib/ui/install_app_buttons.dart"
+          ]
+        },
+        {
+          "kind": "import",
           "text": "import 'ui/install_app_buttons_view.dart' as install_buttons;",
           "uris": [
             "ui/install_app_buttons_view.dart"
@@ -3223,16 +3242,6 @@
           ],
           "local_targets": [
             "lib/models/permission_status_labels.dart"
-          ]
-        },
-        {
-          "kind": "part",
-          "text": "part 'ui/install_app_buttons.dart';",
-          "uris": [
-            "ui/install_app_buttons.dart"
-          ],
-          "local_targets": [
-            "lib/ui/install_app_buttons.dart"
           ]
         },
         {
@@ -3909,6 +3918,8 @@
         "_adminSectionGroup",
         "_adminSectionAsset",
         "_badgeGraphic",
+        "_showAndroidInstallFlow",
+        "_showAppleInstallFlow",
         "_buildPdfTheme",
         "_safeFilePart",
         "_pdfDate",
@@ -5499,25 +5510,57 @@
     },
     {
       "path": "lib/ui/install_app_buttons.dart",
-      "bytes": 2260,
-      "sha256": "4b1eda0c21de1575d4001ebd3b2326f7d2e4951b466c51ab347953ce71f14ff7",
-      "owner": "lib/main.dart",
+      "bytes": 2603,
+      "sha256": "8a2b499b056ab1c6199945dc016c2eda2140b650e27630e6e69632e27702d333",
+      "owner": "lib/ui/install_app_buttons.dart",
       "directives": [
         {
-          "kind": "part of",
-          "text": "part of '../main.dart';",
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
           "uris": [
-            "../main.dart"
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:url_launcher/url_launcher.dart';",
+          "uris": [
+            "package:url_launcher/url_launcher.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
           ],
           "local_targets": [
-            "lib/main.dart"
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'section_visual_helpers.dart';",
+          "uris": [
+            "section_visual_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/ui/section_visual_helpers.dart"
           ]
         }
       ],
-      "declarations": [],
+      "declarations": [
+        {
+          "kind": "typedef",
+          "name": "ExternalUrlLauncher"
+        }
+      ],
       "top_level_functions": [
-        "_showAndroidInstallFlow",
-        "_showAppleInstallFlow"
+        "_launchExternalUrl",
+        "showAndroidInstallFlow",
+        "showAppleInstallFlow"
       ]
     },
     {
@@ -6868,6 +6911,64 @@
       ],
       "declarations": [],
       "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/install_app_flows_test.dart",
+      "bytes": 4393,
+      "sha256": "28ff8117b313e1ef406ab65f5efc9972cb4ca9fc42ef135d48f9490ccfdc7ec4",
+      "owner": "test/install_app_flows_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/models/app_data_models.dart';",
+          "uris": [
+            "package:andi_carpeta/models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/ui/install_app_buttons.dart';",
+          "uris": [
+            "package:andi_carpeta/ui/install_app_buttons.dart"
+          ],
+          "local_targets": [
+            "lib/ui/install_app_buttons.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "_mount",
+        "_confirm",
         "main"
       ]
     },

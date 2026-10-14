@@ -67,6 +67,7 @@ import 'ui/money_card.dart' as money_card;
 import 'ui/info_card.dart' as info_card;
 import 'ui/stat_card.dart' as stat_card;
 import 'ui/app_backdrop.dart' as app_backdrop;
+import 'ui/install_app_buttons.dart' as install_flows;
 import 'ui/install_app_buttons_view.dart' as install_buttons;
 import 'ui/interactive_member_badges.dart' as member_badges;
 import 'ui/auth_status_views.dart' as auth_status;
@@ -88,7 +89,7 @@ import 'ui/app_capabilities_view.dart' as app_capabilities;
 export 'ui/icon_badge_catalog.dart';
 export 'models/permission_status_labels.dart';
 
-part 'ui/install_app_buttons.dart';
+
 part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
@@ -471,6 +472,12 @@ class _MapStatusLegend extends StatelessWidget {
   Widget build(BuildContext context) =>
       dashboard_components.MapStatusLegend(color: color, label: label);
 }
+
+Future<void> _showAndroidInstallFlow(BuildContext context, AppSettings settings) =>
+    install_flows.showAndroidInstallFlow(context, settings);
+
+Future<void> _showAppleInstallFlow(BuildContext context) =>
+    install_flows.showAppleInstallFlow(context);
 
 class _InstallAppButtons extends StatelessWidget {
   final AppSettings settings;
