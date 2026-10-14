@@ -7525,8 +7525,8 @@
     },
     {
       "path": "test/home_platform_sdk_characterization_test.dart",
-      "bytes": 6207,
-      "sha256": "e90e0589116594693ba269eccbfe8b79e28b1b9fcdd3adecea531f1e17d8c88c",
+      "bytes": 6473,
+      "sha256": "2074fe96925db186245ac2da3a30d840e19e8c96596103e0a21bfff685b8c626",
       "owner": "test/home_platform_sdk_characterization_test.dart",
       "directives": [
         {
