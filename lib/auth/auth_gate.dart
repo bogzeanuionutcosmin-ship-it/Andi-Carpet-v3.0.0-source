@@ -67,6 +67,12 @@ class _AuthGateState extends State<AuthGate> {
       _handleAuthChange,
       onError: (Object e) {
         if (!mounted) return;
+        // Stream errors do not authorize fallback across a changed SDK UID.
+        final current = _currentUser;
+        if (_user?.uid != current?.uid) {
+          _handleAuthChange(current);
+          return;
+        }
         setState(() => _error = 'Autentificare: $e');
       },
     );

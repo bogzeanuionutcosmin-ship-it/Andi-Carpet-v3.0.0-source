@@ -67,3 +67,10 @@ Se înlocuiește și cheia ScaffoldMessenger pe același UID transition/logout, 
 **72aca0102294c3938a8581ffcbbe9218906064c1 / CI 38516940394 5/5 SUCCESS**, **59 Flutter PASS**, build web PASS. Testul SnackBar anterior FAIL este PASS fără editarea testului; core acceptance file neschimbat.
 
 Review-ul final verifică și calea auth stream onError: SDK currentUser poate indica UID B în timp ce streamul livrează o eroare; fallbackul profilului A nu este legitim în această situație. Se adaugă acceptanță pentru ruta A și control pozitiv pentru auth stream error cu SDK UID A neschimbat, fără modificare runtime în acest lot.
+
+
+## Auth stream error RED și remediere
+
+**cd2dc174d8dfe6d3cfd1d911b66aea47da79e79e / CI 38517375349:** **60 Flutter PASS / 1 FAIL**, exact SDK UID B + auth stream error păstrează ruta «Auth error private a»; alte 4 joburi SUCCESS. Controlul auth stream error cu SDK UID A neschimbat este PASS.
+
+Handlerul auth onError reverifică SDK currentUser; dacă UID diferă (inclusiv logout), folosește _handleAuthChange pentru invalidare/root boundary și nu păstrează profilul/ruta precedente. Eroarea cu același UID păstrează fallbackul legitim. Testele sunt byte-identice cu RED; GREEN pe noul SHA urmează.
