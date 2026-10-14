@@ -29,7 +29,12 @@ class VisionDiagnosticReport {
         if (lastSeen != 0) return lastSeen;
         return a.fingerprint.compareTo(b.fingerprint);
       });
-    final probeCount = entries.where(_isPersistenceProbe).length;
+    final probes = entries.where(_isPersistenceProbe);
+    final probeCount = probes.length;
+    // A single fingerprint can aggregate many manual taps. Count occurrences
+    // separately, including probes omitted by the 100-line export cap.
+    final probeOccurrences =
+        probes.fold<int>(0, (total, entry) => total + entry.count);
     final incidentCount = entries.length - probeCount;
     final at = (generatedAt ?? DateTime.now()).toUtc();
     final report = StringBuffer()
@@ -39,7 +44,8 @@ class VisionDiagnosticReport {
       ..writeln('Continut: doar coduri tehnice validate, fara date personale.')
       ..writeln('Incidente locale: $incidentCount');
     if (probeCount > 0) {
-      report.writeln('Probe locale (nu sunt erori): $probeCount');
+      report.writeln('Probe locale (nu sunt erori): $probeCount tipuri');
+      report.writeln('Aparitii ale probelor locale: $probeOccurrences');
     }
 
     if (incidentCount == 0) {
