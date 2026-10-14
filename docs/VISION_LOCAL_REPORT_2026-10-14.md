@@ -60,3 +60,15 @@ Utilizatorul a instalat APK-ul de test offline și a furnizat capturi care confi
 Au fost identificate două îmbunătățiri neintruzive: titlul lung `Vision · Error Log` era trunchiat pe telefon, iar evenimentul sintetic era prezentat de advisor ca incident real, cu starea «Deschisă». Corecția din acest lot folosește titlul scurt `Vision`, afișează evenimentul `vision_test/persistence_probe` ca `Test de persistență · fără eroare` / `Probă locală` și **îl exclude numai din recomandările de erori**, păstrându-l în jurnal și în raportul copiat. Alte coduri reale, inclusiv OCR, GPS și FCM, rămân în recomandări. Zero impact asupra autentificării, datelor, permisiunilor sau accesului la rețea.
 
 Testele adăugate acoperă dimensiunea redusă a ecranului, lipsa avertizării false, păstrarea contorului și vizibilitatea incidentelor reale. Rezultatul CI și compilarea APK-ului se verifică exclusiv pe ultimul commit al acestei ramuri.
+
+## Investigație instalare Android — proba de la 09:37 (14.10.2026)
+
+Captura trimisă după ultimul build arată încă titlul `Vision...`, `Vision observă: Incident local observat` pentru `vision_test/persistence_probe` și contor `×4`. În commitul validat `c0a36343510e45b18c476ee92a057d78360d7638`, sursa arată deja `Vision` și filtrarea `persistence_probe` în advisor. **Deci captura nu reflectă corecțiile din HEAD-ul PR #34**; cauză probabilă: utilizatorul a deschis o instalație APK mai veche / noul APK nu a înlocuit-o. Nu afirmăm că știm precis motivul fără instalare ADB/sistem.
+
+### Remediere de distribuire exclusiv pentru APK-ul de laborator
+
+GitHub Actions folosește Android debug signing, care poate varia de la un runner la altul; astfel, instalarea unui alt debug APK peste pachetul cu același ID poate eșua din cauza semnăturii. Mai mult, diferite artefacte anterioare au purtat aceeași etichetă și același versionCode, ceea ce a favorizat confuzia.
+
+Din acest lot, workflowul de smoke creează, **numai în checkoutul temporar CI**, un ID Android unic la fiecare rulare, `com.example.andi_carpeta.smokeoffline.r<RUN_NUMBER>`; eticheta launcher devine `Vision TEST #<RUN_NUMBER>`, iar ecranele de test afișează `VISION TEST OFFLINE · BUILD #<RUN_NUMBER>`. `flutter build apk` primește versiunea de **test** `0.8.0+100000+RUN_NUMBER`, iar ZIP-ul/artifactul include explicit RUN_NUMBER și APK-ul cu nume unic. Workflowul verifică prin `aapt` package/versionCode/versiune, lipsa permisiunilor periculoase, SHA-256 PDF Million și testele Dart. **Nu se schimbă `pubspec.yaml`, versiunea de release, `android/app/build.gradle.kts` din GitHub, sau Firebase live.**
+
+IMPORTANT: noul APK de test **se instalează separat de cele vechi**; contorul local din vechile APK-uri nu este migrat, iar un jurnal gol la prima pornire este corect. Se poate elimina manual vechiul Vision TEST (NU AndiCarpet de lucru) după verificarea noii versiuni. Pentru persistență: pornește noua aplicație etichetată `Vision TEST #N`, intră în jurnal, verifică același `BUILD #N`, apasă proba o dată, închide complet aceeași aplicație și redeschide-o: contorul trebuie să persiste fără reexecutarea probei. Fără orice modificare în PR #33 al Lunăi.
