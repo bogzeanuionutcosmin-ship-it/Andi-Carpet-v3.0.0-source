@@ -14,6 +14,7 @@ enum VisionPersistenceState {
 class VisionPersistenceTracker {
   int _currentRevision = 0;
   int _savedRevision = -1;
+  int _lastFailedRevision = -1;
   bool _readCompleted = false;
   bool _storageUnavailable = false;
 
@@ -21,10 +22,12 @@ class VisionPersistenceTracker {
   int get revision => _currentRevision;
 
   VisionPersistenceState get state {
+    // A later failed read/write cannot be certified by an earlier successful
+    // write, even if that write already covered the current revision.
+    if (_storageUnavailable) return VisionPersistenceState.memoryOnly;
     if (_savedRevision == _currentRevision && _savedRevision >= 0) {
       return VisionPersistenceState.saved;
     }
-    if (_storageUnavailable) return VisionPersistenceState.memoryOnly;
     if (_currentRevision > _savedRevision && _currentRevision > 0) {
       return VisionPersistenceState.pending;
     }
@@ -71,12 +74,18 @@ class VisionPersistenceTracker {
     if (snapshotRevision > _savedRevision) {
       _savedRevision = snapshotRevision;
     }
-    _storageUnavailable = false;
+    // A stale successful callback must not mask a later failed snapshot.
+    if (snapshotRevision >= _lastFailedRevision) {
+      _storageUnavailable = false;
+    }
   }
 
   void writeFailed(int snapshotRevision) {
     if (snapshotRevision < 0 || snapshotRevision > _currentRevision) return;
     if (snapshotRevision >= _savedRevision) {
+      if (snapshotRevision > _lastFailedRevision) {
+        _lastFailedRevision = snapshotRevision;
+      }
       _storageUnavailable = true;
     }
   }
