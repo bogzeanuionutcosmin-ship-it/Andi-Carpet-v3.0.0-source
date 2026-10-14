@@ -19,6 +19,8 @@ class ExpenseDocumentFixture {
   bool imageCancelled = false;
   bool failRecognition = false;
   bool failSave = false;
+  bool updateLocallyBeforeFailure = false;
+  Uint8List? imageOverride;
   bool manager = true;
   Completer<void>? saveGate;
   String text;
@@ -27,18 +29,21 @@ class ExpenseDocumentFixture {
   ExpenseDocumentFixture(this.text);
   Future<XFile?> pick(bool allowNoImage) async {
     pickerRequests.add(allowNoImage);
-    return imageCancelled ? null : XFile.fromData(image, name: 'synthetic.png');
+    return imageCancelled ? null : XFile.fromData(imageOverride ?? image, name: 'synthetic.png');
   }
   Future<String> recognize(Uint8List bytes, {String? path}) async {
     recognizes++;
-    expect(bytes, image); // No camera/MLKit/network boundary reached.
+    expect(bytes, imageOverride ?? image); // No camera/MLKit/network boundary reached.
     if (failRecognition) throw StateError('synthetic OCR failure');
     return text;
   }
   Future<void> save(Expense expense) async {
     attempts.add(expense);
     await saveGate?.future;
-    if (failSave) throw StateError('synthetic save failure');
+    if (failSave) {
+      if (updateLocallyBeforeFailure) { expenses.add(expense); rebuild(() {}); }
+      throw StateError('synthetic save failure');
+    }
     expenses.add(expense);
     rebuild(() {});
   }

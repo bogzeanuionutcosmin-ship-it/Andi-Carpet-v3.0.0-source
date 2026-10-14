@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 218,
+  "dart_files": 219,
   "lib_dart_files": 140,
-  "test_dart_files": 77,
+  "test_dart_files": 78,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 159,
+  "libraries": 160,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -323,6 +323,11 @@
     ],
     "test/empty_state_library_test.dart": [
       "lib/ui/empty_state.dart"
+    ],
+    "test/expense_document_additional_characterization_test.dart": [
+      "lib/main.dart",
+      "test/support/admin_ui_fixture.dart",
+      "test/support/expense_document_fixture.dart"
     ],
     "test/expense_document_flow_characterization_test.dart": [
       "lib/main.dart",
@@ -7540,6 +7545,89 @@
       ]
     },
     {
+      "path": "test/expense_document_additional_characterization_test.dart",
+      "bytes": 6893,
+      "sha256": "206a63264feb06ad30d36b3dd259eb1cf189c5a0aa4ff1b6454b43f728e78938",
+      "owner": "test/expense_document_additional_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:typed_data';",
+          "uris": [
+            "dart:typed_data"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';",
+          "uris": [
+            "package:firebase_core_platform_interface/firebase_core_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:image/image.dart' as img;",
+          "uris": [
+            "package:image/image.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/admin_ui_fixture.dart';",
+          "uris": [
+            "support/admin_ui_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/admin_ui_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/expense_document_fixture.dart';",
+          "uris": [
+            "support/expense_document_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/expense_document_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "document",
+        "main"
+      ]
+    },
+    {
       "path": "test/expense_document_flow_characterization_test.dart",
       "bytes": 6964,
       "sha256": "1d7b877238fe1a48d074b158a228d4c18da3195d267a751b0ea478f2f8c66549",
@@ -10542,8 +10630,8 @@
     },
     {
       "path": "test/support/expense_document_fixture.dart",
-      "bytes": 3741,
-      "sha256": "516d334d02e822c11905838a19b90307542cf0e99b36edfbbf14cf8dfd71fcae",
+      "bytes": 3941,
+      "sha256": "fcee20241c98fd3900f12692fb59b272bf5798ea6f08ac2dea0c70dc54138761",
       "owner": "test/support/expense_document_fixture.dart",
       "directives": [
         {

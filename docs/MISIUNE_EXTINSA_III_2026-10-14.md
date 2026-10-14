@@ -61,3 +61,26 @@ Patru probe noi, fără schimbări runtime sau porturi noi:
 4. Două State Home Admin distincte, aceeași metadata legacy blocată și același DB fake: ambele pregătesc delete/functions/admin/users/marker înainte de primul commit. Două commits execută aceeași ștergere și golire a atribuiri. Snapshoturile sursă nemutate, fără pretenția de integritate DB. Nu repetă badge_v3 sau failure350.
 
 Toate sunt KNOWN DEFECT, nu remedieri sau acceptanță #33. Timeout60s pentru probele de cleanup/concurență. 157 Python local PASS; 218 Dart /59 parts /159 biblioteci /81 independente lib. CI pe SHA lot urmează. Rută chat live, Web700, GPS poziție/geocoding/boost250 și backend real rămân NEEXECUTATE; nu adăugăm guards funcționale.
+
+## Lot 37 — matrice OCR suplimentară, numai widget/fixtures
+
+Lot 36 b9a99f89d7542973c29604a056de1be769a57a21: standard 38580073519 5/5 SUCCESS, identity 38580073605 SUCCESS; 262 Flutter.
+
+Zece probe noi prin parser/form/Expense reale și save fake, fără runtime changes:
+
+| Caz | Rezultat caracterizat |
+|---|---|
+| TOTAL 1 234,56 | 1,00 lei; KNOWN DEFECT space grouping |
+| TOTAL 1234,56 | 1234,56 lei, 123456 bani |
+| TOTAL 1.234 | 1,23 lei; KNOWN DEFECT regex truncation |
+| TOTAL 238 urmat de SUBTOTAL 200 | 200 lei; KNOWN DEFECT subtotal selectat |
+| TOTAL 238 urmat de TOTAL TVA 38 | 38 lei; KNOWN DEFECT TVA selectată |
+| Două bonuri în același text | nr/data primului și totalul celui de-al doilea; KNOWN DEFECT amestec documente |
+| Litri/preț cu 3 zecimale | prefill rotunjit la 2 zecimale; override manual păstrează 3, suma exactă independentă |
+| Două facturi consecutive | imagini/fingerprinturi/ID-uri distincte, două obiecte păstrate, 2135 și 3147 bani |
+| Cache local mutat apoi save throw | rândul rămâne vizibil, fără success log/retry; KNOWN DEFECT, nu dovadă server |
+| Manual Back și redeschidere | input vechi abandonat; formular gol nou, un singur save, fără OCR/fingerprint |
+
+Fixture-ul primește numai imageOverride și updateLocallyBeforeFailure opționale, implicit identic; snapshot mutate-after-failure este model sintetic de efect optimist, nu Firestore persistence. Cele două grouping tests din lot31 nu se repetă. Parserul, business flow ExpensePage, drepturile și comparatorul Vision nu sunt modificate/importate.
+
+157 Python local PASS, 219 Dart /59 parts /160 biblioteci /81 independente lib; CI exact urmează. Camera/MLKit, server evidence, drepturile Issue32 și integrarea UID #33 rămân NEEXECUTATE.
