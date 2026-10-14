@@ -34,7 +34,8 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
     // device-wide journal in the real app. Injected logs are for isolated
     // tests/explicitly scoped integrations; the offline smoke app is separate
     // from login and Firebase.
-    if (widget.log == null && !_offlineTestBuild) {
+    if (!_offlineTestBuild &&
+        (widget.log == null || identical(widget.log, VisionErrorTelemetry.log))) {
       return Scaffold(
         appBar: AppBar(title: const Text('Vision')),
         body: const Center(
