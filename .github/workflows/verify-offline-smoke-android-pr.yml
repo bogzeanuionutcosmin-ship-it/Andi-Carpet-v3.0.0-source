@@ -38,9 +38,14 @@ jobs:
           flutter test test/vision_error_log_test.dart test/vision_diagnostics_page_test.dart test/vision_diagnostic_report_test.dart test/vision_diagnostic_advisor_test.dart test/vision_diagnostic_coverage_test.dart test/document_categories_test.dart test/pv_million_asset_test.dart
 
       - name: Isolate APK from production ONLY in this CI runner
+        env:
+          VISION_TEST_RUN: ${{ github.run_number }}
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import os
+          run = os.environ['VISION_TEST_RUN']
+          assert run.isdecimal() and int(run) > 0
           gradle = Path('android/app/build.gradle.kts')
           s = gradle.read_text()
           g = '    id("com.google.gms.google-services")'
@@ -49,8 +54,11 @@ jobs:
           # No Google Services plugin: standalone entry point does not
           # initialize Firebase, and no Firebase Android app is configured.
           s = s.replace(g, '    // Offline smoke: Google Services disabled in temporary CI copy')
+          # GitHub runners can use different DEBUG signing certificates.
+          # A distinct package ID PER RUN makes installation unambiguous and
+          # avoids Android refusing an in-place update over a prior test.
           s = s.replace(b, b + '        getByName("debug") {\n'
-                        '            applicationIdSuffix = ".smokeoffline"\n'
+                        f'            applicationIdSuffix = ".smokeoffline.r{run}"\n'
                         '        }\n', 1)
           gradle.write_text(s)
           manifest = Path('android/app/src/main/AndroidManifest.xml')
@@ -58,7 +66,7 @@ jobs:
           assert 'android:label="Andi Carpetă"' in text
           manifest.write_text(text.replace(
               'android:label="Andi Carpetă"',
-              'android:label="AndiCarpet TEST Offline"', 1))
+              f'android:label="Vision TEST #{run}"', 1))
           # Strip location, camera, SMS and networking permissions for smoke.
           debug_manifest = Path('android/app/src/debug/AndroidManifest.xml')
           permissions = [
@@ -81,9 +89,17 @@ jobs:
         run: |
           flutter build apk --debug \
             --target lib/testing/vision_documents_offline_smoke.dart \
+            --build-name=0.8.0 \
+            --build-number=$((100000 + ${{ github.run_number }})) \
+            --dart-define=VISION_OFFLINE_SMOKE=true \
+            --dart-define=VISION_SMOKE_RUN=${{ github.run_number }} \
             --dart-define=MAPBOX_ACCESS_TOKEN=
+          cp build/app/outputs/flutter-apk/app-debug.apk \
+            build/app/outputs/flutter-apk/AndiCarpet-Vision-TEST-R${{ github.run_number }}.apk
 
       - name: Verify unique package id and forbidden permissions
+        env:
+          VISION_TEST_RUN: ${{ github.run_number }}
         run: |
           python3 - <<'PY'
           import os
@@ -96,8 +112,12 @@ jobs:
           apk = 'build/app/outputs/flutter-apk/app-debug.apk'
           badging = subprocess.check_output(
               [str(aapt), 'dump', 'badging', apk], text=True)
-          expected = "package: name='com.example.andi_carpeta.smokeoffline'"
+          run = os.environ['VISION_TEST_RUN']
+          expected = f"package: name='com.example.andi_carpeta.smokeoffline.r{run}'"
           assert expected in badging, f'Unsafe package ID: {badging[:250]}'
+          expected_code = f"versionCode='{100000 + int(run)}'"
+          assert expected_code in badging, f'Wrong build number: {badging[:350]}'
+          assert "versionName='0.8.0'" in badging, badging[:350]
           perms = subprocess.check_output(
               [str(aapt), 'dump', 'permissions', apk], text=True)
           for forbidden in (
@@ -129,7 +149,7 @@ jobs:
       - name: Upload ONLY separately-installable smoke test APK
         uses: actions/upload-artifact@v4
         with:
-          name: AndiCarpet-Offline-Smoke-TEST-NO-FIREBASE
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: AndiCarpet-Vision-TEST-R${{ github.run_number }}-NO-FIREBASE
+          path: build/app/outputs/flutter-apk/AndiCarpet-Vision-TEST-R${{ github.run_number }}.apk
           if-no-files-found: error
           retention-days: 3
