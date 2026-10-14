@@ -27,7 +27,7 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
     final insights = VisionDiagnosticAdvisor.assess(currentLog, maxInsights: 1);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vision · Error Log'),
+        title: const Text('Vision'),
         actions: <Widget>[
           // Only debug builds can create a harmless local persistence probe.
           // Release builds remain read-only; this never writes to Firebase.
@@ -191,7 +191,12 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
                                 ? Icons.error_outline
                                 : Icons.bug_report_outlined,
                           ),
-                          title: Text(item.area + ' / ' + item.code),
+                          title: Text(
+                            item.area == 'vision_test' &&
+                            item.code == 'persistence_probe'
+                                ? 'Test de persistență · fără eroare'
+                                : item.area + ' / ' + item.code,
+                          ),
                           subtitle: Text(
                             'Platformă: ' + item.platform +
                             ' · Ultima apariție: ' + dateLabel +
