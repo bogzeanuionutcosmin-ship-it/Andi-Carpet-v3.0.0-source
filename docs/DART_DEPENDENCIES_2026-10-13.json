@@ -1,16 +1,19 @@
 {
   "format_version": 1,
-  "dart_files": 197,
-  "lib_dart_files": 136,
-  "test_dart_files": 60,
+  "dart_files": 199,
+  "lib_dart_files": 137,
+  "test_dart_files": 61,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 138,
+  "libraries": 140,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
   "duplicate_declarations_in_library": [],
   "library_edges": {
+    "lib/admin/admin_member_projections.dart": [
+      "lib/models/app_data_models.dart"
+    ],
     "lib/admin/admin_navigation_catalog.dart": [],
     "lib/admin/backup_codec.dart": [],
     "lib/auth/account_access_views.dart": [],
@@ -78,6 +81,7 @@
       "lib/utils/operational_dates.dart"
     ],
     "lib/main.dart": [
+      "lib/admin/admin_member_projections.dart",
       "lib/admin/admin_navigation_catalog.dart",
       "lib/admin/backup_codec.dart",
       "lib/auth/account_access_views.dart",
@@ -239,6 +243,10 @@
     ],
     "test/account_access_views_test.dart": [
       "lib/auth/account_access_views.dart"
+    ],
+    "test/admin_member_projections_test.dart": [
+      "lib/admin/admin_member_projections.dart",
+      "lib/main.dart"
     ],
     "test/admin_navigation_catalog_test.dart": [
       "lib/admin/admin_navigation_catalog.dart"
@@ -553,8 +561,8 @@
     },
     {
       "path": "lib/admin/admin_communications_actions.dart",
-      "bytes": 7537,
-      "sha256": "2001d05d10a92b600ad2308e870741f6fbf978eb418ada2aa166cfd5ae9bba99",
+      "bytes": 7471,
+      "sha256": "3e53e0fc97433527a40d6171762f3a662491a315265f4c46240d839d1ad2e897",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -711,6 +719,28 @@
       ],
       "top_level_functions": [
         "_editFunctionDefinition"
+      ]
+    },
+    {
+      "path": "lib/admin/admin_member_projections.dart",
+      "bytes": 387,
+      "sha256": "e10d64a3116d2220da81b826a36110963df5c331bb49c88a23af2e5e0feccc05",
+      "owner": "lib/admin/admin_member_projections.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import '../models/app_data_models.dart';",
+          "uris": [
+            "../models/app_data_models.dart"
+          ],
+          "local_targets": [
+            "lib/models/app_data_models.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "activeAdminNotificationRecipients"
       ]
     },
     {
@@ -2659,8 +2689,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 30349,
-      "sha256": "019660eb8b847818bfb8a7e838b8fb4e3b264cdfac793f82a74ae82a435fdf27",
+      "bytes": 30441,
+      "sha256": "4ed0a0e65f4ca85a03fb22b7e5c54ba8b31ab0212d83bf30cfb3f695cf3daf0e",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -3281,6 +3311,26 @@
           ],
           "local_targets": [
             "lib/admin/admin_navigation_catalog.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'admin/admin_member_projections.dart';",
+          "uris": [
+            "admin/admin_member_projections.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_member_projections.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'admin/admin_member_projections.dart';",
+          "uris": [
+            "admin/admin_member_projections.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_member_projections.dart"
           ]
         },
         {
@@ -6348,6 +6398,55 @@
       ],
       "declarations": [],
       "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/admin_member_projections_test.dart",
+      "bytes": 4671,
+      "sha256": "b3e75b46f37d747a9f2834273dfe2963048313ef0e7192cb67c73443e3dc9af7",
+      "owner": "test/admin_member_projections_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/admin/admin_member_projections.dart' as projection;",
+          "uris": [
+            "package:andi_carpeta/admin/admin_member_projections.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_member_projections.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "_user",
         "main"
       ]
     },

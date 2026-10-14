@@ -33,3 +33,9 @@ Logul Flutter disponibil după anularea primei rulări arată patru eșecuri de 
 47159c8 / 38534896652: standard 4/5 SUCCESS, Flutter FAILURE (timeout60s numai în scenariul de stream tardiv); celelalte șapte teste noi PASS. Resetarea platformei este validată. Curățarea este schimbată la anularea explicită a subscriptionului sintetic capturat; starts1/cancels0 înainte de această curățare rămân cerute. Nu se modifică Home sau presupune anulare runtime corectă.
 
 34f9b65 / 38535367840: același timeout60s izolat, 4/5 standard SUCCESS. Se păstrează verificările și se adaugă marcaje de fază ale fixture-ului pentru localizarea exactă a await-ului; cancel sintetic este inițiat fără await și pompat. Verdictul lotului încă NEVALIDAT până la CI verde.
+
+## Lot 25 validat / lot 26 AdminPanel
+
+2f2424592e7cd773d90b14f1178bcd10e996dfe9 / standard38535788487 5/5 SUCCESS, identity38535788576 SUCCESS. Suitele Flutter și build web/smoke Dart au trecut; numărul exact se preia din logul final. Marcajele de fază au permis încheierea curățării subscriptionului prin cancel inițiat și pump; aserțiunile defectului rămân intacte.
+
+Lot26 extrage exclusiv proiecția destinatarilor activi în admin_member_projections.dart: același where(active), toList, sort lowercase, fără deduplicare/trim/modificare roluri. Main re-export păstrează accesul; Admin dialog/send/write/log/cancel este neschimbat. Inversarea substituției și eliminarea directivelor noi reconstruiesc byte-exact sursa bazei. Patru teste: filtre/ordinea/referințele/lipsa mutației, empty/duplicate/equal names, funcții profesionale distincte de role și dialog AdminPanel real cu select-all/cancel fără trimitere. Nu se certifică autorizarea server-side. Cele 13 parts Admin rămân pentru State/context și writes; niciun mixin nu este forțat.

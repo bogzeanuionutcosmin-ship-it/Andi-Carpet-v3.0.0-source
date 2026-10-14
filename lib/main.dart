@@ -65,6 +65,8 @@ import 'home/home_operational_queries.dart';
 export 'home/home_operational_queries.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;
 import 'admin/admin_navigation_catalog.dart' as admin_navigation;
+import 'admin/admin_member_projections.dart';
+export 'admin/admin_member_projections.dart';
 import 'ui/icon_badge_catalog.dart';
 import 'teams/team_selector.dart' as team_selector;
 import 'schedule/schedule_card_full.dart' as schedule_card;
