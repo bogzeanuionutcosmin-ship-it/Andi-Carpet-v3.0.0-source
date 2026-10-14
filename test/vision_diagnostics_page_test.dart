@@ -65,4 +65,26 @@ void main() {
     expect(find.textContaining('Raportul tehnic a fost copiat'), findsOneWidget);
   });
 
+  testWidgets('Vision gives read-only actionable advice for OCR save failures',
+      (WidgetTester tester) async {
+    final log = VisionErrorLog();
+    log.record(area: 'ocr', code: 'document_save_failed',
+      platform: 'android');
+    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
+    expect(find.text('Vision observă: Document nesalvat'), findsOneWidget);
+    expect(find.textContaining('Verifică dacă documentul apare'), findsOneWidget);
+    expect(log.entries.single.count, 1);
+  });
+
+  testWidgets('Vision does not invent health advice without active incidents',
+      (WidgetTester tester) async {
+    final log = VisionErrorLog();
+    log.record(area: 'gps', code: 'location_update_failed',
+      platform: 'android');
+    expect(log.resolve(log.entries.single.fingerprint), isTrue);
+    await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
+    expect(find.textContaining('Vision observă:'), findsNothing);
+    expect(find.text('gps / location_update_failed'), findsOneWidget);
+  });
+
 }
