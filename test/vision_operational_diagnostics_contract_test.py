@@ -108,6 +108,15 @@ class VisionOperationalDiagnosticsContracts(unittest.TestCase):
         self.assertIn("maxBytes: 48 * 1024", TELEMETRY)
         self.assertIn("Duration(days: 7)", TELEMETRY)
 
+    def test_device_wide_ui_fails_closed_and_checks_live_owner_before_and_after_copy(self):
+        page = (ROOT / "lib/vision/vision_diagnostics_page.dart").read_text()
+        self.assertIn("identical(widget.log, VisionErrorTelemetry.log)", page)
+        self.assertIn("widget.isSessionCurrent?.call() == true", page)
+        self.assertIn("if (!_canInspect)", page)
+        self.assertIn("if (!mounted || !_canInspect) return;", page)
+        self.assertLess(page.index("if (!_canInspect)"), page.index("VisionDiagnosticAdvisor.assess"))
+        self.assertGreaterEqual(page.count("if (!_canInspect)"), 4)
+
 
 if __name__ == "__main__":
     unittest.main()

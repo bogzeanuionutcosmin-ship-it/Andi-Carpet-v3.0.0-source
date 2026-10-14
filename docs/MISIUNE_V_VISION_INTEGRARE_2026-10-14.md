@@ -10,7 +10,7 @@ Ramură integration/vision-authgate-modular-20261014. Un singur PR Draft TEST/IN
 
 | Sursă #34 | Destinație / decizie |
 |---|---|
-| lib/vision/* | 11 biblioteci independente: log, telemetry, persistence queue/status/lifecycle, advisor/report/coverage/UI, verifier pur |
+| lib/vision/* | 10 biblioteci independente: log, telemetry, persistence queue/status/lifecycle, advisor/report/coverage/UI, verifier pur |
 | test/vision_*_test.dart | 9 suite existente, fără slăbirea aserțiunilor |
 | main bootstrap | adaptor minim peste bootstrap #35; păstrează politicile Firebase și handlerii existenți |
 | Home FCM/GPS monolitic | hookuri constante în home_push_notifications/home_live_location, păstrând ownership după await |
@@ -25,7 +25,7 @@ Overlap-urile main/Home/Expense/OCR/teste/workflow/assets/documente sunt reconci
 
 ## Lot 1 — nucleu și teste importate
 
-Cele 11 module și cele 9 suite Dart Vision sunt byte-identice sursei freeze #34. În acest lot bootstrap/hookurile nu sunt încă active, iar panoul este numai în teste. Log runtime:150 intrări/48KiB/7zile; restore-before-write, coadă serială, fallback RAM/status explicit, lifecycle flush; fără Firebase/rețea/LLM/permisiuni noi. Raportul este Clipboard numai la gest; verifier-ul nu este conectat la aplicație.
+Cele 10 module și cele 9 suite Dart Vision sunt byte-identice sursei freeze #34. În acest lot bootstrap/hookurile nu sunt încă active, iar panoul este numai în teste. Log runtime:150 intrări/48KiB/7zile; restore-before-write, coadă serială, fallback RAM/status explicit, lifecycle flush; fără Firebase/rețea/LLM/permisiuni noi. Raportul este Clipboard numai la gest; verifier-ul nu este conectat la aplicație.
 
 CI pe SHA lot este obligatoriu înainte de bootstrap/hookuri; rezultatele și arborii se consemnează după execuție. Baseline 294Flutter/158Python/3Node/10financial+5identity, AuthGate12+8 și protected116 rămân.
 
@@ -53,3 +53,16 @@ Bootstrap unic în main, înainte de Firebase: install handlers idempotent și r
 Source contract #34 este adaptat la modulele efective fără eliminarea celor5 aserțiuni anterioare; două contracte suplimentare cer unicitate/ownership/coduri fixe/zero public route și zero verifier wiring. Un test Python suplimentar demonstrează inversion financiar/OCR.166PythonPASS local. CI pe SHA lot și Android se raportează după execuție.
 
 Android: un workflow NOU compile-only, limitat prin head_ref la PR38, fără modificarea workflow-urilor protejate. Rulează teste Vision/AuthGate și compilează lib/main.dart real, fără secrets/token/Google Services modificat, fără artifact upload/instalare/deploy. Este compilare, nu hardware sau login Firebase live.
+
+
+## Lot 2 — rezultate combinate
+
+Commit b89a1783248da48021b6f7da6af18aac984b2d14. Standard38638290602 SUCCESS5/5:397Flutter (294baseline+96Vision+7integration),166Python,3Node,Functions,financial10,smokeDart/webPASS. Identity38638290606 SUCCESS5PASS. Logcheckout fe3b7df21c94c0af0ff03a167055309f43a537d7 / treefe2bd43b2d0afdaf6d28fa083602b6b5564c09c3 identicHEAD. Android38638291119: testeAuthGate/VisionPASS și compilare debug a aplicației integrate lib/main.dart PASS; jobul complet și logul/tree se revalidează înainte de commitul următor. Niciun APK upload/instalat/distribuit.
+
+## Refresh selectiv read-only al sursei și lot 3 UI fail-closed
+
+În timpul validării, #34 a avansat extern 5f316eaa→325b44e6983bc8db50f6a16946b41a3527b0b0e6 (6commituri). Compare confirmă numai3fișiere schimbate:diagnostics_page,widgettests,raport. Modificările introduc refuzul implicit al singletonului device-wide și ownership explicit pentru loguri injectate; sunt relevante pentru #37. Adoptăm acest freeze numai pentru cele2fișiere UI/test. Celelalte module rămânfreeze5f316eaa plus adaptoarele locale documentate. Nicio ramură sursă editată.
+
+Panoul refuză jurnalul global chiar dacă este injectat explicit sau primește grant pozitiv. Orice log injectat în context autentificat cere isSessionCurrent:UID+epoch din AuthGate; lipsa,false ori excepția duc la UI fărăjurnal/raport. Offline-smoke flag nu este activ în aplicația compilată. Combined UI test furnizează closure realAuthGate și creează un log sintetic nou pentru fiecare context, nu o proiecție neverificată a istoricului device-wide. Pagina tot nu primește o rută publică.
+
+Verificarea ownership precedă clipboard și este repetată dupăawait; test suplimentar întârzie completarea Clipboard dupăSDKUIDB dar înainte dedispose și cere zero feedbackA,zeroexportautomat,routeeliminată. Copierea OS deja începută nu poate fi retrasă retroactiv. Sourcecontract cere gating înainte deadvisor/list și dupăcopy. CI peSHA lot,standard/identity/Androidobligatoriu.

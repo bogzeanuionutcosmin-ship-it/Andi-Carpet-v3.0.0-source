@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:andi_carpeta/main.dart';
 import 'package:andi_carpeta/vision/vision_diagnostics_page.dart';
 import 'package:andi_carpeta/vision/vision_error_log.dart';
@@ -8,6 +9,34 @@ import 'auth_session_acceptance_test.dart' as harness;
 import 'support/security_gate_fixture.dart';
 
 void main() {
+  testWidgets('clipboard completion from A cannot show feedback after SDK B before disposal', (tester) async {
+    final auth = SessionAuth(); final db = SessionFirestore();
+    addTearDown(auth.events.close); addTearDown(db.close);
+    final copied = Completer<void>(); var calls = 0;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') { calls++; await copied.future; }
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    await harness.mount(tester, auth, db, homeBuilder: (key, profile, current) => Builder(key: key, builder: (context) => Scaffold(body: TextButton(
+      child: const Text('Open internal diagnostic'), onPressed: () {
+        final local = VisionErrorLog()..record(area: 'fcm', code: 'initialization_failed', platform: 'android');
+        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => VisionDiagnosticsPage(log: local, isSessionCurrent: current)));
+      },
+    ))));
+    db.profile('a'); await harness.flush(tester);
+    await tester.tap(find.text('Open internal diagnostic')); await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Copiază raport tehnic anonimizat')); await tester.idle();
+    expect(calls, 1);
+    auth.switchTo('b'); await tester.idle();
+    copied.complete(); await tester.idle();
+    expect(find.textContaining('Raportul tehnic a fost copiat'), findsNothing);
+    await harness.flush(tester);
+    expect(find.byType(VisionDiagnosticsPage), findsNothing);
+    expect(calls, 1); // An OS copy already initiated is not retroactively revoked.
+    await tester.pumpWidget(const SizedBox()); expect(tester.takeException(), isNull);
+  });
+
   for (final logout in [false, true]) {
     testWidgets('test-only Vision context drops routes, sheets and clipboard feedback on ${logout ? "logout" : "A B A"}', (tester) async {
       final auth = SessionAuth(); final db = SessionFirestore();
@@ -26,7 +55,7 @@ void main() {
           if (!current()) return;
           contexts++;
           final local = VisionErrorLog()..record(area: 'gps', code: 'background_start_failed', platform: 'android');
-          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => VisionDiagnosticsPage(log: local)));
+          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => VisionDiagnosticsPage(log: local, isSessionCurrent: current)));
         },
       ))));
       db.profile('a'); await harness.flush(tester);

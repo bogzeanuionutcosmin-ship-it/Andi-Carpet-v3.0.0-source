@@ -10,10 +10,19 @@ import 'vision_error_telemetry.dart';
 
 /// Read-only diagnostics from THIS device only; no remote-user data queries.
 class VisionDiagnosticsPage extends StatefulWidget {
-  const VisionDiagnosticsPage({super.key, this.log});
+  const VisionDiagnosticsPage({
+    super.key,
+    this.log,
+    this.isSessionCurrent,
+  });
 
   /// Optional pure log for offline unit/widget testing.
   final VisionErrorLog? log;
+
+  /// Required for any injected log in the authenticated app. The caller must
+  /// verify the exact UID AND authentication epoch, not only mounted/state.
+  /// This is not a substitute for proving that [log] is session-scoped.
+  final bool Function()? isSessionCurrent;
 
   @override
   State<VisionDiagnosticsPage> createState() => _VisionDiagnosticsPageState();
@@ -25,8 +34,50 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
   static const String _smokeRun =
       String.fromEnvironment('VISION_SMOKE_RUN', defaultValue: 'local');
 
+  bool get _canInspect {
+    // The offline smoke build has no accounts or Firebase.
+    if (_offlineTestBuild) return true;
+    if (widget.log == null || identical(widget.log, VisionErrorTelemetry.log)) {
+      return false;
+    }
+    try {
+      // Fail closed when no explicit live session owner is supplied, when it
+      // has expired, or when the owner check itself fails.
+      return widget.isSessionCurrent?.call() == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _denyStaleSession() {
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    // The persistent telemetry key is shared by the entire installation,
+    // not partitioned by authenticated UID. A newly signed-in user must not
+    // be able to inspect the prior user's diagnostic history. Until an
+    // authenticated session-scoped projection exists, deny access to the
+    // device-wide journal in the real app. Injected logs are for isolated
+    // tests/explicitly scoped integrations; the offline smoke app is separate
+    // from login and Firebase.
+    if (!_canInspect) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Vision')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Text(
+              'Diagnosticul local nu este disponibil aici până când '
+              'istoricul poate fi izolat sigur pentru sesiunea curentă. '
+              'Nu au fost șterse date și nu a fost trimis niciun raport.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
     final currentLog = widget.log ?? VisionErrorTelemetry.log;
     final entries = currentLog.entries;
     final insights = VisionDiagnosticAdvisor.assess(currentLog, maxInsights: 1);
@@ -54,19 +105,28 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
             tooltip: 'Copiază raport tehnic anonimizat',
             icon: const Icon(Icons.copy_all_outlined),
             onPressed: () async {
+              // Do not let a stale route copy the old owner's report.
+              if (!_canInspect) {
+                _denyStaleSession();
+                return;
+              }
               final report = VisionDiagnosticReport.build(
                 widget.log ?? VisionErrorTelemetry.log,
               );
+              if (!_canInspect) {
+                _denyStaleSession();
+                return;
+              }
               try {
                 await Clipboard.setData(ClipboardData(text: report));
-                if (!mounted) return;
+                if (!mounted || !_canInspect) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text(
                     'Raportul tehnic a fost copiat. Verifică-l înainte de distribuire.',
                   )),
                 );
               } catch (_) {
-                if (!mounted) return;
+                if (!mounted || !_canInspect) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text(
                     'Nu s-a putut copia raportul pe acest dispozitiv.',
@@ -79,6 +139,10 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
             tooltip: 'Ce monitorizează Vision',
             icon: const Icon(Icons.info_outline),
             onPressed: () {
+              if (!_canInspect) {
+                _denyStaleSession();
+                return;
+              }
               showModalBottomSheet<void>(
                 context: context,
                 isScrollControlled: true,
@@ -125,7 +189,7 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
           ),
           IconButton(
             tooltip: 'Actualizează',
-            onPressed: () => setState(() {}),
+            onPressed: _denyStaleSession,
             icon: const Icon(Icons.refresh),
           ),
         ],
