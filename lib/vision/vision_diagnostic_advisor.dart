@@ -51,7 +51,11 @@ class VisionDiagnosticAdvisor {
         if (repeated != 0) return repeated;
         final when = b.lastSeen.compareTo(a.lastSeen);
         if (when != 0) return when;
-        return b.count.compareTo(a.count);
+        final count = b.count.compareTo(a.count);
+        if (count != 0) return count;
+        // Equal severity/time/repetition must yield the same top insight
+        // regardless of cached insertion order or restart ordering.
+        return a.fingerprint.compareTo(b.fingerprint);
       });
 
     return List<VisionDiagnosticInsight>.unmodifiable(
@@ -89,9 +93,10 @@ class VisionDiagnosticAdvisor {
     }
     if (area == 'ocr' && code == 'document_save_failed') {
       return (
-        'Document nesalvat',
-        'Verifică dacă documentul apare în evidență înainte de a încerca '
-            'o nouă salvare. O scanare reușită nu garantează salvarea.',
+        'Salvarea documentului necesită verificare',
+        'A apărut o eroare în timpul salvării, dar documentul ar putea '
+            'fi deja înregistrat. Verifică evidența înainte de orice '
+            'nouă încercare și evită documentele duplicate.',
       );
     }
     if (area == 'ocr') {
