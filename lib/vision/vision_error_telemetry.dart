@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'vision_error_log.dart';
 import 'vision_local_persistence.dart';
+import 'vision_telemetry_lifecycle.dart';
 
 /// Device-only error collection. No Firebase writes, no network AI, no secrets.
 ///
@@ -35,6 +37,14 @@ class VisionErrorTelemetry {
   static Timer? _writeTimer;
   static bool _installed = false;
 
+  // One observer for the app lifetime; only flush already pending snapshots.
+  // An abrupt OS process kill can still interrupt an asynchronous write.
+  static final VisionTelemetryLifecycleObserver _lifecycleObserver =
+      VisionTelemetryLifecycleObserver(
+    hasPending: () => _writeTimer != null,
+    flush: flush,
+  );
+
   static String get _platform =>
       kIsWeb ? 'web' : defaultTargetPlatform.name;
 
@@ -43,6 +53,7 @@ class VisionErrorTelemetry {
   static void installFlutterHandlers() {
     if (_installed) return;
     _installed = true;
+    WidgetsBinding.instance.addObserver(_lifecycleObserver);
 
     final previousFlutterHandler = FlutterError.onError;
     FlutterError.onError = (details) {
