@@ -9875,8 +9875,8 @@
     },
     {
       "path": "test/support/admin_backup_fixture.dart",
-      "bytes": 5097,
-      "sha256": "e31f3f27bf716a69092fd4360785d1051e21b366cb14d9cc653f7c3c5a3cdabe",
+      "bytes": 5157,
+      "sha256": "b0dae7f5a87b9d7f0c0a52a9278f65ebd802bd08c8cec88a936d91974f80c04b",
       "owner": "test/support/admin_backup_fixture.dart",
       "directives": [
         {
@@ -9918,6 +9918,14 @@
           "text": "import 'package:flutter_test/flutter_test.dart';",
           "uris": [
             "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
           ],
           "local_targets": []
         },

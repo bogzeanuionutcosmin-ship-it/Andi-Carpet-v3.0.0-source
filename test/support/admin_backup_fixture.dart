@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:andi_carpeta/main.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 import 'home_maintenance_fixture.dart';
 import 'home_sync_fixture.dart';
 import 'auth_gate_fixture.dart';
@@ -70,13 +71,13 @@ class _BackupCollection extends Fake implements CollectionReference<Map<String, 
 }
 class _BackupDocument extends Fake implements DocumentReference<Map<String, dynamic>> {
   final AdminBackupDbFixture db;
-  final String parent;
+  final String parentPath;
   @override
   final String id;
-  _BackupDocument(this.db, this.parent, this.id);
+  _BackupDocument(this.db, this.parentPath, this.id);
   @override
-  String get path => '$parent/$id';
-  DocumentReference<Map<String, dynamic>> get base => db.baseCollection(parent).doc(id);
+  String get path => '$parentPath/$id';
+  DocumentReference<Map<String, dynamic>> get base => db.baseCollection(parentPath).doc(id);
   @override
   CollectionReference<Map<String, dynamic>> collection(String name) => db.collection('$path/$name');
   @override
@@ -87,7 +88,7 @@ class _BackupDocument extends Fake implements DocumentReference<Map<String, dyna
   Future<void> delete() => base.delete();
   @override
   Stream<DocumentSnapshot<Map<String, dynamic>>> snapshots({bool includeMetadataChanges = false, ListenSource source = ListenSource.defaultSource}) =>
-      db.streams.collection(parent).doc(id).snapshots(includeMetadataChanges: includeMetadataChanges, source: source);
+      db.streams.collection(parentPath).doc(id).snapshots(includeMetadataChanges: includeMetadataChanges, source: source);
   @override
   dynamic noSuchMethod(Invocation i) => db.reject('$path:${i.memberName}');
 }

@@ -37,3 +37,5 @@ Local: 157 Python PASS, source inversion și 116 protected hashes PASS. Inventar
 ## Limite și următorii pași
 
 Accept/partial/batch-failure/retry/concurrency vor rula numai pe fake store; nu se inventează atomicitate. Migration, FCM/GPS, matrice OCR suplimentară și auditul read-only sunt următoarele loturi. P1 AuthGate și defectele cunoscute rămân nereparate. Fără main/merge/rebase/deploy/APK/producție/Firebase rules/config/billing/versiune sau modificări PR #33/#34/#29.
+
+Lot 34 inițial 76522cb / CI 38577042832: 242 teste Flutter existente PASS, noul fișier nu compilează; celelalte 4 joburi și identity 38577042721 SUCCESS. Două erori proprii de fixture: câmpul String parent suprapunea getterul DocumentReference.parent și lipsea importul Material pentru SizedBox. Corecție numai în fixture: parentPath și import Material. Nicio aserțiune sau sursă runtime schimbată. CI corectiv pe SHA propriu urmează.
