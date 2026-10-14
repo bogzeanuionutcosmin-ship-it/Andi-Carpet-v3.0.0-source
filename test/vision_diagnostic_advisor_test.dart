@@ -28,7 +28,7 @@ void main() {
     log.record(area: 'ocr', code: 'document_save_failed',
       platform: 'android');
     final insight = VisionDiagnosticAdvisor.assess(log).single;
-    expect(insight.title, 'Document nesalvat');
+    expect(insight.title, 'Salvarea documentului necesită verificare');
     expect(log.entries, hasLength(2));
   });
 
@@ -62,11 +62,40 @@ void main() {
     final before = log.encode();
     final insights = VisionDiagnosticAdvisor.assess(log);
     expect(insights, hasLength(1));
-    expect(insights.single.title, 'Document nesalvat');
+    expect(insights.single.title, 'Salvarea documentului necesită verificare');
     expect(insights.single.explanation,
-      contains('Verifică dacă documentul apare'));
+      contains('Verifică evidența'));
     expect(insights.single.explanation, isNot(contains('salvez automat')));
     expect(log.encode(), before); // Advisor cannot mutate diagnostics.
+  });
+
+  test('save exception does not claim that the document is absent', () {
+    log.record(area: 'ocr', code: 'document_save_failed',
+        platform: 'android');
+    final before = log.encode();
+    final item = VisionDiagnosticAdvisor.assess(log).single;
+    expect(item.title, 'Salvarea documentului necesită verificare');
+    expect(item.explanation, contains('ar putea'));
+    expect(item.explanation, contains('Verifică evidența'));
+    expect(item.explanation, contains('evită documentele duplicate'));
+    expect(item.explanation, isNot(contains('sigur nu s-a salvat')));
+    expect(log.encode(), before);
+  });
+
+  test('equal-priority incidents have deterministic order after restart', () {
+    final first = VisionErrorLog(clock: () => clock);
+    final second = VisionErrorLog(clock: () => clock);
+    first.record(area: 'ocr', code: 'recognition_failed', platform: 'web');
+    first.record(area: 'fcm', code: 'token_refresh_failed', platform: 'web');
+    second.record(area: 'fcm', code: 'token_refresh_failed', platform: 'web');
+    second.record(area: 'ocr', code: 'recognition_failed', platform: 'web');
+    final a = VisionDiagnosticAdvisor.assess(first, maxInsights: 1).single;
+    final b = VisionDiagnosticAdvisor.assess(second, maxInsights: 1).single;
+    expect(a.title, 'Notificările necesită atenție');
+    expect(a.title, b.title);
+    expect(a.explanation, b.explanation);
+    expect(first.length, 2);
+    expect(second.length, 2);
   });
 
   test('priority is critical before error, regardless of time', () {
@@ -135,7 +164,7 @@ void main() {
     expect(message.repeated, isTrue);
     expect(message.occurrenceLabel,
       'Repetată: 2 apariții în jurnalul local');
-    expect(message.explanation, contains('Verifică dacă documentul apare'));
+    expect(message.explanation, contains('Verifică evidența'));
     expect(log.encode(), before);
   });
 
