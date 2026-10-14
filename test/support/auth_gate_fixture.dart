@@ -75,4 +75,3 @@ Future<void> flushFixtureGate(WidgetTester tester) async {
   await tester.pump();
   await tester.pump();
 }
-

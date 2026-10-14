@@ -769,3 +769,45 @@ LoginPageView este bibliotecă Flutter independentă cu logo/install/backdrop, c
 LoginPageView lot 12: 60d543c4d48771cae01073d5d6643510b5352693 / CI 38493025007 **5/5 SUCCESS**. După fixture-urile Home validate, HomeMessageQueries separă numai selecția query-urilor notifications/chat privat/grup. Adapterul Firestore păstrează ramura admin/member, where userId/recipientId, order createdAt desc și limit20. Constructor HomePage primește opțional portul. Query construction este lazy; portul nu apelează snapshots/listen, nu stochează UID și nu adaugă cache/retry/polling. snapshots, callbacks, priming/dedup, mounted, erroare și cancel rămân textual în Home după substituția expresiilor sursă. Număr și ordine listeners identice.
 
 Două teste directe cu Firestore fake verifică member/admin/UID/ordine/limită/lipsa abonărilor și query-uri separate pentru A/B. Cele patru fixture-uri State Home și caracterizările AuthGate rămân regresii ale integrării. Acesta nu este acces live sau validare backend a regulilor. CI pe lot urmează. Pas următor: checkpoint complet; admin/maintenance, navigate din paginile reale, GPS/FCM și restul surselor identity-bound se abordează ulterior cu fixture-uri dedicate. P1 AuthGate/Home/route nu este corectat în #28; aprobarea unui PR funcțional separat este necesară.
+
+
+## CHECKPOINT-AUTH-HOME-LIFECYCLE-20261014 — patru loturi noi validate
+
+Start măsurat al acestei misiuni: **2026-10-14T00:39:20Z**, baza GitHub/local **a5892dbbaf7b4563f5eb4f7740472f5a590203ad**, CI 38488631152 deja 5/5 SUCCESS. Checkout curat la reluare; ultimele 5 loturi nu sunt repetate. Durata completă până la ultima verificare va fi calculată la final, cu precizie de secundă; nu există valori măsurate de credite.
+
+| Lot | Commit final validat | CI | Rezultat |
+|---|---|---|---|
+| 10. AuthGate identity/route characterization | dee55c97690fe06fcd286541d390f466457cdc93 | 38492063377 | 5/5 SUCCESS |
+| 11. State Home real / sync + platform effects DI | 28aa0504ebc6b1d9c406eacbd405f41190c192d7 | 38492570449 | 5/5 SUCCESS |
+| 12. LoginPageView independentă | 60d543c4d48771cae01073d5d6643510b5352693 | 38493025007 | 5/5 SUCCESS |
+| 13. HomeMessageQueries | dca1ae0c18e029df9d6a81897ae3ecea27bf20ae | 38493437203 | 5/5 SUCCESS |
+
+Commitul inițial lot 10 **93da9d66ed1e5139f27dfbb1cf8f639e226cfe56**, CI **38491865687**: 153 Flutter pass/1 fail, celelalte 4 joburi success. Eșecul presupunea dispose A înainte de mount B; Flutter face mount B înainte de dispose A. Commitul dee55c9 corectează numai ordinea așteptată, fără eliminarea sau slăbirea verificărilor de defect. Runtime AuthGate state machine și corecțiile de securitate nu sunt schimbate. Nu s-a avansat la Home înainte de CI corectiv 5/5.
+
+### Investigație prioritară — P1 confirmat, nereparat
+
+**Reprodus în CI:** după auth A -> B, înainte de profil B, pending UI real păstrează numele/email A; o eroare B este ignorată cât există _profile A. Active page probe păstrează identitatea/tab A, inclusiv la currentUser B + null tranzitoriu. Separat, fixture cu **State-ul real Home** confirmă păstrarea instanței montate A, currentUserId A, datele Cached Alice, tabul A și listenerul users/A. Când vine profilul B, se creează State B nou, tab0, own listener users/B; State A este disposed și old subscriptions anulate. Evenimentele vechi după cancel sunt ignorate în streamurile Dart simulate.
+
+Navigator route A împinsă în harness rămâne vizibilă deasupra paginii B chiar după profil B. Nu este remediată prin ValueKey al Home. Home State fixture înlocuiește **numai rendering-ul** cu SizedBox; nu certifică toate paginile/navigarea reală/hardware sau Firebase live. Nu există dovadă de bypass Firestore Rules din aceste teste. Există dovadă de retenție/afișare client cross-account a datelor deja încărcate, relevantă pe dispozitive comune. Nu declarăm aplicația sigură pe baza CI: testele KNOWN DEFECT sunt caracterizare și rămân marcate astfel.
+
+**Soluție propusă și necesitate de aprobare:** pe UID realmente diferit, invalidare atomică profile/state și loading B, unmount A imediat, păstrarea fallbackului numai pentru reconectarea aceluiași UID; graniță de sesiune pentru Navigator/rute, audit async GPS/FCM. Necesită **aprobare expresă pentru corecție funcțională/de securitate într-un PR separat**. Nu se aplică în #28, conform mandatului. Testele de acceptanță ale corecției vor trebui să ceară zero date A afișate înainte de B sau la eroare B, logout și route push. Raport complet: docs/AUDIT_IDENTITATE_LIFECYCLE_2026-10-14.md.
+
+### Home — caracterizare și limite
+
+Patru teste State real: 14 core member subscriptions în ordinea originală înainte de location/push; own profile/director/teams/cars/locations/schedules/records/definitions/notifications/private/group/settings; eroare/reconnect fără noi abonări; scope financiar t1 -> t2 cu 4 cancel, clear și respingerea vechilor events; dispose -> toate activeCount0; UID real A/B prin AuthGate. Filtrele și query-urile sunt capturate de Firestore fake strict, fără server/live data. Queryurile notification admin/member, private UID și group createdAt desc limit20 sunt verificate separat. Nu există retry/polling/cache sau listen nou în portul HomeMessageQueries; ownership snapshots/listeners rămâne în Home.
+
+SyncFirestore opțional schimbă numai sursa DB core/financial; HomePlatformEffects schimbă numai selecția callbackurilor startup. Defaulturi, momentul accesării SDK, ordinea și apelurile originale rămân. Financial body este identic după unica înlocuire FirebaseFirestore.instance -> _syncDb; nicio formulă, tranzacție, condiție sau permisiune modificată. Nu s-a forțat separarea State financiar/GPS/FCM.
+
+**Rămâne deschis:** fixture admin/audit/seed/maintenance, callbackuri async/post-frame în întregul UI, GPS/FCM hardware/late init/token ownership, reconectare SDK/cache real și protecție server-side. Streamurile testate respectă cancel standard Dart; nu se presupune că au acoperit toate callbackurile platformei sau backend-ul. Cache-urile private și logica finanțelor nu sunt mutate/curățate implicit.
+
+### Teste, inventar și protecții
+
+CI pe fiecare lot: Flutter tests/domain Dart fără engine/build web, Python source/security, Node, Functions syntax/dependencies și Firestore emulator — toate 5 joburi success. Ultimul lot de cod: **163 Flutter PASS**; **13 teste noi** (4 AuthGate, 4 Home, 3 LoginPageView, 2 query selection). Local **155 Python + 3 Node PASS**, Functions syntax și diff/equivalence/inventar PASS. Emulator: **10/10 PASS** în 38493437203. SDK Flutter/Dart indisponibil local; nicio testare Android/live Firebase/publicare.
+
+Inventar: **183 Dart (132 lib, 50 test, 1 script), 59 parts, 124 biblioteci totale, 73 independente în lib**. Regenerat cu script și comparat byte-identic; fără missing/orphan/duplicate/cicluri detectate. Numărul parts nu a scăzut în această misiune: prioritare au fost fixture-urile și interfețele, nu o țintă numerică artificială. Auditul lexical nu demonstrează cod mort.
+
+Zero diff față de baza a5892dbb în lib/finance, reports/PDF/documents/download, OCR, map/Mapbox, assets, Functions, workflows, pubspec, rules/config/teste Firestore. Singura schimbare în home_financial_sync este sursa DB injectabilă, verificată textual. Main rămâne 377f1fd5e73ae78a0df5cab58b09770c873cd167. HEAD-urile verificate neschimbate: #19 d4da2872a566eba258e82b8597c023e03ceb9b56; #20 8ae220b41b5e9c1648151606f9443ba8fa68a90a; #21 d18b2523a31ead7eb65a04fe92a21276a4155c97; #29 545e0202755a8ee86a7b3406adccd469aac84f9e. Numai #28 primește commituri cu expected HEAD lease; arborii local/remote comparați înainte de sync.
+
+**Pas exact de reluare:** verifică HEAD-ul real și CI checkpoint din descrierea PR; nu repeta loturi/runs încheiate. Citește acest checkpoint și raportul lifecycle. Prioritizează aprobarea separată a remediului P1; în modularizare continuă fixture admin/audit și porturi read-only own profile/directory/operations/settings, după caracterizarea efectelor și fără noi reads/writes. LoginPageView este deja separată, nu se re-extrage. Nu muta stări financiare/GPS/FCM înainte de fixture-uri suficiente. Auditul diferențial complet și modularizarea integrală rămân deschise; registrul/Issue #30 nu se reaproba. Vision/Error Log #19/#21 se reutilizează ulterior pe PR dedicat, fără variantă nouă în #28.
+
+Acest checkpoint conține documentație, inventar și eliminarea unei linii goale EOF în fixture auth; CI complet va fi verificat pentru SHA checkpoint înainte de raportul final. PR #28 rămâne Draft/Open, checkout curat și sincronizat. Fără merge/deploy/APK/publicare web/Firebase live/rules/config/billing/migrări/schimbare versiune. Final SHA/run exact sunt în descrierea PR, pentru evitarea unei referințe imposibile la propriul SHA din același commit.

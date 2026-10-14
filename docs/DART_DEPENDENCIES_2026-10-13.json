@@ -8214,8 +8214,8 @@
     },
     {
       "path": "test/support/auth_gate_fixture.dart",
-      "bytes": 2543,
-      "sha256": "31c1a1eb13740c69c0f917d737dfdad7929357549bfabf56bf6e0a887cdc376b",
+      "bytes": 2542,
+      "sha256": "4123dac18d51475516bc839e181a4db4ae00b9ef660eabd423553a4a334666de",
       "owner": "test/support/auth_gate_fixture.dart",
       "directives": [
         {
