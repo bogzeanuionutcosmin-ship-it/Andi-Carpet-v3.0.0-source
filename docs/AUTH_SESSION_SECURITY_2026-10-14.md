@@ -74,3 +74,40 @@ Review-ul final verifică și calea auth stream onError: SDK currentUser poate i
 **cd2dc174d8dfe6d3cfd1d911b66aea47da79e79e / CI 38517375349:** **60 Flutter PASS / 1 FAIL**, exact SDK UID B + auth stream error păstrează ruta «Auth error private a»; alte 4 joburi SUCCESS. Controlul auth stream error cu SDK UID A neschimbat este PASS.
 
 Handlerul auth onError reverifică SDK currentUser; dacă UID diferă (inclusiv logout), folosește _handleAuthChange pentru invalidare/root boundary și nu păstrează profilul/ruta precedente. Eroarea cu același UID păstrează fallbackul legitim. Testele sunt byte-identice cu RED; GREEN pe noul SHA urmează.
+
+
+## Checkpoint final de cod — P1 client demonstrabil remediat
+
+**1893ffda7289b3ecbc0eb804a6ce4400a3a03fa2 / CI 38517692453 5/5 SUCCESS:** **61 Flutter, 107 Python, 3 Node, 10 Firestore emulator PASS**, Functions dependencies/syntax PASS, build web PASS. Main avea 41 teste Flutter; acest PR adaugă 20 (12 acceptanțe de izolare, 8 controale/regresii). Nu confundați cu cele 188 teste ale #28, care nu sunt importate aici.
+
+| Fază | SHA | CI | Dovezi |
+|---|---|---|---|
+| Fixture inițial | 39398af4579afe39e6940901e28957121b7aa8c6 | 38515092462 | Compile failure fake FCM serviceWorkerScriptPath, 41 PASS/2 load failures; nu este RED P1 |
+| RED principal | 51f864162dac73179c7f2dc54cf90df956363beb | 38515354927 | 42 PASS/10 acceptance FAIL, same UID PASS, alte 4 joburi SUCCESS |
+| GREEN principal | ec6b389b194376a85f6975c75088c25b06b6cbdd | 38516118964 | 52 Flutter PASS, 5/5, aceeași suită byte-identică |
+| Regresii legitime | 4a770da00364c5a0eafff4f91a27070ff2c7f3f2 | 38516475803 | 58 Flutter PASS, 5/5 |
+| RED messenger | 58724b34efb382dcd77a3875e02a0b3a2f0ab57f | 38516742854 | 58 PASS/1 FAIL: SnackBar A vizibil în loading B, alte 4 SUCCESS |
+| GREEN messenger | 72aca0102294c3938a8581ffcbbe9218906064c1 | 38516940394 | 59 Flutter PASS, 5/5, test neschimbat |
+| RED auth error | cd2dc174d8dfe6d3cfd1d911b66aea47da79e79e | 38517375349 | 60 PASS/1 FAIL: SDK B + auth error păstrează route A; same SDK UID PASS, alte 4 SUCCESS |
+| GREEN auth error | 1893ffda7289b3ecbc0eb804a6ce4400a3a03fa2 | 38517692453 | 61 Flutter PASS, 5/5, test neschimbat |
+
+Runtime: numai cele trei fișiere existente main AuthGate/Home/AppRoot. Navigarea ROOT și ScaffoldMessenger înlocuite la UID diferit/logout, fără tranziție cu date A; Home și subscriptions A disposed la frame-ul de invalidare fără a aștepta profil B. Erori/null/snapshot întârziat B nu readuc A. SDK auth error cu UID nou trece prin aceeași graniță. Callbackuri vechi respinse sincron prin uid/generație/mounted și guard-uri după await; FCM token/subscription și GPS subscription nu se atașează după dispose.
+
+Same UID/null tranzitoriu cu SDK currentUser valid, profile/auth errors și navigare/Back păstrează fallbackul legitim. Preferințele personale se resetează la UID nou; global branding/backgrounds/templates/financial settings se păstrează. Fixture State Home real verifică own team/decont și cache nou pentru B. Contabilitatea/avansul/query-urile/regulile/rutarea map/PDF/OCR sunt intacte.
+
+Toate fișierele existente în main în afara celor trei runtime și notei ChatGpt sunt comparate byte-exact cu main de bază. Fără import/cherry-pick de modularizare #28. Numai fakes utile adaptate cu atribuire explicită. #28 rămâne c794c5d; #19/#20/#21/#29 și main HEAD-uri reverificate neschimbate. Checkout separat curat și sincronizat prin tree și commit bytes verificate din GitHub; checkoutul #28 nu a fost modificat.
+
+### Verdict și limite
+
+**P1 AuthGate/UI este demonstrabil remediat în codul acestui PR pentru cele 12 scenarii de acceptanță, cu RED→GREEN verificat și controale pozitive.** Nu este remediat live: nu s-a făcut merge/deploy/publicare. Nu se certifică toate funcțiile aplicației ori Android/Firebase/GPS/FCM hardware; Flutter/Dart lipsesc local, execuțiile complete sunt în CI.
+
+Rămân distinct: pushTokens A deja stocate și notificări OS/server deja expediate; recipient matching/revocare tokenuri; cache persistent SDK nepurjat; writes/maintenance deja în curs neanulabile; audit complet al revocării rolurilor în aceeași sesiune și securitatea backend a celorlalte colecții. Acestea nu sunt mascate de CI verde și necesită follow-up separat. Nu se schimbă rules/config/production pentru a face verde.
+
+### Verificare manuală ulterioară, numai într-un mediu autorizat de test
+
+1. Două conturi sintetice A/B pe dispozitiv comun: profil/Home/echipă/decont A încărcate, rută și dialog deschise, SnackBar cu text privat.
+2. A→B cu profil B întârziat/error/null/offline: zero date A în UI, Back nu readuce A, cache State și listeners A eliminate.
+3. A→A reconnect: profil/tab/rută legitime păstrate; A→B→A rapid: UI nou și zero callbacks din epoca A veche.
+4. FCM/GPS cu permisiuni/token/geolocation întârziate: nicio scriere/listener A nou după schimbare. Separat verificați riscul notificărilor OS de la tokenurile A vechi înainte de orice release.
+
+PR #33 rămâne Draft/Open pentru review. Fără merge/deploy/APK/migrare/date Firebase production/rules/config/billing/versiune. Checkpointul de documentație are CI propriu, verificat înainte de raportul final; SHA/run se vor adăuga în descrierea PR pentru evitarea autoreferinței.
