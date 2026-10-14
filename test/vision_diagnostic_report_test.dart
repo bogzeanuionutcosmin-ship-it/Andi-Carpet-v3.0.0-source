@@ -113,7 +113,9 @@ void main() {
     final output = VisionDiagnosticReport.build(log, generatedAt: timestamp);
     expect(output, contains('Incidente locale: 110'));
     expect(output, contains('Probe locale (nu sunt erori): 1'));
-    expect(output, contains('system/warning_99'));
+    // At equal timestamps ties are ordered by fingerprint, so warning_0
+    // is guaranteed to survive the 100-event export cap.
+    expect(output, contains('system/warning_0'));
     expect(output, isNot(contains('vision_test/persistence_probe |')));
     expect(output, contains('raport limitat'));
     expect(output.length,
