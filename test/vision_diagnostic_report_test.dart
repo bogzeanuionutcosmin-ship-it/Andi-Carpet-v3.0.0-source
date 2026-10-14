@@ -25,6 +25,7 @@ void main() {
     expect(output, contains('ocr/save_failed | android | error'));
     expect(output, contains('repetari=10000'));
     expect(output, contains('Incidente locale: 1'));
+    expect(output, contains('Aparitii ale incidentelor: 10000'));
     expect(output, isNot(contains('StackTrace')));
     expect(output.length, lessThanOrEqualTo(
         VisionDiagnosticReport.maxCharacters));
@@ -67,6 +68,24 @@ void main() {
     final output = VisionDiagnosticReport.build(log);
     expect(output, isNot(contains('0123456789')));
     expect(output, isNot(contains('company.test')));
+  });
+
+  test('separates real incident repetitions from test probe repetitions', () {
+    final log = create();
+    for (var i = 0; i < 3; i++) {
+      log.record(area: 'ocr', code: 'save_failed', platform: 'android');
+    }
+    for (var i = 0; i < 4; i++) {
+      log.record(area: 'vision_test', code: 'persistence_probe',
+          platform: 'android', severity: VisionErrorSeverity.warning);
+    }
+    final before = log.encode();
+    final output = VisionDiagnosticReport.build(log, generatedAt: timestamp);
+    expect(output, contains('Incidente locale: 1'));
+    expect(output, contains('Aparitii ale incidentelor: 3'));
+    expect(output, contains('Probe locale (nu sunt erori): 1 tipuri'));
+    expect(output, contains('Aparitii ale probelor locale: 4'));
+    expect(log.encode(), before);
   });
 
   test('synthetic probe remains visible but is not a real incident', () {
