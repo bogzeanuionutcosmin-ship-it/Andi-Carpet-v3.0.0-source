@@ -236,3 +236,13 @@ Jurnalul Vision deduplică evenimente, dar versiunea anterioară a `VisionLocalP
 **Probe:** 1200 de evenimente critice repetate cu primul write blocat → maximum 2 writes și contorul 1201 reconstituit; 40 de flushuri fără eveniment nou → o singură scriere; eșecul primei scrieri în timp ce sosește o revizie mai nouă → a doua scriere salvează integral jurnalul, fără status fals. Testele de restore, serializare, fallback și timeout existente rămân. Aceste probe demonstrează comportamentul porturilor simulate, nu latența fizică Android Keystore.
 
 **Proveniență:** implementare doar în PR #34, fără modificare a #38/ramurilor sursă/main, fără APK instalat sau producție. Înainte de a importa această optimizare în PR #38, comparați HEAD-urile și păstrați validarea completă standard, identity și Android.
+
+## Bootstrap Flutter/Dart — coduri fixe, fără nume dinamice de excepții
+
+**Motivație:** două callbackuri globale din `VisionErrorTelemetry.installFlutterHandlers()` construiau anterior `code` din `details.exception.runtimeType.toString()` respectiv `error.runtimeType.toString()`. Chiar dacă `VisionErrorLog.safeCode` limitează identificatorii, numele tipurilor sunt variabile și nu fac parte din lista aprobată de evenimente. Acest lucru contrazice disciplina read-only de semnale constante a integrării #38.
+
+**Lot separat PR #34:** `flutter_framework/framework_error` și `dart_async/uncaught_error` sunt acum perechi de identificatori **fixe**. Nu se păstrează clasa dinamică, mesajul, stack trace, UID, fotografii, tokenuri ori alt payload brut. Ordinea de apel și returnarea handlerelor anterioare (inclusiv `false` pentru async necapturat) sunt păstrate. Un contract Python nou verifică absența `runtimeType.toString()` din adaptor, prezența codurilor exacte și delegarea către handlerii existenți.
+
+**Limită:** evenimentele istorice deja scrise sub un cod de tip de excepție pot rămâne în cache-ul criptat local până la expirarea TTL; nu ștergem sau migrăm retroactiv jurnalul și nu presupunem că acestea sunt incidente financiare. Integrarea #38 folosea deja coduri constante la bootstrap, deci nu este necesară modificarea ramurii sale. Nu se schimbă costuri, rețea, Firebase, APK, permisiuni sau decizii business.
+
+**Cod:** `ae2b74665d83df57cd3a31699ecae9e8392d15f9`. Rezultatul complet CI standard și Android offline se validează numai pe HEAD final.
