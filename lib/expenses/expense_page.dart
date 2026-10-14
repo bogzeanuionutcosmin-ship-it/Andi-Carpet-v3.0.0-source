@@ -17,10 +17,12 @@ class ExpensePage extends StatefulWidget {
   final void Function(String,String,String) notifyUser;
   final void Function(String,String) log;
   final Future<void> Function(Expense) saveExpense;
+  final Future<XFile?> Function(bool allowNoImage)? documentImagePicker;
+  final Future<String> Function(Uint8List bytes, {String? path})? documentTextRecognizer;
   final Future<void> Function(PerDiemEntry) savePerDiem;
   final Future<void> Function(TeamFinance) saveFinance;
   final Future<void> Function(TravelSettlement) saveSettlement;
-  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
+  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement,this.documentImagePicker,this.documentTextRecognizer});
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 

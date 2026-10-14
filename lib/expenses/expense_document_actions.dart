@@ -72,7 +72,9 @@ extension _ExpenseDocumentActions on _ExpensePageState {
   }
 
   Future<void> _manual() async {
-    final picked = await _pickDocumentImage(allowNoImage: true);
+    final picked = widget.documentImagePicker == null
+        ? await _pickDocumentImage(allowNoImage: true)
+        : await widget.documentImagePicker!(true);
     Uint8List? raw;
     FiscalOcrData? parsed;
     if (picked != null) {
@@ -81,7 +83,7 @@ extension _ExpenseDocumentActions on _ExpensePageState {
       if (raw.isNotEmpty && ocrSetting?.enabled == true && ocrSetting?.mode == LearningMode.automatic) {
         setState(() => scanning = true);
         try {
-          final text = await recognizeTextFromImage(raw, path: picked.path);
+          final text = await (widget.documentTextRecognizer ?? recognizeTextFromImage)(raw, path: picked.path);
           parsed = parseFiscalOcr(text);
           widget.log('OCR automat la atașare', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
         } catch (_) {
@@ -98,14 +100,16 @@ extension _ExpenseDocumentActions on _ExpensePageState {
   Future<void> _scan() async {
     final ocrSetting = widget.settings.learning['ocr'];
     if (ocrSetting?.enabled != true) { if (mounted) showErrorMessage(context, 'OCR financiar este dezactivat din Learning Center.'); return; }
-    final picked = await _pickDocumentImage();
+    final picked = widget.documentImagePicker == null
+        ? await _pickDocumentImage()
+        : await widget.documentImagePicker!(false);
     if (picked == null) return;
     final raw = await picked.readAsBytes();
     if (raw.isEmpty) return;
     setState(() => scanning = true);
     FiscalOcrData parsed;
     try {
-      final text = await recognizeTextFromImage(raw, path: picked.path);
+      final text = await (widget.documentTextRecognizer ?? recognizeTextFromImage)(raw, path: picked.path);
       parsed = parseFiscalOcr(text);
       widget.log('OCR document procesat', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
     } catch (e) {

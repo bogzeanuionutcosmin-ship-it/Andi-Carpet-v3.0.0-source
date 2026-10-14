@@ -49,11 +49,12 @@ class ScreenActionContracts(unittest.TestCase):
         module = source('lib/expenses/expense_document_actions.dart')
         for item in ('e.teamId != candidate.teamId', "(e.settlementId ?? '') == (candidate.settlementId ?? '')",
                      'e.imageFingerprint == candidate.imageFingerprint', 'sameDay(candidate.date, e.date)',
-                     'LearningMode.automatic', 'recognizeTextFromImage(raw, path: picked.path)',
+                     'LearningMode.automatic', '(widget.documentTextRecognizer ?? recognizeTextFromImage)(raw, path: picked.path)',
                      'parseFiscalOcr(text)', "const photoBase64 = '';", "ocrRawText: ''",
                      'final value = bani / 100.0;', 'formKey.currentState?.validate()',
                      'if (!await _duplicateAllowed(e)) return;', 'await widget.saveExpense(e);'):
             self.assertIn(item, module)
+        self.assertEqual(module.count('(widget.documentTextRecognizer ?? recognizeTextFromImage)(raw, path: picked.path)'), 2)
         save = module.split('  Future<void> _saveNewExpense(Expense e)', 1)[1]
         self.assertLess(save.index('await _duplicateAllowed(e)'), save.index('await widget.saveExpense(e)'))
 

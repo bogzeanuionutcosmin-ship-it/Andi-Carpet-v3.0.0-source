@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 206,
+  "dart_files": 208,
   "lib_dart_files": 138,
-  "test_dart_files": 67,
+  "test_dart_files": 69,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 147,
+  "libraries": 149,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -307,6 +307,11 @@
     "test/empty_state_library_test.dart": [
       "lib/ui/empty_state.dart"
     ],
+    "test/expense_document_flow_characterization_test.dart": [
+      "lib/main.dart",
+      "test/support/admin_ui_fixture.dart",
+      "test/support/expense_document_fixture.dart"
+    ],
     "test/firebase_bootstrap_error_view_test.dart": [
       "lib/bootstrap/firebase_bootstrap_error_app.dart"
     ],
@@ -481,6 +486,9 @@
       "lib/main.dart"
     ],
     "test/support/auth_gate_fixture.dart": [
+      "lib/main.dart"
+    ],
+    "test/support/expense_document_fixture.dart": [
       "lib/main.dart"
     ],
     "test/support/home_fcm_write_fixture.dart": [
@@ -1597,8 +1605,8 @@
     },
     {
       "path": "lib/expenses/expense_document_actions.dart",
-      "bytes": 17521,
-      "sha256": "771866ed9af03f5bc1453cff77189748bfc194f7a14aadc669e89e5d7e3be425",
+      "bytes": 17782,
+      "sha256": "eba7347c721d6577bcfa172506e2363c67df8b82852b26fa88af01d8b4c9e46d",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -1622,8 +1630,8 @@
     },
     {
       "path": "lib/expenses/expense_page.dart",
-      "bytes": 19858,
-      "sha256": "67e67a439bf52d4b95ed861d4443f9e0a17acdc4fa95f0f2ace921e557e3a098",
+      "bytes": 20074,
+      "sha256": "7f494a244236a10f6da7e853d98e868505cf5b26e96218e5862a86597423c1d8",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -7223,6 +7231,81 @@
       ]
     },
     {
+      "path": "test/expense_document_flow_characterization_test.dart",
+      "bytes": 6964,
+      "sha256": "1d7b877238fe1a48d074b158a228d4c18da3195d267a751b0ea478f2f8c66549",
+      "owner": "test/expense_document_flow_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';",
+          "uris": [
+            "package:firebase_core_platform_interface/firebase_core_platform_interface.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/admin_ui_fixture.dart';",
+          "uris": [
+            "support/admin_ui_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/admin_ui_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/expense_document_fixture.dart';",
+          "uris": [
+            "support/expense_document_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/expense_document_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "receipt",
+        "main"
+      ]
+    },
+    {
       "path": "test/firebase_bootstrap_error_view_test.dart",
       "bytes": 815,
       "sha256": "b26fee57fc548e2542956bf32260034db7ae80f4531d232cb11cb96fc47b6e37",
@@ -9660,6 +9743,79 @@
         "mountFixtureGate",
         "flushFixtureGate"
       ]
+    },
+    {
+      "path": "test/support/expense_document_fixture.dart",
+      "bytes": 3741,
+      "sha256": "516d334d02e822c11905838a19b90307542cf0e99b36edfbbf14cf8dfd71fcae",
+      "owner": "test/support/expense_document_fixture.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'dart:typed_data';",
+          "uris": [
+            "dart:typed_data"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:image/image.dart' as img;",
+          "uris": [
+            "package:image/image.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:image_picker/image_picker.dart';",
+          "uris": [
+            "package:image_picker/image_picker.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "ExpenseDocumentFixture"
+        }
+      ],
+      "top_level_functions": []
     },
     {
       "path": "test/support/home_fcm_write_fixture.dart",

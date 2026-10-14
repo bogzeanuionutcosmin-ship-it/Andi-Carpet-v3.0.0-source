@@ -38,3 +38,21 @@ Seam minim propus înainte de schimbare: pushFirestore optional în Home, defaul
 | onMessageOpenedApp/openChat get | memberDirectory pentru member, guard înainte et după get | opened citește o dată; dispose înainte de rezultat oprește route |
 
 FCM initial/live route success, unawaited refresh write failure, late success attach/cancel ownership, Web700 et GPS live rămân NEEXECUTATE. Cele116hashuri intacte;156PythonlocalPASS;206Dart/59parts/147libraries/79independent lib. CI exact urmează.
+
+## D — OCR/form/Expense/save boundary (lot31)
+
+B validat ee4255c2/38542589746 5/5SUCCESS+identity38542589759SUCCESS;230Flutter.
+
+Două callbackuri opționale numai pentru selecție imagine et recunoaștere; defaulturile originale păstrate, source inversion byte-exact PASS. saveExpense port existent. Parser/form/save/dedup/amount/authorization runtime neschimbate. Zece teste widget noi exercită traseul real până la save fake et evidență UI locală, fără camera/MLKit/Firebase production. Nu este roundtrip Firestore.
+
+| Text/caz sintetic | Așteptarea caracterizată |
+|---|---|
+|200,200.00,200,00|20000bani în Expense capturat și evidență locală|
+|1.234,56 /1,234.56|123bani; KNOWN DEFECT regex captează1.23, nu123456|
+|BF/date/fuel|nr12345/date05.10.2026/25L/8leiL/20000bani|
+|invoice/ambiguous total|nr67890/date, ultimul total250; manual grouping invalid; override200,21→20021bani|
+|save gated|zero introduced log/success/evidență înainte de await; un singur save; nonmanager confirmed=false|
+|cancel form/image|zero save; image cancel zero recognizer/form|
+|OCR throw/save throw|manual fallback, error et zero retry/evidence/success|
+
+Initial local Python contract1FAIL căuta literal apel fără seam; adaptat să ceară fallback recognizer original de exact2ori, păstrând checks dedup/amount/await.156PythonPASS ulterior;116hashuri intacte.208Dart/59parts/149libraries/79independent lib. CI exact urmează; grouped amounts nu sunt declarate corecte, parserul nu este schimbat. Server rights Issue32/PR29 et hardware/cache SDK rămân în afara probelor.
