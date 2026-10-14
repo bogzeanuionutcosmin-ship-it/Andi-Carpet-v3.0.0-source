@@ -1,5 +1,6 @@
 // Run with `dart run scripts/verify_pure_models.dart`, without a Flutter engine.
 import '../lib/models/app_data_models.dart';
+import '../lib/admin/admin_account_projections.dart';
 import '../lib/models/app_enums.dart';
 import '../lib/models/location_type_mapping.dart';
 import '../lib/utils/graph_names.dart';
@@ -27,5 +28,9 @@ void main() {
   });
   final estimate = learnedDurationEstimate(records, 'location', AppSettings(), targetDate: DateTime(2026, 10, 31));
   check(estimate?.duration == const Duration(minutes: 30), 'Duration learning');
-  print('PURE_MODEL_SMOKE PASS: defaults, mapping, operational boundary, duration learning');
+  check(compareAdminAccountData({'status': 'pending', 'name': 'Z'}, {'name': 'A'}) < 0,
+      'Admin pending-first projection without Flutter engine');
+  check(adminAssignedFunctionIds({'functionIds': [], 'function': 'admin'}).isEmpty,
+      'Empty-list assignment precedence without Flutter engine');
+  print('PURE_MODEL_SMOKE PASS: defaults, mapping, operational boundary, duration learning, admin account projections');
 }

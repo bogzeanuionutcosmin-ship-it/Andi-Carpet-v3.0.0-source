@@ -30,5 +30,15 @@ class AdminMemberProjectionBoundaryTests(unittest.TestCase):
         self.assertIn("lib/models/app_data_models.dart", seen)
 
 
+    def test_account_projection_is_a_pure_leaf_used_by_main(self):
+        report = audit.inventory()
+        path = "lib/admin/admin_account_projections.dart"
+        row = next(row for row in report["files"] if row["path"] == path)
+        self.assertEqual(row["owner"], path)
+        self.assertEqual(row["directives"], [])
+        self.assertEqual(report["library_edges"][path], [])
+        self.assertIn(path, report["library_edges"]["lib/main.dart"])
+
+
 if __name__ == "__main__":
     unittest.main()

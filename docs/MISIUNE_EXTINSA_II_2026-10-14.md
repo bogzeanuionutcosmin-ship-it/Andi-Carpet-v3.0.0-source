@@ -69,4 +69,32 @@ Două teste noi prin maintenanceFirestore existent; runtime lib/byte-identic lot
 - Manual formatV1/preflight/allowed groups înainte de confirmation/deletion400. File decode/JSON parse sunt în afara preflight try; unknown groups ignorate, empty validated poate tot ajunge la marker-success. Save/partial failure/timeout/concurrent restore fără dinamica seam-ului rămân NEEXECUTATE.
 - Nicio modificare de schema, drepturi, finanțe, jurnal Vision/offline operations sau rollback. Backup retention/codec/race lot27 și22–24 nu se repetă.
 
-210Dart/59parts/151libraries/79independent lib;156PythonPASSlocal et116hashuri intacte. CI exact urmează.
+209Dart/59parts/150libraries/79independent lib;156PythonPASSlocal et116hashuri intacte. CI exact urmează.
+
+## Checkpoint E/F et starea finală
+
+| Lot | SHA validat | Standard CI | Identity CI | Flutter |
+|---|---|---|---|---|
+|A/29|c42a5b5e014177a5cdb745c8f3aaa98595ca0ed7|38541891674 SUCCESS5/5|38541892239 SUCCESS|224|
+|B/30|ee4255c2b3e4fa74b1a865d9e14e5e54261fc12a|38542589746 SUCCESS5/5|38542589759 SUCCESS|230|
+|D/31|6cbffab117eb42e0a0ef6945b5597bcc72211bbf|38543337920 SUCCESS5/5|38543338015 SUCCESS|240|
+|C/32|9ddbb6989f39a2fd0492b5e5c740e9fbf434f97d|38543871448 SUCCESS5/5|38543871463 SUCCESS|242|
+
+E checkpoint final adaugă1Pythonboundary pentru noul leaf pur et2checks în smokeDart existent (fărăFlutterengine). F read-only refresh#34becf552;#33a5f43ef/#29545e020/main377f1fd intacte. Conflictele et portarea sunt în INTEGRARE_PR28_PR33_PR34_2026-10-14.md. CI pe SHA checkpoint se publică în descriereaPR după finalizare, pentru a evita autoreferința.
+
+**25Flutter noi față de217baseline;157Python(1nou),3Node,10financial+5identityemulator;smokeDart etbuildweb.** CountsFlutter242dovedite în logs lot32; Python157localPASS; restul CI final se confirmă înPR. Inventar209Dart=138lib+70test/support+1script,59parts/150libraries/79independentlib. Nota inițială210/151 era greșită cu1, corectată. Regenerare inventory et116protectedhashesPASS. Audit lexical fărămissing/orphan/duplicate/cycle, nu dovadă code-dead.
+
+| Etapă | Rezultat efectiv | Limite |
+|---|---|---|
+|A Admin|2pureprojections,UI/cancel/scroll et focused-controller KNOWN DEFECT|mutantedit/delete/assign/serverauthorization necertificate|
+|B FCM|tokenownership/payload/writegate/refresh/cancel/delayedinitial/opened;lateAattempt KNOWN DEFECT|refreshwritefailure/livechatroute/late-successattach/Web700 ethardware lipsă|
+|C backup/restore|migrationbatchfailure etunknownfutureversion;restore sourceaudit|fullAdminrestoreUI/partial/timeout/race BLOCAT fărăDB/FilePicker portexistent|
+|D OCR|fakeimage/recognizer→realparser/form/Expense→savefake/evidenceUI,amount/date/fuel/invoice/cancel/throw/gate|cameraMLKit etFirestore roundtrip/rights necertificate;groupedtruncation nereparată|
+|E dependency/lifecycle|newleafclosure etengine-free smoke,27Admin/HomepartsState păstrate,existingmodels/learningpure|nicio conversie forțată;noul delayedFCM scenariu nu înlocuieșteAuthGateacceptance|
+|F integration|SHAs/conflicts/Visionrefresh etseammatrix read-only|zero integration etzero CIcombinedtree|
+
+### Reluare exactă
+
+VerificăHEADreal/CI și workingtree; nu repeta25–32. Următorul lot poate adăuga un portAdminbackupDB/file strict limitat etsource-inversion proof înainte de fixture full-restore/cancel/partial/future-schema; acesta nu există încă. Păstrează finanțele/diurnele/sălile în cancel/preview et raportează acceptrestore ca operație destructivă non-atomică. FCM refresh-write failure et livechat route necesită observator/cleanup fără listeners tardive rămase. RemediileP1/parser/migration/controller sunt funcționale separate, nu scope-ul acestei modularizări. Integrarea#33→#28→#34 rămâne un mandat viitor.
+
+Checkoutfinalcurat/sync,PRDraftOpen. Fără main/merge/deploy/APK/Firebaseproduction/data/rules/config/billing/version/PR33/34/29. Nu există lucru promis în fundal.

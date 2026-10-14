@@ -236,6 +236,7 @@
       "lib/models/app_data_models.dart"
     ],
     "scripts/verify_pure_models.dart": [
+      "lib/admin/admin_account_projections.dart",
       "lib/learning/duration_estimates.dart",
       "lib/models/app_data_models.dart",
       "lib/models/app_enums.dart",
@@ -6368,8 +6369,8 @@
     },
     {
       "path": "scripts/verify_pure_models.dart",
-      "bytes": 1568,
-      "sha256": "fa3dfb1a3005b4a2b43b2a6989d7f1efed3294a100e943a11575d3511f4b2998",
+      "bytes": 1951,
+      "sha256": "0fcb83a3683830ff17a0bb3d4a0aa2d24bd93f4db78a5a78a561a528f34ef6a1",
       "owner": "scripts/verify_pure_models.dart",
       "directives": [
         {
@@ -6380,6 +6381,16 @@
           ],
           "local_targets": [
             "lib/models/app_data_models.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import '../lib/admin/admin_account_projections.dart';",
+          "uris": [
+            "../lib/admin/admin_account_projections.dart"
+          ],
+          "local_targets": [
+            "lib/admin/admin_account_projections.dart"
           ]
         },
         {

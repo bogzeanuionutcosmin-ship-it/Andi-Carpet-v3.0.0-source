@@ -71,3 +71,20 @@ Pe snapshotul #34 inspectat, cele trei workflow-uri Android full-app/documente/V
 Pentru un viitor SHA combinat: Flutter suite complete/build web/smoke Dart, Python boundaries/contracts, Node, Functions, financial și identity emulator; A→B pending/error/null/ABA/logout/auth SDK error, routes/dialog/SnackBar/Back, settings globale vs personale, GPS/FCM după fiecare await și UID ownership, duplicate listener/cancel, OCR/monetary1ban/avans, PDF hashes/download/share, redacție și persistență Vision. Probele hardware/cache/reconnect/live se fac separat numai într-un mediu autorizat.
 
 **Nicio integrare nu a fost executată.** Următoarea sesiune reverifică toate SHA-urile, mai ales #34 activ în paralel, și urmează mandatul nou primit.
+
+## Refresh misiune extinsă II — 2026-10-14
+
+Snapshot code#28 **9ddbb6989f39a2fd0492b5e5c740e9fbf434f97d**;#33 **a5f43ef9ce0bfedaf59766aafe18732fef7f8f47**;#34 **becf552dc53f0926fa936dad5bccf98e0f16dc19**;#29 **545e0202755a8ee86a7b3406adccd469aac84f9e**;main **377f1fd5e73ae78a0df5cab58b09770c873cd167**. #34 a avansat extern; celelalte surse protejate neschimbate. Checkpointul final adaugă numai probe pure/smoke et documente, cu CI propriu în PR. Fără integrare/ref moves sursă.
+
+Simulări Git read-only reconfirmate pe code#28 et aceste SHAs: #28/#33 aceleași3conflicts(ChatGpt/AuthGate/Home);#28/#34 aceleași4(ChatGpt/ExpensePage/HomePage/main). #33/#34 et#29/#34 reconfirmate la SHA surselor de mai sus: aceleași2respectiv1conflicts. Niciun arbore combinat nu a fost compilat/testat/publicat.
+
+Avans Vision4fea0e8→becf552: report prioritizează faults reale înaintea persistence_probe, separă probe de incidente și numără apariții (nu doar fingerprinturi); safeCode verifică length<=48 înainte de lowercase; restore log respinge resolved prezent de tip nonbool, dar acceptă absența în formatv1. Teste/report docs pe ramura#34, nu copiate et nu atribuite misiunii#28.
+
+### Noile seams et probe de adaptat la portare
+
+- HomePage.pushFirestore/_pushDb: default lazy singleton doar token-write et directory-read push. Reconcilierea#33 trebuie să păstreze această injectare împreună cu SDK/ownership guards, fără al doilea startup/listener. KNOWN DEFECT delayed A token test se transformă în acceptanță ZERO attemptedA pe ramura combinată; succesul tokenB/refresh/cancel et write-await-order rămân controale. Initial/opened delayed-dispose deja cer ZERO route/read după guard; successful live-chat-route încă lipsește.
+- ExpensePage.documentImagePicker/documentTextRecognizer: fallbackurile originale rămân; fixture-ul nou execută parser/form/object/save et evidență locală. Hook-uri Vision rămân în expense_document_actions o singură dată. Cele două teste grouping caracterizează123bani; după remedierea autorizată#29/#34 trebuie acceptanță123456bani, nu slăbirea assertions. Backend read/roundtrip/rights Issue32 nu sunt certificate de save fake.
+- Focused Admin function editor cancel controller/dispose înainte de reverse animation este un KNOWN DEFECT nou, distinct de AuthGate;#33 root isolation nu îl repară automat. Nu elimina caracterizarea la simpla integrare a securității.
+- Migration failure după350confirmed deletions et unknown futurebadge_v3 sunt KNOWN DEFECT distincte de root session; zero financiare/diurne/săli în probe nu înseamnă că atribuiri/definitions DB sunt sigure. Remedierea este funcțională separată.
+
+Ordine viitoare#33→#28→#34 păstrată, fără cherry-pick/merge/APK/staging/producție. Full Admin restore și hardware/cacheSDK rămân NEEXECUTATE; checkpointul exact et testele sunt în docs/MISIUNE_EXTINSA_II_2026-10-14.md et descriereaPR.
