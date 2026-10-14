@@ -65,6 +65,10 @@ class VisionErrorLog {
   static final RegExp _identifier = RegExp(r'^[a-z][a-z0-9_]{0,47}$');
 
   static String safeCode(String value) {
+    // Validate length BEFORE allocating a lowercased copy: accidentally
+    // forwarded exception/OCR content may be arbitrarily large and is never
+    // an acceptable diagnostic identifier.
+    if (value.isEmpty || value.length > 48) return 'unknown';
     final lowered = value.toLowerCase();
     return _identifier.hasMatch(lowered) ? lowered : 'unknown';
   }
