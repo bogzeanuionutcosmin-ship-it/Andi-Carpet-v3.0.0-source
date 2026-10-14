@@ -26,6 +26,14 @@ Aplică ownership `sessionIsCurrent`/epoch guard la intrare/după fiecare `await
 ## Lot 4 — validare completă
 Rerulează cele 274+ teste Flutter din #28 și cele 12+8 security adaptate, plus Python/Node/Functions/web, 10 emulator financiar + 5 identity, Dart smoke, protected 116 hashuri. Probe A01–A12/C01–C08 cu matrice PASS/FAIL, dovezi RED→GREEN pe teste nemodificate semantic și CI **5/5 + identity pe SHA final**. Controlează regresiile Admin restore/OCR și same UID. Actualizează concis `ChatGpt`, `docs/MISIUNE_IV_AUTHGATE_REZULTATE_2026-10-14.md` și descrierea PR cu HEAD, job IDs, ce rămâne NEEXECUTAT, checkout clean/sync.
 
+## ATENȚIE — CI manual obligatoriu pe PR cu bază #28
+Workflow-urile `.github/workflows/validate.yml` și `.github/workflows/test-identity-lifecycle.yml` au trigger `pull_request: branches: [main]`, deci **PR #35 cu BASE #28 nu le pornește automat**. Ambele declară `workflow_dispatch`. Luna trebuie să le declanșeze explicit pentru branch-ul nou și să citească run SHA/concluzia; de ex. din checkout autentificat:
+```bash
+gh workflow run validate.yml --ref fix/authgate-on-modular-home-20261014
+gh workflow run test-identity-lifecycle.yml --ref fix/authgate-on-modular-home-20261014
+```
+Dacă nu are acces CLI, folosește GitHub Actions → workflow → Run workflow → branch nou. Dacă dispatch nu funcționează, **STOP cu blocaj clar**, nu pretinde verde. Nu modifica `validate.yml` sau alte workflow-uri protejate, nu schimba baza PR spre main ca scurtătură. Pe RED explică eșecurile acceptanțelor; pe GREEN verifică ambele pe SHA EXACT al HEAD-ului. Niciun CI istoric #28/#33 nu certifică această integrare.
+
 ## Stop și predare
 **Fără merge/rebase/deploy/release/APK/publicare, Firebase production/rules/config/data, billing, migrare reală, AI plătit sau editări ale altor ramuri.** Nu modifica drepturi/finanțe/START-STOP, parser OCR ori backup în acest lot. Dacă o protecție depinde de schimbări server-side sau de o politică business neconfirmată, documentează și oprește acea subetapă. Nu considera un fake drept probă pe hardware real. La ~15–20% buget nu începe risc major; finalizează și documentează. Dacă toate fazele nu sunt verzi, raportează corect P1 încă deschis pe ramura integrată.
 
