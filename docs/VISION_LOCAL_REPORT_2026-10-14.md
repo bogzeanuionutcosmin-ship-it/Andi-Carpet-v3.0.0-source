@@ -104,3 +104,12 @@ IMPORTANT: noul APK de test **se instalează separat de cele vechi**; contorul l
 În `VisionErrorLog._trim()`, eliminarea respectă acum următoarea prioritate: **incidente rezolvate primele**, apoi între incidentele cu aceeași stare **warning înainte de error înainte de critical**, apoi cele mai vechi din fiecare nivel. Scopul este să păstreze o eroare critică activă chiar dacă există avertizări mai recente. Limitele stricte `maxEntries`, `maxBytes` și TTL rămân în vigoare, inclusiv pentru erori critice; nu promitem persistență nelimitată.
 
 Teste noi acoperă: păstrarea criticelor deschise sub presiunea limitei, eliminarea unei critice rezolvate înaintea unui warning deschis și faptul că două critice respectă plafonul/TTL. Schimbarea afectează doar ordinea de retenție a rezumatelor locale; nu atinge Firebase, sume, conturi, transport, UI ori buildul instalat. CI se raportează separat pentru SHA exact.
+
+
+## Raportul exportat prioritizează incidentele importante
+
+`VisionDiagnosticReport.build` exportă cel mult 100 de evenimente și 16.000 de caractere. Până la acest lot, selecția se baza pe ultimele apariții, ceea ce permitea ca o eroare critică mai veche să fie omisă dacă apăreau multe warnings recente.
+
+Noua ordine a copiei de raport: **incidente deschise înaintea celor rezolvate; critical > error > warning; apoi ultima apariție descrescător; în caz de egalitate, fingerprint stabil**. Aceasta este doar o selecție pentru raportul de diagnostic la copiere manuală, nu modifică ordinea/sintezele jurnalului local, datele păstrate sau prioritizarea la stocare. Nu adaugă rețea, upload ori acces la date personale.
+
+Teste: critică deschisă veche plus 140 warning-uri recente, critică rezolvată după warnings active, limitele de volum/caractere, conservarea snapshot-ului local și absența mutațiilor. Raportați verdictul final CI doar pe SHA efectiv validat.
