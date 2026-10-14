@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 171,
-  "lib_dart_files": 128,
-  "test_dart_files": 42,
+  "dart_files": 173,
+  "lib_dart_files": 129,
+  "test_dart_files": 43,
   "script_dart_files": 1,
   "parts": 60,
-  "libraries": 111,
+  "libraries": 113,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -20,6 +20,7 @@
     ],
     "lib/auth/login_actions.dart": [],
     "lib/auth/login_alias_resolver.dart": [],
+    "lib/auth/login_input_helpers.dart": [],
     "lib/auth/quick_accounts.dart": [],
     "lib/bootstrap/firebase_bootstrap_error_app.dart": [],
     "lib/bootstrap/firebase_initialization.dart": [],
@@ -77,6 +78,7 @@
       "lib/auth/firebase_user_profile.dart",
       "lib/auth/login_actions.dart",
       "lib/auth/login_alias_resolver.dart",
+      "lib/auth/login_input_helpers.dart",
       "lib/auth/quick_accounts.dart",
       "lib/bootstrap/firebase_bootstrap_error_app.dart",
       "lib/bootstrap/firebase_initialization.dart",
@@ -301,6 +303,9 @@
     ],
     "test/login_alias_resolver_test.dart": [
       "lib/auth/login_alias_resolver.dart"
+    ],
+    "test/login_input_helpers_test.dart": [
+      "lib/auth/login_input_helpers.dart"
     ],
     "test/model_library_boundaries_test.dart": [
       "lib/main.dart",
@@ -996,9 +1001,30 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/auth/login_input_helpers.dart",
+      "bytes": 870,
+      "sha256": "e0dbc9e37d52dd0675987f923c082889ddff9b75e655b44cbd6eaeb99147e77d",
+      "owner": "lib/auth/login_input_helpers.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "uris": [
+            "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "friendlyLoginError",
+        "normalizeLoginPhone"
+      ]
+    },
+    {
       "path": "lib/auth/login_registration_page.dart",
-      "bytes": 9353,
-      "sha256": "6bb64daa9eea3ce6573b03e464e5f25c5d5036d06eaba934c6da996c1a9473f6",
+      "bytes": 8671,
+      "sha256": "9548908f779ec45210b33e6029b346fcdf4707e431aee23788c3946c34745c38",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2365,8 +2391,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 29491,
-      "sha256": "ed9eec70987092257940f50200e930259621dea10786a8a1678b8357cf95f738",
+      "bytes": 29531,
+      "sha256": "89121c30be800a1e8b7c1affed7ef4a24fa6d51c2c117685d4a95012b286efd7",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -3097,6 +3123,16 @@
           ],
           "local_targets": [
             "lib/auth/login_alias_resolver.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'auth/login_input_helpers.dart';",
+          "uris": [
+            "auth/login_input_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/auth/login_input_helpers.dart"
           ]
         },
         {
@@ -7061,6 +7097,44 @@
           "text": "import 'package:http/http.dart' as http;",
           "uris": [
             "package:http/http.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/login_input_helpers_test.dart",
+      "bytes": 1919,
+      "sha256": "a82cb197e9baee6a65aff11ccd660bd82e61c1d5f4814720388218127727b70b",
+      "owner": "test/login_input_helpers_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/auth/login_input_helpers.dart';",
+          "uris": [
+            "package:andi_carpeta/auth/login_input_helpers.dart"
+          ],
+          "local_targets": [
+            "lib/auth/login_input_helpers.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "uris": [
+            "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
           ],
           "local_targets": []
         }
