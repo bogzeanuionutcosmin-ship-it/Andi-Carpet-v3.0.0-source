@@ -64,6 +64,10 @@ void main() {
     await flushHomeFixture(tester);
     expect(settings.theme, AppThemeChoice.dark);
     expect(settings.personalBackgroundId, 'global');
+    // addPostFrameCallback does not request a frame by itself.
+    expect(changes, 0);
+    tester.binding.scheduleFrame();
+    await tester.pump();
     expect(changes, 1);
     db.document('users/b').add(GateFixtureSnapshot({'theme': 'light'}));
     db.document('users/a').addError('own disconnected');
@@ -74,6 +78,9 @@ void main() {
     db.document('users/a').add(GateFixtureSnapshot({'theme': 'light', 'fontFamily': 'Roboto'}));
     await flushHomeFixture(tester);
     expect(settings.theme, AppThemeChoice.light);
+    expect(changes, 1);
+    tester.binding.scheduleFrame();
+    await tester.pump();
     expect(changes, 2);
     expect(db.starts, starts);
     expect(db.active['users/a'], 1);

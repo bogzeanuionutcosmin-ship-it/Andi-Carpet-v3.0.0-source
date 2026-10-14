@@ -6932,8 +6932,8 @@
     },
     {
       "path": "test/home_identity_sources_characterization_test.dart",
-      "bytes": 6398,
-      "sha256": "41a08525bd3e693d148cae3971a56e485aecd31379a8ade1998240ebdcf26cd9",
+      "bytes": 6632,
+      "sha256": "07d4001df8a6cfd748ef69d17016f271d055f11e1219b388a97c378273676d1f",
       "owner": "test/home_identity_sources_characterization_test.dart",
       "directives": [
         {
