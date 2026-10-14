@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 199,
+  "dart_files": 200,
   "lib_dart_files": 137,
-  "test_dart_files": 61,
+  "test_dart_files": 62,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 140,
+  "libraries": 141,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -274,6 +274,15 @@
     "test/branding_theme_helpers_library_test.dart": [
       "lib/models/app_data_models.dart",
       "lib/ui/branding_theme_helpers.dart"
+    ],
+    "test/continuity_finance_backup_characterization_test.dart": [
+      "lib/admin/backup_codec.dart",
+      "lib/finance/per_diem_money.dart",
+      "lib/finance/per_diem_payment_plan.dart",
+      "lib/home/home_retention_queries.dart",
+      "lib/main.dart",
+      "test/support/home_maintenance_fixture.dart",
+      "test/support/home_sync_fixture.dart"
     ],
     "test/core_model_libraries_test.dart": [
       "lib/learning/duration_estimates.dart",
@@ -6793,6 +6802,120 @@
           ],
           "local_targets": [
             "lib/ui/branding_theme_helpers.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/continuity_finance_backup_characterization_test.dart",
+      "bytes": 7113,
+      "sha256": "af2b59a013c49ec0a6c5ddc80b569505cc75778743697fd50511365f01c6daf4",
+      "owner": "test/continuity_finance_backup_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/admin/backup_codec.dart';",
+          "uris": [
+            "package:andi_carpeta/admin/backup_codec.dart"
+          ],
+          "local_targets": [
+            "lib/admin/backup_codec.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/finance/per_diem_money.dart';",
+          "uris": [
+            "package:andi_carpeta/finance/per_diem_money.dart"
+          ],
+          "local_targets": [
+            "lib/finance/per_diem_money.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/finance/per_diem_payment_plan.dart';",
+          "uris": [
+            "package:andi_carpeta/finance/per_diem_payment_plan.dart"
+          ],
+          "local_targets": [
+            "lib/finance/per_diem_payment_plan.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/home/home_retention_queries.dart';",
+          "uris": [
+            "package:andi_carpeta/home/home_retention_queries.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_retention_queries.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_maintenance_fixture.dart';",
+          "uris": [
+            "support/home_maintenance_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_maintenance_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
           ]
         }
       ],
