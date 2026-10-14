@@ -3,13 +3,16 @@ part of '../main.dart';
 class AuthGate extends StatefulWidget {
   final AppSettings settings;
   final VoidCallback onSettingsChanged;
-  const AuthGate({super.key, required this.settings, required this.onSettingsChanged});
+  final AuthGateSources? sources;
+  final Widget Function(Key key, FirebaseUserProfile profile)? activePageBuilder;
+  const AuthGate({super.key, required this.settings, required this.onSettingsChanged, this.sources, this.activePageBuilder});
 
   @override
   State<AuthGate> createState() => _AuthGateState();
 }
 
 class _AuthGateState extends State<AuthGate> {
+  late final AuthGateSources _sources;
   StreamSubscription<User?>? _authSubscription;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _profileSubscription;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _uiSettingsSubscription;
@@ -24,8 +27,9 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
+    _sources = widget.sources ?? _firebaseAuthGateSources();
 
-    _uiSettingsSubscription = FirebaseFirestore.instance.collection('meta').doc('uiSettings').snapshots().listen((snap) {
+    _uiSettingsSubscription = _sources.uiSettingsSnapshots().listen((snap) {
       final d = snap.data();
       if (d == null || !mounted) return;
       var changed = false;
@@ -47,13 +51,13 @@ class _AuthGateState extends State<AuthGate> {
 
     // Folosim currentUser imediat, astfel încât Chrome/PWA să nu afișeze
     // splash-ul între refaceri de widget / reconectări scurte ale streamului.
-    _user = FirebaseAuth.instance.currentUser;
+    _user = _sources.currentUser();
     _authInitialized = true;
     if (_user != null) {
       _listenProfile(_user!);
     }
 
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen(
+    _authSubscription = _sources.authStateChanges().listen(
       _handleAuthChange,
       onError: (Object e) {
         if (!mounted) return;
@@ -68,7 +72,7 @@ class _AuthGateState extends State<AuthGate> {
     // Unele versiuni Chrome/PWA pot emite o stare intermediară în timp ce
     // Firebase își reface persistența. Dacă Firebase încă are currentUser,
     // păstrăm sesiunea activă și NU revenim la splash/login.
-    final effectiveUser = eventUser ?? FirebaseAuth.instance.currentUser;
+    final effectiveUser = eventUser ?? _sources.currentUser();
 
     if (effectiveUser == null) {
       _profileSubscription?.cancel();
@@ -103,10 +107,7 @@ class _AuthGateState extends State<AuthGate> {
     _profileUid = user.uid;
     _profileInitialized = false;
 
-    _profileSubscription = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .snapshots(includeMetadataChanges: true)
+    _profileSubscription = _sources.profileSnapshots(user.uid)
         .listen((snap) {
       if (!mounted || _user?.uid != user.uid) return;
 
@@ -154,7 +155,7 @@ class _AuthGateState extends State<AuthGate> {
       return _FirebaseLoading(text: 'Se verifică autentificarea...', settings: widget.settings);
     }
 
-    final user = _user ?? FirebaseAuth.instance.currentUser;
+    final user = _user ?? _sources.currentUser();
     if (user == null) return LoginPage(settings: widget.settings);
 
     if (_error != null && _profile == null) {
@@ -173,6 +174,9 @@ class _AuthGateState extends State<AuthGate> {
     }
     if (!profile.active) return PendingApprovalPage(profile: profile, settings: widget.settings);
 
+    if (widget.activePageBuilder != null) {
+      return widget.activePageBuilder!(ValueKey(profile.uid), profile);
+    }
     return HomePage(
       key: ValueKey(profile.uid),
       settings: widget.settings,
