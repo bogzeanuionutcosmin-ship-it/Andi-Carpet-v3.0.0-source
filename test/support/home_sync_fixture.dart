@@ -137,11 +137,12 @@ class HomeSyncFixture extends Fake implements FirebaseFirestore {
 class FixtureHomePage extends HomePage {
   FixtureHomePage({required Key key, required FirebaseUserProfile profile,
     required HomeSyncFixture fixture, AppSettings? settings, VoidCallback? onSettingsChanged,
-    HomeIdentityQueries? identityQueries, HomeOperationalQueries? operationalQueries})
+    HomeIdentityQueries? identityQueries, HomeOperationalQueries? operationalQueries,
+    HomePlatformEffects? platformEffects})
       : super(key: key, profile: profile,
           settings: settings ?? (AppSettings()..autoCloseWhenAllDone = false),
           onSettingsChanged: onSettingsChanged ?? () {},
-          syncFirestore: fixture, platformEffects: fixture.effects, identityQueries: identityQueries, operationalQueries: operationalQueries);
+          syncFirestore: fixture, platformEffects: platformEffects ?? fixture.effects, identityQueries: identityQueries, operationalQueries: operationalQueries);
   @override
   StatefulElement createElement() => _FixtureHomeElement(this);
 }

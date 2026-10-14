@@ -105,3 +105,12 @@ Lot 14 fa6541042d9a14135dfd7ed7f6b756f0ee377b05 / 38494771474 **5/5**; lot 15 80
 Inventar **188 Dart / 59 parts / 129 biblioteci totale / 75 independente lib**, regenerat identic, fără ținte lipsă/orfani/duplicate/cicluri. HomeIdentityQueries și HomeOperationalQueries separă numai selecțiile originale; state/callbacks/cache/efecte/cancel în Home, fără reads/writes/listeners suplimentare. **P1 AuthGate/Home/Navigator confirmat, nereparat; necesită aprobare pe PR funcțional separat.** Nu declara CI verde ca remediere a confidențialității.
 
 Raport complet, timpi măsurați inclusiv întrerupere, commituri/teste/limite și pasul exact de reluare: **docs/CHECKPOINT_HOME_SOURCES_2026-10-14.md**. Urmează fixture settings/audit/admin/seed/maintenance și caracterizarea AppSettings/post-frame/GPS/FCM; nu repeta loturile 10–16. PR #19/#20/#21/#29 neatinse, fără producție/merge/deploy/versiune/Vision duplicat. Checkpoint exclusiv de documentație: CI pe SHA propriu se verifică înainte de raportul final; descrierea PR va conține SHA/run final.
+
+
+## MOD-HOME-SETTINGS-LIFECYCLE-20261014 — lot 17
+
+Reluare GitHub/local d9795f4f4f26630969009cfd1fa803052558f4b1, checkout sursă curat; loturile 10–16 și CI 38505140788 deja încheiat nu se repetă. Checkout separat în sesiunea actuală. Cinci teste Flutter noi, fără schimbare runtime: AppSettings comun A→B cu fallback la preferințele A până la date explicite B; setări globale parțiale/null/error/reconnect/clamps; callback background post-frame după dispose; callback vizual A după mount B; completion startup injectat A după dispose.
+
+Testele de retenție și callback sunt KNOWN DEFECT de caracterizare, nu acceptanță a izolării. Testul startup dovedește doar lipsa anulării la granița HomePlatformEffects injectată, nu comportamentul hardware GPS/FCM. State Home real cu rendering substituit; date strict sintetice. Admin/seed/maintenance și token ownership reale urmează. AuthGate P1 rămâne confirmat și NEREPARAT, separat de aceste observații; remedierea se face numai pe PR distinct autorizat.
+
+Runtime lib/ este byte-identic bazei. FixtureHomePage permite doar alegerea efectelor deja injectabile. CI pe SHA lot obligatoriu înainte de lotul următor; rezultatul și inventarul se actualizează în checkpoint. Fără main/merge/deploy/APK/versiune/rules/config/date Firebase producție/migrări/billing sau PR-uri protejate.
