@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 189,
+  "dart_files": 191,
   "lib_dart_files": 134,
-  "test_dart_files": 54,
+  "test_dart_files": 56,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 130,
+  "libraries": 132,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -294,6 +294,12 @@
       "lib/models/app_data_models.dart",
       "lib/models/app_enums.dart"
     ],
+    "test/home_admin_maintenance_characterization_test.dart": [
+      "lib/main.dart",
+      "test/support/auth_gate_fixture.dart",
+      "test/support/home_maintenance_fixture.dart",
+      "test/support/home_sync_fixture.dart"
+    ],
     "test/home_definition_sources_test.dart": [
       "lib/home/home_definition_sources.dart"
     ],
@@ -422,6 +428,9 @@
     ],
     "test/support/auth_gate_fixture.dart": [
       "lib/main.dart"
+    ],
+    "test/support/home_maintenance_fixture.dart": [
+      "test/support/home_sync_fixture.dart"
     ],
     "test/support/home_sync_fixture.dart": [
       "lib/main.dart"
@@ -2046,8 +2055,8 @@
     },
     {
       "path": "lib/home/home_backup_maintenance.dart",
-      "bytes": 3827,
-      "sha256": "7d6b10cdbf37aa76afaf27a104f12db37e26de28d9e6c89fd150f5043f9f8703",
+      "bytes": 3831,
+      "sha256": "e21705b6c4050910808a13574629fcd77d98145552239e03c9b418b2397fe731",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2350,8 +2359,8 @@
     },
     {
       "path": "lib/home/home_page.dart",
-      "bytes": 23051,
-      "sha256": "ceb230db86ddea340d19ab976e4beec0ec8325f027d05489b82eec7ffbe2bec8",
+      "bytes": 23216,
+      "sha256": "b34aea8712c2ea469f51ac2b493ed4de63dd113bfab518405aa17d35f708dc2e",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2379,8 +2388,8 @@
     },
     {
       "path": "lib/home/home_permission_maintenance.dart",
-      "bytes": 5400,
-      "sha256": "ae7c7f56bd6c5ea9376fb3531e7a379b94152fcd2c489bcefd53b92886b0947a",
+      "bytes": 5380,
+      "sha256": "0ba86159ad647c0c843a8adad361e012798571e4340bdb052b558cca844966b2",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -6983,6 +6992,92 @@
       ]
     },
     {
+      "path": "test/home_admin_maintenance_characterization_test.dart",
+      "bytes": 8930,
+      "sha256": "2272e90243b62442bd3d9c7217bb0af65baae6d21fe066d2e8eda232400555db",
+      "owner": "test/home_admin_maintenance_characterization_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/auth_gate_fixture.dart';",
+          "uris": [
+            "support/auth_gate_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/auth_gate_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_sync_fixture.dart';",
+          "uris": [
+            "support/home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_maintenance_fixture.dart';",
+          "uris": [
+            "support/home_maintenance_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_maintenance_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "_admin",
+        "_mount",
+        "main"
+      ]
+    },
+    {
       "path": "test/home_definition_sources_test.dart",
       "bytes": 4674,
       "sha256": "16c95bc69499c65730202182a2985e11527cfbc840f8130aa783e5a6df2d4c8b",
@@ -8651,9 +8746,70 @@
       ]
     },
     {
+      "path": "test/support/home_maintenance_fixture.dart",
+      "bytes": 5541,
+      "sha256": "5571ecbc024622ce2c326d5b0464b95654d4684bfaaa0bfe1e0d1da62b43917d",
+      "owner": "test/support/home_maintenance_fixture.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'home_sync_fixture.dart';",
+          "uris": [
+            "home_sync_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_sync_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "MaintenanceWrite"
+        },
+        {
+          "kind": "class",
+          "name": "MaintenanceDoc"
+        },
+        {
+          "kind": "class",
+          "name": "HomeMaintenanceFixture"
+        },
+        {
+          "kind": "class",
+          "name": "_MaintenanceQuery"
+        },
+        {
+          "kind": "class",
+          "name": "_MaintenanceDocument"
+        },
+        {
+          "kind": "class",
+          "name": "_MaintenanceBatch"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "test/support/home_sync_fixture.dart",
-      "bytes": 6820,
-      "sha256": "0be397040fc5793c8baeba2e3008e2d61db3c688ba0ad456ee99a6430b4849f3",
+      "bytes": 6905,
+      "sha256": "42795d979ef1cf9f720d108fa9572f351075d9fc5efe0d85c332693cfe945c3f",
       "owner": "test/support/home_sync_fixture.dart",
       "directives": [
         {

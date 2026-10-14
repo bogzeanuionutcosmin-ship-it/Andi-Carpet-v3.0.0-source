@@ -870,3 +870,14 @@ Runtime lib/ este byte-identic bazei. FixtureHomePage permite doar alegerea efec
 ### Lot 17 — corecție așteptare normalizare font
 
 b1bea4b132317ff0ee9bd10f51498635faf06b0a / CI 38508637600: 176 Flutter PASS / 1 FAIL; celelalte 4 joburi SUCCESS, inclusiv 10 emulator. Fixture-ul cerea Roboto literal, dar normalizarea runtime existentă îl convertește la Sans. Corecția cere Sans după profil A și după fallback B; nicio schimbare runtime sau slăbire a verificărilor retenției între conturi, callbackurilor după dispose ori KNOWN DEFECT. Revalidare integrală obligatorie înainte de lot 18.
+
+
+## MOD-HOME-ADMIN-MAINTENANCE-FIXTURE-20261014 — lot 18
+
+Lot 17 corectiv **da2fc85f257cb9905161cd5d77c4972b666d6b28 / CI 38508870095 5/5 SUCCESS**, **177 Flutter PASS**, smoke Dart și build web PASS. Eșecul inițial 176/1 al așteptării fontului este păstrat în raport. Nu s-a avansat înainte de verde.
+
+HomePage primește maintenanceFirestore opțional, cu getter lazy care folosește exact FirebaseFirestore.instance implicit. Numai accesul la DB în maintenance/backup/seed/permission snapshots este injectabil; trei module runtime se reconstruiesc byte-exact după inversarea substituției și eliminarea declarațiilor portului. Nu se schimbă queries, filtre, writes, batches, ordinea, guard-urile sau comportamentul. Nu se execută migrări reale; fixture strict local.
+
+Cinci teste noi cu State Home real/rendering substituit: Admin cu 18 listeners (audit + global finance), ordinea citirilor seed/migration și badge_v2 fără scrieri; audit error/reconnect/cancel; backup dezactivat dar retenție încă activă cu item-delete înainte de parent-delete; KNOWN DEFECT badge legacy șterge funcțiile și golește functionIds/effectivePermissions member; snapshot funcții active recalculează numai permisiunile schimbate; KNOWN DEFECT maintenance in-flight continuă o ștergere sintetică după dispose, fără duplicate la două evenimente pending. Fiecare citire este scriptată; apelurile neașteptate sunt înregistrate chiar dacă runtime le prinde. Aceste teste nu certifică backend, Android/FCM/GPS ori AdminPanel UI de editare a conturilor.
+
+Riscurile de retenție AppSettings/post-frame și badge_v2/maintenance sunt caracterizate, nu reparate. AuthGate P1 rămâne NEREPARAT și cere PR separat autorizat. Fișierele financiare/GPS/FCM, rules/config, date reale și PR-urile #19/#20/#21/#29 nu se modifică. CI pe SHA lot urmează înainte de orice extragere query-only.

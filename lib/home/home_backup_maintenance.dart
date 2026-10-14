@@ -2,6 +2,7 @@ part of '../main.dart';
 
 // Automatic Firestore backup snapshots and retention management.
 mixin _HomeBackupMaintenance on State<HomePage> {
+  FirebaseFirestore get _maintenanceDb;
   String get currentUserId;
   AppSettings get settings;
 
@@ -11,7 +12,7 @@ mixin _HomeBackupMaintenance on State<HomePage> {
       'schedules','records','expenses','perDiems','finance','settlements',
       'documents','notifications','audit',
     ];
-    final db = FirebaseFirestore.instance;
+    final db = _maintenanceDb;
     final now = DateTime.now();
     final backupId = '${now.year}${two(now.month)}${two(now.day)}_${two(now.hour)}${two(now.minute)}${two(now.second)}';
     final backupRef = db.collection('backups').doc(backupId);
@@ -68,7 +69,7 @@ mixin _HomeBackupMaintenance on State<HomePage> {
   }
 
   Future<void> _pruneAutomaticBackups() async {
-    final db = FirebaseFirestore.instance;
+    final db = _maintenanceDb;
     final cutoff = DateTime.now().subtract(Duration(days: settings.backupRetentionDays.clamp(1, 365)));
     final old = await db.collection('backups').where('createdAt', isLessThan: Timestamp.fromDate(cutoff)).get();
     for (final backup in old.docs) {
@@ -86,7 +87,7 @@ mixin _HomeBackupMaintenance on State<HomePage> {
   }
 
   Future<void> _pruneOldNotifications() async {
-    final db = FirebaseFirestore.instance;
+    final db = _maintenanceDb;
     final cutoff = DateTime.now().subtract(Duration(days: settings.notificationHistoryDays.clamp(1, 365)));
     final old = await db.collection('notifications').where('createdAt', isLessThan: Timestamp.fromDate(cutoff)).get();
     WriteBatch batch = db.batch();

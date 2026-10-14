@@ -6,11 +6,12 @@ class HomePage extends StatefulWidget {
   final FirebaseUserProfile profile;
   final HomeDefinitionSources? definitionSources;
   final FirebaseFirestore? syncFirestore;
+  final FirebaseFirestore? maintenanceFirestore;
   final HomePlatformEffects? platformEffects;
   final HomeMessageQueries? messageQueries;
   final HomeIdentityQueries? identityQueries;
   final HomeOperationalQueries? operationalQueries;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.platformEffects, this.messageQueries, this.identityQueries, this.operationalQueries});
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.maintenanceFirestore, this.platformEffects, this.messageQueries, this.identityQueries, this.operationalQueries});
   @override State<HomePage> createState() => _HomePageState();
 }
 
@@ -19,6 +20,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   late final String currentUserId;
   AppSettings get settings => widget.settings;
   FirebaseFirestore get _syncDb => widget.syncFirestore ?? FirebaseFirestore.instance;
+  FirebaseFirestore get _maintenanceDb => widget.maintenanceFirestore ?? FirebaseFirestore.instance;
   late final List<AppUser> users;
   late final List<Team> teams;
   late final List<Car> cars;
@@ -136,7 +138,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       await _pruneOldNotifications();
       await _pruneAutomaticBackups();
       if (!settings.automaticBackup) return;
-      final db = FirebaseFirestore.instance;
+      final db = _maintenanceDb;
       final stateRef = db.collection('meta').doc('backupAutomation');
       final state = await stateRef.get();
       final lastRaw = state.data()?['lastRunAt'];
