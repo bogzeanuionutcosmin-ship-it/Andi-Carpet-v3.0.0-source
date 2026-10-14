@@ -28,7 +28,6 @@ void main() {
     GeolocatorPlatform.instance = originalGps;
   });
   setUp(() {
-    debugDefaultTargetPlatformOverride = TargetPlatform.android;
     fcm.reset(); gps = HomeGpsSdkFixture(); sync = HomeSyncFixture();
     GeolocatorPlatform.instance = gps;
   });
@@ -37,12 +36,23 @@ void main() {
     GeolocatorPlatform.instance = originalGps;
     debugDefaultTargetPlatformOverride = null;
   });
+  void sdkTest(String name, Future<void> Function(WidgetTester) body, {Timeout? timeout}) {
+    testWidgets(name, (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        await body(tester);
+      } finally {
+        // Restore before binding invariants run, not only in tearDown.
+        debugDefaultTargetPlatformOverride = null;
+      }
+    }, timeout: timeout);
+  }
   Future<void> mount(WidgetTester tester) async {
     await tester.pumpWidget(MaterialApp(home: PlatformSdkHomePage(sync: sync)));
     await flushHomeFixture(tester);
   }
 
-  testWidgets('real native GPS starts economic stream and cancels after stream error', (tester) async {
+  sdkTest('real native GPS starts economic stream and cancels after stream error', (tester) async {
     await mount(tester);
     expect(gps.trace, ['check', 'enabled', 'check', 'stream', 'listen']);
     expect(gps.starts, 1); expect(gps.cancels, 0);
@@ -60,7 +70,7 @@ void main() {
     expect(fcm.trace, ['permission']);
   });
 
-  testWidgets('disabled GPS never checks native permission or attaches', (tester) async {
+  sdkTest('disabled GPS never checks native permission or attaches', (tester) async {
     gps.enabled = false;
     await mount(tester);
     expect(gps.trace, ['check', 'enabled']);
@@ -69,7 +79,7 @@ void main() {
     expect(gps.cancels, 0); expect(sync.activeCount, 0);
   });
 
-  testWidgets('denied native permission requests once and refusal stops attachment', (tester) async {
+  sdkTest('denied native permission requests once and refusal stops attachment', (tester) async {
     gps.permission = LocationPermission.denied;
     await mount(tester);
     expect(gps.trace, ['check', 'enabled', 'check', 'request']);
@@ -77,7 +87,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('permanent GPS denial never opens a permission request', (tester) async {
+  sdkTest('permanent GPS denial never opens a permission request', (tester) async {
     gps.permission = LocationPermission.deniedForever;
     await mount(tester);
     expect(gps.trace, ['check', 'enabled', 'check']);
@@ -85,7 +95,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('KNOWN DEFECT: native GPS can attach after Home dispose when enabled completes late', (tester) async {
+  sdkTest('KNOWN DEFECT: native GPS can attach after Home dispose when enabled completes late', (tester) async {
     final enabled = Completer<bool>(); gps.enabledResult = enabled.future;
     await mount(tester);
     expect(gps.starts, 0);
@@ -100,7 +110,7 @@ void main() {
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(seconds: 60)));
 
-  testWidgets('FCM requests undetermined permission then stops on refusal without token I/O', (tester) async {
+  sdkTest('FCM requests undetermined permission then stops on refusal without token I/O', (tester) async {
     fcm.status = AuthorizationStatus.notDetermined;
     await mount(tester);
     expect(fcm.trace, ['permission', 'request:true:true:true']);
@@ -108,7 +118,7 @@ void main() {
     expect(sync.activeCount, 0);
   });
 
-  testWidgets('authorized FCM with null or blank token never attaches listeners', (tester) async {
+  sdkTest('authorized FCM with null or blank token never attaches listeners', (tester) async {
     fcm.status = AuthorizationStatus.authorized;
     await mount(tester);
     expect(fcm.trace, ['permission', 'token']);
@@ -120,7 +130,7 @@ void main() {
     expect(sync.activeCount, 0);
   });
 
-  testWidgets('FCM late getToken failure is caught after Home dispose without a retry', (tester) async {
+  sdkTest('FCM late getToken failure is caught after Home dispose without a retry', (tester) async {
     fcm.status = AuthorizationStatus.provisional;
     final token = Completer<String?>(); fcm.tokenResult = token.future;
     await mount(tester);

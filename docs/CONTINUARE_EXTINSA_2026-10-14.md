@@ -25,3 +25,7 @@ Prima rulare 3c8b930 / 38533969624: patru joburi standard SUCCESS, identity 3853
 8. Checkpoint final și CI pe SHA exact; nimic neexecutat nu se declară verde.
 
 Fără merge/deploy/APK/main/PR #33/#34/#29/producție/Firebase rules/data/config/billing/versiune.
+
+### Corecție izolarea platformei în fixture
+
+Logul Flutter disponibil după anularea primei rulări arată patru eșecuri de invariants: debugDefaultTargetPlatformOverride era resetat numai în tearDown, după verificarea bindingului. Resetarea este mutată în finally al fiecărui callback testWidgets, înainte de invariants. Prima rulare standard este CANCELLED (4/5 joburi SUCCESS, Flutter CANCELLED cu cele patru failures); identity SUCCESS. Corectivul 6cdd4b8 se înlocuiește cu acest corectiv înainte de verdict final. Sunt erori de fixture proprii, fără modificare lib/ sau slăbirea aserțiunilor.
