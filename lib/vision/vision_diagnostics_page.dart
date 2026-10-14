@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'vision_error_log.dart';
 import 'vision_diagnostic_report.dart';
 import 'vision_diagnostic_advisor.dart';
+import 'vision_diagnostic_coverage.dart';
 import 'vision_error_telemetry.dart';
 
 /// Read-only diagnostics from THIS device only; no remote-user data queries.
@@ -67,6 +68,54 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
                   )),
                 );
               }
+            },
+          ),
+          IconButton(
+            tooltip: 'Ce monitorizează Vision',
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                builder: (sheetContext) => FractionallySizedBox(
+                  heightFactor: 0.72,
+                  child: SafeArea(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        Text('Acoperirea diagnosticului Vision',
+                          style: Theme.of(sheetContext).textTheme.titleLarge),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Aceasta este o listă statică a modulelor instrumentate '
+                          'în versiunea de probă. Nu este un test automat al '
+                          'tuturor funcțiilor și nu certifică lipsa erorilor.',
+                        ),
+                        const SizedBox(height: 12),
+                        for (final area in VisionDiagnosticCoverage.areas)
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(area.name,
+                                    style: Theme.of(sheetContext)
+                                        .textTheme.titleSmall),
+                                  const SizedBox(height: 4),
+                                  Text(area.statusLabel),
+                                  const SizedBox(height: 4),
+                                  Text('Observă: ${area.observes}'),
+                                  Text('Nu verifică: ${area.doesNotVerify}'),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
             },
           ),
           IconButton(
