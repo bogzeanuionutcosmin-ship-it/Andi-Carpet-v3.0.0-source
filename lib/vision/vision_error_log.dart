@@ -222,6 +222,11 @@ class VisionErrorLog {
             !_identifier.hasMatch(platform)) {
           continue;
         }
+        // Missing 'resolved' belongs to the original v1 snapshot format;
+        // a present but malformed flag must not reopen an old incident.
+        if (value.containsKey('resolved') && value['resolved'] is! bool) {
+          continue;
+        }
         final firstTime = DateTime.tryParse(first)?.toUtc();
         final lastTime = DateTime.tryParse(last)?.toUtc();
         if (firstTime == null || lastTime == null ||
