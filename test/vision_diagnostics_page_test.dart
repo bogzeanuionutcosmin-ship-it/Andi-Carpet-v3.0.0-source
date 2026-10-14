@@ -104,8 +104,8 @@ void main() {
     log.record(area: 'ocr', code: 'document_save_failed',
       platform: 'android');
     await tester.pumpWidget(MaterialApp(home: VisionDiagnosticsPage(log: log)));
-    expect(find.text('Vision observă: Document nesalvat'), findsOneWidget);
-    expect(find.textContaining('Verifică dacă documentul apare'), findsOneWidget);
+    expect(find.text('Vision observă: Salvarea documentului necesită verificare'), findsOneWidget);
+    expect(find.textContaining('Verifică evidența'), findsOneWidget);
     expect(log.entries.single.count, 1);
   });
 
