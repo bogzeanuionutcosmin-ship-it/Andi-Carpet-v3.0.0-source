@@ -69,6 +69,66 @@ void main() {
     expect(output, isNot(contains('company.test')));
   });
 
+  test('older open critical is not lost among 140 newer warnings', () {
+    var clock = timestamp;
+    final log = VisionErrorLog(
+      maxEntries: 200, clock: () => clock,
+    );
+    log.record(area: 'system', code: 'older_critical',
+      platform: 'android', severity: VisionErrorSeverity.critical);
+    for (var i = 0; i < 140; i++) {
+      clock = clock.add(const Duration(seconds: 1));
+      log.record(area: 'system', code: 'warning_$i',
+        platform: 'android', severity: VisionErrorSeverity.warning);
+    }
+    final before = log.encode();
+    final report = VisionDiagnosticReport.build(log, generatedAt: clock);
+    expect(report, contains('system/older_critical | android | critical'));
+    expect(report.indexOf('system/older_critical'),
+      lessThan(report.indexOf('system/warning_139')));
+    expect(report, contains('raport limitat'));
+    expect(report.length, lessThanOrEqualTo(
+        VisionDiagnosticReport.maxCharacters));
+    expect(log.encode(), before); // No mutation/reordering of local journal.
+  });
+
+  test('unresolved warning precedes resolved critical in a short export', () {
+    var clock = timestamp;
+    final log = VisionErrorLog(
+      maxEntries: 200, clock: () => clock,
+    );
+    log.record(area: 'system', code: 'resolved_critical',
+      platform: 'android', severity: VisionErrorSeverity.critical);
+    expect(log.resolve('system/resolved_critical/android'), isTrue);
+    for (var i = 0; i < 120; i++) {
+      clock = clock.add(const Duration(seconds: 1));
+      log.record(area: 'system', code: 'open_$i',
+        platform: 'android', severity: VisionErrorSeverity.warning);
+    }
+    final report = VisionDiagnosticReport.build(log, generatedAt: clock);
+    expect(report, contains('Incidente locale: 121'));
+    expect(report, contains('system/open_119'));
+    expect(report, isNot(contains('system/resolved_critical')));
+    expect(report, contains('raport limitat'));
+  });
+
+  test('critical priority remains within the export cap even for many events', () {
+    var clock = timestamp;
+    final log = VisionErrorLog(maxEntries: 200, clock: () => clock);
+    for (var i = 0; i < 120; i++) {
+      log.record(area: 'ocr', code: 'warning_$i',
+        platform: 'web', severity: VisionErrorSeverity.warning);
+      clock = clock.add(const Duration(milliseconds: 1));
+    }
+    log.record(area: 'gps', code: 'critical_now',
+      platform: 'android', severity: VisionErrorSeverity.critical);
+    final export = VisionDiagnosticReport.build(log, generatedAt: clock);
+    expect(export, contains('gps/critical_now | android | critical'));
+    expect(export.split('|').length, greaterThan(1));
+    expect(export.length, lessThanOrEqualTo(
+      VisionDiagnosticReport.maxCharacters));
+  });
+
   test('report caps the number of events and notes omissions', () {
     final log = VisionErrorLog(maxEntries: 300,
       maxBytes: 1024 * 1024, clock: () => timestamp);
