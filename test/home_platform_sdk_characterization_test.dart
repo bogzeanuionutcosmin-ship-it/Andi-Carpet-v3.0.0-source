@@ -95,7 +95,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  sdkTest('KNOWN DEFECT: native GPS can attach after Home dispose when enabled completes late', (tester) async {
+  sdkTest('native GPS cannot attach after Home dispose when enabled completes late', (tester) async {
     final enabled = Completer<bool>(); gps.enabledResult = enabled.future;
     await mount(tester);
     debugPrint('GPS_LATE_FIXTURE mounted');
@@ -107,14 +107,9 @@ void main() {
     debugPrint('GPS_LATE_FIXTURE enabled');
     await flushHomeFixture(tester);
     debugPrint('GPS_LATE_FIXTURE flushed');
-    expect(gps.starts, 1, reason: 'Historical characterization, NOT isolation acceptance');
+    expect(gps.starts, 0);
     expect(gps.cancels, 0);
-    // Cancel the exact late synthetic subscription explicitly. Closing an
-    // active controller in this fake-async zone can leave its done Future stuck.
-    unawaited(gps.lastSubscription!.cancel());
-    await flushHomeFixture(tester);
-    debugPrint('GPS_LATE_FIXTURE cleaned');
-    expect(gps.cancels, 1); // Fixture cleanup, not a cancellation by disposed Home.
+    expect(gps.lastSubscription, isNull);
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(seconds: 60)));
 

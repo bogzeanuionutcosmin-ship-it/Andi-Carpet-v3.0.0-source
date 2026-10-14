@@ -2,9 +2,9 @@ part of '../main.dart';
 
 extension _HomePushNotifications on _HomePageState {
   void _showIncomingPopup({required String title, required String body, VoidCallback? onView}) {
-    if (!mounted) return;
+    if (!_sessionActive) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_sessionActive) return;
       final messenger = ScaffoldMessenger.maybeOf(context);
       if (messenger == null) return;
       messenger
@@ -21,17 +21,17 @@ extension _HomePushNotifications on _HomePageState {
               if (body.trim().isNotEmpty) Text(body, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white)),
             ])),
           ]),
-          action: onView == null ? null : SnackBarAction(label: 'VEZI', textColor: Colors.white, onPressed: onView),
+          action: onView == null ? null : SnackBarAction(label: 'VEZI', textColor: Colors.white, onPressed: () { if (_sessionActive) onView(); }),
         ));
     });
   }
 
   Future<void> _openChatFromAlert(String otherUserId) async {
-    if (!mounted || otherUserId.trim().isEmpty || otherUserId == currentUserId) return;
+    if (!_sessionActive || otherUserId.trim().isEmpty || otherUserId == currentUserId) return;
     if (!isAdmin && _hiddenUserIds.contains(otherUserId)) return;
     try {
       final snap = await _pushDb.collection(isAdmin ? 'users' : 'memberDirectory').doc(otherUserId).get();
-      if (!mounted) return;
+      if (!_sessionActive) return;
       final d = snap.data() ?? <String, dynamic>{};
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => PrivateChatPage(
         currentUser: me,
@@ -40,14 +40,14 @@ extension _HomePushNotifications on _HomePageState {
         otherPhotoBase64: (d['photoBase64'] ?? '').toString(),
       )));
     } catch (_) {
-      if (mounted) _openMembersDirectory();
+      if (_sessionActive) _openMembersDirectory();
     }
   }
 
   String _pushTokenDocId(String token) => base64UrlEncode(utf8.encode(token)).replaceAll('=', '');
 
   Future<void> _savePushToken(String token) async {
-    if (token.trim().isEmpty) return;
+    if (!_sessionActive || token.trim().isEmpty) return;
     final platform = kIsWeb ? 'web' : defaultTargetPlatform.name;
     await _pushDb
         .collection('users').doc(currentUserId)
@@ -63,10 +63,10 @@ extension _HomePushNotifications on _HomePageState {
   }
 
   void _offerPushPermissionAutomatically() {
-    if (_pushPermissionDialogShown || !mounted) return;
+    if (_pushPermissionDialogShown || !_sessionActive) return;
     _pushPermissionDialogShown = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_sessionActive) return;
       showDialog<void>(
         context: context,
         barrierDismissible: true,
@@ -102,7 +102,7 @@ extension _HomePushNotifications on _HomePageState {
   }
 
   Future<void> _initPushNotifications({bool fromUserGesture = false}) async {
-    if (_pushInitializationInFlight) return;
+    if (!_sessionActive || _pushInitializationInFlight) return;
     _pushInitializationInFlight = true;
     try {
       final messaging = widget.messaging ?? FirebaseMessaging.instance;
@@ -112,8 +112,10 @@ extension _HomePushNotifications on _HomePageState {
         // Pe Web (inclusiv PWA iPhone), cererea trebuie lansată direct dintr-un
         // gest al utilizatorului. Nu facem niciun await înainte de apelul acesta.
         permission = await messaging.requestPermission(alert: true, badge: true, sound: true);
+        if (!_sessionActive) return;
       } else {
         permission = await messaging.getNotificationSettings();
+        if (!_sessionActive) return;
         if (permission.authorizationStatus == AuthorizationStatus.notDetermined) {
           if (kIsWeb) {
             // Nu cerem utilizatorului să intre în Profil. Afișăm automat dialogul
@@ -122,6 +124,7 @@ extension _HomePushNotifications on _HomePageState {
             return;
           }
           permission = await messaging.requestPermission(alert: true, badge: true, sound: true);
+          if (!_sessionActive) return;
         }
       }
 
@@ -142,17 +145,20 @@ extension _HomePushNotifications on _HomePageState {
         }
         // După acordarea permisiunii, dăm service worker-ului o clipă să fie gata.
         await Future<void>.delayed(const Duration(milliseconds: 700));
+        if (!_sessionActive) return;
       }
 
       final token = kIsWeb
           ? await messaging.getToken(vapidKey: _webPushVapidKey)
           : await messaging.getToken();
+      if (!_sessionActive) return;
       if (token == null || token.trim().isEmpty) {
         debugPrint('[push] Firebase Messaging nu a returnat un token.');
         return;
       }
 
       await _savePushToken(token);
+      if (!_sessionActive) return;
       debugPrint('[push] Token FCM înregistrat AUTOMAT și salvat pentru $currentUserId.');
 
       if (!_pushListenersAttached) {
@@ -162,6 +168,7 @@ extension _HomePushNotifications on _HomePageState {
           onError: (Object error) => debugPrint('[push] onTokenRefresh: $error'),
         ));
         _coreSubscriptions.add((widget.messageOpenedApp ?? FirebaseMessaging.onMessageOpenedApp).listen((message) {
+          if (!_sessionActive) return;
           final type = (message.data['type'] ?? '').toString();
           if (type == 'chat') {
             final senderId = (message.data['senderId'] ?? '').toString();
@@ -171,6 +178,7 @@ extension _HomePushNotifications on _HomePageState {
       }
 
       final initial = await messaging.getInitialMessage();
+      if (!_sessionActive) return;
       if (initial != null && (initial.data['type'] ?? '').toString() == 'chat') {
         final senderId = (initial.data['senderId'] ?? '').toString();
         if (senderId.isNotEmpty) {

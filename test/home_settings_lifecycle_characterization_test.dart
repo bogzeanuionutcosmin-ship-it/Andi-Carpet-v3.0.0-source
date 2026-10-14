@@ -6,7 +6,7 @@ import 'support/auth_gate_fixture.dart';
 import 'support/home_sync_fixture.dart';
 
 void main() {
-  testWidgets('KNOWN DEFECT: shared root settings retain A visual preferences until B supplies replacements', (tester) async {
+  testWidgets('standalone Home without AuthGate leaves preference reset to the session owner', (tester) async {
     final db = HomeSyncFixture();
     addTearDown(db.close);
     final shared = AppSettings()..autoCloseWhenAllDone = false;
@@ -97,7 +97,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('KNOWN DEFECT: queued background settings callback runs after Home dispose', (tester) async {
+  testWidgets('queued background settings callback is rejected after Home dispose', (tester) async {
     final db = HomeSyncFixture();
     addTearDown(db.close);
     dynamic state;
@@ -112,12 +112,12 @@ void main() {
     expect(state.settings.customBackgrounds.keys, ['bg']);
     await tester.pumpWidget(const SizedBox());
     expect(state.mounted, isFalse);
-    expect(mountedAtCallback, [false]);
+    expect(mountedAtCallback, isEmpty);
     expect(db.activeCount, 0);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('KNOWN DEFECT: A queued visual callback can notify root after keyed B mounts', (tester) async {
+  testWidgets('A queued visual callback cannot notify root after keyed B mounts', (tester) async {
     final db = HomeSyncFixture();
     addTearDown(db.close);
     final shared = AppSettings()..autoCloseWhenAllDone = false;
@@ -136,7 +136,7 @@ void main() {
     final dynamic next = tester.state(find.byType(FixtureHomePage));
     expect(old.mounted, isFalse);
     expect(next.currentUserId, 'b');
-    expect(callbackOwners, ['a:false']);
+    expect(callbackOwners, isEmpty);
     expect(shared.theme, AppThemeChoice.dark);
     await tester.pumpWidget(const SizedBox());
     expect(db.activeCount, 0);

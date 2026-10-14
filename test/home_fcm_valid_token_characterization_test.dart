@@ -125,7 +125,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('KNOWN DEFECT: delayed A token still attempts A write after keyed Home replaced by B', (tester) async {
+  testWidgets('delayed A token makes zero A write attempts after keyed Home replaced by B', (tester) async {
     final tokenA = Completer<String?>(); fcm.tokenResult = tokenA.future;
     db.beforeSet = (write) async {
       if (write.data['deviceOwnerUid'] == 'a') throw StateError('synthetic reject stale A');
@@ -137,8 +137,8 @@ void main() {
     expect(db.writes.single.data['deviceOwnerUid'], 'b');
     tokenA.complete('synthetic-delayed-A');
     await flushHomeFixture(tester);
-    expect(db.attempts.map((w) => w.data['deviceOwnerUid']), ['b', 'a']);
-    expect(db.attempts.last.path, 'users/a/pushTokens/${tokenId('synthetic-delayed-A')}');
+    expect(db.attempts.map((w) => w.data['deviceOwnerUid']), ['b']);
+    expect(db.attempts.any((w) => w.path.startsWith('users/a/')), isFalse);
     expect(db.writes.length, 1); expect(fcm.refreshStarts, 1);
     await finish(tester); expect(fcm.refreshCancels, 1);
     // Rejected fake write avoids leaked late listeners. This is not a full

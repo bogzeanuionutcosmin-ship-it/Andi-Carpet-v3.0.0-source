@@ -14,7 +14,7 @@ import 'support/home_sync_fixture.dart';
 // global opened-message source, so this must not be mixed into a shared suite.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  testWidgets('KNOWN DEFECT: A late successful token attaches listeners after B and continues refresh after B dispose', (tester) async {
+  testWidgets('A late successful token cannot write or attach after B and cannot refresh after B dispose', (tester) async {
     final originalFcm = FirebaseMessagingPlatform.instance;
     final originalGps = GeolocatorPlatform.instance;
     setupFirebaseCoreMocks(); await Firebase.initializeApp();
@@ -30,14 +30,15 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: PushSdkHomePage(uid: 'b', sync: sync, push: db)));
       await flushHomeFixture(tester); expect(db.writes.single.data['deviceOwnerUid'], 'b');
       tokenA.complete('synthetic-late-A'); await flushHomeFixture(tester);
-      expect(db.writes.map((w) => w.data['deviceOwnerUid']), ['b', 'a']);
-      expect(fcm.trace.where((e) => e == 'refresh'), hasLength(2));
-      expect(fcm.trace.where((e) => e == 'initial'), hasLength(2));
+      expect(db.writes.map((w) => w.data['deviceOwnerUid']), ['b']);
+      expect(fcm.trace.where((e) => e == 'refresh'), hasLength(1));
+      expect(fcm.trace.where((e) => e == 'initial'), hasLength(1));
       await tester.pumpWidget(const SizedBox()); await flushHomeFixture(tester);
       expect(sync.activeCount, 0);
-      expect(fcm.refresh.hasListener, isTrue); // orphan A remains; B cancellation is insufficient
+      expect(fcm.refresh.hasListener, isFalse);
       fcm.refresh.add('synthetic-after-B-dispose'); await flushHomeFixture(tester);
-      expect(db.writes.map((w) => w.data['deviceOwnerUid']), ['b', 'a', 'a']);
+      expect(db.writes.map((w) => w.data['deviceOwnerUid']), ['b']);
+      expect(db.attempts.map((w) => w.data['deviceOwnerUid']), ['b']);
       expect(db.unexpected, isEmpty); expect(db.reads, isEmpty);
     } finally {
       // Cancel-only cleanup of fake event sources, not a runtime remedy. Start

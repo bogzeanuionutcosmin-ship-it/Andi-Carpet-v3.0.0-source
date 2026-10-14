@@ -110,7 +110,7 @@ void main() {
     expect(db.activeCount, 0);
   });
 
-  testWidgets('KNOWN DEFECT: actual Home State of A stays alive until profile B; B gets a fresh state', (tester) async {
+  testWidgets('actual Home State of A disposes before profile B; B gets a fresh state', (tester) async {
     final db = HomeSyncFixture();
     final gate = GateFixture();
     addTearDown(db.close);
@@ -126,12 +126,10 @@ void main() {
     gate.user = GateFixtureUser('b', 'b@example.com');
     gate.auth.add(gate.user);
     await flushHomeFixture(tester);
-    expect(identical(tester.state(find.byType(FixtureHomePage)), old), isTrue);
-    expect(old.mounted, isTrue);
-    expect(old.currentUserId, 'a');
-    expect(old.me.name, 'Cached Alice');
-    expect(old.tab, 3);
-    expect(db.active['users/a'], 1);
+    expect(find.byType(FixtureHomePage), findsNothing);
+    expect(old.mounted, isFalse);
+    expect(db.active['users/a'], 0);
+    expect(db.activeCount, 0);
     gate.profile('b').add(GateFixtureSnapshot({'active': true}));
     await flushHomeFixture(tester);
     final dynamic next = tester.state(find.byType(FixtureHomePage));

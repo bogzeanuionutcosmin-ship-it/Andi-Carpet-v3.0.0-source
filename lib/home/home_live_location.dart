@@ -2,6 +2,7 @@ part of '../main.dart';
 
 extension _HomeLiveLocation on _HomePageState {
   void _startAdaptiveLiveLocation() {
+    if (!_sessionActive) return;
     _liveLocationTimer?.cancel();
     _liveLocationTimer = null;
     _backgroundLocationSubscription?.cancel();
@@ -17,13 +18,18 @@ extension _HomeLiveLocation on _HomePageState {
   }
 
   Future<void> _startNativeBackgroundLocationStream() async {
+    if (!_sessionActive) return;
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return;
+      if (!_sessionActive) return;
       var permission = await Geolocator.checkPermission();
+      if (!_sessionActive) return;
       if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+      if (!_sessionActive) return;
       if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
 
       await _backgroundLocationSubscription?.cancel();
+      if (!_sessionActive) return;
       _backgroundLocationSubscription = null;
 
       // Mod economic: cât timp suntem departe de următoarea sală folosim mai puține
@@ -66,6 +72,7 @@ extension _HomeLiveLocation on _HomePageState {
   }
 
   void _updateNativeLocationProximityBoost(Position p, DateTime workDate) {
+    if (!_sessionActive) return;
     if (kIsWeb || _personalLocationMode != 'economic') return;
     final teamId = me.teamId;
     if (teamId == null || teamId.isEmpty) return;
@@ -93,6 +100,7 @@ extension _HomeLiveLocation on _HomePageState {
   }
 
   Future<String> _resolveLiveLocality(Position p) async {
+    if (!_sessionActive) return '';
     final now = DateTime.now();
     if (_lastLiveLocalityLabel.isNotEmpty && _lastLiveLocalityResolvedAt != null && _lastLiveLocalityPosition != null) {
       final moved = Geolocator.distanceBetween(_lastLiveLocalityPosition!.latitude, _lastLiveLocalityPosition!.longitude, p.latitude, p.longitude);
@@ -110,6 +118,7 @@ extension _HomeLiveLocation on _HomePageState {
       final headers = <String,String>{'Accept':'application/json','Accept-Language':'ro'};
       if (!kIsWeb) headers['User-Agent'] = 'AndiCarpeta/2.0.8 (internal operations app)';
       final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 8));
+      if (!_sessionActive) return '';
       if (response.statusCode == 200 && response.body.isNotEmpty) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map && decoded['address'] is Map) {
@@ -139,10 +148,13 @@ extension _HomeLiveLocation on _HomePageState {
   }
 
   Future<void> _shareLiveLocationIfAllowed([Position? suppliedPosition]) async {
+    if (!_sessionActive) return;
     try {
       final permission = await Geolocator.checkPermission();
+      if (!_sessionActive) return;
       if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
       if (!await Geolocator.isLocationServiceEnabled()) return;
+      if (!_sessionActive) return;
       final now = DateTime.now();
       final workDate = operationalWorkDate(now);
       final inWork = isInsideWorkWindow(now, workDate);
@@ -154,6 +166,7 @@ extension _HomeLiveLocation on _HomePageState {
       if (!inWork && effectiveMode == 'offline') {
         if (!_offlineLocationCleared) {
           await FirebaseFirestore.instance.collection('liveLocations').doc(currentUserId).delete();
+          if (!_sessionActive) return;
           _offlineLocationCleared = true;
           _lastSharedAt = null;
           _lastSharedPosition = null;
@@ -172,6 +185,7 @@ extension _HomeLiveLocation on _HomePageState {
 
       final accuracy = effectiveMode == 'live' || inWork ? LocationAccuracy.high : LocationAccuracy.medium;
       final p = suppliedPosition ?? await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: accuracy));
+      if (!_sessionActive) return;
       _updateNativeLocationProximityBoost(p, workDate);
       var moved = true;
       if (_lastSharedPosition != null) {
@@ -183,6 +197,7 @@ extension _HomeLiveLocation on _HomePageState {
       if (!moved && !heartbeatDue) return;
       final myTeam = me.teamId;
       final localityLabel = await _resolveLiveLocality(p);
+      if (!_sessionActive) return;
       await FirebaseFirestore.instance.collection('liveLocations').doc(currentUserId).set({
         'userId': currentUserId,
         'name': me.name,
@@ -196,6 +211,7 @@ extension _HomeLiveLocation on _HomePageState {
         'localityLabel': localityLabel,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+      if (!_sessionActive) return;
       _lastSharedPosition = p;
       _lastSharedAt = now;
       await _applyWorkAutomationFromPosition(p, now, workDate);

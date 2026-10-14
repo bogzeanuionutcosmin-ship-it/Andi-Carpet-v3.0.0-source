@@ -26,6 +26,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   int tab = 0;
   late final String currentUserId;
   AppSettings get settings => widget.settings;
+  bool get _sessionActive => mounted && (widget.sessionIsCurrent?.call() ?? true);
+
+  void _scheduleSettingsChanged() {
+    if (!_sessionActive) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_sessionActive) widget.onSettingsChanged();
+    });
+  }
   FirebaseFirestore get _syncDb => widget.syncFirestore ?? FirebaseFirestore.instance;
   FirebaseFirestore get _maintenanceDb => widget.maintenanceFirestore ?? FirebaseFirestore.instance;
   FirebaseFirestore get _pushDb => widget.pushFirestore ?? FirebaseFirestore.instance;
@@ -166,6 +174,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _startCoreSync() {
+    if (!_sessionActive) return;
     final db = _syncDb;
 
     _startDefinitionsSync(db);
@@ -248,7 +257,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (!isAdmin && _hiddenUserIds.contains(id)) return 'Sistem';
     return users.firstWhere((u) => u.id == id, orElse: () => AppUser(id: id, name: 'Membru', role: UserRole.member)).name;
   }
-  void log(String action, String target) { unawaited(_writeAuditRemote(action, target)); }
+  void log(String action, String target) { if (_sessionActive) unawaited(_writeAuditRemote(action, target)); }
   String _notificationCategory(String title,String message){
     final t='$title $message'.toLowerCase();
     if(t.contains('diurn')||t.contains('decont')||t.contains('cheltu'))return 'decont';
@@ -262,14 +271,16 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     return _personalNotificationPreferences[_notificationCategory(title,message)]??true;
   }
   void notifyUser(String uid, String title, String msg) {
+    if (!_sessionActive) return;
     if (!settings.pushNotifications) return;
     final n = AppNotification(id: idNow(), userId: uid, title: title, message: msg, createdAt: DateTime.now());
-    if (mounted && (isAdmin || uid == currentUserId)) setState(() => notifications.insert(0, n));
+    if (_sessionActive && (isAdmin || uid == currentUserId)) setState(() => notifications.insert(0, n));
     unawaited(FirebaseFirestore.instance.collection('notifications').doc(n.id).set(_notificationMap(n)).catchError((Object e) {
-      if (mounted) setState(() => coreSyncError = 'Notificare: $e');
+      if (_sessionActive) setState(() => coreSyncError = 'Notificare: $e');
     }));
   }
   void notifyTeam(String teamId, String title, String msg) {
+    if (!_sessionActive) return;
     final matches = teams.where((t) => t.id == teamId);
     if (matches.isEmpty) return;
     for (final uid in matches.first.members) {
@@ -277,12 +288,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     }
   }
   void refresh() {
+    if (!_sessionActive) return;
     // Refresh-urile operaționale nu trebuie să reconstruiască MaterialApp/AuthGate.
     // Tema este propagată separat doar când se schimbă efectiv în Firestore.
     setState(() {});
     if (isAdmin) {
       unawaited(_persistCoreData().catchError((Object e) {
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() => coreSyncError = 'Salvare Firestore: $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvarea nu a reușit: $e')));
       }));
@@ -351,7 +363,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     addPage(true, DocumentsPage(isAdmin: isAdmin),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_documente.png', size: 24, accent: docsColor), selectedIcon: appAssetIcon('assets/ui/tab_documente.png', size: 27, accent: docsColor, selected: true), label: compactNav ? 'Doc.' : 'Documente'), docsColor);
     addPage(true,
-      SettingsPage(user: me, notifications: notifications, settings: settings, onChanged: refresh, onThemeChanged: widget.onSettingsChanged, onAdmin: isAdmin ? () => _openAdmin() : null, onLogout: () => FirebaseAuth.instance.signOut()),
+      SettingsPage(user: me, notifications: notifications, settings: settings, onChanged: refresh, onThemeChanged: _scheduleSettingsChanged, onAdmin: isAdmin ? () => _openAdmin() : null, onLogout: () => FirebaseAuth.instance.signOut()),
       const NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings, color: settingsColor), label: 'Setări'), settingsColor);
 
     if (pages.isEmpty) {

@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/auth_gate_fixture.dart';
 
-// Characterization of known defects, NOT acceptance of cross-account retention.
-// A future approved fix must change these expectations and add isolation tests.
+// Former defect probes now require isolation; the RED acceptance suites remain unchanged.
 class _ActivePageProbe extends StatefulWidget {
   final FirebaseUserProfile profile;
   final List<String> lifecycle;
@@ -30,7 +29,7 @@ class _ActivePageProbeState extends State<_ActivePageProbe> {
 }
 
 void main() {
-  testWidgets('KNOWN DEFECT: pending identity A remains before B snapshot and after B error', (tester) async {
+  testWidgets('pending identity A disappears before B snapshot and after B error', (tester) async {
     final h = GateFixture();
     addTearDown(h.close);
     await mountFixtureGate(tester, h);
@@ -41,13 +40,13 @@ void main() {
     await flushFixtureGate(tester);
     expect(h.requestedProfiles, ['a', 'b']);
     expect(h.profileCancels['a'], 1);
-    expect(find.text('Alice\na@example.com'), findsOneWidget,
-        reason: 'Reproduces old identity exposure during the UID transition');
+    expect(find.text('Alice\na@example.com'), findsNothing,
+        reason: 'Old identity must disappear during the UID transition');
     h.profile('b').addError('synthetic B permission error');
     h.settings.add(GateFixtureSnapshot({'androidDownloadUrl': 'synthetic-update'}));
     await flushFixtureGate(tester);
-    expect(find.text('Alice\na@example.com'), findsOneWidget);
-    expect(find.textContaining('synthetic B permission error'), findsNothing);
+    expect(find.text('Alice\na@example.com'), findsNothing);
+    expect(find.textContaining('synthetic B permission error'), findsOneWidget);
     h.profile('a').add(GateFixtureSnapshot({'name': 'Late Alice', 'active': false}));
     await flushFixtureGate(tester);
     expect(find.textContaining('Late Alice'), findsNothing);
@@ -58,7 +57,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('KNOWN DEFECT: active page and navigation state survive UID change until new profile', (tester) async {
+  testWidgets('active page disposes before the new identity profile', (tester) async {
     final h = GateFixture();
     addTearDown(h.close);
     final lifecycle = <String>[];
@@ -71,27 +70,30 @@ void main() {
     h.user = GateFixtureUser('b', 'b@example.com');
     h.auth.add(h.user);
     await flushFixtureGate(tester);
-    expect(find.text('identity:a:tab:2'), findsOneWidget);
-    expect(lifecycle, ['mount:a']);
+    expect(find.text('identity:a:tab:2'), findsNothing);
+    expect(lifecycle, ['mount:a', 'dispose:a']);
     h.profile('b').addError('synthetic offline');
     h.auth.add(null); // currentUser B fallback must not resubscribe.
     await flushFixtureGate(tester);
     expect(h.requestedProfiles, ['a', 'b']);
-    expect(lifecycle, ['mount:a']);
+    expect(lifecycle, ['mount:a', 'dispose:a']);
     h.profile('b').add(GateFixtureSnapshot({'name': 'Bob', 'active': true}));
     await flushFixtureGate(tester);
     expect(find.text('identity:b:tab:0'), findsOneWidget);
-    expect(lifecycle, ['mount:a', 'mount:b', 'dispose:a']);
+    expect(lifecycle, ['mount:a', 'dispose:a', 'mount:b']);
     await tester.pumpWidget(const SizedBox());
     expect(lifecycle.last, 'dispose:b');
   });
 
-  testWidgets('KNOWN DEFECT: a route pushed by A remains above the new B page', (tester) async {
+  testWidgets('root removes a route pushed by A before the new B page', (tester) async {
     final h = GateFixture();
     addTearDown(h.close);
     final lifecycle = <String>[];
-    await mountFixtureGate(tester, h, activePageBuilder: (key, profile) =>
-        _ActivePageProbe(key: key, profile: profile, lifecycle: lifecycle));
+    await tester.pumpWidget(AndiCarpetaApp(authSources: h.sources,
+      settings: AppSettings()..brandingBackgroundId = 'none',
+      homeBuilder: (key, profile, current) =>
+        _ActivePageProbe(key: key, profile: profile, lifecycle: lifecycle)));
+    await flushFixtureGate(tester);
     h.profile('a').add(GateFixtureSnapshot({'active': true}));
     await flushFixtureGate(tester);
     await tester.tap(find.text('Open route'));
@@ -102,10 +104,8 @@ void main() {
     await flushFixtureGate(tester);
     h.profile('b').add(GateFixtureSnapshot({'active': true}));
     await flushFixtureGate(tester);
-    expect(find.text('route:a'), findsOneWidget);
+    expect(find.text('route:a'), findsNothing);
     expect(lifecycle, contains('mount:b'));
-    Navigator.of(tester.element(find.text('route:a'))).pop();
-    await tester.pumpAndSettle();
     expect(find.text('identity:b:tab:0'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
