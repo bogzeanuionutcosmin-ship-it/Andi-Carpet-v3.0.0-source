@@ -174,6 +174,26 @@ void main() {
       expect(log.entries.single.count, 3);
     });
 
+    test('identifier validation bounds work before normalization', () {
+      final maxLength = 'a' + List<String>.filled(47, 'b').join();
+      final tooLong = maxLength + 'c';
+      expect(maxLength.length, 48);
+      expect(VisionErrorLog.safeCode(maxLength), maxLength);
+      expect(VisionErrorLog.safeCode(tooLong), 'unknown');
+      expect(VisionErrorLog.safeCode('OCR_FAILED'), 'ocr_failed');
+      expect(VisionErrorLog.safeCode(''), 'unknown');
+      expect(VisionErrorLog.safeCode('secret@example.com'), 'unknown');
+    });
+
+    test('very large accidental error payload is never retained', () {
+      final raw = 'token=' + List<String>.filled(200000, 's').join();
+      final log = create();
+      log.record(area: 'ocr', code: raw, platform: 'android');
+      expect(log.entries.single.code, 'unknown');
+      expect(log.encodedBytes, lessThan(1024));
+      expect(log.encode(), isNot(contains('token=')));
+    });
+
     test('serialized summaries survive local restart', () {
       final before = create();
       before.record(area: 'ocr', code: 'save_failed', platform: 'android');
