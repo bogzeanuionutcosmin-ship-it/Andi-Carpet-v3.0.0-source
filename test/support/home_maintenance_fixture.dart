@@ -33,6 +33,7 @@ class HomeMaintenanceFixture extends Fake implements FirebaseFirestore {
   final commitAttempts = <List<MaintenanceWrite>>[];
   Future<void> Function(List<MaintenanceWrite>)? beforeCommit;
   final directWrites = <MaintenanceWrite>[];
+  final cutoffs = <String, Timestamp>{};
   final queryReads = <String, Future<QuerySnapshot<Map<String, dynamic>>> Function()>{};
   final documentReads = <String, Future<DocumentSnapshot<Map<String, dynamic>>> Function()>{};
   Never reject(String operation) {
@@ -67,6 +68,7 @@ class _MaintenanceQuery extends Fake implements CollectionReference<Map<String, 
     if (invocation.memberName == #where) {
       final cutoff = invocation.namedArguments[#isLessThan];
       if (args.single != 'createdAt' || cutoff is! Timestamp) return db.reject('where:$key');
+      db.cutoffs[key] = cutoff;
       return _MaintenanceQuery(db, '$key[before:createdAt]');
     }
     if (invocation.memberName == #get) {

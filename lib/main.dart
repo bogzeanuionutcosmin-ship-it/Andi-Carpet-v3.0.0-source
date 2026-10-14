@@ -59,6 +59,8 @@ import 'home/home_identity_queries.dart';
 export 'home/home_identity_queries.dart';
 import 'home/home_system_queries.dart';
 export 'home/home_system_queries.dart';
+import 'home/home_retention_queries.dart';
+export 'home/home_retention_queries.dart';
 import 'home/home_operational_queries.dart';
 export 'home/home_operational_queries.dart';
 import 'home/seed_operational_locations.dart' as operational_location_seed;

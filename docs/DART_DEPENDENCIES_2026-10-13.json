@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 193,
-  "lib_dart_files": 135,
-  "test_dart_files": 57,
+  "dart_files": 195,
+  "lib_dart_files": 136,
+  "test_dart_files": 58,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 134,
+  "libraries": 136,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -66,6 +66,7 @@
     "lib/home/home_message_queries.dart": [],
     "lib/home/home_operational_queries.dart": [],
     "lib/home/home_platform_effects.dart": [],
+    "lib/home/home_retention_queries.dart": [],
     "lib/home/home_system_queries.dart": [],
     "lib/home/seed_operational_locations.dart": [
       "lib/models/app_data_models.dart",
@@ -96,6 +97,7 @@
       "lib/home/home_message_queries.dart",
       "lib/home/home_operational_queries.dart",
       "lib/home/home_platform_effects.dart",
+      "lib/home/home_retention_queries.dart",
       "lib/home/home_system_queries.dart",
       "lib/home/seed_operational_locations.dart",
       "lib/learning/duration_estimates.dart",
@@ -325,6 +327,10 @@
     "test/home_operational_queries_test.dart": [
       "lib/main.dart",
       "test/support/home_sync_fixture.dart"
+    ],
+    "test/home_retention_queries_test.dart": [
+      "lib/home/home_retention_queries.dart",
+      "test/support/home_maintenance_fixture.dart"
     ],
     "test/home_settings_lifecycle_characterization_test.dart": [
       "lib/main.dart",
@@ -2063,8 +2069,8 @@
     },
     {
       "path": "lib/home/home_backup_maintenance.dart",
-      "bytes": 3831,
-      "sha256": "e21705b6c4050910808a13574629fcd77d98145552239e03c9b418b2397fe731",
+      "bytes": 3825,
+      "sha256": "9ed36110f03ad5408e73ee07a493a6d6aa6411cff9bf8774fc5c6b4e42c1c8e9",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -2459,6 +2465,33 @@
       "top_level_functions": []
     },
     {
+      "path": "lib/home/home_retention_queries.dart",
+      "bytes": 936,
+      "sha256": "8daebeeda0a56c057239627c3c879796deaceb8f3a2f0a1f4ff9352509655652",
+      "owner": "lib/home/home_retention_queries.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "HomeRetentionQueries"
+        },
+        {
+          "kind": "class",
+          "name": "_FirestoreHomeRetentionQueries"
+        }
+      ],
+      "top_level_functions": []
+    },
+    {
       "path": "lib/home/home_sync_listeners.dart",
       "bytes": 15281,
       "sha256": "228f1692ad4d51166924f1d89c67d038e01349b960c1dc5e6dad8da7cd8691a3",
@@ -2617,8 +2650,8 @@
     },
     {
       "path": "lib/main.dart",
-      "bytes": 30263,
-      "sha256": "eaf7daed6ce3beaa78df913f2bddcfa6f8b33eae7cb411453219a44cac2064fc",
+      "bytes": 30349,
+      "sha256": "019660eb8b847818bfb8a7e838b8fb4e3b264cdfac793f82a74ae82a435fdf27",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -3179,6 +3212,26 @@
           ],
           "local_targets": [
             "lib/home/home_system_queries.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'home/home_retention_queries.dart';",
+          "uris": [
+            "home/home_retention_queries.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_retention_queries.dart"
+          ]
+        },
+        {
+          "kind": "export",
+          "text": "export 'home/home_retention_queries.dart';",
+          "uris": [
+            "home/home_retention_queries.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_retention_queries.dart"
           ]
         },
         {
@@ -7452,6 +7505,54 @@
       ]
     },
     {
+      "path": "test/home_retention_queries_test.dart",
+      "bytes": 3090,
+      "sha256": "4dc886d87bc09fe645263efa9487f18cc58c62ca0474af225d094bc05d33fcc2",
+      "owner": "test/home_retention_queries_test.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/home/home_retention_queries.dart';",
+          "uris": [
+            "package:andi_carpeta/home/home_retention_queries.dart"
+          ],
+          "local_targets": [
+            "lib/home/home_retention_queries.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'support/home_maintenance_fixture.dart';",
+          "uris": [
+            "support/home_maintenance_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/home_maintenance_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
       "path": "test/home_settings_lifecycle_characterization_test.dart",
       "bytes": 8675,
       "sha256": "95a45d43586a7a910e2d1f2b526eaad8e6275a3f73a913307c61bc9e34a223a0",
@@ -8883,8 +8984,8 @@
     },
     {
       "path": "test/support/home_maintenance_fixture.dart",
-      "bytes": 5865,
-      "sha256": "c345e935039a7de386de46ddbe14dee8111c3e451375020424580e18143759d0",
+      "bytes": 5938,
+      "sha256": "830f2667dd131a66199f3703a9fbdc125ca3adba9729193bf6f0ea55ea0d880e",
       "owner": "test/support/home_maintenance_fixture.dart",
       "directives": [
         {

@@ -71,7 +71,7 @@ mixin _HomeBackupMaintenance on State<HomePage> {
   Future<void> _pruneAutomaticBackups() async {
     final db = _maintenanceDb;
     final cutoff = DateTime.now().subtract(Duration(days: settings.backupRetentionDays.clamp(1, 365)));
-    final old = await db.collection('backups').where('createdAt', isLessThan: Timestamp.fromDate(cutoff)).get();
+    final old = await HomeRetentionQueries.fromFirestore(db).backupsBefore(Timestamp.fromDate(cutoff)).get();
     for (final backup in old.docs) {
       final items = await backup.reference.collection('items').get();
       WriteBatch batch = db.batch();
@@ -89,7 +89,7 @@ mixin _HomeBackupMaintenance on State<HomePage> {
   Future<void> _pruneOldNotifications() async {
     final db = _maintenanceDb;
     final cutoff = DateTime.now().subtract(Duration(days: settings.notificationHistoryDays.clamp(1, 365)));
-    final old = await db.collection('notifications').where('createdAt', isLessThan: Timestamp.fromDate(cutoff)).get();
+    final old = await HomeRetentionQueries.fromFirestore(db).notificationsBefore(Timestamp.fromDate(cutoff)).get();
     WriteBatch batch = db.batch();
     var count = 0;
     for (final doc in old.docs) {

@@ -649,3 +649,14 @@ Patru teste Flutter noi cu State Home real/rendering substituit, strict sintetic
 KNOWN DEFECT nou caracterizat: documentCount al backupului failed numără documente încercate (16) deși numai 8 sunt confirmate în fixture; primele items rămân fără rollback. Este comportament preexistent, NU reparat și nu dovadă de integritate a restaurării. Eșecul retenției poate lăsa un backup parțial purjat, cu parent păstrat. Fixture-ul simulează reject înainte de commit; nu certifică ambiguitatea network/SDK după commit server.
 
 Local: 155 Python PASS, inventar 193 Dart/59 part/134 biblioteci totale/76 independente lib fără missing/orphan/duplicates/cycles. Flutter/Dart indisponibil local; CI standard plus identity emulator pe SHA lot se verifică înainte de următorul lot. AuthGate P1 și riscurile GPS/FCM/post-frame/settings/badge_v2 rămân NEREPARATE în #28. Fără modificări de producție, merge/deploy/APK/versiune, migrări reale sau PR-uri protejate.
+
+
+## MOD-HOME-RETENTION-QUERIES-20261014 — lot 23
+
+Lot 22 38eeae632f676442a4ff829d079fbf6982ed721a validat: CI standard 38524869964 5/5 SUCCESS plus identity 38524869959 SUCCESS. Toate cele patru teste noi de batch/failure au trecut; runtime lib/ a rămas byte-identic bazei c794c5d.
+
+HomeRetentionQueries este bibliotecă SDK independentă query-only: notifications/backups, where createdAt isLessThan Timestamp furnizat explicit. Nu calculează timpul, nu schimbă clamp 1..365, nu adaugă order/limit/get/listen/write/cache/retry. Home calculează în continuare cutoff la același punct, face get, șterge în batches300 și șterge parent după items. Cele două substituții query și directivele main inversate reconstruiesc byte-exact fișierele anterioare. Nu se schimbă API-ul HomePage, ordinea sau ownershipul maintenance.
+
+Trei teste Flutter noi pentru lazy query/no I/O, Timestamp exact/filtru strict, două DB independente/re-read fără cache și eroare propagată fără retry/write. Fixture strict înregistrează și cutoff-ul. Cele 11 teste State Home Admin/maintenance validează wiringul real și limitele 8/300, inclusiv caracterizările KNOWN DEFECT păstrate.
+
+Local 155 Python PASS, diff/equivalence/inventar PASS. Inventar 195 Dart = 136 lib + 58 test/support + 1 script; 59 part, 136 biblioteci totale, 77 independente lib; fără missing/orphan/duplicate/cycles. CI standard plus identity pe SHA lot urmează; nu se avansează până la verde. AuthGate P1, GPS/FCM și riscurile de backup/migration existente sunt NEREPARATE. Nicio producție, merge/deploy/versiune sau PR protejat modificat.
