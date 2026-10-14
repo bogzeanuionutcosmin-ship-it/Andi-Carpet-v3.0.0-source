@@ -97,3 +97,10 @@ IMPORTANT: noul APK de test **se instalează separat de cele vechi**; contorul l
 - În `VisionDiagnosticsPage`, statusul este afișat informativ; pentru jurnale injectate din test se spune explicit că persistența nu a fost verificată, fără a folosi statusul global al dispozitivului.
 - Teste pure pentru scriere întârziată, eșec citire/scriere, recuperare, callback-uri invalide și capturi vechi, plus test widget pentru jurnal injectat. Workflow-ul Android offline rulează testul nou; orice verdict final se comunică numai după CI pe HEAD.
 - **Limitare:** indicatorul este o observație de runtime despre succesul apelurilor de stocare, **nu o garanție fizică de integritate a discului**, nici verificarea după restart. Testul manual Build #22 pentru un singur eveniment `×1` rămâne valid independent; nu trebuie instalat alt APK pentru acest lot.
+
+
+## Jurnal sub presiunea spațiului — prioritatea severității
+
+În `VisionErrorLog._trim()`, eliminarea respectă acum următoarea prioritate: **incidente rezolvate primele**, apoi între incidentele cu aceeași stare **warning înainte de error înainte de critical**, apoi cele mai vechi din fiecare nivel. Scopul este să păstreze o eroare critică activă chiar dacă există avertizări mai recente. Limitele stricte `maxEntries`, `maxBytes` și TTL rămân în vigoare, inclusiv pentru erori critice; nu promitem persistență nelimitată.
+
+Teste noi acoperă: păstrarea criticelor deschise sub presiunea limitei, eliminarea unei critice rezolvate înaintea unui warning deschis și faptul că două critice respectă plafonul/TTL. Schimbarea afectează doar ordinea de retenție a rezumatelor locale; nu atinge Firebase, sume, conturi, transport, UI ori buildul instalat. CI se raportează separat pentru SHA exact.
