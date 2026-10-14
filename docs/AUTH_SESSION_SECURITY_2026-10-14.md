@@ -53,3 +53,10 @@ Nu se revocă retroactiv documentele pushTokens A deja stocate pe server și nu 
 ## Regresii validate și control suplimentar root chrome
 
 4a770da00364c5a0eafff4f91a27070ff2c7f3f2 / CI **38516475803 5/5 SUCCESS**, **58 Flutter PASS**, build web PASS; toate cele șase regresii noi trec. Navigator root reset nu garantează singur că ScaffoldMessenger din MaterialApp pierde mesajele SnackBar private. Se adaugă un test de acceptanță suplimentar pentru SnackBar A→B, înainte de eventuala corecție a ownership-ului messenger. Nu este schimbat runtime în acest lot.
+
+
+## RED/GREEN suplimentar — ScaffoldMessenger
+
+**58724b34efb382dcd77a3875e02a0b3a2f0ab57f / CI 38516742854:** 58 Flutter PASS / **1 FAIL** exact SnackBar privacy assertion; alte 4 joburi SUCCESS. Textul «Private snackbar a» rămânea vizibil în loading B după resetarea Navigatorului. ScafoldMessenger aparține MaterialApp deasupra Navigatorului și păstra coada/mesajul curent.
+
+Se înlocuiește și cheia ScaffoldMessenger pe același UID transition/logout, fără schimbarea mesagerului la same UID. Nu se folosește doar hideCurrentSnackBar cu animație/coadă reziduală. Mesajele și bannerele messenger sunt state ale sesiunii, spre deosebire de brandingul global. Testul SnackBar și acceptanțele originale sunt neschimbate. GREEN pe noul SHA urmează; până atunci izolarea întregii suprafețe testate nu este declarată finală.

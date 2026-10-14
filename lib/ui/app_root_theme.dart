@@ -13,6 +13,7 @@ class _AndiCarpetaAppState extends State<AndiCarpetaApp> {
   final _defaultSettings = AppSettings();
   AppSettings get settings => widget.settings ?? _defaultSettings;
   GlobalKey<NavigatorState> _sessionNavigatorKey = GlobalKey<NavigatorState>();
+  GlobalKey<ScaffoldMessengerState> _sessionMessengerKey = GlobalKey<ScaffoldMessengerState>();
   String? _navigationUid;
 
   @override
@@ -28,6 +29,7 @@ class _AndiCarpetaAppState extends State<AndiCarpetaApp> {
     setState(() {
       _navigationUid = uid;
       _sessionNavigatorKey = GlobalKey<NavigatorState>();
+      _sessionMessengerKey = GlobalKey<ScaffoldMessengerState>();
     });
     return true;
   }
@@ -37,6 +39,7 @@ class _AndiCarpetaAppState extends State<AndiCarpetaApp> {
     final mode = switch (settings.theme) { AppThemeChoice.light => ThemeMode.light, AppThemeChoice.dark => ThemeMode.dark, AppThemeChoice.system => ThemeMode.system };
     return MaterialApp(
       navigatorKey: _sessionNavigatorKey,
+      scaffoldMessengerKey: _sessionMessengerKey,
       title: 'Andi Carpetă',
       debugShowCheckedModeBanner: false,
       themeMode: mode,
