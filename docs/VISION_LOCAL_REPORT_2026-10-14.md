@@ -171,3 +171,14 @@ La generarea manuală a raportului Vision, după numărul de incidente distincte
 Rezumatul este generat **înainte de trunchierea la 100 de linii/16.000 de caractere**: un incident rezolvat sau o eroare critică omisă din liniile individuale rămâne reflectată în statistici. Nu există date brute, valori financiare, nume, UID-uri, locații, tokenuri sau vreo cerere Firebase/API suplimentară. Este doar o îmbunătățire a raportului copiat explicit de utilizator; niciun diagnostic automat sau acțiune de business.
 
 Teste noi: critică repetată de trei ori + eroare deschisă + warning rezolvat + două probe simulate; respectiv 120 warnings, critică rezolvată și probă, pentru a dovedi că totalurile rămân corecte chiar dacă unele linii sunt trunchiate. Exportul nu schimbă snapshotul jurnalului. CI pe SHA final decide validarea.
+
+
+## Recomandările Vision: eroarea la salvare nu certifică lipsa documentului
+
+În `VisionDiagnosticAdvisor`, semnalul `ocr/document_save_failed` era intitulat categoric „Document nesalvat”, deși o excepție locală / un timeout **nu dovedește** că serverul n-a confirmat deja commitul. Acest tip de formulare riscă să încurajeze reîncercări care creează documente duplicate.
+
+Titlul recomandării este acum **„Salvarea documentului necesită verificare”**, cu explicația prudentă că documentul **ar putea fi deja înregistrat**, trebuie verificată evidența și trebuie evitate duplicatele. Vision **nu face** retry automat, nu deduce existența documentului, nu se conectează la Firestore și nu modifică fluxul real OCR, sumele sau permisiunile. Verdicturile `saved_document_missing` / `saved_amount_mismatch` rămân separate și necesită dovezile de server prevăzute în verificatorul pur, încă neconectat la backend.
+
+În plus, pentru două incidente cu aceeași severitate, același indicator de repetare, timestamp și contor, advisorul folosește fingerprintul strict sanitizat ca ultim criteriu de ordine. Astfel, recomandarea de top nu mai depinde de ordinea întâmplătoare de inserare/restaurare a jurnalului.
+
+Teste noi pentru explicație non-categorică, protecție împotriva dublurilor și prioritizare deterministă după ordine inversată a evenimentelor; testele unit și widget existente pentru OCR au fost adaptate strict la noul text. Niciun upload, apel AI plătit sau intervenție în PR #28. Rezultatul final se confirmă doar cu CI/Android pe HEAD exact.
