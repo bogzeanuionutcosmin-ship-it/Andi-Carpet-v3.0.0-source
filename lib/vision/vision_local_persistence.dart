@@ -45,9 +45,12 @@ class VisionLocalPersistence {
   Future<void> flush() {
     _lastWrite = _lastWrite.then((_) async {
       await initialize();
-      final snapshot = log.encode();
       final revision = status.revision;
       try {
+        // Snapshot encoding can fail too (e.g. unexpected clock errors).
+        // Catching it inside the queue prevents one bad attempt from
+        // poisoning every future flush.
+        final snapshot = log.encode();
         await _write(snapshot);
         status.writeSucceeded(revision);
       } catch (_) {
