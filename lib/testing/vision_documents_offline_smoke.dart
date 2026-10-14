@@ -16,6 +16,10 @@ Future<void> main() async {
   runApp(const _OfflineTestApp());
 }
 
+/// Compile-time stamp supplied only by the isolated GitHub Actions test build.
+const String _visionSmokeRun =
+    String.fromEnvironment('VISION_SMOKE_RUN', defaultValue: 'local');
+
 class _OfflineTestApp extends StatelessWidget {
   const _OfflineTestApp();
 
@@ -121,10 +125,20 @@ class _SmokeHomeState extends State<_SmokeHome> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('AndiCarpet · TEST offline')),
+        appBar: AppBar(title: const Text('AndiCarpet Vision TEST')),
         body: ListView(
           padding: const EdgeInsets.all(14),
           children: [
+            Text(
+              'VISION TEST OFFLINE · BUILD #$_visionSmokeRun',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Fiecare build de test are o aplicație Android separată. '
+              'Nu este un update al aplicației de lucru.',
+            ),
+            const SizedBox(height: 12),
             const Text(
               'MOD DE TEST, SEPARAT DE APLICAȚIA DE LUCRU.\n'
               'Fără login, Firebase, GPS sau date financiare. '
