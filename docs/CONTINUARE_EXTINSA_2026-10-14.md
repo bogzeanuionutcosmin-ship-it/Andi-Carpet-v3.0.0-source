@@ -14,6 +14,8 @@ Workflow identity primește numai cele două căi de teste, pentru validare pe S
 
 ## Etapele următoare
 
+Prima rulare 3c8b930 / 38533969624: patru joburi standard SUCCESS, identity 38533969678 SUCCESS; Flutter a rămas în unit/widget tests. Review-ul fixture-ului a identificat închiderea streamului tardiv așteptată fără pump în fake-async. Corecția este exclusiv test: închiderea este inițiată și evenimentul done este livrat prin pump, cu timeout60s pentru acest scenariu. Aserțiunile starts1/cancels0 după dispose rămân neschimbate; nu se prezintă această problemă de fixture drept RED funcțional. Noua rulare va avea SHA propriu.
+
 2. AdminPanel: extrageri pure/proiecții fără writes; mixinurile State rămân.
 3. Lifecycle: controle same UID/rebuild, registru KNOWN DEFECT și matricea de portare.
 4. Dependențe: inventar și închidere explicită pentru biblioteci pure.

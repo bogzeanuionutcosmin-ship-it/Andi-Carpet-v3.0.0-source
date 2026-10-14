@@ -95,9 +95,10 @@ void main() {
     expect(gps.starts, 1, reason: 'Historical characterization, NOT isolation acceptance');
     expect(gps.cancels, 0);
     // Close the synthetic stream ourselves; Home already disposed before attach.
-    await gps.positions.close();
+    unawaited(gps.positions.close());
+    await flushHomeFixture(tester); // Deliver done in the widget fake-async zone.
     expect(tester.takeException(), isNull);
-  });
+  }, timeout: const Timeout(Duration(seconds: 60)));
 
   testWidgets('FCM requests undetermined permission then stops on refusal without token I/O', (tester) async {
     fcm.status = AuthorizationStatus.notDetermined;
