@@ -6485,8 +6485,8 @@
     },
     {
       "path": "test/admin_cancel_characterization_test.dart",
-      "bytes": 4972,
-      "sha256": "cb4137cba726d078c2eeb46030bdc951b43f218ea07306c9a486a93fb1057a48",
+      "bytes": 5859,
+      "sha256": "10ac70a9dd4db4c0464c384fbdf21e8a2d37f579a9bbc54fc18e72f83e54e5b1",
       "owner": "test/admin_cancel_characterization_test.dart",
       "directives": [
         {

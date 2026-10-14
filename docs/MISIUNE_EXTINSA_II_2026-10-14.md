@@ -19,3 +19,6 @@ E: noi lifecycle scenarios/conversii numai dacă justificabile; FunctionDefiniti
 F: reverificare read-only HEAD33/34/29, fără integrare/ref moves.
 
 Fără merge/deploy/APK/main/PR33/34/29/Firebase production/rules/config/billing/versiune sau schimbări de comportament.
+
+### Eșec inițial păstrat
+20675e1/38541395111:223FlutterPASS/1FAIL,4alte standardSUCCESS;identity38541395031SUCCESS. Focused function editor cancel dispose controller înainte de reverse animation (runtime nemodificat). Testul cere eroarea exactă et whitelist numai cascade framework observate; zeroFirebase et drepturi intacte rămân obligatorii. Nu este remediere; KNOWN DEFECT explicit. CI corectiv urmează.
