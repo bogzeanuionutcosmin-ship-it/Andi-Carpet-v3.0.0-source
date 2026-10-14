@@ -186,6 +186,75 @@ void main() {
       expect(after.entries.single.lastSeen, now);
     });
 
+    test('corrupt resolved metadata cannot reopen an old incident', () {
+      final cache = jsonEncode({
+        'version': 1,
+        'items': [
+          {
+            'area': 'gps', 'code': 'already_resolved', 'platform': 'android',
+            'severity': 'critical',
+            'firstSeen': now.toIso8601String(),
+            'lastSeen': now.toIso8601String(),
+            'count': 3,
+            'resolved': 'false', // Corrupted: a String is not a boolean.
+          },
+          {
+            'area': 'ocr', 'code': 'legitimate_resolved', 'platform': 'web',
+            'severity': 'error',
+            'firstSeen': now.toIso8601String(),
+            'lastSeen': now.toIso8601String(),
+            'count': 2,
+            'resolved': true,
+          },
+          {
+            'area': 'system', 'code': 'legacy_without_flag',
+            'platform': 'android', 'severity': 'warning',
+            'firstSeen': now.toIso8601String(),
+            'lastSeen': now.toIso8601String(),
+            'count': 1,
+          },
+        ],
+      });
+      final log = create();
+      log.restore(cache);
+      expect(log.entries, hasLength(2));
+      expect(log.entries.map((e) => e.code),
+          isNot(contains('already_resolved')));
+      expect(log.entries.firstWhere(
+        (e) => e.code == 'legitimate_resolved').resolved, isTrue);
+      expect(log.entries.firstWhere(
+        (e) => e.code == 'legacy_without_flag').resolved, isFalse);
+    });
+
+    test('malformed boolean and valid siblings restore without leaking', () {
+      final cache = jsonEncode({
+        'version': 1,
+        'items': [
+          {
+            'area': 'system', 'code': 'bad_status', 'platform': 'android',
+            'severity': 'error',
+            'firstSeen': now.toIso8601String(),
+            'lastSeen': now.toIso8601String(),
+            'count': 1,
+            'resolved': 1,
+          },
+          {
+            'area': 'system', 'code': 'clean_status', 'platform': 'android',
+            'severity': 'error',
+            'firstSeen': now.toIso8601String(),
+            'lastSeen': now.toIso8601String(),
+            'count': 1,
+            'resolved': false,
+          },
+        ],
+      });
+      final log = create();
+      log.restore(cache);
+      expect(log.length, 1);
+      expect(log.entries.single.code, 'clean_status');
+      expect(log.entries.single.resolved, isFalse);
+    });
+
     test('old, future, corrupt or malicious cache never reaches output', () {
       final log = create();
       final invalidCache = jsonEncode({
