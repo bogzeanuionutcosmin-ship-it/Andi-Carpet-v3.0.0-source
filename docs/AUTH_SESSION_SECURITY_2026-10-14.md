@@ -39,3 +39,12 @@ Fără cod modularizat sau commituri #28 absorbite: cele trei fișiere runtime e
 ### Limite care nu trebuie ascunse
 
 Nu se revocă retroactiv documentele pushTokens A deja stocate pe server și nu se garantează că o notificare FCM OS deja expediată pentru A dispare de pe dispozitiv. Curățarea/reatribuirea securizată a tokenurilor și recipient matching server-side necesită follow-up dedicat; rules/config/date production sunt intacte. Nu se șterge cache-ul persistent SDK și nu se anulează/rollback un write deja expediat. Maintenance/migrări administrative deja în curs și autorizarea server a altor colecții sunt riscuri separate, nu reparate automat de root reset. Testele acoperă SDK fake, fără Android/GPS/FCM hardware/live Firebase.
+
+
+## GREEN demonstrat — aceeași suită
+
+**ec6b389b194376a85f6975c75088c25b06b6cbdd / CI 38516118964 5/5 SUCCESS:** toate cele 10 acceptanțe anterior FAIL sunt PASS, controlul same UID PASS, **52 Flutter PASS**, build web PASS; 107 Python, 3 Node, 10 emulator financiar și Functions PASS. Fișierul acceptance și fixture-urile sunt byte-identice cu RED 51f8641, hash păstrat. Corecția P1 client este demonstrată pentru aceste scenarii; nu se declară securitatea întregului produs certificată.
+
+## Lot regresii suplimentare
+
+Șase teste noi fără schimbare runtime: same UID păstrează tema/fontul dar B resetează exclusiv personal și păstrează global; State Home echipă/decont A→B cu cache nou și cancel scope financiar A; sesiunea se invalidează înainte de frame/dispose și respinge snapshot personal vechi; FCM activ scrie owner corect/refresh apoi cancel; GPS activ se atașează normal și cancel; system Back funcționează normal în aceeași sesiune. Noul fișier importă doar helperii publici din suita de acceptanță, fără a modifica testele RED/GREEN. CI pe noul SHA urmează.
