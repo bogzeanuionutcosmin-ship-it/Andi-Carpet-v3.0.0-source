@@ -72,6 +72,21 @@ class VisionDiagnosticAdvisor {
   static (String, String) _knownGuidance(String area, String code) {
     // All text is predefined, never composed from exception payloads,
     // private Firestore fields, locations or user-provided event identifiers.
+    if (area == 'ocr' && code == 'saved_amount_mismatch') {
+      return (
+        'Suma salvată necesită verificare',
+        'Verificarea de pe server indică o diferență față de suma așteptată. '
+            'Nu retrimite automat documentul; verifică evidența și suma '
+            'înainte de orice corecție autorizată.',
+      );
+    }
+    if (area == 'ocr' && code == 'saved_document_missing') {
+      return (
+        'Documentul nu a fost regăsit',
+        'O verificare confirmată pe server nu a regăsit documentul așteptat. '
+            'Verifică evidența înainte de a încerca din nou; nu crea duplicate.',
+      );
+    }
     if (area == 'ocr' && code == 'document_save_failed') {
       return (
         'Document nesalvat',
