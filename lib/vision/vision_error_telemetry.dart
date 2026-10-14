@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'vision_error_log.dart';
+import 'vision_persistence_status.dart';
 
 /// Device-only error collection. No Firebase writes, no network AI, no secrets.
 ///
@@ -22,6 +23,13 @@ class VisionErrorTelemetry {
     retention: const Duration(days: 7),
   );
 
+  static final VisionPersistenceTracker _persistence =
+      VisionPersistenceTracker();
+
+  /// This describes only locally observed read/write results. It does not
+  /// attest to Android keystore health, Firebase or data on another device.
+  static String get persistenceMessage => _persistence.displayMessage;
+
   static Future<void>? _loading;
   static Future<void> _lastWrite = Future<void>.value();
   static Timer? _writeTimer;
@@ -35,8 +43,10 @@ class VisionErrorTelemetry {
   static Future<void> _restore() async {
     try {
       log.restore(await _storage.read(key: _storageKey));
+      _persistence.readSucceeded();
     } catch (_) {
-      // Local cache permissions/corruption must never block AndiCarpet.
+      // Never claim that data was saved if protected storage is inaccessible.
+      _persistence.readFailed();
     }
   }
 
@@ -81,6 +91,7 @@ class VisionErrorTelemetry {
   }) {
     try {
       log.record(area: area, code: code, platform: _platform, severity: severity);
+      _persistence.changed();
       if (severity == VisionErrorSeverity.critical) {
         unawaited(flush());
       } else {
@@ -99,11 +110,14 @@ class VisionErrorTelemetry {
     _writeTimer?.cancel();
     _writeTimer = null;
     final snapshot = log.encode();
+    final snapshotRevision = _persistence.revision;
     _lastWrite = _lastWrite.then((_) async {
       try {
         await _storage.write(key: _storageKey, value: snapshot);
+        _persistence.writeSucceeded(snapshotRevision);
       } catch (_) {
-        // Platform storage can be unavailable; summaries still exist in RAM.
+        // Keep diagnostics in RAM without pretending persistence succeeded.
+        _persistence.writeFailed(snapshotRevision);
       }
     });
     return _lastWrite;
