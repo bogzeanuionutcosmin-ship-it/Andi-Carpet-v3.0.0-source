@@ -4,7 +4,8 @@ class AuthGate extends StatefulWidget {
   final AppSettings settings;
   final VoidCallback onSettingsChanged;
   final AuthGateSources? sources;
-  const AuthGate({super.key, required this.settings, required this.onSettingsChanged, this.sources});
+  final Widget Function(Key key, FirebaseUserProfile profile)? activePageBuilder;
+  const AuthGate({super.key, required this.settings, required this.onSettingsChanged, this.sources, this.activePageBuilder});
 
   @override
   State<AuthGate> createState() => _AuthGateState();
@@ -173,6 +174,9 @@ class _AuthGateState extends State<AuthGate> {
     }
     if (!profile.active) return PendingApprovalPage(profile: profile, settings: widget.settings);
 
+    if (widget.activePageBuilder != null) {
+      return widget.activePageBuilder!(ValueKey(profile.uid), profile);
+    }
     return HomePage(
       key: ValueKey(profile.uid),
       settings: widget.settings,

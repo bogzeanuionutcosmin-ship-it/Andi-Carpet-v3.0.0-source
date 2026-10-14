@@ -1,11 +1,11 @@
 {
   "format_version": 1,
-  "dart_files": 174,
+  "dart_files": 176,
   "lib_dart_files": 129,
-  "test_dart_files": 44,
+  "test_dart_files": 46,
   "script_dart_files": 1,
   "parts": 59,
-  "libraries": 115,
+  "libraries": 117,
   "limitations": "Directive/declaration inventory, all conditional branches included; no use/call/type analysis. Not proof of unused code.",
   "missing_targets": [],
   "orphan_parts": [],
@@ -235,8 +235,13 @@
     "test/app_capabilities_view_test.dart": [
       "lib/ui/app_capabilities_view.dart"
     ],
+    "test/auth_gate_identity_characterization_test.dart": [
+      "lib/main.dart",
+      "test/support/auth_gate_fixture.dart"
+    ],
     "test/auth_gate_sources_widget_test.dart": [
-      "lib/main.dart"
+      "lib/main.dart",
+      "test/support/auth_gate_fixture.dart"
     ],
     "test/auth_status_views_test.dart": [
       "lib/ui/auth_status_views.dart"
@@ -374,6 +379,9 @@
     ],
     "test/stat_card_library_test.dart": [
       "lib/ui/stat_card.dart"
+    ],
+    "test/support/auth_gate_fixture.dart": [
+      "lib/main.dart"
     ],
     "test/team_selector_library_test.dart": [
       "lib/models/app_data_models.dart",
@@ -840,8 +848,8 @@
     },
     {
       "path": "lib/auth/auth_gate.dart",
-      "bytes": 6291,
-      "sha256": "7fd11689f645bb90a7347b6d025f09e54fe2c57aff7435922f7a50895b103025",
+      "bytes": 6519,
+      "sha256": "f7196fd93a1178ed5a582df1103433e248075edd4441f0ebfb0cefb532bea22d",
       "owner": "lib/main.dart",
       "directives": [
         {
@@ -6077,35 +6085,68 @@
       ]
     },
     {
-      "path": "test/auth_gate_sources_widget_test.dart",
-      "bytes": 6385,
-      "sha256": "a5af57cf5a0786356317cecdb7f784ceebfb9256594902bd4d2f40d2ccf19048",
-      "owner": "test/auth_gate_sources_widget_test.dart",
+      "path": "test/auth_gate_identity_characterization_test.dart",
+      "bytes": 6365,
+      "sha256": "b346440da839831e0981bca88634a6d6f5fc1597e7a88bb8fb519d85b8d72b8a",
+      "owner": "test/auth_gate_identity_characterization_test.dart",
       "directives": [
         {
           "kind": "import",
-          "text": "import 'dart:async';",
+          "text": "import 'package:andi_carpeta/main.dart';",
           "uris": [
-            "dart:async"
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
           ],
           "local_targets": []
         },
         {
           "kind": "import",
-          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
           "uris": [
-            "package:cloud_firestore/cloud_firestore.dart"
+            "package:flutter_test/flutter_test.dart"
           ],
           "local_targets": []
         },
         {
           "kind": "import",
-          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "text": "import 'support/auth_gate_fixture.dart';",
           "uris": [
-            "package:firebase_auth/firebase_auth.dart"
+            "support/auth_gate_fixture.dart"
           ],
-          "local_targets": []
+          "local_targets": [
+            "test/support/auth_gate_fixture.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "_ActivePageProbe"
         },
+        {
+          "kind": "class",
+          "name": "_ActivePageProbeState"
+        }
+      ],
+      "top_level_functions": [
+        "main"
+      ]
+    },
+    {
+      "path": "test/auth_gate_sources_widget_test.dart",
+      "bytes": 4319,
+      "sha256": "804956d44e7504a6dea35a65f8c86544b07649a0ea08b0f3d23734cd4462f7eb",
+      "owner": "test/auth_gate_sources_widget_test.dart",
+      "directives": [
         {
           "kind": "import",
           "text": "import 'package:flutter/material.dart';",
@@ -6131,25 +6172,20 @@
           "local_targets": [
             "lib/main.dart"
           ]
-        }
-      ],
-      "declarations": [
-        {
-          "kind": "class",
-          "name": "_GateUser"
         },
         {
-          "kind": "class",
-          "name": "_GateSnapshot"
-        },
-        {
-          "kind": "class",
-          "name": "_GateHarness"
+          "kind": "import",
+          "text": "import 'support/auth_gate_fixture.dart';",
+          "uris": [
+            "support/auth_gate_fixture.dart"
+          ],
+          "local_targets": [
+            "test/support/auth_gate_fixture.dart"
+          ]
         }
       ],
+      "declarations": [],
       "top_level_functions": [
-        "mountGate",
-        "flushGate",
         "main"
       ]
     },
@@ -7899,6 +7935,82 @@
       "declarations": [],
       "top_level_functions": [
         "main"
+      ]
+    },
+    {
+      "path": "test/support/auth_gate_fixture.dart",
+      "bytes": 2543,
+      "sha256": "31c1a1eb13740c69c0f917d737dfdad7929357549bfabf56bf6e0a887cdc376b",
+      "owner": "test/support/auth_gate_fixture.dart",
+      "directives": [
+        {
+          "kind": "import",
+          "text": "import 'dart:async';",
+          "uris": [
+            "dart:async"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:cloud_firestore/cloud_firestore.dart';",
+          "uris": [
+            "package:cloud_firestore/cloud_firestore.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:firebase_auth/firebase_auth.dart';",
+          "uris": [
+            "package:firebase_auth/firebase_auth.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter/material.dart';",
+          "uris": [
+            "package:flutter/material.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:flutter_test/flutter_test.dart';",
+          "uris": [
+            "package:flutter_test/flutter_test.dart"
+          ],
+          "local_targets": []
+        },
+        {
+          "kind": "import",
+          "text": "import 'package:andi_carpeta/main.dart';",
+          "uris": [
+            "package:andi_carpeta/main.dart"
+          ],
+          "local_targets": [
+            "lib/main.dart"
+          ]
+        }
+      ],
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "GateFixtureUser"
+        },
+        {
+          "kind": "class",
+          "name": "GateFixtureSnapshot"
+        },
+        {
+          "kind": "class",
+          "name": "GateFixture"
+        }
+      ],
+      "top_level_functions": [
+        "mountFixtureGate",
+        "flushFixtureGate"
       ]
     },
     {
