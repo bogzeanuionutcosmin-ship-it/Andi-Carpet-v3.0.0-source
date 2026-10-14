@@ -1,12 +1,15 @@
 part of '../main.dart';
 
 class AndiCarpetaApp extends StatefulWidget {
-  const AndiCarpetaApp({super.key});
+  final AppSettings? settings;
+  final AuthGateSources? authSources;
+  final Widget Function(Key, FirebaseUserProfile, bool Function())? homeBuilder;
+  const AndiCarpetaApp({super.key, this.settings, this.authSources, this.homeBuilder});
   @override State<AndiCarpetaApp> createState() => _AndiCarpetaAppState();
 }
 
 class _AndiCarpetaAppState extends State<AndiCarpetaApp> {
-  final settings = AppSettings();
+  late final settings = widget.settings ?? AppSettings();
   @override
   Widget build(BuildContext context) {
     _activeAppSettingsForBranding = settings;
@@ -17,7 +20,7 @@ class _AndiCarpetaAppState extends State<AndiCarpetaApp> {
       themeMode: mode,
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
-      home: AuthGate(settings: settings, onSettingsChanged: () => setState(() {})),
+      home: AuthGate(settings: settings, sources: widget.authSources, activeSessionPageBuilder: widget.homeBuilder, onSettingsChanged: () => setState(() {})),
     );
   }
   ThemeData _theme(Brightness b) {

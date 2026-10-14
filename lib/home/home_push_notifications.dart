@@ -105,7 +105,7 @@ extension _HomePushNotifications on _HomePageState {
     if (_pushInitializationInFlight) return;
     _pushInitializationInFlight = true;
     try {
-      final messaging = FirebaseMessaging.instance;
+      final messaging = widget.messaging ?? FirebaseMessaging.instance;
 
       NotificationSettings permission;
       if (kIsWeb && fromUserGesture) {
@@ -161,7 +161,7 @@ extension _HomePushNotifications on _HomePageState {
           (value) => unawaited(_savePushToken(value)),
           onError: (Object error) => debugPrint('[push] onTokenRefresh: $error'),
         ));
-        _coreSubscriptions.add(FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _coreSubscriptions.add((widget.messageOpenedApp ?? FirebaseMessaging.onMessageOpenedApp).listen((message) {
           final type = (message.data['type'] ?? '').toString();
           if (type == 'chat') {
             final senderId = (message.data['senderId'] ?? '').toString();

@@ -13,7 +13,12 @@ class HomePage extends StatefulWidget {
   final HomeIdentityQueries? identityQueries;
   final HomeOperationalQueries? operationalQueries;
   final HomeSystemQueries? systemQueries;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.maintenanceFirestore, this.pushFirestore, this.platformEffects, this.messageQueries, this.identityQueries, this.operationalQueries, this.systemQueries});
+  final bool Function()? sessionIsCurrent;
+  final FirebaseMessaging? messaging;
+  final Stream<RemoteMessage>? messageOpenedApp;
+  final void Function()? startLocation;
+  final Future<void> Function()? initializePush;
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.maintenanceFirestore, this.pushFirestore, this.platformEffects, this.messageQueries, this.identityQueries, this.operationalQueries, this.systemQueries, this.sessionIsCurrent, this.messaging, this.messageOpenedApp, this.startLocation, this.initializePush});
   @override State<HomePage> createState() => _HomePageState();
 }
 
@@ -101,8 +106,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     categories.addAll(defaultLocationCategories());
     functionDefinitions.addAll(defaultFunctionDefinitions());
     _startCoreSync();
-    (widget.platformEffects?.startLocation ?? _startAdaptiveLiveLocation)();
-    unawaited((widget.platformEffects?.initializePush ?? _initPushNotifications)());
+    (widget.platformEffects?.startLocation ?? widget.startLocation ?? _startAdaptiveLiveLocation)();
+    unawaited((widget.platformEffects?.initializePush ?? widget.initializePush ?? _initPushNotifications)());
   }
 
   final List<StreamSubscription<dynamic>> _coreSubscriptions = [];
