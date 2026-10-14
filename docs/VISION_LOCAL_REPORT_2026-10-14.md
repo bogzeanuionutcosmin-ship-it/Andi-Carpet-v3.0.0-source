@@ -125,3 +125,10 @@ Teste: critică deschisă veche plus 140 warning-uri recente, critică rezolvat�
 Teste sintetice: eveniment repetat după ora mutată înapoi 30 s și apoi redeschiderea jurnalului, ora care avansează ulterior, metadate `resolved` corupte împreună cu intrări valide, compatibilitate cache v1 fără indicator. Nu sunt mutate, trimise, logate sau accesate date de utilizator. Nicio schimbare APK necesară pentru verificările pe telefon în această etapă.
 
 **Verificarea finală a lotului este CI pe SHA exact; această descriere nu este un rezultat de test în sine.**
+
+
+## Limita de cod diagnostic înainte de normalizare
+
+`VisionErrorLog.safeCode` verifică acum mai întâi limita strictă de **48 caractere** și respinge instant șirurile goale ori mai lungi, înainte de `toLowerCase()`. Evităm crearea inutilă a unei copii de sute de KB dacă un apelant trimite accidental un mesaj brut sau un fragment OCR în loc de un cod constant. Intrarea devine doar `unknown`, nu este introdusă în log ca text sensibil; nu apare un nou transport sau API.
+
+Teste: cod valid exact 48, cod invalid 49, normalizarea constantelor majuscule, respingerea e-mailurilor/șirurilor goale și a unui payload sintetic de 200.000 caractere fără exportarea lui. Aceasta este o măsură defensivă locală, nu un înlocuitor pentru auditul fiecărui adaptor altele decât coduri fixe.
