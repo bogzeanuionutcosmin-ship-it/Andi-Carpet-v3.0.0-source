@@ -241,6 +241,27 @@ void main(){
     expect((await h.scope.coordinator.journal.pending()).single.digest,intent.digest);
     successor.dispose();h.adapter.dispose();
   });
+  testWidgets('all 32 recovered operations remain reachable on a small screen without network reads',(t)async{
+    final h=_Harness();
+    for(var n=0;n<32;n++) {
+      await h.scope.coordinator.journal.prepare(FinanceIntent(
+        operationId:n.toRadixString(16).padLeft(32,'0'),actorUid:'worker',teamId:'team',
+        collection:'settlements',documentId:'trip$n',baseRevision:0,
+        kind:FinanceIntentKind.edit,changes:{'name':'Pending'}));
+    }
+    await t.binding.setSurfaceSize(const Size(320,480));
+    addTearDown(()=>t.binding.setSurfaceSize(null));
+    await t.pumpWidget(MaterialApp(home:Scaffold(body:FinanceExpenseDemoRecovery(
+      adapter:h.adapter,child:const SizedBox()))));
+    await t.tap(find.text('Verifică operațiile în așteptare'));await t.pumpAndSettle();
+    expect(h.adapter.pendingCodes,hasLength(32));expect(t.takeException(),isNull);
+    final last=find.byKey(const ValueKey(('finance-pending','settlements/trip31')));
+    await t.scrollUntilVisible(last,100,scrollable:find.descendant(
+      of:find.byKey(const ValueKey('finance-pending-list')),matching:find.byType(Scrollable)));
+    expect(last,findsOneWidget);expect(t.takeException(),isNull);
+    expect(h.db.calls,0);expect(h.db.serverReads,0);
+    await t.pumpWidget(const SizedBox());h.adapter.dispose();
+  });
   test('cached observation never becomes an adapter baseline',(){
     final h=_Harness();
     expect(()=>h.adapter.observeSettlement(h.fixture.settlementOverride!,

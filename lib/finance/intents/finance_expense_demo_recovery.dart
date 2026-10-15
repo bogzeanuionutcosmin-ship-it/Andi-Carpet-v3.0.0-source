@@ -13,8 +13,10 @@ class FinanceExpenseDemoRecovery extends StatelessWidget {
         ()async{await adapter.loadPendingForReviewExplicitly();},
         child:const Text('Verifică operațiile în așteptare')),
       if(adapter.recoveryCode!=null)const Text('Operațiile locale nu pot fi verificate acum.'),
+      if(adapter.pendingCodes.isNotEmpty) Flexible(child:ListView(
+        key:const ValueKey('finance-pending-list'),shrinkWrap:true,children:[
       for(final pending in adapter.pendingCodes.entries)
-        MaterialBanner(content:Text(switch(pending.value){
+        MaterialBanner(key:ValueKey(('finance-pending',pending.key)),content:Text(switch(pending.value){
           'finance_revision_conflict'||'finance_evidence_mismatch'=>'Datele au fost modificate. Salvarea necesită verificare.',
           'finance_pending'=>'Salvare în curs.',
           _=>'Rezultatul salvării nu este încă confirmat.',
@@ -22,6 +24,7 @@ class FinanceExpenseDemoRecovery extends StatelessWidget {
           onPressed:adapter.isBusy(pending.key)||!adapter.scope.sessionIsCurrent()?null:
             () async {await adapter.reconcileExplicitly(pending.key);},
           child:const Text('Verifică salvarea'))]),
+      ])),
       Expanded(child:child),
     ]));
 }
