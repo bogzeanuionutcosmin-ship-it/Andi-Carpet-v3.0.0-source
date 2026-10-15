@@ -12,6 +12,9 @@ class ExpenseDocumentFixture {
   final user = AppUser(id: 'worker', name: 'Synthetic Worker', role: UserRole.member);
   final expenses = <Expense>[];
   final attempts = <Expense>[];
+  final perDiems = <PerDiemEntry>[];
+  Future<void> Function(PerDiemEntry)? savePerDiemOverride;
+  Future<void> Function(TravelSettlement)? saveSettlementOverride;
   final logs = <String>[];
   final pickerRequests = <bool>[];
   int recognizes = 0;
@@ -22,6 +25,7 @@ class ExpenseDocumentFixture {
   bool updateLocallyBeforeFailure = false;
   Uint8List? imageOverride;
   bool manager = true;
+  bool Function()? diagnosticSessionIsCurrent;
   Completer<void>? saveGate;
   String text;
   late StateSetter rebuild;
@@ -52,17 +56,18 @@ class ExpenseDocumentFixture {
       builder: (context, setState) {
         rebuild = setState;
         return ExpensePage(
+          diagnosticSessionIsCurrent: diagnosticSessionIsCurrent,
           currentUser: user, teams: [Team(id: 'team', name: 'Synthetic Team', members: ['worker'], financialManagerId: manager ? 'worker' : 'other')],
-          users: [user], expenses: expenses, perDiems: [],
+          users: [user], expenses: expenses, perDiems: perDiems,
           finances: [TeamFinance(teamId: 'team', managerId: manager ? 'worker' : 'other')],
           settlements: [TravelSettlement(id: 'settlement', teamId: 'team', name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), managerId: manager ? 'worker' : 'other')],
           settings: AppSettings(), canEditTeam: (_) => true,
           isAdmin: false, canEditOwnDecont: true, canViewOtherDecont: false,
           onChanged: () { changes++; }, notifyUser: (a, b, c) { fail('Unexpected notification'); },
           log: (a, b) => logs.add('$a:$b'), saveExpense: save,
-          savePerDiem: (_) async { fail('Unexpected per-diem write'); },
+          savePerDiem: savePerDiemOverride ?? (_) async { fail('Unexpected per-diem write'); },
           saveFinance: (_) async { fail('Unexpected finance write'); },
-          saveSettlement: (_) async { fail('Unexpected settlement write'); },
+          saveSettlement: saveSettlementOverride ?? (_) async { fail('Unexpected settlement write'); },
           documentImagePicker: pick, documentTextRecognizer: recognize,
         );
       },
