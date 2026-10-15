@@ -2898,3 +2898,6 @@ proxy nu sunt introduse încontroaleleonline existente. Clientuloffline areAuth
 emulat separat,cacheRAM propriu șiacelașiUIDsintetic; jurnalul și toatewriteurile
 probei offline folosesc numaiportul său. Verificarea serverului dupăreconectare
 se faceindependent princlientuldirect. Zeroassertslăbite și niciunretryadăugat.
+
+MISIUNEA VIII — continuare callbackuri reale ExpensePage, 2026-10-15 UTC:
+HEAD de pornire 0ba41ec, checkout curat, PR55 Draft verificat. Adaptor nou exclusiv demo pentru callbackurile existente receipt/edit/close; baseline server imuabil, fără schimbare Home implicit ori hashuri înghețate. Future pending pentru rezultat incert/conflict, reconciliere explicită și refresh server obligatoriu înainte de succes UI. Șapte probe noi candidate pe dialogurile reale; CI urmează, nu sunt declarate PASS înainte de rulare. Create fără baseline în acest adaptor refuzat; Restore complet, hardware și Spark live păstrează blocajele documentate. Fără merge/deploy/date reale/billing/distribuție.
