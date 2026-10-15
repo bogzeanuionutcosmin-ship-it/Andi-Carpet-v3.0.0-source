@@ -258,6 +258,11 @@ class TravelSettlement {
   String? managerId;
   double receivedDeparture;
   double receivedDuring;
+  // Explicit pre-protocol aggregate history; never fabricate receipt entries.
+  final double receivedOpeningDeparture;
+  final double receivedOpeningDuring;
+  final int? revision;
+  final String? lastOperationId;
   List<ReceivedMoneyEntry> receivedEntries;
   double perDiemRate;
   bool closed;
@@ -271,13 +276,17 @@ class TravelSettlement {
     this.managerId,
     this.receivedDeparture = 0,
     this.receivedDuring = 0,
+    this.receivedOpeningDeparture = 0,
+    this.receivedOpeningDuring = 0,
+    this.revision,
+    this.lastOperationId,
     List<ReceivedMoneyEntry>? receivedEntries,
     this.perDiemRate = 50,
     this.closed = false,
     DateTime? createdAt,
   }) : receivedEntries = receivedEntries ?? <ReceivedMoneyEntry>[], createdAt = createdAt ?? DateTime.now();
-  double get departureTotal => receivedEntries.isEmpty ? receivedDeparture : receivedEntries.where((e)=>e.kind=='departure').fold<double>(0,(a,b)=>a+b.amount);
-  double get duringTotal => receivedEntries.isEmpty ? receivedDuring : receivedEntries.where((e)=>e.kind=='during').fold<double>(0,(a,b)=>a+b.amount);
+  double get departureTotal => receivedEntries.isEmpty ? receivedDeparture : receivedOpeningDeparture + receivedEntries.where((e)=>e.kind=='departure').fold<double>(0,(a,b)=>a+b.amount);
+  double get duringTotal => receivedEntries.isEmpty ? receivedDuring : receivedOpeningDuring + receivedEntries.where((e)=>e.kind=='during').fold<double>(0,(a,b)=>a+b.amount);
   double get totalReceived => departureTotal + duringTotal;
 }
 
@@ -286,11 +295,16 @@ class TeamFinance {
   String? managerId;
   double receivedDeparture;
   double receivedDuring;
+  // Explicit pre-protocol aggregate history; never fabricate receipt entries.
+  final double receivedOpeningDeparture;
+  final double receivedOpeningDuring;
+  final int? revision;
+  final String? lastOperationId;
   List<ReceivedMoneyEntry> receivedEntries;
   double perDiemRate;
-  TeamFinance({required this.teamId, this.managerId, this.receivedDeparture = 0, this.receivedDuring = 0, List<ReceivedMoneyEntry>? receivedEntries, this.perDiemRate = 50}) : receivedEntries = receivedEntries ?? <ReceivedMoneyEntry>[];
-  double get departureTotal => receivedEntries.isEmpty ? receivedDeparture : receivedEntries.where((e)=>e.kind=='departure').fold<double>(0,(a,b)=>a+b.amount);
-  double get duringTotal => receivedEntries.isEmpty ? receivedDuring : receivedEntries.where((e)=>e.kind=='during').fold<double>(0,(a,b)=>a+b.amount);
+  TeamFinance({required this.teamId, this.managerId, this.receivedDeparture = 0, this.receivedDuring = 0, this.receivedOpeningDeparture = 0, this.receivedOpeningDuring = 0, this.revision, this.lastOperationId, List<ReceivedMoneyEntry>? receivedEntries, this.perDiemRate = 50}) : receivedEntries = receivedEntries ?? <ReceivedMoneyEntry>[];
+  double get departureTotal => receivedEntries.isEmpty ? receivedDeparture : receivedOpeningDeparture + receivedEntries.where((e)=>e.kind=='departure').fold<double>(0,(a,b)=>a+b.amount);
+  double get duringTotal => receivedEntries.isEmpty ? receivedDuring : receivedOpeningDuring + receivedEntries.where((e)=>e.kind=='during').fold<double>(0,(a,b)=>a+b.amount);
   double get totalReceived => departureTotal + duringTotal;
 }
 
