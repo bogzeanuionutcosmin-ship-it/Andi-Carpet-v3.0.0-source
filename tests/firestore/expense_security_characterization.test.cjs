@@ -40,11 +40,16 @@ before(async () => {
         active: true, role: 'member', function: 'developer',
         effectivePermissions: [],
       }],
+      // Legacy director intentionally has no effectivePermissions field.
+      // The fallback currently grants every named permission.
+      ['expense-ocr-legacy-director', {
+        active: true, role: 'member', function: 'director',
+      }],
     ]) {
       await setDoc(doc(ctx.firestore(), 'users', uid), data);
     }
     await setDoc(doc(ctx.firestore(), 'teams', 'expense-ocr-team'), {
-      members: ['expense-ocr-member', 'expense-ocr-inactive'],
+      members: ['expense-ocr-member', 'expense-ocr-inactive', 'expense-ocr-legacy-director'],
     });
   });
   // Seed additional boundary documents AFTER initializeTestEnvironment, never in
@@ -334,4 +339,32 @@ test('developer profession is not admin: cannot change another team manager', as
 test('non-admin member cannot delete its own team expense', async () => {
   const { deleteDoc } = require('firebase/firestore');
   await assertFails(deleteDoc(doc(db('expense-ocr-member'), 'expenses/expense-ocr-boundary')));
+});
+
+
+// LEGACY ROLE FALLBACK: Known authorization gap, characterized as
+// assertSucceeds deliberately. A director should be read-only under the
+// owner's desired finance policy, but function='director' without the newer
+// effectivePermissions list currently matches ANY permission in
+// hasLegacyPermission(), including viewOwnDecont. These examples require
+// same-team membership: do not claim cross-team writes were reproduced.
+test('legacy director without effectivePermissions can rewrite own-team expense (unsafe)', async () => {
+  await assertSucceeds(updateDoc(
+    doc(db('expense-ocr-legacy-director'), 'expenses/expense-ocr-boundary'),
+    { amount: 0.01, confirmed: true },
+  ));
+});
+
+test('legacy director without effectivePermissions can replace own-team managerId (unsafe)', async () => {
+  await assertSucceeds(updateDoc(
+    doc(db('expense-ocr-legacy-director'), 'finance/expense-ocr-team'),
+    { managerId: 'expense-ocr-legacy-director' },
+  ));
+});
+
+test('legacy director without effectivePermissions can reopen own-team settlement (unsafe)', async () => {
+  await assertSucceeds(updateDoc(
+    doc(db('expense-ocr-legacy-director'), 'settlements/expense-ocr-boundary'),
+    { closed: false },
+  ));
 });
