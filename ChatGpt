@@ -2515,3 +2515,14 @@ Shiva a pornit din HEAD PR #59 `f7b523c3375b0137d09911469e3d1f21d0a823c1` pe ram
 Teste noi: 4 Flutter pentru acces permis/blocat, sesiune revocată, singleton global respins și accesibilitate în ecran mic; 3 Python pentru contractul de izolare; condiția existing Android compile-only a fost extinsă pentru această ramură, fără alt trigger și fără publicarea artefactului. Raport: `docs/VISION_DIAGNOSTICS_STATIC_AVATAR_HEADER_2026-10-16.md`. Nu modificați manifestul 116 SHA sau pinii Vision.
 
 **Checkpoint incomplet până la rularea CI pe HEAD real.** Nu declarați avatar vizibil în versiunea distribuită, nici diagnosticul UID-scope rezolvat integral; e doar o componentă vizuală într-un PR Draft. Păstrați PR #55 și #59 izolate, fără merge/deploy.
+
+
+## 16.10.2026 — Shiva: jurnal Vision temporar, separat pe epoca sesiunii
+
+Pornit din HEAD PR #61 `473e985f4d1a253e887fa9665d758af7509443fd`, pe ramura nouă `feat/vision-ephemeral-session-journal-20261016`. Shiva nu schimbă PR #55 al Lunei, `main`, Firestore rules, operațiile financiare sau producția.
+
+**Port nou, strict RAM:** `lib/vision/vision_session_journal.dart` conține un `VisionSessionJournal` care permite exact un log temporar per epocă de autentificare și lease revocabil. Fiecare `startSession` invalidează vechiul token, creează un `VisionErrorLog` bounded nou; `revoke()` și callbackul fals/throwing distrug logul. A→B→A2, callbackuri întârziate și exportul revalidat sunt acoperite de 9 teste Dart `test/vision_session_journal_test.dart` și 4 teste Python `test/vision_session_journal_contract_test.py`. Nu există UID în log, persistence, HTTP, Firebase, timers, polling, Cloud AI sau cost de Firestore. Raport: `docs/VISION_EPHEMERAL_SESSION_JOURNAL_2026-10-16.md`.
+
+**IMPORTANT:** componenta nu este injectată în `VisionDiagnosticsPage`, AuthGate, Home sau Navigator. Jurnalul global instalat rămâne inaccesibil utilizatorilor în pagina reală. Pentru integrarea viitoare este obligatoriu callbackul autoritativ AuthGate (UID + generation), plus revalidare înainte de render/copy/share și probe reale pe dispozitive. Nu pretindeți izolarea completă a funcției Vision încă.
+
+Workflow Android compile-only existent este activat doar pentru această ramură (fără upload/install/deploy). Ci-ul final trebuie verificat pe HEAD, nu împrumutat de la #61. Fără merge, deploy, APK publicat, modificări costuri/producție ori intervenție în PR #55.
