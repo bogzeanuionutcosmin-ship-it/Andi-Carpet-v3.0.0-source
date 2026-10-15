@@ -2910,3 +2910,6 @@ Adăugat wrapper notificat fără polling, cu buton explicit de reconciliere în
 
 MISIUNEA VIII — corecția caracterizărilor după gardul Restore:
 f1c6cf5 a trecut 147Dart/47JS/8SDK+raw/194Python. Standard și platforms au eșuat în exact4martoriVII care cereau vechea suprascriere financiară de către Restore; noul gard executa zero batchuri. Aceleași4cazuri convertite în regresii stricte: refuz explicit, zero tentative/commits/directwrites/successlogs, receipt păstrat în ambele ordini și ambele colecții. Actuala remediere este refuzul Restore financiar, nu importul complet;24alte caracterizări VII neschimbate. Niciun test eliminat/skipuit ori aserțiune de integritate relaxată. CI integral se rerulează pe noul commit.
+
+MISIUNEA VIII — fixture Chrome Admin:
+b56a017 Standard5/5 SUCCESS(751Flutter/194Python/web), identitySUCCESS, MissionVIII147Dart/47JS/8SDK+rawSUCCESS. Platforms161AuthVision+329financeVM PASS, Chrome309PASS/6FAIL în cele șase fixture-uri Admin noi; APK NOT RUN. Izolat clientul Mapbox al dashboardului cu runWithClient ca în proba financiară existentă, plus zeroHTTP/zeroFirebaseimplicit strict. Nu relaxăm no_default_http_client, nu skipuim teste, nu schimbăm cod financiar pentru fixture. CI se verifică din nou pe HEAD nou.
