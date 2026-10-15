@@ -2,6 +2,7 @@ part of '../main.dart';
 
 // Permission snapshots, initial data seeding and badge migration.
 mixin _HomePermissionMaintenance on State<HomePage> {
+  FirebaseFirestore get _maintenanceDb;
   bool get isAdmin;
   List<FunctionDefinition> get functionDefinitions;
   bool get _permissionSyncInFlight;
@@ -26,7 +27,7 @@ mixin _HomePermissionMaintenance on State<HomePage> {
     if (!isAdmin || _permissionSyncInFlight || functionDefinitions.isEmpty) return;
     _permissionSyncInFlight = true;
     try {
-      final db = FirebaseFirestore.instance;
+      final db = _maintenanceDb;
       final snap = await db.collection('users').get();
       final batch = db.batch();
       var writes = 0;
@@ -59,10 +60,10 @@ mixin _HomePermissionMaintenance on State<HomePage> {
   }
 
   Future<void> _seedLocationsIfNeeded() async {
-    final col = FirebaseFirestore.instance.collection('locations');
+    final col = _maintenanceDb.collection('locations');
     final existing = await col.limit(1).get();
     if (existing.docs.isNotEmpty) return;
-    final batch = FirebaseFirestore.instance.batch();
+    final batch = _maintenanceDb.batch();
     for (final l in _seedLocations()) {
       batch.set(col.doc(l.id), _locationMap(l));
     }
@@ -71,7 +72,7 @@ mixin _HomePermissionMaintenance on State<HomePage> {
 
   Future<void> _seedDefinitionsIfNeeded() async {
     if (!isAdmin) return;
-    final db = FirebaseFirestore.instance;
+    final db = _maintenanceDb;
     final categoriesCol = db.collection('locationCategories');
     final functionsCol = db.collection('functions');
     final existingCategories = await categoriesCol.limit(1).get();
@@ -89,7 +90,7 @@ mixin _HomePermissionMaintenance on State<HomePage> {
 
   Future<void> _migrateFunctionBadgeSystemIfNeeded() async {
     if (!isAdmin) return;
-    final db = FirebaseFirestore.instance;
+    final db = _maintenanceDb;
     final metaRef = db.collection('meta').doc('uiSettings');
     final metaSnap = await metaRef.get();
     if ((metaSnap.data()?['functionSystemVersion'] ?? '').toString() == 'badge_v2') return;
