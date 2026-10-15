@@ -1,0 +1,45 @@
+name: Home Console Privacy Characterization (EXPECTED RED)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'test/home_console_privacy.red.py'
+      - '.github/workflows/home-console-privacy-characterization.yml'
+      - 'docs/HOME_CONSOLE_PRIVACY_CHARACTERIZATION_2026-10-15.md'
+
+permissions:
+  contents: read
+
+jobs:
+  characterize-raw-console-output:
+    if: github.head_ref == 'test/home-console-privacy-characterization-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Positive control: local Vision observation uses constant codes
+        run: python3 test/home_console_privacy.red.py TestHomeConsolePrivacy.test_positive_vision_reports_still_use_constant_area_and_code
+      - name: Require exact known RED — raw user identifier in FCM console
+        shell: bash
+        run: |
+          set +e
+          python3 test/home_console_privacy.red.py TestHomeConsolePrivacy.test_no_uid_in_push_console > "$RUNNER_TEMP/home-uid-red.log" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/home-uid-red.log"
+          test "$result" -eq 1
+          grep -Fq 'HOME_CONSOLE_RAW_UID' "$RUNNER_TEMP/home-uid-red.log"
+          echo "EXPECTED RED: FCM console contains an interpolated UID; NOT FIXED"
+      - name: Require exact known RED — raw SDK exceptions and stacks
+        shell: bash
+        run: |
+          set +e
+          python3 test/home_console_privacy.red.py TestHomeConsolePrivacy.test_no_raw_sdk_errors_or_stack_in_home_console > "$RUNNER_TEMP/home-exception-red.log" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/home-exception-red.log"
+          test "$result" -eq 1
+          grep -Fq 'HOME_CONSOLE_RAW_SDK_EXCEPTION' "$RUNNER_TEMP/home-exception-red.log"
+          echo "EXPECTED RED: raw exceptions/stacks in application-owned Home debugPrint calls; NOT FIXED"
+      # No Flutter SDK, Firebase, secrets, logs upload, APK, deploy or billing.
