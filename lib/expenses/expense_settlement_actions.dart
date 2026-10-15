@@ -140,6 +140,8 @@ extension _ExpenseSettlementActions on _ExpensePageState {
         widget.log(next ? 'Decont închis' : 'Decont redeschis', s.name);
         setState(() {});
       } catch (e) {
+        // Ignore every completion owned by an obsolete financial session.
+        if (!operationIsCurrent()) return;
         if (e is FinanceSaveRejected) {
           if (operationIsCurrent() && s.closed == next && s.endDate == attemptedEnd) {
             setState(() { s.closed = previousClosed; s.endDate = previousEnd; });

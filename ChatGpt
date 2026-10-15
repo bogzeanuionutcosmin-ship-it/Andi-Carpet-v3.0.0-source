@@ -2477,3 +2477,10 @@ Inspecția catch-ului close generic arată `s.closed = !next` înainte de garda 
 
 
 VII-08 martor f10b892: workflow38695842560/job116292104540 a reprodus strict 4 cazuri stale (revoked/unmounted ×2 erori). Cele4 cazuri A→B/A2 au întâlnit mai întâi un overflow de layout al fixture-ului la800px; nu sunt revendicate drept repro reușită. Corecție numai viewport1400×1000, cu reset în teardown. Poarta baseline cere acum exact8 markeri și respinge explicit overflow/compilefailure. Nicio aserțiune financiară sau runtime schimbată. Auditor read-only #50/#51 rulat local:21pinuri per ramură validate,2+3 delte disjuncte, exact2fișiere comune; nu s-a executat integrare. Restul drafturilor de audit rămân nepublicate până la lot separat.
+
+
+## VII-08 — completare stale close: repro8RED → corecție de sesiune
+
+Baseline89e7c19bc3b5255f282141320a972de7f0ada76c: probe38696207176/job116293249872 a reprodus toate8 cazurile strict la STALE_CLOSE_MUTATED_SHARED_OBSERVATION (expectedtrue/actualfalse), fără overflow sau compilare eșuată. Guardul nou din catch returnează înainte de orice mutație dacă sesiunea originală nu mai este validă. Nu introduce rollback/retry/reconciliere; comportamentul necunoscut din sesiunea activă este păstrat, inclusiv divergența close+timeout caracterizată separat. Cele8 aserțiuni originale nu se schimbă; wrapperul *_test.dart le include în standard și Chrome, iar poarta dedicată cere acum PASS real.
+
+Scope runtime exact: un comentariu și `if (!operationIsCurrent()) return;` în catch-ul close. `expense_settlement_actions.dart` SHA256 db37036095f0f8f54b3e820cb0eb9230a8f8243f12aaae55f4d87b2559cbf87d → 0348242c2def81ac693ded3e3a64c96b9df701fff2b0895f4e6e2b1b09bc92b8. Pin fără hook Vision f8537f12ab5b28facbafb56d9da18785ece1edeee843ee5b1c5c449f6fc16060 → d2959a8077fd4e625fb8e5d561c03514b7af62a26aecdb5dd446c3c8af727b76. Numai aceste2pinuri specifice actualizate; 116hashuri și celelalte pinuri intacte. Test nou Python reconstruiește byte-exact sursa precedentă prin înlăturarea exclusivă a guardului nou. CI pe noulHEAD urmează. Drafturile suplimentare pentru contract/Admin/compatibilitate sunt încă nelivrate.
