@@ -146,3 +146,17 @@ Rezultatele SDK generice, timeouturile, commiturile incerte, reconcilierile și 
 VII-06 `lib/expenses/expense_page.dart`: SHA256 176fa1a7e904747d55dfd17b6a035c7a0db20b498c46ceab1daef719a0d1ea29 → 9016fe9e1d79e5fc8ce3686bf72e29a5c2dcfd28351698361c5f93f155cc249e.
 
 VII-06 `lib/expenses/expense_settlement_actions.dart`: SHA256 0fc0c21e6b23d481fee3dbc2072b70a163515093a5418c9af212738dff29d914 → 4a5fa16106be54cc7667fcd462aab534b498577c333bf26cd9b6aebc925ae5ba.
+
+## VII-06/08 — serializare între acțiunile aceluiași decont
+
+`625343fbd903fc604f9a903e93143f42e3557b6e`: standard38692687415 SUCCESS5/5, identity38692687328 SUCCESS, probe38692687421 SUCCESS. Cele3probe de respingere certă sunt acumPASS real; controalele generic/write-then-throw rămân caracterizări ale comportamentului incert, nu BUGFIXED.
+
+În verificarea concurenței am separat un risc suplimentar: două gărzi independente money/close nu împiedicau o editare sau închidere să trimită întregul model în timp ce încasarea era încă în așteptare. Noua gardă comună serializează create (cheie separată) și edit/close/money (aceeași cheie de decont). Cheia este recordDart `(epoch, teamId, settlementId)`, fără concatenare ambiguă de ID-uri; nu se păstrează sau trimite la server. finally eliberează numai cheia operației proprii. Blocarea nu introduce retry ori noi reguli financiare.
+
+**7teste noi** invocă handlerii reali capturați, nu doar hit-testing:6combinații edit/close/receipt×succes/reject încearcă ceilalți writeri în timpul save-ului; zero dialog sau save suplimentar și snapshot corect dupărejection. Apoi o acțiune nouă funcționează. Al7-lea testează intrareaNew și confirmarea dublă. Este serializare înExpensePage pentru aceste4fluxuri, nu un lock global pentru Admin/altefluxuri/alte dispozitive. Atomicitatea și reconcilierea server rămân în afara acestei reparații.
+
+Total continuare față de cadbf00:60testeFlutter noi (7edit+17close+29receipt+7concurență) și1Python nou. Cumulativ înPR50:132testeFlutter noi față dePR46. Numerele PASS finale/HEAD/tree se verifică pe noulcommit; nu se împrumută rezultatele unuiHEADanterior.
+
+Serializare `lib/expenses/expense_page.dart`: SHA256 9016fe9e1d79e5fc8ce3686bf72e29a5c2dcfd28351698361c5f93f155cc249e → f6a3976dbe52fa81c1599d78207803c35362c2cba5ece9c68182cb68a8af511d.
+
+Serializare `lib/expenses/expense_settlement_actions.dart`: SHA256 4a5fa16106be54cc7667fcd462aab534b498577c333bf26cd9b6aebc925ae5ba → db37036095f0f8f54b3e820cb0eb9230a8f8243f12aaae55f4d87b2559cbf87d.

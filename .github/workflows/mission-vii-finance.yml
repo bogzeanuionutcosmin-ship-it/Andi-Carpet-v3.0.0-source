@@ -33,3 +33,5 @@ jobs:
         run: flutter test test/finance_session_completion_test.dart test/finance_telemetry_boundary_test.dart test/finance_director_read_only_test.dart --reporter expanded
       - name: Definite close rejection must preserve closed and endDate
         run: flutter test test/finance_settlement_close_rollback.red.dart test/finance_close_rejection_test.dart --reporter expanded
+      - name: Settlement writers must exclude each other while pending
+        run: flutter test test/finance_cross_action_serialization_test.dart --reporter expanded

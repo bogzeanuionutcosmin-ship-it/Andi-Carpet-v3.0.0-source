@@ -44,72 +44,84 @@ extension _ExpenseSettlementActions on _ExpensePageState {
 
   Future<void> _createSettlement() async {
     final operationIsCurrent = _financeOperationIsCurrent();
-    var start = DateTime.now();
-    DateTime? end;
-    final result = await showDialog<TravelSettlement>(context: context, builder: (d) => FinanceDialogFields(
-      initialTexts: ['Deplasare ${_shortDate(start)}'],
-      builder: (d, fields, setD) { final nameC = fields.single; return AlertDialog(
-      title: const Text('Deplasare nouă'),
-      content: SizedBox(width: 520, child: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: nameC, decoration: const InputDecoration(labelText: 'Denumire')), const SizedBox(height: 10),
-        ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event), title: const Text('Data început'), subtitle: Text(_shortDate(start)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: start); if (x != null && d.mounted) setD(() { start = x; if (end != null && end!.isBefore(start)) end = start; }); }, child: const Text('Alege'))),
-        ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event_available), title: const Text('Data final (opțional)'), subtitle: Text(end == null ? 'Nesetată' : _shortDate(end!)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: start, lastDate: DateTime(2100), initialDate: end ?? start); if (x != null && d.mounted) setD(() => end = x); }, child: const Text('Alege'))),
-      ])),
-      actions: [TextButton(onPressed: () => FinanceDialogFields.close(d), child: const Text('Anulează')), FilledButton(onPressed: () { final n = nameC.text.trim(); if (n.isEmpty) return; FinanceDialogFields.close(d, TravelSettlement(id: idNow(), teamId: team.id, name: n, startDate: start, endDate: end, managerId: finance.managerId ?? team.financialManagerId ?? (team.members.contains(widget.currentUser.id) ? widget.currentUser.id : null), perDiemRate: finance.perDiemRate)); }, child: const Text('Creează'))],
-    ); }));
-    if (result == null || !operationIsCurrent()) return;
+    final operationKey = (_financeSessionEpoch, team.id, '__create__');
+    if (!_pendingFinanceKeys.add(operationKey)) return;
     try {
-      await widget.saveSettlement(result);
-      if (!operationIsCurrent()) return;
-      widget.log('Deplasare creată', '${team.name} · ${result.name}');
-      if (mounted) setState(() => selectedSettlementId = result.id);
-    } catch (e) { if (operationIsCurrent()) showErrorMessage(context, 'Deplasarea nu a putut fi creată: $e'); }
+      var start = DateTime.now();
+      DateTime? end;
+      final result = await showDialog<TravelSettlement>(context: context, builder: (d) => FinanceDialogFields(
+        initialTexts: ['Deplasare ${_shortDate(start)}'],
+        builder: (d, fields, setD) { final nameC = fields.single; return AlertDialog(
+        title: const Text('Deplasare nouă'),
+        content: SizedBox(width: 520, child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: nameC, decoration: const InputDecoration(labelText: 'Denumire')), const SizedBox(height: 10),
+          ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event), title: const Text('Data început'), subtitle: Text(_shortDate(start)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: start); if (x != null && d.mounted) setD(() { start = x; if (end != null && end!.isBefore(start)) end = start; }); }, child: const Text('Alege'))),
+          ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event_available), title: const Text('Data final (opțional)'), subtitle: Text(end == null ? 'Nesetată' : _shortDate(end!)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: start, lastDate: DateTime(2100), initialDate: end ?? start); if (x != null && d.mounted) setD(() => end = x); }, child: const Text('Alege'))),
+        ])),
+        actions: [TextButton(onPressed: () => FinanceDialogFields.close(d), child: const Text('Anulează')), FilledButton(onPressed: () { final n = nameC.text.trim(); if (n.isEmpty) return; FinanceDialogFields.close(d, TravelSettlement(id: idNow(), teamId: team.id, name: n, startDate: start, endDate: end, managerId: finance.managerId ?? team.financialManagerId ?? (team.members.contains(widget.currentUser.id) ? widget.currentUser.id : null), perDiemRate: finance.perDiemRate)); }, child: const Text('Creează'))],
+      ); }));
+      if (result == null || !operationIsCurrent()) return;
+      try {
+        await widget.saveSettlement(result);
+        if (!operationIsCurrent()) return;
+        widget.log('Deplasare creată', '${team.name} · ${result.name}');
+        if (mounted) setState(() => selectedSettlementId = result.id);
+      } catch (e) { if (operationIsCurrent()) showErrorMessage(context, 'Deplasarea nu a putut fi creată: $e'); }
+    } finally {
+      _pendingFinanceKeys.remove(operationKey);
+    }
   }
 
   Future<void> _editSettlement() async {
     final operationIsCurrent = _financeOperationIsCurrent();
     final s = settlement; if (s == null) return;
-    var start = s.startDate; var end = s.endDate;
-    var editedName = s.name;
-    final ok = await showDialog<bool>(context: context, builder: (d) => FinanceDialogFields(
-      initialTexts: [s.name],
-      builder: (d, fields, setD) { final nameC = fields.single; return AlertDialog(
-      title: const Text('Editează deplasarea'),
-      content: SizedBox(width: 520, child: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: nameC, decoration: const InputDecoration(labelText: 'Denumire')), const SizedBox(height: 8),
-        ListTile(contentPadding: EdgeInsets.zero, title: const Text('Început'), subtitle: Text(_shortDate(start)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: start); if (x != null && d.mounted) setD(() => start = x); }, child: const Text('Alege'))),
-        ListTile(contentPadding: EdgeInsets.zero, title: const Text('Final'), subtitle: Text(end == null ? 'Nesetat' : _shortDate(end!)), trailing: Wrap(children: [TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: start, lastDate: DateTime(2100), initialDate: end ?? start); if (x != null && d.mounted) setD(() => end = x); }, child: const Text('Alege')), if (end != null) IconButton(onPressed: () => setD(() => end = null), icon: const Icon(Icons.clear))])),
-      ])),
-      actions: [TextButton(onPressed: () => FinanceDialogFields.close(d, false), child: const Text('Anulează')), FilledButton(onPressed: () { editedName = nameC.text.trim(); FinanceDialogFields.close(d, true); }, child: const Text('Salvează'))],
-    ); }));
-    if (ok == true && operationIsCurrent()) {
-      final previousName = s.name;
-      final previousStart = s.startDate;
-      final previousEnd = s.endDate;
-      final previousClosed = s.closed;
-      final attemptedName = editedName.isEmpty ? s.name : editedName;
-      s.name = attemptedName; s.startDate = start; s.endDate = end;
-      try {
-        await widget.saveSettlement(s);
-        if (!operationIsCurrent()) return;
-        widget.log('Deplasare modificată', s.name);
-      } catch (e) {
-        if (!operationIsCurrent()) return;
-        // Restore our own rejected attempt only, never a newer observation.
-        if (e is FinanceSaveRejected && s.name == attemptedName &&
-            s.startDate == start && s.endDate == end && s.closed == previousClosed) {
-          setState(() { s.name = previousName; s.startDate = previousStart; s.endDate = previousEnd; });
+    final operationKey = (_financeSessionEpoch, s.teamId, s.id);
+    if (!_pendingFinanceKeys.add(operationKey)) return;
+    try {
+      var start = s.startDate; var end = s.endDate;
+      var editedName = s.name;
+      final ok = await showDialog<bool>(context: context, builder: (d) => FinanceDialogFields(
+        initialTexts: [s.name],
+        builder: (d, fields, setD) { final nameC = fields.single; return AlertDialog(
+        title: const Text('Editează deplasarea'),
+        content: SizedBox(width: 520, child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: nameC, decoration: const InputDecoration(labelText: 'Denumire')), const SizedBox(height: 8),
+          ListTile(contentPadding: EdgeInsets.zero, title: const Text('Început'), subtitle: Text(_shortDate(start)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: start); if (x != null && d.mounted) setD(() => start = x); }, child: const Text('Alege'))),
+          ListTile(contentPadding: EdgeInsets.zero, title: const Text('Final'), subtitle: Text(end == null ? 'Nesetat' : _shortDate(end!)), trailing: Wrap(children: [TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: start, lastDate: DateTime(2100), initialDate: end ?? start); if (x != null && d.mounted) setD(() => end = x); }, child: const Text('Alege')), if (end != null) IconButton(onPressed: () => setD(() => end = null), icon: const Icon(Icons.clear))])),
+        ])),
+        actions: [TextButton(onPressed: () => FinanceDialogFields.close(d, false), child: const Text('Anulează')), FilledButton(onPressed: () { editedName = nameC.text.trim(); FinanceDialogFields.close(d, true); }, child: const Text('Salvează'))],
+      ); }));
+      if (ok == true && operationIsCurrent()) {
+        final previousName = s.name;
+        final previousStart = s.startDate;
+        final previousEnd = s.endDate;
+        final previousClosed = s.closed;
+        final attemptedName = editedName.isEmpty ? s.name : editedName;
+        s.name = attemptedName; s.startDate = start; s.endDate = end;
+        try {
+          await widget.saveSettlement(s);
+          if (!operationIsCurrent()) return;
+          widget.log('Deplasare modificată', s.name);
+        } catch (e) {
+          if (!operationIsCurrent()) return;
+          // Restore our own rejected attempt only, never a newer observation.
+          if (e is FinanceSaveRejected && s.name == attemptedName &&
+              s.startDate == start && s.endDate == end && s.closed == previousClosed) {
+            setState(() { s.name = previousName; s.startDate = previousStart; s.endDate = previousEnd; });
+          }
+          showErrorMessage(context, 'Nu s-a putut salva: $e');
         }
-        showErrorMessage(context, 'Nu s-a putut salva: $e');
       }
+    } finally {
+      _pendingFinanceKeys.remove(operationKey);
     }
   }
 
   Future<void> _toggleSettlementClosed() async {
     final operationIsCurrent = _financeOperationIsCurrent();
     final s = settlement; if (s == null) return;
-    final operationKey = '$_financeSessionEpoch:${s.id}';
-    if (!_pendingSettlementClosures.add(operationKey)) return;
+    final operationKey = (_financeSessionEpoch, s.teamId, s.id);
+    if (!_pendingFinanceKeys.add(operationKey)) return;
     try {
       final next = !s.closed;
       if (next) {
@@ -140,7 +152,7 @@ extension _ExpenseSettlementActions on _ExpensePageState {
         if (operationIsCurrent()) showErrorMessage(context, 'Nu s-a putut salva: $e');
       }
     } finally {
-      _pendingSettlementClosures.remove(operationKey);
+      _pendingFinanceKeys.remove(operationKey);
     }
   }
 
@@ -260,8 +272,8 @@ extension _ExpenseSettlementActions on _ExpensePageState {
     final settlement = this.settlement;
     final finance = this.finance;
     final receiptTeamName = team.name;
-    final operationKey = '$_financeSessionEpoch:${team.id}:${settlement?.id ?? _ExpensePageState._legacySettlementKey}';
-    if (!_pendingReceiptKeys.add(operationKey)) return;
+    final operationKey = (_financeSessionEpoch, team.id, settlement?.id ?? _ExpensePageState._legacySettlementKey);
+    if (!_pendingFinanceKeys.add(operationKey)) return;
     try {
       String method='Cash';
       final now=DateTime.now();
@@ -374,7 +386,7 @@ extension _ExpenseSettlementActions on _ExpensePageState {
         showErrorMessage(context,'Nu s-a putut salva suma: $e');
       }
     } finally {
-      _pendingReceiptKeys.remove(operationKey);
+      _pendingFinanceKeys.remove(operationKey);
     }
   }
 
