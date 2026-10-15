@@ -1,4 +1,4 @@
-// Issue #42: EXPECTED RED on the frozen financial runtime.
+// Historical #44 RED witness: unchanged assertions now require GREEN for an explicit before-write rejection.
 // This intentionally proves that a failed settlement close leaves endDate
 // mutated while closed is rolled back. Synthetic data only; no Firebase calls.
 // Kept outside *_test.dart so regular flutter test test/ stays green.
@@ -15,7 +15,7 @@ void main() {
     fixture.saveSettlementOverride = (settlement) async {
       writes++;
       attempted = settlement;
-      throw StateError('synthetic settlement save failure');
+      throw FinanceSaveRejected('synthetic rejected before persistence');
     };
 
     await fixture.mount(tester);

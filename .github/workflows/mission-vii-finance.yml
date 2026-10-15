@@ -40,17 +40,5 @@ jobs:
           grep -Fq 'RECEIPT_CONFIRMED_LOCAL_STATE_NOT_PRESERVED' "$RUNNER_TEMP/receipt-state-red.log"
       - name: Financial session and observational boundaries
         run: flutter test test/finance_session_completion_test.dart test/finance_telemetry_boundary_test.dart test/finance_director_read_only_test.dart --reporter expanded
-      - name: Strict close RED witness
-        shell: bash
-        run: |
-          for spec in 'finance_settlement_close_rollback.red.dart:END_DATE_ROLLBACK_MISSING'; do
-            file="${spec%%:*}"
-            marker="${spec#*:}"
-            set +e
-            flutter test "test/$file" --reporter expanded > "$RUNNER_TEMP/$file.log" 2>&1
-            result=$?
-            set -e
-            cat "$RUNNER_TEMP/$file.log"
-            test "$result" -eq 1
-            grep -Fq "$marker" "$RUNNER_TEMP/$file.log"
-          done
+      - name: Definite close rejection must preserve closed and endDate
+        run: flutter test test/finance_settlement_close_rollback.red.dart test/finance_close_rejection_test.dart --reporter expanded

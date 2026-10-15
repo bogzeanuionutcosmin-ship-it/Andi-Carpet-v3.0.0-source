@@ -116,3 +116,17 @@ Proba istorică edit-failure din această ramură păstrează toate aserțiunile
 VII-04 `lib/expenses/expense_settlement_actions.dart`: SHA256 3976d0bb5e0eef4c1c54d44443deade6938e6d6498293999e9dab0ad00b459f3 → 105bb0fa1d4141e610ecd765bb5afe61013e038d655bb118d1a264353c863d02.
 
 VII-04 `lib/home/home_financial_write_actions.dart`: SHA256 7de96936fd2493ed210d392cc6554f768a3a3dc25fafca2169e9ab126e807f76 → ad5c8989bc6740a63592ae354684a7518b1b350e539db77df2022a735f493365.
+
+## Continuare VII-05 — closed/endDate la respingere certă
+
+Lotul VII-04 `c86ba258ae35b8691c4dd83922ed2f58d255d7e2` are standard38691749622 SUCCESS5/5, identity38691749546 SUCCESS și probe38691749620 SUCCESS: martorul editării și cele7teste noi trec efectiv. EndDate-close și receipt rămânRED pe acelHEAD. Buildurile Android intermediare pot fi supersedate; nu sunt folosite ca dovadă pentru noulHEAD.
+
+Închiderea/redeschiderea capturează împreună closed și endDate. La `FinanceSaveRejected`, le restaurează numai dacă sesiunea este încă validă și starea încă este încercarea proprie; observațiile noi nu se suprascriu. Erorile neclasificate păstrează calea existentă, fără clasificare SDK, server rollback sau retry nou. Drepturile și regulile de redeschidere nu sunt schimbate.
+
+Un set cu cheie epoch+settlementId împiedică două dialoguri sau două scrieri concurente de close/reopen pentru același decont. Cheia se eliberează înfinally inclusiv la cancel/eșec, iar epoch-ul unui cont nou nu este blocat de operația veche. Confirmarea folosește închiderea protejată a rutei pentru dublu handler.
+
+**17 teste noi:**8combinații succes/reject×close/reopen×endDate prezent/absent; cancel/Back/barrier;2duplicate handler; failure→acțiune nouă reușită; observație nouă; revocare; write-success-then-throw. Martorul #44 păstrează toate aserțiunile, dar fake-ul marchează explicit respingerea înainte de persistență; poarta devinePASS real. PR44 original este intact. Fixture-ul are opțiuni inițiale closed/end, cu aceleași valori implicite. CI nou în așteptare.
+
+VII-05 `lib/expenses/expense_page.dart`: SHA256 efd42ce1c1944bcf0288aea6ec54d2d9448ecf36dbba833454c8c43603cce01c → 176fa1a7e904747d55dfd17b6a035c7a0db20b498c46ceab1daef719a0d1ea29.
+
+VII-05 `lib/expenses/expense_settlement_actions.dart`: SHA256 105bb0fa1d4141e610ecd765bb5afe61013e038d655bb118d1a264353c863d02 → 0fc0c21e6b23d481fee3dbc2072b70a163515093a5418c9af212738dff29d914.

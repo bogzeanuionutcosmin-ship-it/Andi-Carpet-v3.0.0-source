@@ -108,15 +108,40 @@ extension _ExpenseSettlementActions on _ExpensePageState {
   Future<void> _toggleSettlementClosed() async {
     final operationIsCurrent = _financeOperationIsCurrent();
     final s = settlement; if (s == null) return;
-    final next = !s.closed;
-    if (next) {
-      final ok = await showDialog<bool>(context: context, builder: (d) => AlertDialog(title: const Text('Închizi decontul?'), content: const Text('Nu se vor mai putea adăuga documente sau diurne până la redeschidere.'), actions: [TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Anulează')), FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Închide'))])) ?? false;
-      if (!ok) return;
+    final operationKey = '$_financeSessionEpoch:${s.id}';
+    if (!_pendingSettlementClosures.add(operationKey)) return;
+    try {
+      final next = !s.closed;
+      if (next) {
+        final ok = await showDialog<bool>(context: context, builder: (d) => AlertDialog(title: const Text('Închizi decontul?'), content: const Text('Nu se vor mai putea adăuga documente sau diurne până la redeschidere.'), actions: [TextButton(onPressed: () => FinanceDialogFields.close(d, false), child: const Text('Anulează')), FilledButton(onPressed: () => FinanceDialogFields.close(d, true), child: const Text('Închide'))])) ?? false;
+        if (!ok) return;
+      }
+      if (!operationIsCurrent()) return;
+      final previousClosed = s.closed;
+      final previousEnd = s.endDate;
+      s.closed = next;
+      if (next && s.endDate == null) s.endDate = DateTime.now();
+      final attemptedEnd = s.endDate;
+      try {
+        await widget.saveSettlement(s);
+        if (!operationIsCurrent()) return;
+        widget.log(next ? 'Decont închis' : 'Decont redeschis', s.name);
+        setState(() {});
+      } catch (e) {
+        if (e is FinanceSaveRejected) {
+          if (operationIsCurrent() && s.closed == next && s.endDate == attemptedEnd) {
+            setState(() { s.closed = previousClosed; s.endDate = previousEnd; });
+          }
+        } else {
+          // Preserve the pre-existing unclassified-error path. This is not
+          // evidence that a server write failed or an instruction to retry.
+          s.closed = !next;
+        }
+        if (operationIsCurrent()) showErrorMessage(context, 'Nu s-a putut salva: $e');
+      }
+    } finally {
+      _pendingSettlementClosures.remove(operationKey);
     }
-    if (!operationIsCurrent()) return;
-    s.closed = next;
-    if (next && s.endDate == null) s.endDate = DateTime.now();
-    try { await widget.saveSettlement(s); if (!operationIsCurrent()) return; widget.log(next ? 'Decont închis' : 'Decont redeschis', s.name); if (mounted) setState(() {}); } catch (e) { s.closed = !next; if (operationIsCurrent()) showErrorMessage(context, 'Nu s-a putut salva: $e'); }
   }
 
   Future<void> _showGeneralCalculations() async {
