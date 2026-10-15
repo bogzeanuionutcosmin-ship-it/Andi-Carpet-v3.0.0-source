@@ -551,7 +551,12 @@ service cloud.firestore {
           && evidence(0) && newMarker().kind == 'create';
       }
       allow create: if isFinancial() && settlementCreation();
-      allow update: if isFinancial() && request.resource.data.teamId == resource.data.teamId
+      // Reject a stale envelope before authorisation/marker/transition expansion.
+      // This preserves the predicate and avoids spending the rules expression
+      // budget on a transaction that cannot advance the current revision.
+      allow update: if isFinancial()
+        && request.resource.data.get('revision', -1) == resource.data.get('revision', 0) + 1
+        && request.resource.data.teamId == resource.data.teamId
         && (financialCollection != 'finance' || targetId == resource.data.teamId)
         && financeActor(resource.data) && evidence(resource.data.get('revision', 0))
         && ((newMarker().kind == 'receipt' && receiptChange()) || settlementEdit());
@@ -560,7 +565,10 @@ service cloud.firestore {
         allow get: if isFinancial() && isActive() && (isAdmin() || (hasPermission('viewOwnDecont')
           && (!exists(targetPath()) || isTeamMember(get(targetPath()).data.teamId))));
         allow list: if isFinancial() && isAdmin();
-        allow create: if isFinancial() && isActive()
+        allow create: if isFinancial()
+          && request.resource.data.get('revision', -1) ==
+            (exists(targetPath()) ? get(targetPath()).data.get('revision', 0) : 0) + 1
+          && isActive()
           && markerBinding(request.resource.data,operationId,getAfter(targetPath()).data,
             exists(targetPath()) ? get(targetPath()).data.get('revision', 0) : 0)
           && getAfter(targetPath()).data.lastOperationId == operationId

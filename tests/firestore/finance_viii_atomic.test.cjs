@@ -81,3 +81,10 @@ test('manager and Admin still may commit legitimate atomic receipts',async()=>{a
 test('expense creator can submit unconfirmed; only manager can change amount and confirm',async()=>{const worker=db('worker');await assertSucceeds(setDoc(doc(worker,'expenses/new'),{teamId:'team',settlementId:'trip',createdBy:'worker',amount:20,confirmed:false}));await assertFails(updateDoc(doc(worker,'expenses/new'),{amount:1,confirmed:true}));await assertSucceeds(updateDoc(doc(db('manager'),'expenses/new'),{amount:21,confirmed:true}));});
 test('expense cannot move between teams or forge creator',async()=>{await assertFails(updateDoc(doc(db('manager'),'expenses/bill'),{teamId:'other'}));await assertFails(updateDoc(doc(db('manager'),'expenses/bill'),{createdBy:'manager'}));});
 test('revoked user cannot reuse previously prepared request',async()=>{await env.withSecurityRulesDisabled(c=>updateDoc(doc(c.firestore(),'users/manager'),{active:false}));await assertFails(submit(db('manager'),intent(1)));});
+
+test('stale envelope rejects before rules expression exhaustion',async()=>{
+ await submit(db('manager'),intent(1));
+ const error=await assertFails(malicious(intent(2),{}));
+ assert.equal(error.code,'permission-denied');
+ assert.doesNotMatch(error.message,/maximum of 1000/);
+});

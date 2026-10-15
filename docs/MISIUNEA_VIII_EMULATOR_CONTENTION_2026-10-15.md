@@ -28,3 +28,11 @@ retry was added to obtain green.
 This suite uses JS SDK against actual emulator rules, not Flutter SDK network
 integration. Dart unit tests cover the repository/adapter/coordinator separately.
 Full Flutter SDK + emulator + restart/offline acceptance remains a release blocker.
+
+
+Continuation: a722238 CI had38PASS/2FAIL; cost reduction alone did NOT fix all
+expression exhaustion. New predicate ordering checks target and marker revisions
+before authorisation/binding/transition helpers. Stale envelopes are rejected
+with the same required successor revision; no permission or atomicity condition
+is removed. Added a focused stale-envelope case which explicitly rejects an
+expression-budget error. Rules pin bd024d10fb3e4e7fd5a74e3e5633af366d4d998e5afe81bd36dcdb60c15f3ee6 -> 0c446a3d99c12d5ccbb0d52deec17de12fd7daf075eb771acfff3d7d31229591. Actual CI pending.
