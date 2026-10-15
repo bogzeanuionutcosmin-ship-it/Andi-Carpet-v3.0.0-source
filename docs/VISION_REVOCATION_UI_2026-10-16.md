@@ -9,7 +9,7 @@
 ## Implementare în ramură nouă
 
 - `lib/vision/vision_session_journal.dart` — subscrieri locale `listenRevocation` strict per epocă, fără dependențe noi. `revoke()` abandonează `_activeLog` înainte de orice notificare, mută listenerii din map înainte de invocare pentru a preveni dublarea/reentrancy, iar o excepție de la UI nu împiedică revocarea. `startSession` invocă `revoke()` înainte de construirea unei noi epoci. Lease-urile vechi nu primesc semnalele altui cont și nu îl pot invalida. Rezultatul subscrierii este o funcție de dezabonare.
-- `lib/vision/vision_scoped_diagnostics_page.dart` — `StatefulWidget` care se abonează în `initState`, schimbă abonamentul la o nouă instanță lease în `didUpdateWidget` și se dezabonează în `dispose`. La revocare reconstruiește automat pagina fail-closed; când notificarea ajunge în timpul unui build/layout Flutter, reprogramează numai setState după cadrul curent, fără timer/polling.
+- `lib/vision/vision_scoped_diagnostics_page.dart` — `StatefulWidget` care se abonează în `initState`, schimbă abonamentul la o nouă instanță lease în `didUpdateWidget` și se dezabonează în `dispose`. La revocare reconstruiește automat pagina fail-closed; notificarea programează **întotdeauna** un rebuild post-frame prin WidgetsBinding, sigur atât în interiorul, cât și în afara unui build; fără timer/polling și fără import separat de scheduler.
 - `test/vision_scoped_diagnostics_page_test.dart` — **6 teste Flutter noi**: logout fără tap/rebuild impus din părinte, tranziție A→B cu pagina veche încă montată și schimbarea lease-ului, dispose-safe, single-shot unsub, listener ce aruncă și vechi lease neautorizat.
 - `test/vision_scoped_diagnostics_adapter_contract_test.py` — două teste noi și adaptarea celor existente pentru `StatefulWidget`, verificând revocarea înaintea notificării, ascunderea ecranului și igiena lifecycle.
 - Workflow `verify-vision-modular-android.yml` este activat doar pentru acest branch, păstrând `flutter build apk --debug --target lib/main.dart` fără upload/instalare. Alte workflowuri de deploy au rămas intacte.
@@ -25,4 +25,4 @@
 
 Rulează obligatoriu standard 5/5 (Flutter, Python, Functions, Node, emulator, build web), Identity și Android compile-only **pe HEAD final**. Nu credita CI vechi de la #64; dacă un test nou eșuează, reprodu și corectează defectul fără să muți baremul de securitate. Un test pe hardware cu A→B→A2 rămâne pas separat.
 
-**Status la publicarea documentului: CI nou neconfirmat.**
+**CI:** primul run a semnalat importul nepermis `package:flutter/scheduler.dart` în testul imuabil `vision_hardening_freeze_test.py`. Sursa a fost corectată fără modificarea testului/freeze pinurilor: adaptorul folosește numai `WidgetsBinding` din importul Flutter Material existent și rebuild post-frame. Fixture-urile verifică închiderea după frame-ul programat (`pumpAndSettle`). Rezultatul CI pe HEAD corectat trebuie verificat înainte de verdict.
