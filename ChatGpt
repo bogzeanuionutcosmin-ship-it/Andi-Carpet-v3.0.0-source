@@ -2925,3 +2925,6 @@ Recuperarea32intenții are listăscrollabilă și probă320x480/ultimulitem/zero
 
 MISIUNEA VIII — fixture boundedscroll:
 11aaca0:154DartPASS/1FAIL, proba32 a trecut load/nooverflow dar helperul nu a atinsultimul în50x100px(Noelement). Bugetgesturi explicit100x250px și aserțiune întărită hitTestablelast;32operații/zeroSDK/zerooverflow neschimbate. Nu declarăm probaPASS înainte de noulCI.
+
+MISIUNEA VIII — proba ultimuluicontrol:
+491c404:154PASS/1FAIL, scrollulajunge la ultimulbanner darhitTestablecontainernuesteprobaacțiunii. Țintaesteacumbutonulultim, adusînviewport+apăsat:0readînainte/1markerreadexplicitdupă,0tranzacții,32pendingpăstrate. Fărărelaxare integritate/dimensionare/jurnal. CIseverificădin nou.
