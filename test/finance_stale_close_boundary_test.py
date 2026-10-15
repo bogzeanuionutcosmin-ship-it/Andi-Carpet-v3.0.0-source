@@ -2,6 +2,7 @@
 from pathlib import Path
 import hashlib
 import unittest
+from support.finance_opening_boundary import before_opening_projection
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -9,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class StaleCloseBoundary(unittest.TestCase):
     def test_removing_only_the_new_guard_reconstructs_previous_runtime(self):
         source = (ROOT / 'lib/expenses/expense_settlement_actions.dart').read_text()
+        source = before_opening_projection(source)
         guard = '        // Ignore every completion owned by an obsolete financial session.\n        if (!operationIsCurrent()) return;\n'
         self.assertEqual(source.count(guard), 1)
         previous = source.replace(guard, '', 1)

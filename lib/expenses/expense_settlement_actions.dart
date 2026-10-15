@@ -197,6 +197,8 @@ extension _ExpenseSettlementActions on _ExpensePageState {
       for(final st in widget.settlements.where((x)=>x.teamId==team.id)){
         if(st.receivedEntries.isNotEmpty){
           addTransfers(st.receivedEntries);
+          // Preserve aggregate history in its original settlement-start period.
+          if(dateOk(st.startDate)) receivedTotal+=st.receivedOpeningDeparture+st.receivedOpeningDuring;
         }else if(dateOk(st.startDate)){
           receivedTotal+=st.totalReceived;
         }
@@ -206,6 +208,8 @@ extension _ExpenseSettlementActions on _ExpensePageState {
         final tf=f.first;
         if(tf.receivedEntries.isNotEmpty){
           addTransfers(tf.receivedEntries);
+          // Undated team history remains restricted to the all-time report.
+          if(allTime) receivedTotal+=tf.receivedOpeningDeparture+tf.receivedOpeningDuring;
         }else if(allTime){
           // Legacy totals without dates appear only in the all-time report.
           receivedTotal+=tf.totalReceived;
@@ -261,7 +265,7 @@ extension _ExpenseSettlementActions on _ExpensePageState {
           row('Total cheltuit',c['spent']!,strong:true),
           row('Buget rămas',c['budget']!,strong:true),
           row('Sumă de primit',c['due']!,strong:true),
-          if(!allTime&&widget.finances.any((f)=>f.teamId==team.id&&f.receivedEntries.isEmpty&&f.totalReceived!=0))
+          if(!allTime&&widget.finances.any((f)=>f.teamId==team.id&&((f.receivedEntries.isEmpty&&f.totalReceived!=0)||f.receivedOpeningDeparture!=0||f.receivedOpeningDuring!=0)))
             const Padding(padding:EdgeInsets.only(top:10),child:Text('Notă: sumele legacy fără dată sunt incluse doar în „Total general”.',style:TextStyle(fontSize:12))),
         ]))),
         actions:[FilledButton(onPressed:()=>Navigator.pop(d),child:const Text('Închide'))],
