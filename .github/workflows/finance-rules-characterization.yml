@@ -1,0 +1,31 @@
+name: Characterize Finance Rules (TEST ONLY)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/firestore/expense_security_characterization.test.cjs'
+      - '.github/workflows/finance-rules-characterization.yml'
+      - 'firestore.rules'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finance-characterization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Firebase emulator and test libraries
+        run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
+      - name: Run isolated synthetic characterization scenarios (not approval)
+        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test tests/firestore/expense_security_characterization.test.cjs'
