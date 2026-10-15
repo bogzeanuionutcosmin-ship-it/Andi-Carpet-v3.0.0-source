@@ -259,6 +259,7 @@ void main(){
     final lastControl=find.descendant(of:last,matching:find.widgetWithText(TextButton,'Verifică salvarea'));
     await t.scrollUntilVisible(lastControl,250,maxScrolls:100,scrollable:find.descendant(
       of:find.byKey(const ValueKey('finance-pending-list')),matching:find.byType(Scrollable)));
+    await t.pumpAndSettle();
     expect(lastControl.hitTestable(),findsOneWidget);expect(t.takeException(),isNull);
     expect(h.db.calls,0);expect(h.db.serverReads,0);
     await t.tap(lastControl);await t.pumpAndSettle();
