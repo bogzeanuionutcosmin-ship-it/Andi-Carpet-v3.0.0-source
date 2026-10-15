@@ -33,6 +33,9 @@ jobs:
       - run: flutter pub get
       - name: AuthGate and integrated Vision regression tests
         run: flutter test test/auth_session_acceptance_test.dart test/auth_session_regression_test.dart test/vision_*_test.dart
+      - name: Browser FCM delayed ownership against real web branch without live SDK
+        if: github.head_ref == 'hardening/vision-authgate-v1-20261015'
+        run: flutter test --platform chrome --dart-define=FCM_WEB_VAPID_KEY=synthetic-test-only-vapid --dart-define=no_default_http_client=true test/vision_web_push_delay.browser.dart --reporter expanded
       - name: Characterize isolated known RED financial dialog without relaxing assertions
         if: github.head_ref == 'hardening/vision-authgate-v1-20261015'
         shell: bash
