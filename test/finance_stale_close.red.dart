@@ -10,6 +10,8 @@ void main() {
   for (final transition in ['revoked', 'unmounted', 'A-B', 'A-B-A2']) {
     for (final timeout in [false, true]) {
       testWidgets('stale close $transition timeout=$timeout cannot mutate shared observation', (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1400, 1000));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         final gate = Completer<void>(); var active = true; var saves = 0;
         final shared = TravelSettlement(id: 'settlement', teamId: 'team',
           name: 'Synthetic shared trip', startDate: DateTime(2026, 10, 1), managerId: 'A');
