@@ -2452,3 +2452,16 @@ PR46 caracterizare confirmată pe ee7ab669/tree3f587602: workflow38682160481 con
 - Freeze `test/vision_hardening_freeze_test.py` actualizat la **exact 3** noi SHA256 aprobate pentru această ramură, fără dezactivarea vreunui test. Testul operațional care cerea text GPS cu `$e` cere acum textul constant. Restul hashurilor protejate/contractelor au rămas nemodificate. Hashuri old/new + limitări în `docs/HOME_CONSOLE_PRIVACY_FIX_2026-10-15.md`.
 - Testele foste RED sunt cerute GREEN în workflowul fix; pe primul HEAD un test a eșuat numai din cauza formei incorecte de import Python `python3 -m unittest test/file.py` (nu pachet Python). Corectat commandul către `python3 test/file.py -v`, fără modificarea aserțiunilor. **Nu declarați CI final PASS înainte de rezultate pentru HEAD-ul final.**
 - Scop restrâns: nu garantează absența tuturor logurilor SDK/OS, nici test pe hardware, Firebase live sau release. Nu faceți merge, deploy, APK/web public, billing ori modificări de producție. Dacă se integrează vreodată #51 în ramura Lunei, faceți comparație precisă a surselor/freeze/CI înainte de aprobare.
+
+
+## Decizie proprietar — mandat autonom Shiva, activabil DUPĂ Luna VII (15.10.2026)
+
+**Instrucțiune transmisă expres de proprietar:** „Ok. Momentan facem asta si dupa ce termin Luna ce i-am dat facem cum ai zis. Noteaza asta si: Shiva, lucrează autonom la AndiCarpet. Alege următoarele sarcini tehnice sigure, execută succesiv cât poți, verifică rezultatele și documentează progresul. Nu mă întreba după fiecare pas. Respectă restricțiile de producție și nu modifica munca Lunei.”
+
+**Interpretare obligatorie de continuitate:**
+- **ACUM:** Luna continuă Misiunea VII din GitHub Issue #48 / PR Draft #50. Shiva **nu preia/editează ramura sau loturile Lunei** și nu pornește alte loturi pe baza mandatului amânat. Sunt permise doar înregistrarea deciziei și explicarea stadiului.
+- **DUPĂ ce Luna declară și verificăm în GitHub finalizarea activității curente:** Shiva poate conduce autonom sesiunile de lucru viitoare din AndiCarpet, alege taskuri tehnice sigure nealocate Lunei, execută succesiv fără să întrebe după fiecare lot, verifică teste/CI și documentează HEAD/tree/limitări. O instrucțiune ulterioară de începere poate declanșa munca; această notă **nu este o sarcină automată de fundal** și nu promite continuare între mesaje.
+- **Restricții permanente:** nu merge în main; fără deploy/publicare APK sau web, fără Firebase sau date reale de producție, fără editare `firestore.rules`, reguli financiare/roluri/permisiuni ori servicii cu cost nou fără aprobare explicită. Nu interferează cu munca Lunei. Fixurile UI/documentare permise numai pe ramuri noi/PR Draft izolate, cu teste, CI și handoff.
+- De verificat la reluare, fără a presupune că persistă checkpointul vechi: HEAD real PR #50, CI și probleme rămase; PR #51 este munca separată a lui Shiva, CI validat anterior. Reconcilierea lor nu este autorizată automat.
+
+**Această notă consemnează o decizie pentru VIITOR, nu execută o schimbare tehnică nouă sau un deploy.**
