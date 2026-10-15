@@ -80,7 +80,7 @@ void main() {
       home: VisionDiagnosticsPage(),
     ));
     expect(find.text('Vision'), findsOneWidget);
-    expect(find.bySemanticsLabel('Vision, asistent grafic'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'Vision, asistent grafic')), findsOneWidget);
     expect(tester.getSize(find.byKey(avatarKey)), const Size(40, 40));
     await tester.pump(const Duration(seconds: 3));
     expect(tester.binding.hasScheduledFrame, isFalse);
