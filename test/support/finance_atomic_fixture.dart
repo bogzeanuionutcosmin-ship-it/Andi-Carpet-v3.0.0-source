@@ -9,6 +9,8 @@ class FinanceAtomicFixture implements FinanceAtomicPort {
   int calls=0, reads=0, writes=0, callbacks=0, serverReads=0;
   bool commitThenThrow=false, failBeforeCommit=false, fromCache=false, pending=false;
   Future<void> Function()? beforeCommit;
+  Future<void> Function(String)? beforeRead;
+  Future<void> Function()? beforeServerReturn;
   void seed(String path,Map<String,Object?> data){documents[path]=data;versions[path]=(versions[path]??0)+1;}
   @override Future<T> atomic<T>(Future<T> Function(FinanceTransaction) action) async {
     calls++;
@@ -24,7 +26,8 @@ class FinanceAtomicFixture implements FinanceAtomicPort {
     throw StateError('synthetic transaction contention exhausted');
   }
   @override Future<FinanceServerObservation> readServer(String path) async {
-    serverReads++;return FinanceServerObservation(documents[path],fromCache:fromCache,pendingWrites:pending);
+    serverReads++;final value=documents[path];await beforeServerReturn?.call();
+    return FinanceServerObservation(value,fromCache:fromCache,pendingWrites:pending);
   }
 }
 class _Tx implements FinanceTransaction {
@@ -33,7 +36,7 @@ class _Tx implements FinanceTransaction {
   _Tx(this.db);
   @override Future<Map<String,Object?>?> read(String path) async {
     if(pending.isNotEmpty)throw StateError('read after write');
-    db.reads++;seen[path]=db.versions[path]??0;
+    await db.beforeRead?.call(path);db.reads++;seen[path]=db.versions[path]??0;
     final value=db.documents[path];return value==null?null:Map<String,Object?>.from(freezeFinanceValue(value) as Map);
   }
   @override void write(String path,Map<String,Object?> value){pending[path]=Map<String,Object?>.from(freezeFinanceValue(value) as Map);}

@@ -114,11 +114,13 @@ class FinanceRepository {
       final result = await port.atomic((tx) async {
         if (!_owns(intent)) throw const FinanceRefusal('finance_session_expired');
         final marker = await tx.read(intent.markerPath);
+        if (!_owns(intent)) throw const FinanceRefusal('finance_session_expired');
         if (marker != null) {
           if (!_matches(intent, marker)) throw const FinanceRevisionConflict();
           return FinanceIntentResult(FinanceIntentStatus.confirmed,'finance_confirmed',revision: intent.baseRevision+1,replayed:true);
         }
         final previous = await tx.read(intent.targetPath);
+        if (!_owns(intent)) throw const FinanceRefusal('finance_session_expired');
         final next = applyFinanceIntent(intent, previous);
         if (!_owns(intent)) throw const FinanceRefusal('finance_session_expired');
         tx.write(intent.targetPath, next);

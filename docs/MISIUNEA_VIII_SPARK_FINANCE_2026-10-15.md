@@ -130,3 +130,7 @@ TravelSettlement/TeamFinance now preserve explicit opening balances alongside it
 
 
 Continuation checkpoint 2026-10-15: ab518dd predicate ordering alone remainedRED. 5e1819d caches financial predicates, preserves explicit effectivePermissions and legacy fallback, and permits view-own reads of an absent settlement for real transactional creation. MissionVIII38740966147 SUCCESS:69DartPASS and44emulatorPASS/0FAIL; previous two concurrency failures plus new stale-envelope/fallback/create controls now PASS, with zero1000-expression errors in the job log. These are JS SDK emulator acceptances, not full Flutter SDK network acceptance. StandardCI/identity still awaited at this checkpoint. Local draft10 history/model/codec is now published separately; UI and full Restore remain blocked as described.
+
+
+### VIII-11 — delayed reads, offline and session generation
+Six new deterministic cases cover delayed marker proof after A→B→A2 (sameUID), revocation during marker/target reads, offline failure/reconnect without automatic financial retry, marker identity mismatch and revocation before an SDK contention callback. Added ownership checks immediately after each transaction read, so a stale marker completion does not even start the target read. Source journals remain scoped to the original UID/generation; no stale completion confirms a successor. Fixture gates are synthetic and explicitly do not certify real mobile transport/cache/restart. Device secure-storage and FlutterSDK+emulator offline tests remain required before client integration.
