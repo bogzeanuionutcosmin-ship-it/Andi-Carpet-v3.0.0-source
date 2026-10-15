@@ -33,7 +33,7 @@ class _Harness {
     adapter=FinanceExpenseDemoAdapter(scope:scope,port:db,acceptServerSnapshot:(path,data)async{
       if(failRefresh)throw StateError('synthetic_refresh_failure');
       refreshes++;
-      fixture.settlementOverride=TravelSettlement(id:'settlement',teamId:'team',name:data['name'] as String,
+      fixture.settlementOverride=TravelSettlement(id:path.split('/').last,teamId:'team',name:data['name'] as String,
         startDate:data['startDate'] as DateTime,createdAt:data['createdAt'] as DateTime,
         managerId:data['managerId'] as String,closed:data['closed'] as bool,endDate:data['endDate'] as DateTime?,
         revision:data['revision'] as int,lastOperationId:data['lastOperationId'] as String,
@@ -46,7 +46,7 @@ class _Harness {
       fixture.rebuild((){});
     });
     adapter.observeSettlement(model,FinanceServerObservation(db.documents['settlements/settlement'],fromCache:false,pendingWrites:false));
-    fixture.saveSettlementOverride=adapter.saveSettlement;
+    fixture.saveSettlementOverride=(model)=>model.id=='settlement'?adapter.saveSettlement(model):adapter.createSettlement(model);
     fixture.diagnosticSessionIsCurrent=scope.sessionIsCurrent;
   }
   Future<void> receipt(WidgetTester t)async{
@@ -109,6 +109,41 @@ void main(){
     h.current=false;
     await expectLater(h.adapter.reconcileExplicitly('settlements/settlement'),throwsA(isA<FinanceSaveRejected>()));
     expect(h.refreshes,0);expect(h.fixture.logs,isEmpty);expect(h.db.calls,1);
+    await t.pumpWidget(const SizedBox());
+  });
+  testWidgets('real edit dialog commits only its changed fields and refreshes its revision',(t)async{
+    final h=_Harness();await h.fixture.mount(t);
+    await t.ensureVisible(find.text('Editează deplasarea'));await t.tap(find.text('Editează deplasarea'));await t.pumpAndSettle();
+    await h.fixture.enter(t,'Denumire','Revised');
+    await t.tap(find.widgetWithText(FilledButton,'Salvează'));await t.pumpAndSettle();
+    expect(h.db.calls,1);expect(h.db.writes,2);expect(h.refreshes,1);
+    expect(h.fixture.settlementOverride!.name,'Revised');expect(h.fixture.settlementOverride!.revision,1);
+    expect(h.fixture.logs,hasLength(1));await t.pumpWidget(const SizedBox());
+  });
+  testWidgets('stale baseline conflict stays pending without overwriting the newer server revision',(t)async{
+    final h=_Harness();h.db.seed('settlements/settlement',{
+      ...h.db.documents['settlements/settlement']!,'revision':1,'name':'New server name'});
+    await h.fixture.mount(t);await h.close(t);
+    expect(h.db.writes,0);expect(h.db.documents['settlements/settlement']!['name'],'New server name');
+    expect(h.fixture.logs,isEmpty);expect(h.adapter.pendingCodes.values.single,'finance_revision_conflict');
+    expect(await h.scope.coordinator.journal.pending(),hasLength(1));
+    await t.pump(const Duration(minutes:1));expect(h.db.calls,1);
+    await t.pumpWidget(const SizedBox());
+  });
+  testWidgets('real create dialog keeps its new target and reconciles a committed lost acknowledgement',(t)async{
+    final h=_Harness();h.db.commitThenThrow=true;await h.fixture.mount(t);
+    await t.tap(find.text('Nouă'));await t.pumpAndSettle();
+    await h.fixture.enter(t,'Denumire','New synthetic trip');
+    await t.tap(find.widgetWithText(FilledButton,'Creează'));await t.pumpAndSettle();
+    expect(h.db.calls,1);expect(h.db.writes,2);expect(h.fixture.logs,isEmpty);
+    final pending=(await h.scope.coordinator.journal.pending()).single;
+    final path=pending.targetPath;
+    expect(path,isNot('settlements/settlement'));
+    expect(h.db.documents[path]!['name'],'New synthetic trip');
+    await h.adapter.reconcileExplicitly(path);await t.pumpAndSettle();
+    expect(h.db.calls,1);expect(h.refreshes,1);expect(h.fixture.logs,hasLength(1));
+    expect(h.fixture.settlementOverride!.id,pending.documentId);
+    expect(h.fixture.settlementOverride!.revision,1);
     await t.pumpWidget(const SizedBox());
   });
   test('cached observation never becomes an adapter baseline',(){

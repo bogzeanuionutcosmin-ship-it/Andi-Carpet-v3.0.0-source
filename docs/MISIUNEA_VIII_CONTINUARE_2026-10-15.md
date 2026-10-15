@@ -64,3 +64,11 @@ Comandă: «Continuă PR #55 din HEAD-ul real și verifică CI-ul acelui SHA. Ci
 După ack pierdut, conflict sau imposibilitatea refreshului, Future-ul callbackului rămâne în așteptare. Astfel dialogul real păstrează blocarea pe țintă și nu intră în rollbackul generic nesigur de close. Reconcilierea este numai explicită, cu același intent. Markerul confirmă operația; înainte de succesul UI este cerut separat snapshot server al țintei și înlocuirea modelului prin callback. Confirmarea markerului rămâne memorată dacă refreshul eșuează, fără resubmit sau dependență de un jurnal deja curățat. Un refuz proaspăt cert poate elibera callbackul cu FinanceSaveRejected. Scope-ul trebuie să fie același cu diagnosticSessionIsCurrent al paginii.
 
 Cele șapte probe noi folosesc ExpensePage și dialogurile originale pentru receipt/close, plus refuzul observației cache. Nu repară automat Home implicit, create în acest adaptor, toate cele 28 de caracterizări vechi, restartul fizic ori clienții vechi. Sunt candidate până la verificarea CI pe SHA publicat.
+
+### Gard în Restore-ul existent și extinderea adaptorului
+
+Primul lot callbackuri, b2bb076: 136 probe Dart PASS, inclusiv cele șapte noi; 47 JS emulator PASS. Verificarea integrală a acelui HEAD continuă separat.
+
+În lotul următor, Restore manual V1 și automat refuză întregul input care enumeră finance/settlements sau subcolecțiile lor, înainte de orice ștergere, batch ori marker de succes. Chiar și colecția financiară goală provoacă refuz: lipsa markerilor nu dovedește absența operațiilor. Backupurile istorice și exportul rămân nemodificate. Șase probe pe handlerii Admin reali verifică input mixt și zero mutații. Gardul nu certifică restaurarea operațională care omite finanțele și nu este un import complet.
+
+Adaptorul adaugă intrarea explicită createSettlement pentru callbackul de creare: absența țintei este validată în tranzacția protocolului; niciun document existent nu poate fi înlocuit. Testul folosește dialogul Nouă real, commit urmat de ack pierdut și reconciliere fără o a doua scriere. Sunt adăugate și probele dialogului edit și ale conflictului de revizie. Modificările sunt candidate până la CI pe SHA publicat. Nu activează implicit Home și nu modifică cele 28 de caracterizări vechi.

@@ -45,7 +45,9 @@ class FinanceExpenseDemoAdapter {
   final Future<void> Function(String path,Map<String,Object?> data) acceptServerSnapshot;
   final _baselines=<String,_Baseline>{};
   final _saves=<String,_Save>{};
-  FinanceExpenseDemoAdapter({required this.scope,required this.port,required this.acceptServerSnapshot});
+  FinanceExpenseDemoAdapter({required this.scope,required this.port,required this.acceptServerSnapshot}) {
+    if(!identical(scope.coordinator.repository.port,port))throw ArgumentError('finance_scope_port_mismatch');
+  }
   Map<String,String> get pendingCodes=>Map.unmodifiable(_saves.map((p,s)=>MapEntry(p,s.code)));
   void _guard(){if(!scope.sessionIsCurrent())throw FinanceSaveRejected('finance_session_expired');}
   void observeSettlement(TravelSettlement model,FinanceServerObservation server)=>
@@ -71,6 +73,26 @@ class FinanceExpenseDemoAdapter {
     if((data['revision']??0) is! int)throw FinanceSaveRejected('finance_invalid_revision');
     if(!_baselines.containsKey(path)&&_baselines.length>=32)throw FinanceSaveRejected('finance_demo_scope_full');
     _baselines[path]=_Baseline(data,model);
+  }
+  // Wire this separately for the existing create dialog. Absence is checked
+  // inside the same transaction; an existing target can never be overwritten.
+  Future<void> createSettlement(TravelSettlement model) {
+    _guard();final path='settlements/${model.id}';
+    if(_saves.containsKey(path))throw FinanceSaveRejected('finance_unresolved_target');
+    if(_saves.length>=32)throw FinanceSaveRejected('finance_demo_scope_full');
+    final intent=FinanceIntent(operationId:FinanceIntent.newOperationId(),actorUid:scope.ownerUid,
+      teamId:model.teamId,collection:'settlements',documentId:model.id,baseRevision:0,
+      kind:FinanceIntentKind.create,changes:{'name':model.name,'startDate':model.startDate,
+        'endDate':model.endDate,'createdAt':model.createdAt,'managerId':model.managerId,
+        'perDiemRate':model.perDiemRate});
+    try {
+      final expected=applyFinanceIntent(intent,null),candidate=_settlement(model);
+      if(model.revision!=null&&model.revision!=0)throw const FinanceRefusal('finance_invalid_creation');
+      for(final key in candidate.keys) {
+        if(!sameFinanceValue(expected[key],candidate[key]))throw const FinanceRefusal('finance_invalid_creation');
+      }
+    } on Object {throw FinanceSaveRejected('finance_invalid_creation');}
+    final save=_Save(intent);_saves[path]=save;unawaited(_run(path,save,false));return save.done.future;
   }
   Future<void> saveSettlement(TravelSettlement model)=>_save('settlements/${model.id}',_settlement(model));
   Future<void> saveFinance(TeamFinance model)=>_save('finance/${model.teamId}',_finance(model));
@@ -109,7 +131,7 @@ class FinanceExpenseDemoAdapter {
     try {
       final next=applyFinanceIntent(intent,baseline.data);
       for(final key in candidate.keys.where((k)=>k!='receivedEntries')) {
-        if(!sameFinanceValue(_display(next[key]),candidate[key]))throw const FinanceRefusal('finance_model_transition_mismatch');
+        if(!sameFinanceValue(_display(next.containsKey(key)?next[key]:before[key]),candidate[key]))throw const FinanceRefusal('finance_model_transition_mismatch');
       }
     } on Object {throw FinanceSaveRejected('finance_model_transition_rejected');}
     final save=_Save(intent);_saves[path]=save;

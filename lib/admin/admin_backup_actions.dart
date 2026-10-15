@@ -4,6 +4,13 @@ part of '../main.dart';
 mixin _AdminBackupActions on State<AdminPanelPage> {
   FirebaseFirestore get _backupDb;
   AdminBackupFiles get _backupFiles;
+  // V1 and automatic snapshots have no complete financial-intent inventory.
+  // Refuse the whole restore before any unrelated deletion or batch commit.
+  void _rejectLegacyFinancialRestore(Iterable<String> collections) {
+    if(collections.any((name)=>const {'finance','settlements'}.contains(name.split('/').first))) {
+      throw const FormatException('Backup-ul financiar necesită un manifest cu revizii și dovezi. Restaurarea nu a început.');
+    }
+  }
   Future<void> _exportBackup() async {
     const names=['teams','cars','locations','locationCategories','functions','schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit','learningEvents','backgrounds'];
     final db=_backupDb;
@@ -51,6 +58,7 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
       for(final item in items.docs){
         final d=item.data();
         final collection=(d['collection']??'').toString();
+        _rejectLegacyFinancialRestore([collection]);
         if(!allowed.contains(collection))continue;
         final documentId=(d['documentId']??'').toString();
         if(documentId.isEmpty||documentId.contains('/'))throw FormatException('ID invalid în $collection.');
@@ -104,6 +112,7 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
     final rawCollections=parsed['collections'] as Map;
     final validated=<String,Map<String,dynamic>>{};
     try{
+      _rejectLegacyFinancialRestore(rawCollections.keys.map((key)=>key.toString()));
       for(final entry in rawCollections.entries){
         final name=entry.key.toString();
         if(!allowedRestoreCollections.contains(name))continue;
