@@ -2380,3 +2380,8 @@ Hardware/login Firebase live, GPS/FCM/cameră/Keystore fizic sunt NEEXECUTATE. N
 ## MISIUNEA VI — lot 1 coalescing, 15.10.2026
 
 Issue39, ramură nouă hardening/vision-authgate-v1-20261015 din #38 7a87d1d; nu repetăm III–V. Coalescing selectiv comparat cu #34 d84641b: single active drain, no-op snapshot salvat, TTL flush și dirty during write inclus fără alt flush. Șase teste adversariale noi, status/restore/format/ownership/business păstrate. 167 Python local PASS; Flutter/Dart local indisponibile, CI urmează pe SHA exact. Android workflow existent extins numai pentru noul head_ref, zero release/upload. Raport docs/MISIUNE_VI_VISION_HARDENING_2026-10-15.md. Urmează CI lot1, apoi lot2; restul NEEXECUTAT. Fără merge/deploy/APK/web/producție/surse editate.
+
+
+## MISIUNEA VI — lot 1 GREEN, lot 2 presiune
+
+PR41: lot1 08492f64 / tree ecacc77f = merge70e57c, standard38661750066 SUCCESS5/5 (408Flutter/167Python), identity38661750070 5PASS, Android38661750057 134teste+compile real PASS. Lot2 adaugă șase probe 10000duplicate/150distinct/48KiB/TTL7d/NTP/counter/oversizedraw; fără runtime diff. CI urmează pe SHA lot2. Restul loturilor nu sunt publicate încă; reluare după lot2GREEN cu lot3. Surse și producție nemodificate.

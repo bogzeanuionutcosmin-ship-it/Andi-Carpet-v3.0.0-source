@@ -20,4 +20,12 @@ Local 167 Python PASS; Flutter/Dart nu sunt instalate local. CI pe commitul lotu
 
 ## Reluare
 
-Lot 1 implementat, CI în așteptare. Urmează verificarea CI, apoi lot 2 (presiune jurnal). Loturile 2–10 NEEXECUTATE în acest checkpoint. Hardware/login Firebase/GPS/FCM/cameră/Keystore reale NEEXECUTATE. Fără merge/deploy/APK/web/producție/finanțe/roluri/paid AI.
+Lot 1 GREEN. Lot 2 pregătit, CI urmează; loturile 3–10 nu sunt încă publicate în acest checkpoint. Hardware/login Firebase/GPS/FCM/cameră/Keystore reale NEEXECUTATE. Fără merge/deploy/APK/web/producție/finanțe/roluri/paid AI.
+
+## Validare lot 1 / PR #41
+
+Commit 08492f64f5f4b8544d1bc151de8e39227f43bf88, tree ecacc77fbb7e8e09f6de12692da6a881103f8af5; merge-ref 70e57c245e096d0751a022f11d2de04a1f724d58 are exact același tree. Standard 38661750066 SUCCESS 5/5 (408 Flutter, 167 Python); identity 38661750070 SUCCESS 5 teste; Android 38661750057 SUCCESS, 134 teste + lib/main.dart debug compile. Logurile checkout verificate, plus git fetch merge-ref tree. Cele două bursturi sunt efectiv PASS, nu doar analiză.
+
+## Lot 2 — presiune / retenție / ceas
+
+Șase teste noi în vision_pressure_test.dart: 10000 duplicate/one drain/one snapshot; 150 amprente + mix resolved/severity; 48-char identifiers cu byte eviction; TTL exact șapte zile și NTP -30s/-2min la cold restore; input invalid ~2,6MB fără raw leak; count saturat și resolve/reopen. Politica de ceas existentă elimină evenimentele peste 1min în viitor: testăm limita, nu promitem păstrare peste rollback arbitrar. Zero runtime diff în acest lot. Numere/CI se completează după rulare; nu este benchmark hardware.
