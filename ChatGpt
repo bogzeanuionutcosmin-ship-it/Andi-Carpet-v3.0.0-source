@@ -2877,3 +2877,15 @@ Asserția confirmed și controlul fărăwrite suplimentar rămânobligatorii. La
 sunt afișate numai3flaguri tehnice cache/pending/present, fărăpayload/UID/sume.
 Nu se schimbă repository,rules sauclasificarea conservatoare dinaplicație.
 Rezultatul acestuifollow-up necesităCI propriu;precedentul SDKFAIL nuestePASS.
+
+
+### Transport CI — cauza fixture-ului investigată separat
+b2eacf2:SDK7PASS/1FAIL la altă tranzacție online (setupAuthA→B→A2), înaintea
+schimbăriiUID. Ipoteza metadata nu explică acestal doilea eșec și nuesteprobată.
+Proxy-ul reutiliza socketuri upstream și adăuga repetat listenersclose peacelași
+socket (warning realMaxListeners înlog). Eliminatpoolulkeepaliveupstream și
+listenerulduplu; nuadăugămretryfinanciar sauacceptareuncertainpecontroalelepozitive.
+BarierawaitForPendingWrites a fostînlăturată dinprobaackpierdut. Noulcounter cere
+căfixture-ul a ajuns efectivdupăcommitînainte deeroareasintetică; nuconfundă o
+tranzacțieSDKeșuată cuackpierdut. Codurileproxy sunt constante sanitizate, fărăURL,
+request,UID,sume sautoken. Runtime/rules neschimbate. CIacestuifollow-up urmează.

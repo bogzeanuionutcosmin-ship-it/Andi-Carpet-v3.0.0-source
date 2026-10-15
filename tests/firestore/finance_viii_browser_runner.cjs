@@ -5,15 +5,19 @@ const {spawn}=require('node:child_process');
 if(process.env.FIRESTORE_EMULATOR_HOST!=='127.0.0.1:8080' || process.env.FIREBASE_AUTH_EMULATOR_HOST!=='127.0.0.1:9099')throw Error('local_emulators_required');
 let online=true;
 const sockets=new Set();
-function track(socket){sockets.add(socket);socket.on('close',()=>sockets.delete(socket));}
+function track(socket){if(sockets.has(socket))return;sockets.add(socket);socket.once('close',()=>sockets.delete(socket));}
 function unavailable(res){if(!res.headersSent)res.writeHead(503,{'Access-Control-Allow-Origin':'*'});res.end();}
 const proxy=http.createServer((req,res)=>{
  if(!online){unavailable(res);return;}
  const upstream=http.request({host:'127.0.0.1',port:8080,path:req.url,method:req.method,
-  headers:{...req.headers,host:'127.0.0.1:8080'}},response=>{
+  agent:false,headers:{...req.headers,host:'127.0.0.1:8080',connection:'close'}},response=>{
    res.writeHead(response.statusCode,response.headers);response.pipe(res);
   });
- upstream.on('socket',track);upstream.on('error',()=>unavailable(res));
+ upstream.on('socket',track);upstream.on('error',error=>{
+  if(online)console.log(['ECONNRESET','ECONNREFUSED','EPIPE'].includes(error.code)?
+   `VIII_PROXY_UPSTREAM_${error.code}`:'VIII_PROXY_UPSTREAM_OTHER');
+  unavailable(res);
+ });
  req.on('aborted',()=>upstream.destroy());req.pipe(upstream);
 });
 proxy.on('connection',track);
