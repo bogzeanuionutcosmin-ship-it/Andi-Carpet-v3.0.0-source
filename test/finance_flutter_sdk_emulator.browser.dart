@@ -108,4 +108,15 @@ void main(){
   expect((await repo.execute(i)).status,FinanceIntentStatus.confirmed);expect((await repo.execute(i)).replayed,true);
   final data=await server('flutter-created');expect(data['revision'],1);expect(data['receivedEntries'],isEmpty);
  });
+ test('actual Flutter SDK preserves historical timestamp nanoseconds through receipt and edit',()async{
+  final repo=FinanceRepository(port:port,ownerUid:uid,sessionIsCurrent:()=>true);
+  expect((await repo.execute(receipt('flutter-nanos',40,uid))).status,FinanceIntentStatus.confirmed);
+  final edit=FinanceIntent(operationId:'e'*32,actorUid:uid,teamId:'flutter-team',collection:'settlements',documentId:'flutter-nanos',baseRevision:1,kind:FinanceIntentKind.edit,changes:{'name':'Exact edited'});
+  expect((await repo.execute(edit)).status,FinanceIntentStatus.confirmed);
+  final data=await server('flutter-nanos');
+  expect(data['startDate'],const Timestamp(1790812800,123456789));
+  expect(data['createdAt'],const Timestamp(1790812800,987654321));
+  expect(((data['receivedEntries'] as List).first as Map)['date'],const Timestamp(1790812800,123456789));
+  expect(data['receivedDeparture'],225);expect(data['receivedEntries'],hasLength(2));
+ });
 }

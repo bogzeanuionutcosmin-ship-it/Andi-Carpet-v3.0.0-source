@@ -17,6 +17,7 @@ const {doc,setDoc,Timestamp}=require('firebase/firestore');
   for(const uid of users)await setDoc(doc(db,'users',uid),{active:true,role:'member',function:'worker',effectivePermissions:['viewOwnDecont']});
   await setDoc(doc(db,'teams/flutter-team'),{members:users,financialManagerId:users[0]});
   for(const target of ['flutter-main','flutter-lost','flutter-race','flutter-owner'])await setDoc(doc(db,'settlements',target),{teamId:'flutter-team',managerId:users[0],name:'Synthetic SDK trip',closed:false,startDate:Timestamp.fromDate(new Date('2026-10-01T00:00:00Z')),endDate:null,createdAt:Timestamp.fromDate(new Date('2026-10-01T00:00:00Z')),perDiemRate:50,receivedDeparture:25,receivedDuring:10,receivedEntries:[]});
+  await setDoc(doc(db,'settlements/flutter-nanos'),{teamId:'flutter-team',managerId:users[0],name:'Exact timestamp fixture',closed:false,startDate:new Timestamp(1790812800,123456789),endDate:null,createdAt:new Timestamp(1790812800,987654321),perDiemRate:50,receivedDeparture:25,receivedDuring:0,receivedEntries:[{id:'historical',kind:'departure',amount:25,method:'Cash',fromName:'Synthetic',date:new Timestamp(1790812800,123456789)}]});
  });}finally{await env.cleanup();}
  console.log('Synthetic local Auth and Firestore fixtures ready; no live resource used.');
 })().catch(()=>{console.error('synthetic_emulator_seed_failed');process.exitCode=1;});
