@@ -24,7 +24,7 @@ jobs:
           java-version: '21'
       - run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
       - name: Strict ACL and atomic financial protocol acceptance
-        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test tests/firestore/finance_viii_acl.red.cjs'
+        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test --test-concurrency=1 tests/firestore/finance_viii_acl.red.cjs tests/firestore/finance_viii_atomic.test.cjs'
   dart:
     if: github.head_ref == 'fix/finance-spark-safe-mission-viii-20261015'
     runs-on: ubuntu-latest
