@@ -15,7 +15,7 @@ class SyntheticFirestore implements FirebaseFirestore {
   Duration? timeout;
   SyntheticFirestore(this.project);
   @override FirebaseApp get app => SyntheticApp(project);
-  @override void useFirestoreEmulator(String host,int port,{bool automaticHostMapping=true}) {configured++;}
+  @override void useFirestoreEmulator(String host,int port,{bool sslEnabled=false,bool automaticHostMapping=true}) {configured++;}
   @override Future<T> runTransaction<T>(TransactionHandler<T> handler,{Duration timeout=const Duration(seconds:30),int maxAttempts=5}) async {
     attempts=maxAttempts;this.timeout=timeout;
     return handler(SyntheticTransaction());
