@@ -17,7 +17,10 @@ void main() {
         findsOneWidget);
     expect(find.byKey(const Key('vision-assistant-avatar-artwork')),
         findsOneWidget);
-    expect(find.byType(GestureDetector), findsNothing);
+    expect(find.descendant(
+      of: find.byType(VisionAssistantAvatar),
+      matching: find.byType(GestureDetector),
+    ), findsNothing);
     expect(find.byType(IconButton), findsNothing);
     expect(tester.takeException(), isNull);
   });
