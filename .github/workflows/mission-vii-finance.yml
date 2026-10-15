@@ -23,17 +23,8 @@ jobs:
       - run: flutter pub get
       - name: Positive confirmed-save control
         run: flutter test test/settlement_edit_confirmed_characterization_test.dart --reporter expanded
-      - name: Strict edit-failure RED in its own process
-        shell: bash
-        run: |
-          set +e
-          flutter test test/settlement_edit_failure.red.dart --reporter expanded > "$RUNNER_TEMP/settlement-edit-red.log" 2>&1
-          result=$?
-          set -e
-          cat "$RUNNER_TEMP/settlement-edit-red.log"
-          test "$result" -eq 1
-          grep -Fq 'EDIT_FAILURE_PRECONDITIONS_PASS' "$RUNNER_TEMP/settlement-edit-red.log"
-          grep -Fq 'SETTLEMENT_EDIT_LOCAL_STATE_NOT_RESTORED' "$RUNNER_TEMP/settlement-edit-red.log"
+      - name: Definite edit rejection must restore local fields
+        run: flutter test test/settlement_edit_failure.red.dart test/finance_edit_rejection_test.dart --reporter expanded
       - name: Repaired lifecycle witnesses must actually pass
         run: flutter test test/settlement_create_cancel.red.dart test/vision_settlement_controller.red.dart test/finance_dialog_lifecycle_test.dart test/finance_received_amount_nonfinite.red.dart test/finance_received_amount_validation_test.dart --reporter expanded
       - name: Receipt local-state rejection remains explicitly RED

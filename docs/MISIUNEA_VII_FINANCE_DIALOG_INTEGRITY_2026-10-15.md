@@ -100,3 +100,19 @@ Hardware, GPS/FCM/Firebase live, MLKit/cameră și commiturile unui serverreal:N
 - Acceptanță: exact un write inițial; controale before/after pentru fiecare câmp; failure înainte de commit; write-success-then-throw; timeout; event listener mai nou; duplicate confirm; UID switch; zero audit de succes pe respingere; verificare explicită a ID-ului operației. Regresii pentru avansuri și schemele distincte de diurnă.
 
 Această propunere este concretă pentru review separat al cazurilor incerte, conform Issue48. Nu a fost implementată ca politică financiară și nu autorizează schimbări de rules/server/retry.
+
+## Continuare VII-04 — respingere certă înainte de persistență
+
+Bază reverificată: PR50 `cadbf00acf40d71771b38c16fd5a99bd71bc1e01`, checkout curat, tree `e77cdd5b409889c46942251b715eb0ad27e0ed69`. CI final al bazei: standard38690312118 SUCCESS5/5 (508Flutter/171Python/3Node/10emulator), identity38690312163 SUCCESS5; Android38690312317 SUCCESS (161+75VM,2+72Chrome,APKreal+aapt). Nu reluăm misiunile încheiate.
+
+**Contract minim implementat numai pentru certitudine dovedită:** `FinanceSaveRejected extends StateError` este emis în cele două gărzi locale settlement/finance înainte de apelul Firestore. Nu există catch care convertește excepții SDK/timeout în acest tip. Testul Python nou inversează exclusiv cele două nume de tip și reconstruiește hashul byte-exact al adaptorului anterior: toate condițiile de drepturi, scrierile și efectele ulterioare rămân neschimbate. Compatibilitatea StateError și mesajele sunt păstrate. Nu sunt schimbări de ACL/rules sau semantică financiară.
+
+Editarea restaurează name/startDate/endDate numai la acest semnal explicit, cât sesiunea originală este activă și câmpurile încă aparțin încercării proprii. O observație mai nouă nu este suprascrisă. Closed/manager/sume/selectarea rămân neatinse. Generic StateError, timeout și posibilul write-success-then-throw rămân neclasificate, fără rollback sau retry nou. Aceste cazuri nu sunt declarate reconciliate.
+
+Proba istorică edit-failure din această ramură păstrează toate aserțiunile, inclusiv identitatea obiectului, toate câmpurile, exact1save și zero audit. Numai fake-ul declară acum informația pe care chiar o garantează: `FinanceSaveRejected` înainte de persistență. Poarta proprie cere PASS real; PR46 original este intact. Controale negative distincte folosesc în continuare StateError generic și un fake de scriere reușită urmată de eroare, deci noul contract nu poate produce un GREEN prin clasificarea arbitrară a tuturor erorilor.
+
+**7 teste Dart noi:** compatibilitate marker; reject cert; generic; write-then-throw; observație mai nouă; epoch revocat; modificarea efectivă a startDate prin datepicker cu păstrarea closed inițial. **1 test Python nou**,172PASS local. Flutter/Chrome/Android pe noulHEAD sunt în așteptare; nu revendicăm încă GREEN. VII-05/06 rămân RED, iar reconcilierea rezultatelor incerte rămâne pentru review separat.
+
+VII-04 `lib/expenses/expense_settlement_actions.dart`: SHA256 3976d0bb5e0eef4c1c54d44443deade6938e6d6498293999e9dab0ad00b459f3 → 105bb0fa1d4141e610ecd765bb5afe61013e038d655bb118d1a264353c863d02.
+
+VII-04 `lib/home/home_financial_write_actions.dart`: SHA256 7de96936fd2493ed210d392cc6554f768a3a3dc25fafca2169e9ab126e807f76 → ad5c8989bc6740a63592ae354684a7518b1b350e539db77df2022a735f493365.

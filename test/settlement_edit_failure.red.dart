@@ -1,5 +1,5 @@
-// STRICT RED expectation, executed separately by the characterization workflow.
-// No runtime fix or policy for uncertain Firestore commits is authorized here.
+// Historical RED witness: unchanged integrity assertions now require GREEN.
+// The fake explicitly guarantees rejection before persistence (VII-04 contract).
 import 'dart:async';
 import 'package:andi_carpeta/main.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +11,7 @@ void main() {
   testWidgets('settlement edit failed save must restore original local fields', (tester) async {
     final gate = Completer<void>(); final attempts = <TravelSettlement>[];
     final fixture = ExpenseDocumentFixture('')..saveSettlementOverride = (s) async {
-      attempts.add(s); await gate.future; throw StateError('synthetic rejected save');
+      attempts.add(s); await gate.future; throw FinanceSaveRejected('synthetic rejected before persistence');
     };
     await fixture.mount(tester);
     final original = currentSettlement(tester)..endDate = DateTime(2026, 10, 9);

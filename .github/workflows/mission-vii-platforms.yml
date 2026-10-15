@@ -37,7 +37,7 @@ jobs:
         if: github.head_ref == 'fix/finance-dialog-integrity-mission-vii-20261015'
         run: flutter test --platform chrome --dart-define=FCM_WEB_VAPID_KEY=synthetic-test-only-vapid --dart-define=no_default_http_client=true test/vision_web_push_delay.browser.dart --reporter expanded
       - name: Repaired financial lifecycle and numeric witnesses must pass
-        run: flutter test test/settlement_create_cancel.red.dart test/vision_settlement_controller.red.dart test/finance_received_amount_nonfinite.red.dart test/finance_*_test.dart --reporter expanded
+        run: flutter test test/settlement_edit_failure.red.dart test/settlement_create_cancel.red.dart test/vision_settlement_controller.red.dart test/finance_received_amount_nonfinite.red.dart test/finance_*_test.dart --reporter expanded
       - name: Financial dialogs in Chrome with synthetic save boundaries
         run: flutter test --platform chrome --dart-define=no_default_http_client=true test/finance_*_test.dart --reporter expanded
       - name: Compile actual integrated app entrypoint without install or publication

@@ -83,8 +83,25 @@ extension _ExpenseSettlementActions on _ExpensePageState {
       actions: [TextButton(onPressed: () => FinanceDialogFields.close(d, false), child: const Text('Anulează')), FilledButton(onPressed: () { editedName = nameC.text.trim(); FinanceDialogFields.close(d, true); }, child: const Text('Salvează'))],
     ); }));
     if (ok == true && operationIsCurrent()) {
-      s.name = editedName.isEmpty ? s.name : editedName; s.startDate = start; s.endDate = end;
-      try { await widget.saveSettlement(s); if (!operationIsCurrent()) return; widget.log('Deplasare modificată', s.name); } catch (e) { if (operationIsCurrent()) showErrorMessage(context, 'Nu s-a putut salva: $e'); }
+      final previousName = s.name;
+      final previousStart = s.startDate;
+      final previousEnd = s.endDate;
+      final previousClosed = s.closed;
+      final attemptedName = editedName.isEmpty ? s.name : editedName;
+      s.name = attemptedName; s.startDate = start; s.endDate = end;
+      try {
+        await widget.saveSettlement(s);
+        if (!operationIsCurrent()) return;
+        widget.log('Deplasare modificată', s.name);
+      } catch (e) {
+        if (!operationIsCurrent()) return;
+        // Restore our own rejected attempt only, never a newer observation.
+        if (e is FinanceSaveRejected && s.name == attemptedName &&
+            s.startDate == start && s.endDate == end && s.closed == previousClosed) {
+          setState(() { s.name = previousName; s.startDate = previousStart; s.endDate = previousEnd; });
+        }
+        showErrorMessage(context, 'Nu s-a putut salva: $e');
+      }
     }
   }
 

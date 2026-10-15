@@ -108,7 +108,7 @@ extension _HomeFinancialWriteActions on _HomePageState {
 
   Future<void> _saveSettlementDirect(TravelSettlement settlement) async {
     if (!canEditTeam(settlement.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
-      throw StateError('Nu ai dreptul să modifici această deplasare.');
+      throw FinanceSaveRejected('Nu ai dreptul să modifici această deplasare.');
     }
     await FirebaseFirestore.instance.collection('settlements').doc(settlement.id).set(_settlementMap(settlement), SetOptions(merge: true));
     unawaited(_writeLearningEvent(category: 'finance', event: 'settlement_saved', teamId: settlement.teamId, data: {
@@ -118,7 +118,7 @@ extension _HomeFinancialWriteActions on _HomePageState {
 
   Future<void> _saveFinanceDirect(TeamFinance finance) async {
     if (!canEditTeam(finance.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
-      throw StateError('Nu ai dreptul să modifici datele financiare ale acestei echipe.');
+      throw FinanceSaveRejected('Nu ai dreptul să modifici datele financiare ale acestei echipe.');
     }
     final data = _financeMap(finance);
     await FirebaseFirestore.instance.collection('finance').doc(finance.teamId).set(data, SetOptions(merge: true));
