@@ -60,9 +60,12 @@ class _VisionAvatarPreviewAppState extends State<VisionAvatarPreviewApp> {
                 onChanged: (value) => setState(() => _dark = value),
               ),
               const SizedBox(height: 12),
-              Text(
-                'Dimensiune',
-                style: Theme.of(context).textTheme.titleMedium,
+              Builder(
+                builder: (previewContext) => Text(
+                  'Dimensiune',
+                  key: const Key('vision-preview-size-heading'),
+                  style: Theme.of(previewContext).textTheme.titleMedium,
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(
