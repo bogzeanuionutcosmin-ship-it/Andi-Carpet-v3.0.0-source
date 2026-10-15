@@ -27,13 +27,17 @@ class VisionAvatarSourceContract(unittest.TestCase):
                 self.assertNotIn(term, self.source)
 
     def test_no_animation_timer_interaction_or_route(self):
+        # Inspect executable source, not Dart documentation comments.
+        # The descriptive comment mentioning Navigator is not navigation code.
+        code = "\n".join(line for line in self.source.splitlines()
+                         if not line.lstrip().startswith("//"))
         for term in (
             "AnimationController", "TickerProvider", "Timer(",
             "Future.delayed", "GestureDetector", "InkWell(", "onTap:",
             "Navigator.", "OverlayEntry", "IconButton(", "setState(",
         ):
             with self.subTest(term=term):
-                self.assertNotIn(term, self.source)
+                self.assertNotIn(term, code)
 
     def test_semantic_label_and_painter_are_explicit(self):
         self.assertIn("class VisionAssistantAvatar extends StatelessWidget",
