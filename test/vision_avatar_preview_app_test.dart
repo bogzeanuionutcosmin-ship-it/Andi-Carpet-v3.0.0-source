@@ -58,6 +58,10 @@ void main() {
 
   testWidgets('compact portrait/landscape and text scale do not overflow',
       (WidgetTester tester) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
     for (final size in <Size>[
       const Size(320, 568),
       const Size(568, 320),
@@ -70,11 +74,17 @@ void main() {
         child: const VisionAvatarPreviewApp(),
       ));
       await tester.pumpAndSettle();
+      // The scrollable preview legitimately builds below-fold content lazily.
+      // Test actual reachability, not a false assumption that every child
+      // must be painted on the first frame of a 320 px landscape viewport.
+      await tester.scrollUntilVisible(
+        find.byType(VisionAssistantAvatar),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.byType(VisionAssistantAvatar), findsOneWidget);
       expect(tester.takeException(), isNull);
     }
-    tester.view.resetPhysicalSize();
-    tester.view.resetDevicePixelRatio();
   });
 
   testWidgets('preview has no navigation, permission or action to upload',
@@ -83,6 +93,11 @@ void main() {
     expect(find.byType(TextField), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
     expect(find.byType(IconButton), findsNothing);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('vision-preview-offline-note')),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.textContaining('conexiune la server'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
