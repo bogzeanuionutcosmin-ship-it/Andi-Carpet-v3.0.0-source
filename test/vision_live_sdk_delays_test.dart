@@ -131,13 +131,21 @@ void main() {
         gps.positions.add(syntheticPosition(44)); await harness.flush(tester);
         expect(pending, hasLength(1)); expect(delays, hasLength(1));
         await tester.pump(const Duration(milliseconds: 249)); expect(gps.starts, 1);
-        await tester.pump(const Duration(milliseconds: 1)); await harness.flush(tester);
+        await tester.pump(const Duration(milliseconds: 1));
+        // SDK StreamSubscription.cancel completes on the real async queue.
+        // Drain it without advancing the FakeAsync 250ms deadline.
+        await tester.runAsync(() async { await Future<void>.delayed(Duration.zero); });
+        await harness.flush(tester);
         expect(gps.starts, 2, reason: 'trace=${gps.trace}, settings=${gps.settingsHistory.length}, timers=$delays'); expect(gps.cancels, 1);
         expect(gps.settingsHistory.last!.accuracy, LocationAccuracy.high);
         expect(gps.settingsHistory.last!.distanceFilter, 10);
         gps.positions.add(syntheticPosition(46)); await harness.flush(tester);
         await tester.pump(const Duration(milliseconds: 249)); expect(gps.starts, 2);
-        await tester.pump(const Duration(milliseconds: 1)); await harness.flush(tester);
+        await tester.pump(const Duration(milliseconds: 1));
+        // SDK StreamSubscription.cancel completes on the real async queue.
+        // Drain it without advancing the FakeAsync 250ms deadline.
+        await tester.runAsync(() async { await Future<void>.delayed(Duration.zero); });
+        await harness.flush(tester);
         expect(gps.starts, 3); expect(gps.cancels, 2);
         expect(gps.settingsHistory.last!.accuracy, LocationAccuracy.medium);
         expect(gps.settingsHistory.last!.distanceFilter, 60);
