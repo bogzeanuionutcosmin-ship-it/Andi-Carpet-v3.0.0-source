@@ -101,3 +101,8 @@ closed,Adminrevizienouă,edit/close/create. Agregatelelegacy fărăentries sunt
 păstrate ca opening balances explicite, fărătransferuriinventate; istoricul
 inconsistentfailclosed pentrureview. Noilecâmpuri nu sunt încălegate deUIcodec.
 CI peSHAexacturmează; niciunclaimaplicațiesecurizată înainte deadapter/rules/UI.
+
+
+### VIII-05 — emulator-only Firestore adapter (2026-10-15)
+Injects an explicit FirebaseFirestore, requires a demo-* project and loopback emulator endpoint before configuration. Uses runTransaction(maxAttempts:3, timeout:30s), marker-first reads before writes, recursive Timestamp conversion, serverTimestamp for target.updatedAt / marker.createdAt, and explicit Source.server reconciliation preserving metadata. No listeners, polling, application retry, default Firebase app or production activation. Nine synthetic adapter/codec tests complement the 14 identity and 24 atomic repository tests; actual SDK/emulator end-to-end remains a separate acceptance requirement. This is a staged, unwired protocol; existing app writers and six ACL RED findings remain unchanged.
+Sources: https://pub.dev/documentation/cloud_firestore/latest/cloud_firestore/FirebaseFirestore-class.html and GetOptions/SnapshotMetadata (verified 2026-10-15).
