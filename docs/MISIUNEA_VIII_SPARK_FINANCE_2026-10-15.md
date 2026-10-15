@@ -389,3 +389,14 @@ HarnessulCI adaugă un proxy exclusivloopback8081→8080 și un control8082 care
 noi înaplicație sau rețeaexternă. Aserțiuneauncertain/noautomaticreplay rămâne
 neschimbată; timeoutulprobei este2minute pentru retryurileSDKbounded existente.
 Rezultatele nouluiHEAD trebuie reverificate.192PythonlocalPASS.
+
+
+## Continuare VIII — UI demo și scope AuthGate
+860e2e7 /38805104085:116DartPASS,47JSemulatorPASS,8FlutterSDKChromePASS și
+verificareaJS rawPASS. Probaoffline taieefectiv socketurileproxy, păstreazăintentul,
+nuconfirmădin cache șinuretrimiteautomat lareconectare. RestoreAdmin țintit și
+staleguard au trecut înSDKreal;Restorecomplet rămâne distinct și nefinalizat.
+LotulUI adaugă FinanceDemoScope/FinanceIntentDemoPanel,neconectateproducției.
+9probe noi verificăcreate/edit/close/receipt,doubletap,ackpierdut,storagefailure,
+disposal șiAndiCarpetaApp/AuthGateA→B→A2. Nu regenereazăoperationId larebuild,
+nu facebackgroundreplay șinuînchidecaracterizărilevechiUI. CI nou în așteptare.
