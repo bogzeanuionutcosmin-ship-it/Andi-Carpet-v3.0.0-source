@@ -29,3 +29,7 @@ Commit 08492f64f5f4b8544d1bc151de8e39227f43bf88, tree ecacc77fbb7e8e09f6de12692d
 ## Lot 2 — presiune / retenție / ceas
 
 Șase teste noi în vision_pressure_test.dart: 10000 duplicate/one drain/one snapshot; 150 amprente + mix resolved/severity; 48-char identifiers cu byte eviction; TTL exact șapte zile și NTP -30s/-2min la cold restore; input invalid ~2,6MB fără raw leak; count saturat și resolve/reopen. Politica de ceas existentă elimină evenimentele peste 1min în viitor: testăm limita, nu promitem păstrare peste rollback arbitrar. Zero runtime diff în acest lot. Numere/CI se completează după rulare; nu este benchmark hardware.
+
+### Corecție de fixture lot 2
+
+La revizuirea testului maximal-identifiers am observat că 150 rânduri valide maxime încap în 48 KiB; nu este corect să cerem eviction de bytes la această combinație. Proba folosește acum o limită injectată mai strictă, 4096 bytes, și identificatori exact48, păstrând toate assertions de cap/severity/restore. Limita de producție 48KiB/150 este în continuare verificată separat. Nu schimbăm runtime sau politica pentru a satisface o presupunere greșită de test. CI inițial/correctiv sunt raportate separat după observare.

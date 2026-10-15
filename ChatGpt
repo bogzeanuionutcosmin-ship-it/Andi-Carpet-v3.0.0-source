@@ -2385,3 +2385,5 @@ Issue39, ramură nouă hardening/vision-authgate-v1-20261015 din #38 7a87d1d; nu
 ## MISIUNEA VI — lot 1 GREEN, lot 2 presiune
 
 PR41: lot1 08492f64 / tree ecacc77f = merge70e57c, standard38661750066 SUCCESS5/5 (408Flutter/167Python), identity38661750070 5PASS, Android38661750057 134teste+compile real PASS. Lot2 adaugă șase probe 10000duplicate/150distinct/48KiB/TTL7d/NTP/counter/oversizedraw; fără runtime diff. CI urmează pe SHA lot2. Restul loturilor nu sunt publicate încă; reluare după lot2GREEN cu lot3. Surse și producție nemodificate.
+
+Lot2 fixture correction:150maximalrows fit48KiB; proba byte eviction folosește cap4096injectat și identificatori48exact, fără runtime change sau relaxarea cap/severity/restore. CI corectiv separat.

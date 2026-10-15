@@ -49,14 +49,16 @@ void main() {
     expect(restored.length, log.length); expect(restored.encodedBytes, log.encodedBytes);
   });
 
-  test('maximal identifiers force byte eviction while retaining critical entries', () {
-    final log = bounded(() => start);
+  test('tight injected byte cap exercises eviction with maximal identifiers', () {
+    // Production 150 maximal rows fit under 48 KiB; a tighter injected cap
+    // deliberately exercises the independent byte-eviction branch.
+    final log = VisionErrorLog(clock: () => start, maxEntries: 150, maxBytes: 4096);
     final area = 'a' * 48, platform = 'p' * 48;
     for (var i = 0; i < 300; i++) {
-      log.record(area: area, code: 'code_${i}_' + 'x' * (41 - i.toString().length),
+      log.record(area: area, code: 'code_${i}_' + 'x' * (42 - i.toString().length),
         platform: platform, severity: i == 0 ? VisionErrorSeverity.critical : VisionErrorSeverity.warning);
       expect(log.length, lessThanOrEqualTo(150));
-      expect(log.encodedBytes, lessThanOrEqualTo(48 * 1024));
+      expect(log.encodedBytes, lessThanOrEqualTo(4096));
     }
     expect(log.entries.any((e) => e.severity == VisionErrorSeverity.critical), isTrue);
     expect(log.length, lessThan(150)); // Byte cap, not only entry cap, is exercised.
