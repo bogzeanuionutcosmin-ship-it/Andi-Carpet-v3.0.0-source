@@ -45,7 +45,7 @@ class _LedgerPanelState extends State<FinanceLedgerDemoPanel> {
     Expanded(child:ListView(children:[
       for(final row in page?.rows??<FinanceLedgerRow>[])
         ListTile(title:Text('${switch(row.data['kind']){
-          'receipt'=>'Încasare','create'=>'Creare','close'=>'Închidere',_=>'Modificare'}} · revizia ${row.data['revision']}')),
+          'receipt'=>'Încasare','create'=>'Creare','close'=>'Stare decont',_=>'Modificare'}} · revizia ${row.data['revision']}')),
     ])),
   ]);
 }
