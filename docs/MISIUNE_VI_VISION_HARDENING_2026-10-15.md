@@ -79,3 +79,11 @@ Fixture-ul Expense existent primește numai opțiuni de test: perDiems/override 
 Proba inițială strictă este păstrată textual, fără schimbarea aserțiunilor, în test/vision_settlement_controller.red.dart. Nu intră în descoperirea *_test.dart: aceasta este o probă RED explicită pentru un flux business BLOCKED, nu o acceptanță GREEN. Workflow-ul Android o execută separat și cere exit1 + mesajul exact controller-disposed + numele probei; dacă proba devine verde, caracterizarea cere revizuire. Nu se pretinde că formularul financiar funcționează. Cele patru probe Vision autorizate rămân neschimbate în suita normală; niciun test existent din #38 și nicio aserțiune AuthGate nu este slăbită.
 
 Read source confirmă posibilă mutație locală receivedEntries înainte de save failure, fără rollback, păstrată ca risc distinct. Remedierea lifecycle/rollback financiar cere misiune separată. CI corectiv trebuie validat înainte de lot7.
+
+## Lot6 GREEN pentru Vision, formular business rămâne RED / lot7 freeze
+
+Lot6 corectiv c91f7a233b4d9ca540dd447c3375923baddda4da / tree7138737020485ff643af02aa9d209f274cb57102. Standard38664983837 SUCCESS5/5,430Flutter/167Python; identity38664983847 SUCCESS5. Android38664983870 a trecut atât testele Vision/AuthGate cât și pasul explicit knownRED, apoi a intrat în compile; nu revendicăm finalizarea acelui build înainte de rezultat. Formularul Sumă primită este în continuare BLOCKED/KNOWN RED, nu reparat.
+
+Lot7: patru contracte Python noi în vision_hardening_freeze_test.py:21hashuri suplimentare pentru AuthGate/root/operațional/parser/telemetry/status/verifier/securityfixtures/configAndroid; allowlist strict de importuri fără transport/backend în Vision; fără timer/listă de Futures sau veche coadă în persistență; proba financiară RED și wrapperul CI nu pot fi slăbite. Corpul inițial al probei RED are SHA2568c82ee6e21b75ffe6404716983a702b191a8c3265be30c421aa6070e046d7644, identic textului din3c823108.
+
+171Python local PASS,116protectedhashes intacte. Contractele V existente13hookuri/publicUI/ownership sunt păstrate, nu duplicate. Matricea combinată includeUIDepoch×storage×lifecycle×platformlabels și SDKAndroidfake; nu o prezentăm drept produs cartezian exhaustiv sau hardware. Zero runtime în lot7. CI urmează; apoi loturile8–10 validare/audit/predare.
