@@ -1,8 +1,8 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
 
-class _FirebaseBootstrapErrorApp extends StatelessWidget {
+class FirebaseBootstrapErrorView extends StatelessWidget {
   final String message;
-  const _FirebaseBootstrapErrorApp({required this.message});
+  const FirebaseBootstrapErrorView({required this.message});
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
