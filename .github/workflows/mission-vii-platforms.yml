@@ -31,7 +31,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - name: Diagnose synthetic Admin contention in Chrome without suppressing failures
+      - name: Synthetic Admin contention in Chrome must perform no HTTP
         run: flutter test --platform chrome --dart-define=no_default_http_client=true test/finance_other_writer_uncertainty_test.dart --reporter expanded
       - name: AuthGate and integrated Vision regression tests
         run: flutter test test/auth_session_acceptance_test.dart test/auth_session_regression_test.dart test/vision_*_test.dart

@@ -4,6 +4,8 @@ import 'package:andi_carpeta/main.dart';
 import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'support/admin_backup_fixture.dart';
 import 'support/admin_ui_fixture.dart';
 import 'support/expense_document_fixture.dart';
@@ -22,17 +24,22 @@ Map<String, dynamic> jsonEvidence(Map<String, Object?> value) => Map<String, dyn
 
 void main() {
   late FirebasePlatform original; late NoFirebaseAccess sdk;
+  final unexpectedHttp = <String>[];
+  var clientCreations = 0;
+  final noNetwork = MockClient((request) async {
+    unexpectedHttp.add(request.url.toString());
+    throw StateError('Unexpected HTTP in synthetic finance fixture');
+  });
+  tearDownAll(() {
+    expect(clientCreations, 1, reason: 'Real Admin dashboard initialized its Mapbox client');
+    expect(unexpectedHttp, isEmpty, reason: 'No HTTP or paid service boundary may be reached');
+    noNetwork.close();
+  });
   setUp(() { original = FirebasePlatform.instance; sdk = NoFirebaseAccess(); FirebasePlatform.instance = sdk; });
   tearDown(() { expect(sdk.attempts, isEmpty); FirebasePlatform.instance = original; });
   for (final legacy in [false, true]) {
     for (final receiptLast in [false, true]) {
-      testWidgets('KNOWN UNSAFE Admin restore versus pending receipt legacy=$legacy receiptLast=$receiptLast', (t) async {
-        final previousErrorHandler = FlutterError.onError;
-        FlutterError.onError = (details) {
-          print('SYNTHETIC_ADMIN_BROWSER_ERROR: ${details.exceptionAsString()}');
-          previousErrorHandler?.call(details);
-        };
-        try {
+      testWidgets('KNOWN UNSAFE Admin restore versus pending receipt legacy=$legacy receiptLast=$receiptLast', (t) => http.runWithClient(() async {
         final pending = FinanceUncertainStore(); final fixture = ExpenseDocumentFixture('');
         fixture.legacyFinance = legacy;
         fixture.saveSettlementOverride = (s) => pending.save(s);
@@ -65,13 +72,7 @@ void main() {
         // Actual Admin commands and actual ExpensePage submission, synthetic
         // durable application only. No server lock/ACL/atomicity is certified.
         await h.finish(t);
-        } catch (error, stack) {
-          print('SYNTHETIC_ADMIN_TEST_FAILURE: $error\n$stack');
-          rethrow;
-        } finally {
-          FlutterError.onError = previousErrorHandler;
-        }
-      });
+      }, () { clientCreations++; return noNetwork; }));
     }
     testWidgets('late commit after receipt timeout legacy=$legacy does not trigger an automatic second call', (t) async {
       final store = FinanceUncertainStore(); final fixture = ExpenseDocumentFixture('');
