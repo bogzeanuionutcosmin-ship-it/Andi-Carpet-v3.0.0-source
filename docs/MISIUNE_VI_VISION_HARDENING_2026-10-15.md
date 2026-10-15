@@ -57,3 +57,9 @@ Lot4 bfa9dcc4af67bfc48694d56a302be68d8fc8792c / tree968d11eb407bb7b872da8250ae0c
 Lot5: șase widget tests noi pe State Home și closure UID+epoch AuthGate reale, cu plugin/effect boundaries fake. FCM A blocat la permission/requestPermission/getToken, B token+refresh legitime și eroare refresh observată o dată; A1 nu scrie/atașează nici după A→B→A2. GPS A blocat la service/checkPermission/requestPermission, B stream legitim și un cod constant la eroare; zero late attach A, cancel B exact. Fără token/poziții reale, fără HTTP/Firestore live, zero praguri sau runtime schimbate.
 
 Limite dinamice explicite lot5: reverse-geocoding HTTP, boost250 și Web700 nu sunt executate de aceste șase probe. Sunt verificate în sursa înghețată (guard după await / revalidare la intrarea metodei). Fluxul live-location încă folosește HTTP și Firebase singleton direct; este necesar un fixture separat pentru a demonstra aceste subcazuri fără I/O, nu schimbăm fluxul operațional în această misiune. Fără certificare hardware/backgroundOS sau revocarea writes deja expediate. CI lot5 urmează.
+
+### Lot5 cleanup corectiv / infrastructură
+
+9bd6f97, standard38664031459:420PASS/6FAIL, exclusiv foundation debug-variable invariant după corpul testelor. Scenariile au parcurs assertions, dar addTearDown reseta platform override după verificarea Flutter. Corecție fixture-only: reset explicit înainte de întoarcerea fiecărui test; cleanup de siguranță existent păstrat, nicio aserțiune/runtime schimbată. Identity38664031428 SUCCESS5. CI corectiv urmează.
+
+Exec-server local s-a deconectat după publicarea lot5; nu declarăm checkout local sincronizat ulterior. Continuare autorizată prin conector GitHub: bază/tree explicite verificate live, expected_sha, numai fișierele selectate și CI pe HEAD real. Drafturile locale nepublicate nu sunt încă livrabile; loturile următoare vor fi salvate în GitHub înainte de orice raport de final.

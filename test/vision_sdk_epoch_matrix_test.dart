@@ -90,6 +90,7 @@ void main() {
       expect(b.starts, 1); expect(b.cancels, 1);
       expect(VisionErrorTelemetry.log.encode(), isNot(contains('PRIVATE')));
       await tester.pumpWidget(const SizedBox()); expect(home.activeCount, 0); expect(tester.takeException(), isNull);
+      debugDefaultTargetPlatformOverride = null; // Before Flutter verifies foundation invariants.
     });
   }
 
@@ -117,6 +118,7 @@ void main() {
       expect(home.writes, isEmpty); expect(VisionErrorTelemetry.log.encode(), isNot(contains('PRIVATE')));
       await tester.pumpWidget(const SizedBox()); expect(b.cancels, 1); expect(home.activeCount, 0);
       expect(tester.takeException(), isNull);
+      debugDefaultTargetPlatformOverride = null; // Before Flutter verifies foundation invariants.
     });
   }
 }
