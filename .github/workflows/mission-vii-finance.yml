@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: settlement-characterization-${{ github.event.pull_request.number }}
+  group: mission-vii-finance-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
   isolated-probes:
