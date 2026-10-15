@@ -368,3 +368,121 @@ test('legacy director without effectivePermissions can reopen own-team settlemen
     { closed: false },
   ));
 });
+
+
+// FINANCIAL AUTHORIZATION TRANSITIONS — isolated fixture IDs, demo emulator.
+// The after-deletion assertions characterize a potentially dangerous legacy
+// fallback; SUCCESS for an unauthorized write is intentionally evidence of
+// an existing weakness, not approval of the policy.
+test('financial access after field deletion: legacy driver permission resurrects', async () => {
+  const { setDoc, deleteField } = require('firebase/firestore');
+  const actor = 'expense-ocr-revoked-driver';
+  const team = 'expense-ocr-revocation-team';
+  const expensePath = 'expenses/expense-ocr-revocation-document';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const storage = ctx.firestore();
+    await setDoc(doc(storage, 'users/' + actor), {
+      active: true, role: 'member', function: 'driver', effectivePermissions: [],
+    });
+    await setDoc(doc(storage, 'teams/' + team), { members: [actor] });
+    await setDoc(doc(storage, expensePath), {
+      teamId: team, amount: 100, confirmed: false,
+    });
+  });
+  // Explicit empty list correctly revokes financial edit access.
+  await assertFails(updateDoc(doc(db(actor), expensePath), { amount: 101 }));
+  // Legacy migration that removes the field can *restore* the broad fallback.
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'users/' + actor), {
+      effectivePermissions: deleteField(),
+    });
+  });
+  await assertSucceeds(updateDoc(doc(db(actor), expensePath), { amount: 102 }));
+  // Server-side team membership check still denies writes after transfer.
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await updateDoc(doc(ctx.firestore(), 'teams/' + team), { members: [] });
+  });
+  await assertFails(updateDoc(doc(db(actor), expensePath), { amount: 103 }));
+});
+
+test('inactive admin role cannot read or overwrite team finance', async () => {
+  const { setDoc, getDoc } = require('firebase/firestore');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users/expense-ocr-inactive-admin'), {
+      active: false, role: 'admin',
+    });
+  });
+  await assertFails(getDoc(doc(db('expense-ocr-inactive-admin'), 'finance/expense-ocr-team')));
+  await assertFails(updateDoc(doc(db('expense-ocr-inactive-admin'), 'finance/expense-ocr-team'), {
+    receivedDeparture: 0,
+  }));
+});
+
+test('member cannot grant self finance permissions or admin role from client', async () => {
+  await assertFails(updateDoc(doc(db('expense-ocr-member'), 'users/expense-ocr-member'), {
+    role: 'admin',
+  }));
+  await assertFails(updateDoc(doc(db('expense-ocr-member'), 'users/expense-ocr-member'), {
+    effectivePermissions: ['viewOwnDecont', 'viewOtherDecont'],
+  }));
+});
+
+test('legacy director can read cross-team finance but cannot edit cross-team amounts', async () => {
+  const { setDoc, getDoc } = require('firebase/firestore');
+  const path = 'expenses/expense-ocr-foreign-expense';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), {
+      teamId: 'expense-ocr-foreign-team', amount: 8, confirmed: false,
+    });
+  });
+  await assertSucceeds(getDoc(doc(db('expense-ocr-legacy-director'), path)));
+  await assertFails(updateDoc(doc(db('expense-ocr-legacy-director'), path), { amount: 0 }));
+});
+
+test('finance create: member can nominate outsider and arbitrary receipt (unsafe)', async () => {
+  const { setDoc } = require('firebase/firestore');
+  const actor = 'expense-ocr-finance-creator';
+  const team = 'expense-ocr-finance-creator-team';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const storage = ctx.firestore();
+    await setDoc(doc(storage, 'users/' + actor), {
+      active: true, role: 'member', effectivePermissions: ['viewOwnDecont'],
+    });
+    await setDoc(doc(storage, 'teams/' + team), { members: [actor] });
+  });
+  await assertSucceeds(setDoc(doc(db(actor), 'finance/' + team), {
+    teamId: team, managerId: 'expense-ocr-outsider', receivedDeparture: 99999,
+  }));
+});
+
+test('finance update: member can falsify teamId inside own finance document (unsafe)', async () => {
+  // Dedicated team/actor from previous test already owns this finance path;
+  // seed a separate, complete self-contained fixture to avoid test-order coupling.
+  const { setDoc } = require('firebase/firestore');
+  const actor = 'expense-ocr-finance-spoof';
+  const team = 'expense-ocr-finance-spoof-team';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const storage = ctx.firestore();
+    await setDoc(doc(storage, 'users/' + actor), {
+      active: true, role: 'member', effectivePermissions: ['viewOwnDecont'],
+    });
+    await setDoc(doc(storage, 'teams/' + team), { members: [actor] });
+    await setDoc(doc(storage, 'finance/' + team), {
+      teamId: team, managerId: actor, receivedDeparture: 0,
+    });
+  });
+  await assertSucceeds(updateDoc(doc(db(actor), 'finance/' + team), {
+    teamId: 'expense-ocr-foreign-team',
+  }));
+});
+
+test('settlements create: ordinary teammate can self-create closed arbitrary settlement (unsafe)', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'settlements/expense-ocr-self-created-closed'),
+    {
+      teamId: 'expense-ocr-team', managerId: 'expense-ocr-outsider',
+      closed: true, receivedDeparture: 123456,
+    },
+  ));
+});
