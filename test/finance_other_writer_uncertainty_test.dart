@@ -39,7 +39,7 @@ void main() {
   tearDown(() { expect(sdk.attempts, isEmpty); FirebasePlatform.instance = original; });
   for (final legacy in [false, true]) {
     for (final receiptLast in [false, true]) {
-      testWidgets('KNOWN UNSAFE Admin restore versus pending receipt legacy=$legacy receiptLast=$receiptLast', (t) => http.runWithClient(() async {
+      testWidgets('REGRESSION financial Admin restore is blocked versus pending receipt legacy=$legacy receiptLast=$receiptLast', (t) => http.runWithClient(() async {
         final pending = FinanceUncertainStore(); final fixture = ExpenseDocumentFixture('');
         fixture.legacyFinance = legacy;
         fixture.saveSettlementOverride = (s) => pending.save(s);
@@ -62,15 +62,19 @@ void main() {
         final restore = find.widgetWithText(OutlinedButton, 'Restaurează');
         await t.ensureVisible(restore); await t.tap(restore); await t.pumpAndSettle();
         await t.tap(find.widgetWithText(FilledButton, 'Restaurează').last); await t.pumpAndSettle();
-        expect(h.db.commits.map((batch) => batch.length), [1, 1]);
-        expect(durable.data[write.documentKey], snapshot); expect(h.ui.logs, hasLength(1));
+        // Previously this exact handler committed delete+set and could erase
+        // the receipt. The fail-closed gate now refuses the ENTIRE snapshot.
+        expect(find.textContaining('Backup-ul financiar necesită un manifest'), findsOneWidget);
+        expect(h.db.commitAttempts, isEmpty); expect(h.db.commits, isEmpty);
+        expect(h.db.directWrites, isEmpty); expect(h.ui.logs, isEmpty);
+        expect(durable.data[write.documentKey], receiptLast ? {'departure': 0} : payload);
         if (receiptLast) durable.seed(write.documentKey, payload);
         pending.acknowledge(0, error: TimeoutException('synthetic lost acknowledgement'));
         await t.pumpAndSettle();
-        expect(durable.data[write.documentKey], receiptLast ? payload : snapshot);
+        expect(durable.data[write.documentKey], payload);
         expect(fixture.logs, isEmpty); expect(pending.writes, hasLength(1));
-        // Actual Admin commands and actual ExpensePage submission, synthetic
-        // durable application only. No server lock/ACL/atomicity is certified.
+        // Actual Admin refusal and actual ExpensePage submission; receipt
+        // completion remains synthetic. No full restore/SDK certification.
         await h.finish(t);
       }, () { clientCreations++; return noNetwork; }));
     }
