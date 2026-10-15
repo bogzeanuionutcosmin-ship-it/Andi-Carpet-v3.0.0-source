@@ -43,3 +43,9 @@ Lot3: patru teste noi, trei platforme-simbol (android/web/windows) × cold resto
 ### Lot3 fixture RED / corecție
 
 acff78e, standard38662978602:417PASS/1FAIL, numai TypeError RawTooltip→IconButton în testul nou care capturează callbackul. Cele trei cold-cache și cele414anterioare PASS; identity38662978613 SUCCESS. Corecție exclusiv finder: selectăm direct IconButton după tooltip, nu RawTooltip returnat de byTooltip. Assertions/fluxul/runtime neschimbate. CI corectiv urmează, nu declarăm GREEN anticipat.
+
+## Lot3 GREEN / lot4 bootstrap-lifecycle
+
+Lot3 corectiv b235f48466ba0e0f8222e56c8a0ea28cefa31543 / tree184d33416e1c4e9fcead34da980ddcb1d7406532. Standard38663228002 SUCCESS5/5, 418Flutter/167Python; identity38663227995 SUCCESS5. Runtime neschimbat; Android final va recertifica toate testele noi.
+
+Lot4: două probe noi pe bootstrap real/porturi și persistență reală/lifecycle. Storage read blocat/eșuat, start dublu cu un singur read, handlers Flutter/async lipsă (presentError păstrat, false pentru async), Firebase init failure propagat exact și o singură încercare, fără a aștepta storage. Storm100×lifecycle share-one-drain; saved numai după write, detach fără schimbare nu multiplică snapshoturi. Kill rămâne best effort. Fără schimbare runtime. CI lot4 urmează.

@@ -2393,3 +2393,7 @@ Lot2 fixture correction:150maximalrows fit48KiB; proba byte eviction folosește 
 Lot2 6ee5b257/tree908fc831: standard38662610600 SUCCESS5/5, identity38662610626 5PASS,414Flutter/167Python. Corecția fixture4KiB nu schimbă politica; primaCI anulată. Androidruntime lot1GREEN; test-onlyAndroidlot2 pending la avans, finalcompile obligatoriu. Lot3 patru teste:cachedevice-wide coldrestore/RAMfailure×3platformlabels și staleClipboardcallbackA1 dupăA→B→A2; zero copy/istoricA înB, cache nemutat. CIurmează; lot4următor dupăGREEN.
 
 Lot3 CI38662978602:417PASS/1fixtureTypeError RawTooltip→IconButton;identity38662978613PASS. Corecție finderonly directIconButton, fără assertions/runtime changes; CIcorectiv urmează.
+
+
+## MISIUNEA VI — lot3GREEN, lot4bootstrap/lifecycle
+Lot3b235f484/tree184d3341:standard38663228002SUCCESS5/5,identity38663227995SUCCESS5,418Flutter/167Python; finder corectat fără runtime/assertionchange. Lot4două probe:realbootstrap+storage slow/fail+nullhandlers+doubleinit+Firebaseerror; lifecycle100storm+singleblockeddrain+savedafterwrite. Runtimeintact, CIurmează; următorlot5SDK dupăGREEN.
