@@ -1,5 +1,5 @@
 {
-  "finance_head": "ccec7880edb520e93c3e121fda5f038c0e0f7f18",
+  "finance_head": "bc60448e14044f047276680f678c19acd4cb4538",
   "privacy_head": "950f736a4e2e32799db5c61ccd8388fe1acae70e",
   "base": "736ef9ea66bec5ff0c431d05808e43423c1f3ba9",
   "shared_paths": [
@@ -8,7 +8,7 @@
   ],
   "finance_pins": {
     "lib/expenses/expense_page.dart": "f6a3976dbe52fa81c1599d78207803c35362c2cba5ece9c68182cb68a8af511d",
-    "lib/expenses/expense_settlement_actions.dart": "0348242c2def81ac693ded3e3a64c96b9df701fff2b0895f4e6e2b1b09bc92b8",
+    "lib/expenses/expense_settlement_actions.dart": "2cf1a4471d6c5fc41458201d3794a919ee318be74b8bf56208e484d121a00db9",
     "pubspec.yaml": "2bd8c7408160bf1ea72b5c5cbc55e2a45f00faaf87c3f43d0d8d33c314f1b835"
   },
   "privacy_pins": {
@@ -26,7 +26,7 @@
     "lib/expenses/expense_page.dart": "f6a3976dbe52fa81c1599d78207803c35362c2cba5ece9c68182cb68a8af511d",
     "lib/expenses/expense_document_actions.dart": "c34eb78c9d164f8cd65f0cd08be253e8de173aba6760c67fd45a64cf6c4eb6d1",
     "lib/expenses/expense_per_diem_actions.dart": "92c1b9f74e43f1afe46ee16319fbde25ec324cd9282bacf709d81c30e4c6dbf2",
-    "lib/expenses/expense_settlement_actions.dart": "0348242c2def81ac693ded3e3a64c96b9df701fff2b0895f4e6e2b1b09bc92b8",
+    "lib/expenses/expense_settlement_actions.dart": "2cf1a4471d6c5fc41458201d3794a919ee318be74b8bf56208e484d121a00db9",
     "lib/ocr_parser.dart": "a8b4be8722a6df6cb6f4f0c7cea5ea83d24dce8dd3b2decb3f043514c8c9c9af",
     "lib/vision/vision_error_telemetry.dart": "e813a726842b486bcb2f7e150d2d518a3614073cfa1e564d6149fc3703198245",
     "lib/vision/vision_persistence_status.dart": "51fb5dee4121b2f0c00ae3577b2c851c39a1cffb88a3af3c91eb350455ca02d4",

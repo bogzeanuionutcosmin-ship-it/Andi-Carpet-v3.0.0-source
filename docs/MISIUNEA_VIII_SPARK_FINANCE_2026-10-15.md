@@ -259,3 +259,63 @@ Follow-up numeric/profile guard: candidate refuses a positive receipt that canno
 
 
 Real Flutter SDK follow-up: fce0138/run38746250738/job116460560370 reached allscenarios withrealAuth/Firestore aftergenuinepluginregistration;4PASS/1FAIL strictlyfound callbackFinanceRefusal wrappedasgenericSDKerror. Adapterpreserves typedlocalrefusal/conflict onlywhenZEROwriteswerescheduled acrossALLcallbackattempts. AnySDKerrorwithoutthatproof,oranypriorattemptwrite,remainsuncertain. Fiveboundarytestsretainstrictrealclosed-receiptassertion. Coordinatoralso distinguishes freshjournalpreparefromexistingpending: localprewriterejection onmanualresume cannot erase anearlieruncertainattempt;newregressionretainsitsdurableintent. No automaticretry,rollback,rebase,roundingorSDKerror=no-writeassumption.98Dart/702Flutterarefinalverificationtargets;5realSDKcasesremainmandatory. Allsources savedinPR55;standaloneUI/Restore/Sparkproductionreadinessstillunfinished.
+
+
+## Checkpoint consolidat — SDK real verificat, 15.10.2026
+
+Cod verificat: bc60448e14044f047276680f678c19acd4cb4538; tree d1e22440d4db1588adcd02a25609cab2e4559a82. Commitul care adaugă această notă
+modifică numai documentația/raportul audit; HEAD/tree/CI final se citesc din PR55.
+
+MissionVIII38747592786 SUCCESS3/3:98DartPASS (job116465221691),47JSemulatorPASS
+(job116465221637),5FlutterSDKChrome+Auth/Firestore emulatorPASS (job116465221925).
+Logulreal:14:02:30UTC +5Alltestspassed. Aceleași5asertăristricte,nu mocksdeSDK: 
+receipt/replay/edit/close,ackpierdutdupăcommit,reconcilefărăwrite,2instanțeconcurente,
+AuthA→B→A2/actorBneautorizat/epochvechi,crearecuviewOwn. Primaîncercare58ac66d a
+rămasînsetup;98bbe35 a localizatinitialize_primaryTimeout;fce0138 a înregistratSDKweb
+realși a găsit4PASS/1FAIL larefuzlocalîmpachetat;bc60448 reparăexactaceagranițăfără
+aacceptaoriceSDKerrorcanowrite.5noiprobecuSDKwrapping+1manualresume păstrează incert
+oricerezultatalunuiintentdejaîn așteptare,chiardacăapelulactualerefuzatlocal.
+
+ProbeleJavaScript47 includ6martoriACLreparați,concurență/replay/Restoredenial,creare
+viewOwn,fallback/autorizareprofilecompatibile și refuzulîncăsăriiinvizibileînprecizia
+double. Ultimulpinrules4b744fd1ce9826041513e680affbdbdc2713deb9d87e1cf5677ea1bfc50833e7.
+187PythonlocalPASS,inclusiv116catalogși21freeze,inversiunileistoricehashurioriginale.
+RaportauditJSON actualizatpecodulbc60448:21pinuri/branch,116catalog,exact2overlap,
+0integrareShiva. Toate5pinurifinance/privacypluspubspec rămânpreservateînuniune.
+
+Standard/AndroidChrome depebc60448 erauîncurslaînregistrareaacesteidovezi.Ținte
+finale:702Flutterintegral,187Python,3Node,10emulatorlegacy,Identity5,Auth/VisionVM,
+financeVM/Chrome,APKdebugmain+aaptfărăupload. Acestea trebuie citite dinlogurile
+HEADfinal,nu declarateprinadunare.98probededicated se suprapun cu702integral;
+cele5networkbrowser sunt invocate separat. CIintermediarsupersedat/cancelled nu
+ține loc debuildfinal. PatruworkflowuriVIIistoriceSKIPPEDnu suntPASS.
+
+### Lucrări încă necesare înaintea integrării
+
+- WriteriiHome/ExpensePage și fluxurilemanager/perDiem/expense nu sunt încă toate
+  mutatepenoulprotocol. IntegrareaUI trebuie testată explicitnumaiîn harnessdemo;
+  nu activațiregulilecandidat pestevechiiclienți.28caracterizăriVIIaleUI vechirămân
+  KNOWNUNSAFE,nu seînchidpentru cărepositorynoul a trecut separat.
+- AdminRestoremultibatch,preflightglobal,export/importmarkeri/revizii rămân
+  nefinalizate;Rulesprevindștergereafinanciară,darnurefacaltecolecțiidejarestaurate.
+- Mobileoffline/reconnectreal,private-storagehardware șiAuthGateactualpentru
+  fabrica nouluiscope rămânnecertificate.5networkcasesfolosescpersistențăcache
+  dezactivată,nu probeazăcacheoffline.
+- Markerabsent/cached/pendingnuconfirmănoncommit. ConflictuldupăunSDKerror poate
+  rămâneînrevizuire;nu segenereazăautomatIDnou șinu serebazeazăsume.
+- CompatibilitateareceipturiloristoricecuTimestampnanosecunde,întregulregistru
+  foarte mare,exactitateafloatingpointlaoriceordine demărime,limitadocumentului
+  1MiB și retențiemultianuală necesităprobe/strategieînainte deproducție. Guardul
+  demonstratdetecteazăunincrementdispărut,nu certificătoateproblemeledouble.
+- LegacyperDiemoverdeclared șiIssue32integral rămânneînchise.4logurischedule
+  protejateKNOWNUNSAFE rămânlamuncaseparatăShiva.
+
+Modelcost40op+40checks/zi,max3callback:3080reads,80writes,44,851,200bytes/an
+laipoteza2KiBmarker+1KiBistoric/op. Baseline/indexuri/egress/capacitateUNKNOWN;
+production_readyfalse. Fărăbilling/Blaze/Functionsnoi/CloudRun/TTL/polling/listener.
+Fărămerge,deploy,date reale,serviciiplătitesaumodificăriFirebaseproducție.
+
+Reluare:«ContinuăPR55/MisiuneaVIII dinHEADreal șiCI dindescriereaPR. Citește
+ChatGptșimatriceaVIII14plusaceastănotă. Păstreazăoricecommitnou. Nurepetafixurile
+validate;reparăoriceCIREDfărărelaxare,apoiintegrareUI-emulator/Restore/compatibilitate
+istoric/capacitateSpark. PR50/51/52read-only,producțieși billinginterzise.»
