@@ -486,3 +486,129 @@ test('settlements create: ordinary teammate can self-create closed arbitrary set
     },
   ));
 });
+
+
+// ISSUE #32 — supplementary financial field-level characterization.
+// Existing viewOwnDecont controls the *whole* update, not just read access.
+// Synthetic fixtures only; assertSucceeds means "unsafe write reproduced".
+// All paths below have independent IDs to avoid suite-order coupling.
+async function seedExpenseFieldProbe(path, overrides = {}) {
+  const { setDoc } = require('firebase/firestore');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), {
+      ...expenseOcrPayload(), confirmed: true, amount: 15.20, ...overrides,
+    });
+  });
+}
+async function seedFinanceFieldProbe(path, data) {
+  const { setDoc } = require('firebase/firestore');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), path), data);
+  });
+}
+
+test('unsafe: teammate can replace confirmed OCR image evidence and document number', async () => {
+  const path = 'expenses/expense-ocr-tamper-photo';
+  await seedExpenseFieldProbe(path);
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    documentImageBase64: 'SYNTHETIC_REPLACED_IMAGE',
+    imageFingerprint: 'synthetic-replaced-fingerprint',
+    documentNumber: 'SYNTHETIC_REPLACED_NO',
+  }));
+});
+
+test('unsafe: teammate can reassign expense to another settlement in same team', async () => {
+  const path = 'expenses/expense-ocr-tamper-settlement';
+  await seedExpenseFieldProbe(path);
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    settlementId: 'different-synthetic-settlement', description: 'reassigned',
+  }));
+});
+
+test('unsafe: teammate can forge unvalidated confirmation author and timestamp', async () => {
+  const path = 'expenses/expense-ocr-tamper-confirmation-metadata';
+  await seedExpenseFieldProbe(path);
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    confirmedBy: 'expense-ocr-member', confirmedAt: serverTimestamp(),
+    supplier: 'REPLACED SUPPLIER',
+  }));
+});
+
+test('unsafe: member can put nonnumeric text in expense amount via update', async () => {
+  const path = 'expenses/expense-ocr-tamper-amount-type';
+  await seedExpenseFieldProbe(path);
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    amount: 'not-a-number',
+  }));
+});
+
+test('unsafe: member can replace finance receivedEntries and perDiemRate', async () => {
+  const path = 'finance/expense-ocr-team';
+  await seedFinanceFieldProbe(path, {
+    teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin',
+    receivedDeparture: 10, receivedEntries: [], perDiemRate: 30,
+  });
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    receivedEntries: [{ id: 'synthetic-false-receipt', amount: 99999, kind: 'during' }],
+    perDiemRate: 99999,
+  }));
+});
+
+test('unsafe: member can rewrite receivedEntries and perDiemRate in closed settlement', async () => {
+  const path = 'settlements/expense-ocr-field-closed';
+  await seedFinanceFieldProbe(path, {
+    teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin',
+    closed: true, perDiemRate: 30, receivedEntries: [],
+  });
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    receivedEntries: [{ id: 'synthetic-closed-receipt', amount: 90000, kind: 'departure' }],
+    perDiemRate: 90000,
+  }));
+});
+
+test('unsafe: expenses create with injected distributedBy permits string amount', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'expenses/expense-ocr-malformed-create'),
+    { ...expenseOcrPayload(), distributedBy: 'expense-ocr-member', amount: 'invalid' },
+  ));
+});
+
+test('unsafe: explicit director viewing privilege plus viewOwnDecont enables own-team write', async () => {
+  const actor = 'expense-ocr-director-dual-permissions';
+  const team = 'expense-ocr-director-dual-team';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const { setDoc } = require('firebase/firestore');
+    const storage = ctx.firestore();
+    await setDoc(doc(storage, 'users/' + actor), {
+      active: true, role: 'member', function: 'director',
+      effectivePermissions: ['viewOtherDecont', 'viewOwnDecont'],
+    });
+    await setDoc(doc(storage, 'teams/' + team), { members: [actor] });
+    await setDoc(doc(storage, 'finance/' + team), {
+      teamId: team, managerId: 'expense-ocr-admin', receivedDeparture: 10,
+    });
+  });
+  await assertSucceeds(updateDoc(doc(db(actor), 'finance/' + team), {
+    receivedDeparture: 999,
+  }));
+});
+
+test('managerId claim alone does not authorize finance write without own-decont permission', async () => {
+  const actor = 'expense-ocr-manager-without-permission';
+  const team = 'expense-ocr-manager-no-permission-team';
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const { setDoc } = require('firebase/firestore');
+    const storage = ctx.firestore();
+    await setDoc(doc(storage, 'users/' + actor), {
+      active: true, role: 'member', effectivePermissions: [],
+    });
+    await setDoc(doc(storage, 'teams/' + team), { members: [actor] });
+    await setDoc(doc(storage, 'finance/' + team), {
+      teamId: team, managerId: actor, receivedDeparture: 10,
+    });
+  });
+  await assertFails(updateDoc(doc(db(actor), 'finance/' + team), {
+    receivedDeparture: 15,
+  }));
+});
