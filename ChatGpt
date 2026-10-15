@@ -2448,3 +2448,6 @@ Ramură nouă fix/finance-dialog-integrity-mission-vii-20261015 din PR46 736ef9e
 
 ## MISIUNEA VII — VII-01 confirmat / VII-02 în verificare
 PR50 nou, baseline52509189867606b1cdfe63806ef78b1f1a6b4cb7, tree6ee9103ad44762c5ca140116f1c6567bf2a12645: standard38685978288 SUCCESS5/5, identity38685978321 SUCCESS, martori38685978298 SUCCESS ca detector (5defecte RED reale +1controlPASS). VII-02 introduce FinanceDialogFields ownership State, guard de închidere pe ruta curentă și22teste noi. Fără schimbare save semantics. Actualizate strict cele2pinuri settlement autorizate, restul freeze intact. FlutterCI nou obligatoriu înainte de verdict. Următor: VII-03 finite input, apoi evaluarea eșec cert vs commit incert; Issue47 exclus.
+
+## MISIUNEA VII — finiteGREEN / epoch UI în verificare
+PR50 HEAD4bda385: standard38686620462SUCCESS5/5, identity38686620461SUCCESS, probe38686620453SUCCESS; NaN și lifecycle efectivGREEN. Loturmător: epochExpensePage,20probe A→B/A→B→A2,3telemetry+1director, martorreceipt local-state distinct. VII04/05/06 rollback nu este revendicat; callbackVoid nu clasifică commitincert. DiferențialIssue32/PR40 documentat, rules byte-identice. Home/Learning backend dupăwrite rămâne limită separată, Issue47 neatins. UrmeazăCI pe noulHEAD, apoi Android/Chrome și checkpoint exact.

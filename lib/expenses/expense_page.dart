@@ -30,6 +30,22 @@ class ExpensePage extends StatefulWidget {
 
 class _ExpensePageState extends State<ExpensePage> {
   bool get _visionSessionActive => mounted && (widget.diagnosticSessionIsCurrent?.call() ?? true);
+  int _financeSessionEpoch = 0;
+
+  @override
+  void didUpdateWidget(covariant ExpensePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentUser.id != widget.currentUser.id) _financeSessionEpoch++;
+  }
+
+  bool Function() _financeOperationIsCurrent() {
+    final epoch = _financeSessionEpoch;
+    final owner = widget.currentUser.id;
+    final sessionIsCurrent = widget.diagnosticSessionIsCurrent;
+    return () => mounted && epoch == _financeSessionEpoch &&
+        widget.currentUser.id == owner && (sessionIsCurrent?.call() ?? true);
+  }
+
   static const String _legacySettlementKey = '__legacy__';
   int teamIndex = 0;
   String? selectedSettlementId;

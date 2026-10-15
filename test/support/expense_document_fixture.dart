@@ -9,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 // Real ExpensePage, real parser, real form/object/save orchestration. Only
 // image selection, recognition and the save boundary are synthetic.
 class ExpenseDocumentFixture {
-  final user = AppUser(id: 'worker', name: 'Synthetic Worker', role: UserRole.member);
+  final AppUser user;
   final expenses = <Expense>[];
   final attempts = <Expense>[];
   final perDiems = <PerDiemEntry>[];
@@ -25,6 +25,7 @@ class ExpenseDocumentFixture {
   bool updateLocallyBeforeFailure = false;
   Uint8List? imageOverride;
   bool manager = true;
+  bool readOnlyDirector = false;
   bool legacyFinance = false;
   Future<void> Function(TeamFinance)? saveFinanceOverride;
   bool Function()? diagnosticSessionIsCurrent;
@@ -32,7 +33,8 @@ class ExpenseDocumentFixture {
   String text;
   late StateSetter rebuild;
   late final Uint8List image = Uint8List.fromList(img.encodePng(img.Image(width: 2, height: 2)));
-  ExpenseDocumentFixture(this.text);
+  ExpenseDocumentFixture(this.text, {String userId = 'worker'})
+      : user = AppUser(id: userId, name: 'Synthetic Worker', role: UserRole.member);
   Future<XFile?> pick(bool allowNoImage) async {
     pickerRequests.add(allowNoImage);
     return imageCancelled ? null : XFile.fromData(imageOverride ?? image, name: 'synthetic.png');
@@ -59,12 +61,12 @@ class ExpenseDocumentFixture {
         rebuild = setState;
         return ExpensePage(
           diagnosticSessionIsCurrent: diagnosticSessionIsCurrent,
-          currentUser: user, teams: [Team(id: 'team', name: 'Synthetic Team', members: ['worker'], financialManagerId: manager ? 'worker' : 'other')],
+          currentUser: user, teams: [Team(id: 'team', name: 'Synthetic Team', members: [user.id], financialManagerId: manager ? user.id : 'other')],
           users: [user], expenses: expenses, perDiems: perDiems,
-          finances: [TeamFinance(teamId: 'team', managerId: manager ? 'worker' : 'other', receivedDeparture: legacyFinance ? 1 : 0)],
-          settlements: legacyFinance ? [] : [TravelSettlement(id: 'settlement', teamId: 'team', name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), managerId: manager ? 'worker' : 'other')],
+          finances: [TeamFinance(teamId: 'team', managerId: manager ? user.id : 'other', receivedDeparture: legacyFinance ? 1 : 0)],
+          settlements: legacyFinance ? [] : [TravelSettlement(id: 'settlement', teamId: 'team', name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), managerId: manager ? user.id : 'other')],
           settings: AppSettings(), canEditTeam: (_) => true,
-          isAdmin: false, canEditOwnDecont: true, canViewOtherDecont: false,
+          isAdmin: false, canEditOwnDecont: !readOnlyDirector, canViewOtherDecont: readOnlyDirector,
           onChanged: () { changes++; }, notifyUser: (a, b, c) { fail('Unexpected notification'); },
           log: (a, b) => logs.add('$a:$b'), saveExpense: save,
           savePerDiem: savePerDiemOverride ?? (_) async { fail('Unexpected per-diem write'); },

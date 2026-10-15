@@ -36,7 +36,20 @@ jobs:
           grep -Fq 'SETTLEMENT_EDIT_LOCAL_STATE_NOT_RESTORED' "$RUNNER_TEMP/settlement-edit-red.log"
       - name: Repaired lifecycle witnesses must actually pass
         run: flutter test test/settlement_create_cancel.red.dart test/vision_settlement_controller.red.dart test/finance_dialog_lifecycle_test.dart test/finance_received_amount_nonfinite.red.dart test/finance_received_amount_validation_test.dart --reporter expanded
-      - name: Strict close and numeric RED witnesses
+      - name: Receipt local-state rejection remains explicitly RED
+        shell: bash
+        run: |
+          set +e
+          flutter test test/finance_received_state.red.dart --reporter expanded > "$RUNNER_TEMP/receipt-state-red.log" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/receipt-state-red.log"
+          test "$result" -eq 1
+          grep -Fq 'RECEIPT_REJECTION_PRECONDITIONS_PASS' "$RUNNER_TEMP/receipt-state-red.log"
+          grep -Fq 'RECEIPT_CONFIRMED_LOCAL_STATE_NOT_PRESERVED' "$RUNNER_TEMP/receipt-state-red.log"
+      - name: Financial session and observational boundaries
+        run: flutter test test/finance_session_completion_test.dart test/finance_telemetry_boundary_test.dart test/finance_director_read_only_test.dart --reporter expanded
+      - name: Strict close RED witness
         shell: bash
         run: |
           for spec in 'finance_settlement_close_rollback.red.dart:END_DATE_ROLLBACK_MISSING'; do

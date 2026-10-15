@@ -43,6 +43,7 @@ extension _ExpenseSettlementActions on _ExpensePageState {
   String _shortDate(DateTime d) => '${two(d.day)}.${two(d.month)}.${d.year}';
 
   Future<void> _createSettlement() async {
+    final operationIsCurrent = _financeOperationIsCurrent();
     var start = DateTime.now();
     DateTime? end;
     final result = await showDialog<TravelSettlement>(context: context, builder: (d) => FinanceDialogFields(
@@ -56,15 +57,17 @@ extension _ExpenseSettlementActions on _ExpensePageState {
       ])),
       actions: [TextButton(onPressed: () => FinanceDialogFields.close(d), child: const Text('Anulează')), FilledButton(onPressed: () { final n = nameC.text.trim(); if (n.isEmpty) return; FinanceDialogFields.close(d, TravelSettlement(id: idNow(), teamId: team.id, name: n, startDate: start, endDate: end, managerId: finance.managerId ?? team.financialManagerId ?? (team.members.contains(widget.currentUser.id) ? widget.currentUser.id : null), perDiemRate: finance.perDiemRate)); }, child: const Text('Creează'))],
     ); }));
-    if (result == null) return;
+    if (result == null || !operationIsCurrent()) return;
     try {
       await widget.saveSettlement(result);
+      if (!operationIsCurrent()) return;
       widget.log('Deplasare creată', '${team.name} · ${result.name}');
       if (mounted) setState(() => selectedSettlementId = result.id);
-    } catch (e) { if (mounted) showErrorMessage(context, 'Deplasarea nu a putut fi creată: $e'); }
+    } catch (e) { if (operationIsCurrent()) showErrorMessage(context, 'Deplasarea nu a putut fi creată: $e'); }
   }
 
   Future<void> _editSettlement() async {
+    final operationIsCurrent = _financeOperationIsCurrent();
     final s = settlement; if (s == null) return;
     var start = s.startDate; var end = s.endDate;
     var editedName = s.name;
@@ -79,22 +82,24 @@ extension _ExpenseSettlementActions on _ExpensePageState {
       ])),
       actions: [TextButton(onPressed: () => FinanceDialogFields.close(d, false), child: const Text('Anulează')), FilledButton(onPressed: () { editedName = nameC.text.trim(); FinanceDialogFields.close(d, true); }, child: const Text('Salvează'))],
     ); }));
-    if (ok == true) {
+    if (ok == true && operationIsCurrent()) {
       s.name = editedName.isEmpty ? s.name : editedName; s.startDate = start; s.endDate = end;
-      try { await widget.saveSettlement(s); widget.log('Deplasare modificată', s.name); } catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva: $e'); }
+      try { await widget.saveSettlement(s); if (!operationIsCurrent()) return; widget.log('Deplasare modificată', s.name); } catch (e) { if (operationIsCurrent()) showErrorMessage(context, 'Nu s-a putut salva: $e'); }
     }
   }
 
   Future<void> _toggleSettlementClosed() async {
+    final operationIsCurrent = _financeOperationIsCurrent();
     final s = settlement; if (s == null) return;
     final next = !s.closed;
     if (next) {
       final ok = await showDialog<bool>(context: context, builder: (d) => AlertDialog(title: const Text('Închizi decontul?'), content: const Text('Nu se vor mai putea adăuga documente sau diurne până la redeschidere.'), actions: [TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Anulează')), FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Închide'))])) ?? false;
       if (!ok) return;
     }
+    if (!operationIsCurrent()) return;
     s.closed = next;
     if (next && s.endDate == null) s.endDate = DateTime.now();
-    try { await widget.saveSettlement(s); widget.log(next ? 'Decont închis' : 'Decont redeschis', s.name); if (mounted) setState(() {}); } catch (e) { s.closed = !next; if (mounted) showErrorMessage(context, 'Nu s-a putut salva: $e'); }
+    try { await widget.saveSettlement(s); if (!operationIsCurrent()) return; widget.log(next ? 'Decont închis' : 'Decont redeschis', s.name); if (mounted) setState(() {}); } catch (e) { s.closed = !next; if (operationIsCurrent()) showErrorMessage(context, 'Nu s-a putut salva: $e'); }
   }
 
   Future<void> _showGeneralCalculations() async {
@@ -209,6 +214,7 @@ extension _ExpenseSettlementActions on _ExpensePageState {
   }
 
   Future<void> _money(bool departure) async {
+    final operationIsCurrent = _financeOperationIsCurrent();
     String method='Cash';
     final now=DateTime.now();
     final result=await showDialog<ReceivedMoneyEntry>(
@@ -262,23 +268,27 @@ extension _ExpenseSettlementActions on _ExpensePageState {
         ],
       ); }),
     );
-    if(result==null)return;
+    if(result==null||!operationIsCurrent())return;
+    final settlement = this.settlement;
+    final finance = this.finance;
     try{
       if(settlement!=null){
         settlement!.receivedEntries.add(result);
         settlement!.receivedDeparture=settlement!.departureTotal;
         settlement!.receivedDuring=settlement!.duringTotal;
         await widget.saveSettlement(settlement!);
+        if (!operationIsCurrent()) return;
         widget.log('Sumă primită adăugată','${settlement!.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
       }else{
         finance.receivedEntries.add(result);
         finance.receivedDeparture=finance.departureTotal;
         finance.receivedDuring=finance.duringTotal;
         await widget.saveFinance(finance);
+        if (!operationIsCurrent()) return;
         widget.log('Sumă primită adăugată','${team.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
       }
       if(mounted){setState((){});showSuccessMessage(context,'Suma primită a fost adăugată.');}
-    }catch(e){if (_visionSessionActive) VisionErrorTelemetry.report(area: 'finance', code: 'received_amount_save_failed'); if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');}
+    }catch(e){if (!operationIsCurrent()) return; if (_visionSessionActive) VisionErrorTelemetry.report(area: 'finance', code: 'received_amount_save_failed'); if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');}
   }
 
 
