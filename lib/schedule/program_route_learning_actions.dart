@@ -181,8 +181,8 @@ extension _ProgramRouteLearningActions on _ProgramPageState {
           counts[key]=(counts[key]??0)+2; // alegerea explicită a echipei cântărește dublu
         }
       }
-    } catch(_) {
-      debugPrint('[learning] routing_history_read_failed');
+    } catch(e) {
+      debugPrint('[learning] Istoricul manual de rutare nu a putut fi citit: $e');
     }
     return counts;
   }
@@ -201,8 +201,8 @@ extension _ProgramRouteLearningActions on _ProgramPageState {
         'data': {'order': s.items.map((e)=>e.locationId).toList(), 'date': s.date.toIso8601String()},
         'createdAt': FieldValue.serverTimestamp(),
       });
-    } catch(_) {
-      debugPrint('[learning] routing_choice_write_failed');
+    } catch(e) {
+      debugPrint('[learning] Alegerea traseului nu a putut fi jurnalizată: $e');
     }
   }
 
