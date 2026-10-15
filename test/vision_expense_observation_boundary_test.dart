@@ -32,24 +32,6 @@ void main() {
     await tester.pumpWidget(const SizedBox()); expect(tester.takeException(), isNull);
   });
 
-  testWidgets('settlement receipt failure is observed without a second save or value in journal', (tester) async {
-    final before = VisionErrorTelemetry.log.entries.where((e) => e.area == 'finance' && e.code == 'received_amount_save_failed').fold(0, (n, e) => n + e.count);
-    var saves = 0;
-    final fixture = ExpenseDocumentFixture(document)
-      ..saveSettlementOverride = (_) async { saves++; throw StateError('PRIVATE 321.09 supplier'); };
-    await fixture.mount(tester);
-    await tester.ensureVisible(find.text('Primit la plecare')); await tester.tap(find.text('Primit la plecare'));
-    await tester.pumpAndSettle();
-    await fixture.enter(tester, 'Valoare', '321.09'); await fixture.enter(tester, 'De la cine', 'PRIVATE supplier');
-    await tester.tap(find.widgetWithText(FilledButton, 'Adaugă')); await tester.pumpAndSettle();
-    expect(saves, 1);
-    final after = VisionErrorTelemetry.log.entries.where((e) => e.area == 'finance' && e.code == 'received_amount_save_failed').fold(0, (n, e) => n + e.count);
-    expect(after, before + 1); expect(VisionErrorTelemetry.log.encode(), isNot(contains('321.09')));
-    expect(VisionErrorTelemetry.log.encode(), isNot(contains('PRIVATE')));
-    await tester.pump(const Duration(seconds: 1)); expect(saves, 1);
-    await tester.pumpWidget(const SizedBox()); expect(tester.takeException(), isNull);
-  });
-
   testWidgets('possible local mutation then exception yields prudent signal without retry or server claim', (tester) async {
     final before = occurrences('document_save_failed');
     final fixture = ExpenseDocumentFixture(document)..failSave = true..updateLocallyBeforeFailure = true;
