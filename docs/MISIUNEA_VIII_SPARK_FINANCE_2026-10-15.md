@@ -82,3 +82,9 @@ pozitive (Adminreadlegacy,outsiderdeny). Nu importăm59probe istorice sau28teste
 Workflowul izolat cere exact6FAIL+2PASS în baseline, cu emulator demo, nu compileerror.
 Acesta este detectorul vulnerabilității, nu remediereGREEN. Urmează verificareCI,
 apoi modeluloperației. Rules/runtime încăbyte-identicePR50.
+
+
+## VIII-03 — model Dart pur durabil și identitate
+FinanceIntent folosește128biți Random.secure, bindingactor/team/target,baseRevision,request deepimmutable,serializareversionată+dateUTC șiSHA256canonic.14teste noi:roundtrip,imutabilitate,ordinea cheilor,intenții distincte,reutilizareIDcupayloadschimbat,ID100,NaN/Infinity,paths,diagnosticfărăpayload,version,sizefailclosed. Nu este încăexecutor sauUIintegrat. crypto3.0.7 dejaîncuiattransitiv este declaratdirect laaceeașiversiune; zeroSDK/serviciunou. Pinurile strictnecesarepubspec/lock actualizatecuold/new:
+{'pubspec.yaml': ('a792bec431260e7ceb1ef3a1fa954c6f3e4d0039b04b5a7a3bf0745c08b2a441', '2bd8c7408160bf1ea72b5c5cbc55e2a45f00faaf87c3f43d0d8d33c314f1b835'), 'pubspec.lock': ('1fcaaee73e6372a2eb4b5952f528dcbe682f3b30f1f5998b282b96186283c913', 'c989d0f5793cc78bace3ad253bdb81e1732fa560126c352269700b38c2f0cc76')}
+Restul114hashuri și toateassertionspăstrate; mandateIssue54permite dependenciesstrictnecesare, nuprivacy/routing changes. CIurmează peSHAexact.

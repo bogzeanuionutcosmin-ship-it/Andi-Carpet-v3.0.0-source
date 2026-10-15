@@ -113,8 +113,8 @@
     "lib/reports/pdf_reports.dart": "913c731e0ccadf325d05cd92c6f49080e0ce3d149c5e44d3557692f54f04123e",
     "lib/schedule/program_graph_actions.dart": "0ad775da6ee079bca134bf0ef126a3d0a4cfe8f8ba3d6dcf256192931a6a2f35",
     "lib/schedule/program_route_learning_actions.dart": "61a4c3544ead87343ef1ec04cefea81d689dcb6fb421cd80c4ad987274635145",
-    "pubspec.lock": "1fcaaee73e6372a2eb4b5952f528dcbe682f3b30f1f5998b282b96186283c913",
-    "pubspec.yaml": "a792bec431260e7ceb1ef3a1fa954c6f3e4d0039b04b5a7a3bf0745c08b2a441",
+    "pubspec.lock": "c989d0f5793cc78bace3ad253bdb81e1732fa560126c352269700b38c2f0cc76",
+    "pubspec.yaml": "2bd8c7408160bf1ea72b5c5cbc55e2a45f00faaf87c3f43d0d8d33c314f1b835",
     "test/ocr_parser_test.dart": "bd45f1670ab791dff3e381142a5062f10a923111fbb8317d480ac0a41640b765",
     "tests/firestore/diurna.test.cjs": "d758f1ff509a64050778532d07cc7cecf2bcd67daf87c96093a047aa35bc4819"
   },
