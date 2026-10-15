@@ -4,6 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'package:firebase_core_web/firebase_core_web.dart';
+import 'package:firebase_auth_web/firebase_auth_web.dart';
+import 'package:cloud_firestore_web/cloud_firestore_web.dart';
 import 'package:andi_carpeta/finance/intents/finance_intent.dart';
 import 'package:andi_carpeta/finance/intents/finance_repository.dart';
 import 'package:andi_carpeta/finance/intents/firestore_finance_port.dart';
@@ -30,14 +34,21 @@ class ObservedPort implements FinanceAtomicPort {
 FinanceIntent receipt(String target,int id,String uid,{int revision=0})=>FinanceIntent(operationId:id.toRadixString(16).padLeft(32,'0'),actorUid:uid,teamId:'flutter-team',collection:'settlements',documentId:target,baseRevision:revision,kind:FinanceIntentKind.receipt,changes:{'kind':'departure','amount':200.0,'method':'Cash','fromName':'Synthetic payer','date':DateTime.utc(2026,10,15)});
 void main(){
  TestWidgetsFlutterBinding.ensureInitialized();
+ // Browser unit-test entrypoints do not run the application's generated
+ // plugin registrant. Register genuine web SDK delegates, never test doubles.
+ FirebaseCoreWeb.registerWith(webPluginRegistrar);
+ FirebaseAuthWeb.registerWith(webPluginRegistrar);
+ FirebaseFirestoreWeb.registerWith(webPluginRegistrar);
+ webPluginRegistrar.registerMessageHandler();
+ final createdApps=<FirebaseApp>[];final createdAuths=<FirebaseAuth>[];
  const options=FirebaseOptions(apiKey:'synthetic-emulator-key',appId:'1:123:web:synthetic',messagingSenderId:'123',projectId:'demo-andi-carpet');
  late FirebaseApp app,secondApp;late FirebaseAuth auth,secondAuth;late FirebaseFirestore db,secondDb;
  late ObservedPort port,secondPort;late String uid;
  Future<void> signIn(FirebaseAuth a,String suffix)=>a.signInWithEmailAndPassword(email:'viii-$suffix@example.test',password:'SyntheticEmulatorOnly123!');
  setUpAll(()async{
-  app=await sdkStage('initialize_primary',()=>Firebase.initializeApp(name:'viii-primary',options:options));
-  secondApp=await sdkStage('initialize_second',()=>Firebase.initializeApp(name:'viii-second-device',options:options));
-  auth=FirebaseAuth.instanceFor(app:app);secondAuth=FirebaseAuth.instanceFor(app:secondApp);
+  app=await sdkStage('initialize_primary',()=>Firebase.initializeApp(name:'viii-primary',options:options));createdApps.add(app);
+  secondApp=await sdkStage('initialize_second',()=>Firebase.initializeApp(name:'viii-second-device',options:options));createdApps.add(secondApp);
+  auth=FirebaseAuth.instanceFor(app:app);secondAuth=FirebaseAuth.instanceFor(app:secondApp);createdAuths.addAll([auth,secondAuth]);
   await sdkStage('auth_emulator_primary',()=>auth.useAuthEmulator('127.0.0.1',9099,automaticHostMapping:false));
   await sdkStage('auth_emulator_second',()=>secondAuth.useAuthEmulator('127.0.0.1',9099,automaticHostMapping:false));
   await sdkStage('persistence_primary',()=>auth.setPersistence(Persistence.NONE));await sdkStage('persistence_second',()=>secondAuth.setPersistence(Persistence.NONE));
@@ -47,7 +58,7 @@ void main(){
   secondPort=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:secondDb));
   await sdkStage('sign_in_primary',()=>signIn(auth,'a'));await sdkStage('sign_in_second',()=>signIn(secondAuth,'a'));uid=auth.currentUser!.uid;
  });
- tearDownAll(()async{await auth.signOut();await secondAuth.signOut();await app.delete();await secondApp.delete();});
+ tearDownAll(()async{for(final a in createdAuths){await sdkStage('cleanup_auth',()=>a.signOut());}for(final a in createdApps.reversed){await sdkStage('cleanup_app',()=>a.delete());}});
  Future<Map<String,dynamic>> server(String target)async{
   final snapshot=await db.doc('settlements/$target').get(const GetOptions(source:Source.server));
   expect(snapshot.metadata.isFromCache,false);expect(snapshot.metadata.hasPendingWrites,false);return snapshot.data()!;
