@@ -58,7 +58,7 @@ void main() {
     });
     db.profile('a'); await harness.flush(tester);
     final originalOwner = owners.last;
-    final staleCopy = tester.widget<IconButton>(find.byTooltip('Copiază raport tehnic anonimizat')).onPressed!;
+    final staleCopy = tester.widget<IconButton>(find.byWidgetPredicate((w) => w is IconButton && w.tooltip == 'Copiază raport tehnic anonimizat')).onPressed!;
     expect(originalOwner(), isTrue);
     auth.switchTo('b'); await harness.flush(tester); db.profile('b'); await harness.flush(tester);
     expect(originalOwner(), isFalse);
