@@ -74,3 +74,11 @@ VIII01 audit+modelcost pregătit;VIII02–14 NEFINALIZATE. Intențiile server, i
 UI și ACL rămân KNOWN UNSAFE în comportamentul moștenit până la probele viitoare.
 Hardware/Firebase live/SDKcache real:NEEXECUTATE. UltimulSHA/tree/CI autoritativ și
 comanda de reluare se actualizează în descrierea PR Draft după fiecare checkpoint.
+
+## VIII-02 — noi acceptanțe ACL stricte, baseline RED cerut
+Opt probe noi emulator:6acceptanțe de securitate încăRED (amount/confirmed,
+managerId,reopen,Directorwrite,Adminbypass,expensecreate fărădistributedBy),2controale
+pozitive (Adminreadlegacy,outsiderdeny). Nu importăm59probe istorice sau28testeVII.
+Workflowul izolat cere exact6FAIL+2PASS în baseline, cu emulator demo, nu compileerror.
+Acesta este detectorul vulnerabilității, nu remediereGREEN. Urmează verificareCI,
+apoi modeluloperației. Rules/runtime încăbyte-identicePR50.
