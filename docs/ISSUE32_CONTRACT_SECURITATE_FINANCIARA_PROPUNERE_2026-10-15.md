@@ -115,8 +115,37 @@ Acestea sunt **numai punctele încă nerezolvate**. Deciziile din secțiunea A r
 - Poate modifica `settlements.receivedEntries` într-un decont închis incluzând o intrare cu `amount=Infinity`.
 - Toate aceste `assertSucceeds` sunt **defecte de validare caracterizate**, nu permisiuni dorite și nici dovadă că UI-ul le salvează în mod curent.
 
-**Problemă de interfață observată lexical, de confirmat prin test widget separat:** în `lib/expenses/expense_settlement_actions.dart::_money` se validează numai `amount == null || amount <= 0`, fără `!amount.isFinite`; `double.tryParse` poate reprezenta `NaN` și `Infinity`. Introducerea tastaturii numerice nu asigură imposibilitatea de paste ori valori speciale. Traseul UI, Flutter și salvarea reală rămân **NEEXECUTATE** pentru acest caz; vezi [Issue #43](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/issues/43).
+**Problemă de interfață observată lexical, de confirmat prin test widget separat:** în `lib/expenses/expense_settlement_actions.dart::_money` se validează numai `amount == null || amount <= 0`, fără `!amount.isFinite`; `double.tryParse` poate reprezenta `NaN` și `Infinity`. Introducerea tastaturii numerice nu asigură imposibilitatea de paste ori valori speciale. Traseul UI, Flutter și salvarea reală rămân **NEEXECUTATE** pentru acest caz; vezi [Issue #43](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/issues/42).
 
 **Invariante viitoare, propuneri ce necesită aprobare înainte de implementare:** pentru fiecare flux bănesc validarea trebuie să impună tip numeric, finitudine, semn și limite potrivite operațiunii; limitele nu se stabilesc arbitrar, iar avansul de diurnă deja aprobat nu poate fi interzis printr-un plafon aplicat generic. Păstrați distinct stornările/retururile aprobate și documentele istorice. Folosiți teste atât pentru SDK direct / rules, cât și pentru editorul Flutter; după autorizarea fixului, caracterizările de abuz trebuie să devină `assertFails`.
 
 **Nicio modificare de reguli, date live, diagrame de sumă sau cod financiar runtime din acest lot.** PR #40 rămâne Draft / DO NOT MERGE, separat de Luna PR #41.
+
+
+## J. Traseele reale de scriere și perDiems legacy — audit local 15.10.2026
+
+**Bază inspectată:** PR #40, commit `a56e808cefca026914727bf49ea72bdddf63fcda` (moștenește codul operațional #38). Probe noi 54–59 în `tests/firestore/expense_security_characterization.test.cjs`: [59/59 PASS în emulator DEMO, run 38671813389](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38671813389). Nu este un inventar exhaustiv al writerilor Admin/restore; acestea rămân de cartografiat separat.
+
+| Flux client / sursă verificată | Cale efectivă | Comportament și limită |
+|---|---|---|
+| Cheltuială OCR/manual, `lib/home/home_financial_write_actions.dart:6–20` | `_saveExpenseDirect` → `_expenseMap` → `expenses/{id}.set(merge:true)` | Guard client `canEditTeam + viewOwnDecont`, dar payloadul din `home_document_codecs.dart:350–370` **nu include `distributedBy`**, deși regula create non-admin îl cere. Pentru document existent, `set(merge:true)` intră pe regulile de **update** prea permisive. |
+| Diurnă legacy, `home_financial_write_actions.dart:20–110` | `_savePerDiemDirect`: tranzacție `perDiems/{id}`, audit la răspuns | Clientul verifică sesiunea, beneficiarul, suma finită și starea la confirmare și folosește tranzacție, dar aceste garanții **nu se aplică oricărui SDK client**: regulile Firestore permit create prin apel direct cu verificări mai slabe. `perDiems` ≠ `per_diem_settlements_v2`. |
+| Decont, `home_financial_write_actions.dart:111–117` | `_saveSettlementDirect` → `settlements/{id}.set(merge:true)` | Tot modelul `_settlementMap` este trimis; regulile permit membrului cu `viewOwnDecont` modificarea câmpurilor sensibile și a decontului închis. |
+| Registru bani echipă, `home_financial_write_actions.dart:119–132` | `_saveFinanceDirect` → `finance/{teamId}.set(merge:true)` | `_financeMap` scrie inclusiv gestionar/sume/receivedEntries; `viewOwnDecont` este folosit ca write grant generic. |
+| Formular de bani, `lib/expenses/expense_settlement_actions.dart:210–282` | `_money` → `receivedEntries.add` și totaluri înainte de `await saveSettlement/saveFinance` | La eșec nu apare rollback demonstrat; controller-ele se distrug imediat după `showDialog`. Defect lifecycle **KNOWN RED** din [Issue #42](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/issues/42); separat de permisiunile server-side. |
+| Schimbare gestionar / rată, `lib/expenses/expense_per_diem_actions.dart:156–175` | `_manager` / `_perDiemRate` → mutație pe `settlement` sau `finance` înainte de save | `managerId` este extras contextual din `TravelSettlement`, `TeamFinance`, `Team.financialManagerId`; nu există demonstrația unei singure autorități canonice. `_perDiemRate` respinge `r < 0` dar nu testează explicit `isFinite`, observat doar din sursă. |
+
+### Probe noi pentru emiterea diurnei legacy
+
+- **ALLOW de caracterizare, nu aprobare:** membru activ al echipei, fără calitate de gestionar verificată de server, poate crea diurnă cu `distributedBy=auth.uid` chiar pentru el însuși; poate nominaliza un membru activ **din afara echipei** sau un `memberId` inexistent; suma declarată `Infinity` trece `amount is number && amount > 0`.
+- **DENY existente, de păstrat:** un outsider fără apartenență la echipa distribuitorului nu poate crea diurna acesteia; sumele negative și `NaN` nu trec condiția actuală pentru `perDiems.create`.
+- **Nu mutăm istoria:** faptul că o diurnă pentru un beneficiar din altă echipă este permisă la **create** nu determină automat politica de **confirmare ulterioară după transfer**. Confirmările documentelor deja istorice trebuie să rămână accesibile beneficiarului după politica aprobată; un fix pentru beneficiari noi nu trebuie să distrugă istoricul.
+
+### Contract încă necesar înainte de remediere
+
+1. Confirmăm cine poate **crea** o diurnă pe echipă: gestionar desemnat server-side, Admin sau alt delegat explicit; simplul `viewOwnDecont` nu este o dovadă de delegare financiară.
+2. Verificăm `beneficiaryId/memberId` față de echipa destinatară la momentul distribuirii, separat de politica documentelor istorice la transfer/suspendare.
+3. Sume **finite** și reprezentabile exact în bani; valide separat pentru creare, primire/refuz, avans, retur/storno și reconciliere; nu impunem plafon arbitrar și nu blocăm avansurile deja aprobate.
+4. Testare post-fix: probele ALLOW abuzive devin DENY, dar testele legitime de gestionar, beneficiar, revocare, avans și migrare sunt pozitive. Staging înainte de orice acțiune asupra Firebase live.
+
+**Scope și dovezi:** exclusiv reguli DIN REPO + emulator Firestore cu utilizatori sintetici; nu există constatare despre rules live. Codul, contractele și cele 116 hashuri protejate ale aplicației nu au fost modificate de această analiză. PR #40 rămâne DRAFT/DO NOT MERGE, Luna #41 este separat, fără deploy, APK sau billing.
