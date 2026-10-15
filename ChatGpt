@@ -2504,3 +2504,14 @@ Misiunea VIII a Lunei din PR #55 continuă în branchul financiar separat, făr�
 **Această notă SUPRASEDE afirmația de mai sus că workflowurile manual-only ar rămâne modificate la HEAD-ul final.** Primul CI a demonstrat prin 2 eșecuri `routing_pdf_boundary_test.py` că `publish-authorized-release.yml` și `restore-member-directory.yml` sunt PINNED în cele 116 SHA. Au fost **restaurate byte-identic** din PR #58 după acel rezultat. Nu s-a modificat manifestul și nu s-a ascuns sau reclasificat riscul drept remediat.
 
 **Livrarea finală în acest PR este doar audit:** 5 teste Python în `test/production_workflow_manual_gate_test.py` care inventariază explicit `KNOWN_UNSAFE_AUTO_DEPLOY`, detectează extinderi ale triggerelor de producție și verifică operațiile legacy manuale cu `git push`; raport `docs/PRODUCTION_WORKFLOW_MANUAL_GATES_2026-10-15.md`. **Workflowurile originale de deploy rămân nesigure** și necesită aprobare distinctă pentru modificarea surselor protejate plus revizuirea manifestului într-o etapă autorizată. CI pe ultimul HEAD încă necesită verificare; nu pretindeți că producția are numai lansare manuală, că un deploy a rulat sau că a fost prevenit tehnic prin noul test.
+
+
+## 16.10.2026 — Shiva: avatar Vision în header diagnosticului fără acces nou
+
+Mandatul autonom al proprietarului este activ pentru loturi tehnice sigure, fără intervenții în PR #55 al Lunei, fără merge/deploy/producție/billing. Luna avansează separat pe protocol financiar și Admin Restore; **Shiva nu atinge acele fluxuri**.
+
+Shiva a pornit din HEAD PR #59 `f7b523c3375b0137d09911469e3d1f21d0a823c1` pe ramura `feat/vision-diagnostics-static-avatar-safe-20261016` și a adăugat vizual `VisionAssistantAvatar(size:40)` în titlul `VisionDiagnosticsPage`, atât în varianta fail-closed, cât și în varianta cu log injectat autorizat. Nu a modificat `_canInspect`, UID/epoch, jurnalul device-wide, callbackurile de raportare, logout, importurile Firebase ori navigarea. Avatarul e un `StatelessWidget` decorativ; nu are interacțiuni, animații sau transport.
+
+Teste noi: 4 Flutter pentru acces permis/blocat, sesiune revocată, singleton global respins și accesibilitate în ecran mic; 3 Python pentru contractul de izolare; condiția existing Android compile-only a fost extinsă pentru această ramură, fără alt trigger și fără publicarea artefactului. Raport: `docs/VISION_DIAGNOSTICS_STATIC_AVATAR_HEADER_2026-10-16.md`. Nu modificați manifestul 116 SHA sau pinii Vision.
+
+**Checkpoint incomplet până la rularea CI pe HEAD real.** Nu declarați avatar vizibil în versiunea distribuită, nici diagnosticul UID-scope rezolvat integral; e doar o componentă vizuală într-un PR Draft. Păstrați PR #55 și #59 izolate, fără merge/deploy.
