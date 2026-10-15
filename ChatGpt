@@ -2866,3 +2866,14 @@ MisiuneaNUesteînchisăintegral:Home/ExpensePagevechi,Restorecomplet/inventar,
 backwardcompat,storage/hardware șiSparkusage/indexuri/egress rămânblocante.
 NoileharnessuriNUcertificăreparareavechilor28caracterizăriVII. production_readyfalse.
 Fărămerge/deploy/producție/billing/APKpublicat/instalat sauPR50/51/52modificate.
+
+
+### CI final — sincronizare metadata pentru proba ack pierdut
+fd09520:129Dart și47JSemulatorPASS, darSDK a avut7PASS/1FAIL la reconcilierea
+imediată dupăackpierdut: rezultatul conservator a fostuncertain, nuconfirmed.
+Proba așteaptă acum waitForPendingWrites doar ca barieră de metadata și apoi
+execută în continuare Source.server+markeridentity; bariera singură nu confirmă.
+Asserția confirmed și controlul fărăwrite suplimentar rămânobligatorii. La eșec
+sunt afișate numai3flaguri tehnice cache/pending/present, fărăpayload/UID/sume.
+Nu se schimbă repository,rules sauclasificarea conservatoare dinaplicație.
+Rezultatul acestuifollow-up necesităCI propriu;precedentul SDKFAIL nuestePASS.

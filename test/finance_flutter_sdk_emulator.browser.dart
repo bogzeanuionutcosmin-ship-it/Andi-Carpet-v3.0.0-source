@@ -25,6 +25,7 @@ Future<T> sdkStage<T>(String code,Future<T> Function() action) async {
 
 class ObservedPort implements FinanceAtomicPort {
  final FinanceAtomicPort inner;int atomicCalls=0,serverReads=0;
+ FinanceServerObservation? lastObservation;
  bool loseAcknowledgement=false;
  Future<void> Function()? afterServerRead;
  ObservedPort(this.inner);
@@ -33,7 +34,7 @@ class ObservedPort implements FinanceAtomicPort {
   if(loseAcknowledgement)throw TimeoutException('synthetic_ack_loss_after_real_commit');return result;
  }
  @override Future<FinanceServerObservation> readServer(String path)async{
-  serverReads++;final result=await inner.readServer(path);await afterServerRead?.call();return result;
+  serverReads++;final result=await inner.readServer(path);lastObservation=result;await afterServerRead?.call();return result;
  }
 }
 // In-memory journal fixture isolates transport acceptance from physical secure
@@ -91,7 +92,12 @@ void main(){
  test('actual Flutter SDK lost acknowledgement reconciles by explicit server read without writes',()async{
   final repo=FinanceRepository(port:port,ownerUid:uid,sessionIsCurrent:()=>true);final i=receipt('flutter-lost',10,uid);
   port.loseAcknowledgement=true;expect((await repo.execute(i)).status,FinanceIntentStatus.uncertain);port.loseAcknowledgement=false;
-  final calls=port.atomicCalls;expect((await repo.reconcile(FinanceIntent.decode(i.encode()))).status,FinanceIntentStatus.confirmed);expect(port.atomicCalls,calls);
+  // A local pending-write metadata transition can outlive the SDK transaction
+  // Future. This barrier is NOT proof of this intent: the explicit Source.server
+  // read and exact immutable marker check below remain mandatory.
+  await db.waitForPendingWrites();
+  final calls=port.atomicCalls;expect((await repo.reconcile(FinanceIntent.decode(i.encode()))).status,FinanceIntentStatus.confirmed,
+   reason:'server evidence flags: cache=${port.lastObservation?.fromCache}, pending=${port.lastObservation?.pendingWrites}, present=${port.lastObservation?.data!=null}');expect(port.atomicCalls,calls);
   final data=await server('flutter-lost');expect(data['revision'],1);expect(data['receivedEntries'],hasLength(1));
  });
  test('actual independent Flutter SDK clients cannot lose a concurrent receipt',()async{
