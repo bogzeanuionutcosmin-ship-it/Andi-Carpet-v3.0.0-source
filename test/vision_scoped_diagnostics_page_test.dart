@@ -175,27 +175,27 @@ void main() {
       (tester) async {
     final journal = VisionSessionJournal();
     final a = journal.startSession(isSessionCurrent: () => true);
-    a.record(area: 'ocr', code: 'only_A', platform: 'android');
+    a.record(area: 'ocr', code: 'only_a', platform: 'android');
     await tester.pumpWidget(MaterialApp(
       home: VisionScopedDiagnosticsPage(lease: a),
     ));
-    expect(find.text('ocr / only_A'), findsOneWidget);
+    expect(find.text('ocr / only_a'), findsOneWidget);
 
     final b = journal.startSession(isSessionCurrent: () => true);
-    b.record(area: 'gps', code: 'only_B', platform: 'android');
+    b.record(area: 'gps', code: 'only_b', platform: 'android');
     await tester.pumpAndSettle();
-    expect(find.text('ocr / only_A'), findsNothing);
-    expect(find.text('gps / only_B'), findsNothing);
+    expect(find.text('ocr / only_a'), findsNothing);
+    expect(find.text('gps / only_b'), findsNothing);
     expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
 
     // Same widget type, different lease: didUpdateWidget must resubscribe.
     await tester.pumpWidget(MaterialApp(
       home: VisionScopedDiagnosticsPage(lease: b),
     ));
-    expect(find.text('gps / only_B'), findsOneWidget);
+    expect(find.text('gps / only_b'), findsOneWidget);
     journal.revoke();
     await tester.pumpAndSettle();
-    expect(find.text('gps / only_B'), findsNothing);
+    expect(find.text('gps / only_b'), findsNothing);
     expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
