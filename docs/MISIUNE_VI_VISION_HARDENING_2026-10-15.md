@@ -34,7 +34,7 @@ Commit 08492f64f5f4b8544d1bc151de8e39227f43bf88, tree ecacc77fbb7e8e09f6de12692d
 
 La revizuirea testului maximal-identifiers am observat că 150 rânduri valide maxime încap în 48 KiB; nu este corect să cerem eviction de bytes la această combinație. Proba folosește acum o limită injectată mai strictă, 4096 bytes, și identificatori exact48, păstrând toate assertions de cap/severity/restore. Limita de producție 48KiB/150 este în continuare verificată separat. Nu schimbăm runtime sau politica pentru a satisface o presupunere greșită de test. CI inițial/correctiv sunt raportate separat după observare.
 
-## Lot 2 GREEN / lot 3 sécurité multi-compte
+## Lot 2 GREEN / lot 3 securitate multi-cont
 
 Lot2 final 6ee5b257954fd573005defe393b1fa608b9f5bfe, tree908fc831fa307eb766e528e0af2b8166ff1c4d5c. Standard38662610600 SUCCESS5/5, 414Flutter/167Python, identity38662610626 SUCCESS5tests. Flutter checkout5265e8e; merge-tree verificat separat. Prima rulare38662503072 a fost anulată la publicarea corecției de fixture; nu există dovadă RED comportamentală revendicată. Android test-only38662610691 era încă în build la trecerea la următorul lot; numai lot1runtime este deja certificat Android, iar finalul va cere propria compilare.
 
@@ -119,3 +119,30 @@ Inventar local:253Dart/59part/194biblioteci (include probaRED ca bibliotecă sep
 Million original din #34 reverificat SHA2563bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23; assets/pv_magic.pdf eaf7be7d1ff77aafaa328c1ffd08c8e3c668f689104be432436cf5fb40eaaa6b. Niciun asset schimbat.
 
 Lot8 code/CI checkpoint7eaa3aa783e8ceadfe8360b926862bcd5e0c5fd1/tree f40b33193e188036e9fc07824938b607f0f252df; commitul9 este numai acest audit și ChatGpt. Validarea finală include și metadata aapt, probaRED și lib/main.dart real. Nu facem CI redundant manual pentru fiecare paragraf; ultimele trei checkpointuri documentare sunt certificate de ultimul HEAD verificat, conform politicii Issue39.
+
+## Lot10 — închidere și predare
+
+Toate loturile sigure au fost parcurse, în ramură izolată. Nu declarăm formularul financiar reparat sau toate subprobele SDK executate. Sinteză:28teste Flutter pozitive noi (402→430),4contracte Python noi (167→171),1probă business RED explicită cu corpul original păstrat. A01–A12/C01–C08 și fixture-urile de securitate sunt byte-identice cu #38; toate116hashuri protejate intacte.
+
+| Lot | Commit final / corecții | Standard / identity | Teste și fișiere principale |
+|---|---|---|---|
+|1 coalescing|08492f64|[38661750066](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38661750066) / [38661750070](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38661750070)|408Flutter,167Python;6noi; vision_local_persistence + coalescing tests; Android38661750057 SUCCESS134+compile|
+|2 presiune|f0ca23d2→6ee5b257|[38662610600](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38662610600) / [38662610626](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38662610626)|414Flutter,167Python;6noi; vision_pressure_test|
+|3 epoch/cache|acff78e3→b235f484|[38663228002](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38663228002) / [38663227995](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38663227995)|418Flutter,167Python;4noi; session_cache_matrix|
+|4 bootstrap/lifecycle|bfa9dcc4|[38663598978](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38663598978) / [38663598984](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38663598984)|420Flutter,167Python;2noi; bootstrap_lifecycle_adversarial|
+|5 SDK|9bd6f97e→c18647b9|[38664331766](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38664331766) / [38664331769](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38664331769)|426Flutter,167Python;6noi; sdk_epoch_matrix; HTTP/boost/Web700 rămân fără probe dinamice|
+|6 observabilitate|3c823108→c91f7a23|[38664983837](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38664983837) / [38664983847](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38664983847)|430Flutter,167Python;4pozitive+1RED; Expense fixture/tests; wrapper knownRED în workflow|
+|7 freeze|d220da55|[38665315100](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38665315100) / [38665315109](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38665315109)|430Flutter,171Python;4contracte noi; hardening_freeze|
+|8 Android metadata|7eaa3aa7|Certificate pe HEAD final, după ultimul doc-only checkpoint|Workflow compile existent + inspecție aapt package/version/permissions, fără artifact APK|
+|9 audit|702587908114619d2d3879b7864e62d383d91ec3|Certificate pe HEAD final|Numai raportul și ChatGpt; matrice status, surse/inventar/riscuri|
+|10 predare|SHA/tree și CI final în descrierea PR41 după execuție|UltimulHEAD se validează, nu este presupus GREEN|Numai raportul și ChatGpt; fără autoreferință imposibilă la propriul hash|
+
+Trees 1–7 în aceeași ordine:ecacc77fbb7e8e09f6de12692da6a881103f8af5;908fc831fa307eb766e528e0af2b8166ff1c4d5c;184d33416e1c4e9fcead34da980ddcb1d7406532;968d11eb407bb7b872da8250ae0c069b856ddadc;f8edeabcc7fa8772782bdf25217e3f851ac1ea14;7138737020485ff643af02aa9d209f274cb57102;1360a2cdffb72f4547befbdd99a56308ccab6b38. Metadata local/index/remote a fost comparată la fiecare publicare; corecția5 prinAPI a folosit base-tree explicit verificat și diff limitat la3fișiere. Tree8f40b33193e188036e9fc07824938b607f0f252df; tree9dc3ad1d91b8e388b2e394e30b595a842687e08d7.
+
+### Reluare exactă / condiții deschise
+
+Verifică SHA/CI/tree final în [PR41](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/41), apoi checkout exact. Nu repeta loturile1–7 sau misiunileIII–V. Dacă ultimulCI este încă pending/RED, finalizează întâi verificarea. Mesajul cu HEAD exact se publică în descrierea PR după CI, fără commit suplimentar care ar invalida checkpointul.
+
+Muncă sigură rămasă în sfera probelor: fixture separat pentru reverseHTTP/boost250/Web700, cu zero I/O și fără schimbarea comportamentului GPS. Nu sunt certificate dinamic aici. Formularul _money controller lifecycle/rollback, drepturile Issue32, UI public/proiecție persistentă UID, Million, backup/migrare/Learning și release/hardware cer scope distinct conform matricei. Nu converti knownRED financiar în GREEN prin relaxarea probei; o reparație autorizată va actualiza explicit caracterizarea.
+
+PR41 rămâne Draft TEST/HARDENING DO NOT MERGE. Fără merge/deploy/publicare web/APK/instalare, date/rules/config producție, roluri, finanțe, billing/servicii plătite sau schimbări pe ramurile sursă. La final se verifică checkout curat și arbore identic merge-ref/branch, standard5/5, identity5teste, Android real+metadata+knownRED. Aceste rezultate finale se raportează efectiv după încheiere, nu anticipat în acest fișier.
