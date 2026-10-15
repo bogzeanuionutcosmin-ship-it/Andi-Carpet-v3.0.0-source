@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 import 'vision_diagnostics_page.dart';
 import 'vision_session_journal.dart';
@@ -49,16 +48,14 @@ class _VisionScopedDiagnosticsPageState
 
   void _onLeaseRevoked() {
     if (!mounted) return;
-    // Auth transitions can occur while an ancestor builds. Avoid calling
-    // setState inside another widget's layout; defer only in that phase.
-    if (WidgetsBinding.instance.schedulerPhase ==
-        SchedulerPhase.persistentCallbacks) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() {});
-      });
-    } else {
-      setState(() {});
-    }
+    // An AuthGate transition can invalidate a route during parent build.
+    // A post-frame rebuild is safe both within and outside the build phase.
+    // Explicitly request a frame when there is no ongoing frame; there are
+    // no timers, repeated callbacks or persistent background listeners.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+    WidgetsBinding.instance.scheduleFrame();
   }
 
   @override
