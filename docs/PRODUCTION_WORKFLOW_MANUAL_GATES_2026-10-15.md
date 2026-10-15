@@ -1,44 +1,46 @@
-# AndiCarpet — production release gates (audit + Draft only)
+# AndiCarpet — audit automat pentru declanșatoare de producție (KNOWN UNSAFE)
 
-**15 octombrie 2026 · Shiva · numai PR Draft · NU DEPLOY**
+**15 octombrie 2026 · Shiva · PR Draft read-only în privința producției**
 
-## De ce există acest lot
+## Riscuri identificate, încă NEREPARATE
 
-Inspecția read-only a celor 14 workflowuri GitHub din baza PR #58 (HEAD `570d6a3a30206730be894589f5c7a552cfc11110`) a identificat două trasee cu efect direct asupra proiectului Firebase de producție, care puteau porni **automat la push pe `main`**:
+Inspectând toate workflowurile GitHub ale proiectului, am descoperit aceste căi existente:
 
-| Fișier | Trigger anterior | Efect potențial |
+| Fișier | Eveniment / drepturi | Efect care ar putea fi declanșat |
 | --- | --- | --- |
-| `.github/workflows/publish-authorized-release.yml` | `push main` la schimbarea workflowului și `workflow_dispatch` fără confirmare obligatorie | autentificare OIDC și `firebase deploy --only hosting` |
-| `.github/workflows/restore-member-directory.yml` | `push main` la schimbări de workflow, `functions/index.js`, projection/backfill ori `firestore.rules` | `firebase deploy --only firestore:rules`, `firebase deploy --only functions:syncMemberDirectory`, apoi `node functions/backfill_member_directory.js` asupra datelor existente |
+| `.github/workflows/publish-authorized-release.yml` | `push` pe `main` la schimbarea sa; și `workflow_dispatch` fără confirmare obligatorie | OIDC + `firebase deploy --only hosting` |
+| `.github/workflows/restore-member-directory.yml` | `push` pe `main` la schimbări Functions/Firestore rules/workflow | OIDC + `firebase deploy --only firestore:rules` + `functions:syncMemberDirectory` + backfill utilizatori |
+| `.github/workflows/import-v3.0.1.yml` | `workflow_dispatch` cu `contents: write` | import de ZIP și `git push` |
+| `.github/workflows/setup-source.yml` | `workflow_dispatch` cu `contents: write` | extragere ZIP și `git push` |
 
-**Faptul că un trigger există în sursă nu înseamnă că jobul a rulat recent**, iar activarea environment-ului `firebase-production` poate presupune protecții suplimentare configurate în GitHub pe care acest audit nu le-a verificat. Riscul este un mecanism automat de publicare care contrazice cerința proprietarului „niciun deploy fără aprobare explicită”.
+Primele **două reprezintă riscuri de deploy automat** la `main`; celelalte două sunt operații **manuale** care pot totuși modifica arborele sursă. Există deja `.github/workflows/firebase-oidc-deploy.yml`, exclusiv manual, cu confirmarea `DEPLOY` și `main` pentru operațiile de producție. Acest audit nu demonstrează că un deploy real a avut loc, nici că GitHub environment-ul `firebase-production` are sau nu aprobări separate.
 
-Alte workflowuri au fost inspectate: `firebase-oidc-deploy.yml` este deja `workflow_dispatch` cu `github.ref == main` + `DEPLOY` pentru acțiuni de producție; `build-android.yml` este manual și produce un artifact, nu deploy Firebase; `validate.yml` și testele emulator nu au rol de publicare de producție. Nu ștergem aceste workflowuri și nu modificăm autorizațiile lor în acest lot.
+## Bariera de integritate care a decis rezultatul
 
-## Remediere propusă, strict în ramură izolată
+Cele patru workflowuri de mai sus (plus `firebase-oidc-deploy.yml`) sunt incluse în setul cu **116 SHA256 imutabile**, specificate în `docs/ROUTING_PDF_PROTECTED_2026-10-13.json`. Într-un commit intermediar s-a încercat eliminarea triggerurilor automate din primele două și introducerea `workflow_dispatch` cu confirmare `DEPLOY_HOSTING` sau `RESTORE_MEMBER_DIRECTORY`. **CI a refuzat aceste modificări** prin două verificări reale `routing_pdf_boundary_test.py` (SHA mismatch).
 
-Am eliminat **numai triggerurile automate `push` din cele două workflowuri de producție** și introdus:
-- `workflow_dispatch.inputs.confirm_production` obligatoriu, **text exact** `DEPLOY_HOSTING` pentru publicarea Hosting, respectiv `RESTORE_MEMBER_DIRECTORY` pentru operația de restaurare care include rules/trigger/backfill;
-- gardă **la nivelul întregului job**: `github.event_name == 'workflow_dispatch'`, `github.ref == 'refs/heads/main'` și concordanța exactă a confirmării;
-- păstrarea environment-ului existent `firebase-production`, serializării `firebase-production-deploy`, OIDC, comenzii de deploy și tuturor pașilor instalați.
+**Am restaurat ambele workflowuri exact la conținutul bazei PR #58**, verificând egalitatea SHA de blob GitHub la restaurare. **Nu am modificat manifestul, nu am scos fișiere de sub protecție și nu am relaxat testele existente.** În consecință, remedierea propriu-zisă a triggerurilor de deploy este **ÎNCĂ NECESARĂ, NEIMPLEMENTATĂ** și trebuie autorizată separat într-un proces de schimbare a surselor protejate. Nu afirmați că actualul repository a devenit manual-only.
 
-Fără noi permisiuni, secrete, API-uri, dependințe, joburi cu cost sau servicii Firebase. Nu am schimbat `main` sau workflowurile deja active în producție: aceste fișiere sunt **numai în acest PR Draft**, neintegrat. Nu s-a declanșat `workflow_dispatch` și nicio autentificare OIDC de producție din această misiune.
+## Ce oferă efectiv acest PR
 
-## Teste de prevenție
+- `test/production_workflow_manual_gate_test.py`: **5** teste Python descoperite automat de CI-ul standard, toate read-only. Ele (1) detectează orice nou workflow cu `firebase deploy`/backfill și `push`/`pull_request` în afara celor două excepții `KNOWN_UNSAFE_AUTO_DEPLOY`; (2) verifică hashurile oficiale ale celor două workflowuri vechi, fără bypass; (3) caracterizează operațiile reale și garda `firebase-oidc-deploy.yml`; (4) caracterizează cele două importuri manuale care au `git push`; (5) resping orice **nou actor `git push` automat**.
+- Documentul acesta și checkpointul `ChatGpt`: risc clar, experimente CI RED și restaurare, recomandări pentru protejarea producției.
+- Niciun fișier de runtime, Firebase rules, business, financiar, release workflow sau sursă protejată nu este schimbat în arborele final.
 
-`test/production_workflow_manual_gate_test.py`, descoperit de CI-ul Python standard, adaugă patru teste:
-1. inspectează **toate workflowurile** pentru comenzi `firebase deploy`/backfill și respinge automatele `push`/`pull_request` în secțiunea de trigger;
-2. cere confirmarea textuală exactă, ramura `main` și evenimentul manual **la nivel de job**, plus `environment: firebase-production`;
-3. verifică faptul că operațiile de publicare/backfill rămân explicit declarate și revizuibile, fără ascunderea lor;
-4. păstrează garda manuală existentă a `firebase-oidc-deploy.yml`.
+**Atenție:** aceste verificări pot fi GREEN chiar dacă *cele două riscuri cunoscute rămân nesigure*. Sunt **teste de caracterizare și non-regresie**, NU validare că lansarea este sigură. Nu se atinge producția, nu se declanșează autentificare/deploy/backfill, nu se schimbă planul Spark, nu există APK publicat.
 
-Testele sunt contracte de **sursă**; ele nu certifică setările repository environment, rolurile IAM, aprobările reviewerilor, politica de protected branches sau absența tuturor metodelor externe de deploy. Pentru producție sunt necesare separat revizia permisiunilor OIDC, protejarea `main`, approvals și probă controlată în staging (fără date reale).
+## Remedierea ulterioară recomandată, NEAUTORIZATĂ pentru fișierele protejate
 
-## Verificări și statut
+1. După review și autorizare explicită, renunțare la `push` în cele două workflowuri de producție; `workflow_dispatch` cu confirmare textuală distinctă, plus `github.ref == refs/heads/main` la nivelul jobului; menținerea environment `firebase-production`, OIDC și serializarea deployului.
+2. Audit de protecție pentru `main`, approval reviewers pentru `firebase-production` și drepturile IAM ale service account-ului de deploy; până atunci nu se certifică siguranța.
+3. Teste YAML/static RED→GREEN, reconcilierea manifestului înghețat într-un **proces explicit autorizat**, CI standard/identity + verificare controlată staging; niciodată deploy „de probă” în producție.
+4. Abia apoi evaluarea dacă importer-ele legacy cu `contents:write` și `git push` mai sunt necesare ori trebuie limitate la ramuri de import dedicate. Nu modificați tacit `main`.
 
-- Bază `ci/vision-avatar-offline-android-20261015`, [PR #58](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/58), CI standard 5/5 / Identity / preview Android SUCCESS, fără intervenție în [PR #55 Luna](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/55).
-- PR nou **DRAFT / DO NOT MERGE** din baza #58, `main` doar ca țintă CI. Pentru un eventual release, proprietarul trebuie să aprobe distinct schimbarea fluxului de publicare și orice deploy.
-- Nu se pretinde CI verde până la verificarea ultimului HEAD real și a rezultatelor workflowurilor. Testele standard trebuie să ruleze Python, Flutter, emulator și web; workflowurile Android dedicate altor branchuri pot rămâne SKIPPED, nu PASS.
-- Niciun fișier din `lib/`, `firestore.rules`, `functions/`, `android/`, `pubspec.yaml`, hashurile Vision/Schedule protejate ori date din Firestore nu a fost modificat.
+## Separare și checkpoint
 
-**Notă operațională:** dacă aceste schimbări vor fi vreodată integrate în `main` cu aprobarea proprietarului, workflowurile manuale vor necesita deliberat confirmarea exactă. Un simple `push` pe `main` nu ar trebui să mai poată executa respectivele două joburi.
+- Pornit din [PR #58](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/58) HEAD `570d6a3a30206730be894589f5c7a552cfc11110`.
+- [Luna PR #55](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/55) rămâne read-only, fără intervenții. `main` este bază numai pentru declanșarea testelor de PR.
+- **Nu declarați PASS pe un HEAD nou înainte de verificarea GitHub CI.** Workflowurile Android/Finance dedicate altor ramuri pot fi SKIPPED intenționat.
+- Zero merge, deploy, producție, Firebase rules reale, date reale, billing, modificări `lib/`, schimbare de costuri, APK publicat ori autentificare OIDC.
+
+**STATUS:** audit și caracterizare, două vulnerabilități de automatizare `KNOWN UNSAFE`, *nu remediere*.
