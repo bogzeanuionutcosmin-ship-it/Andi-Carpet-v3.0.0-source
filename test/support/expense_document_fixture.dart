@@ -25,6 +25,8 @@ class ExpenseDocumentFixture {
   bool updateLocallyBeforeFailure = false;
   Uint8List? imageOverride;
   bool manager = true;
+  bool legacyFinance = false;
+  Future<void> Function(TeamFinance)? saveFinanceOverride;
   bool Function()? diagnosticSessionIsCurrent;
   Completer<void>? saveGate;
   String text;
@@ -59,14 +61,14 @@ class ExpenseDocumentFixture {
           diagnosticSessionIsCurrent: diagnosticSessionIsCurrent,
           currentUser: user, teams: [Team(id: 'team', name: 'Synthetic Team', members: ['worker'], financialManagerId: manager ? 'worker' : 'other')],
           users: [user], expenses: expenses, perDiems: perDiems,
-          finances: [TeamFinance(teamId: 'team', managerId: manager ? 'worker' : 'other')],
-          settlements: [TravelSettlement(id: 'settlement', teamId: 'team', name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), managerId: manager ? 'worker' : 'other')],
+          finances: [TeamFinance(teamId: 'team', managerId: manager ? 'worker' : 'other', receivedDeparture: legacyFinance ? 1 : 0)],
+          settlements: legacyFinance ? [] : [TravelSettlement(id: 'settlement', teamId: 'team', name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), managerId: manager ? 'worker' : 'other')],
           settings: AppSettings(), canEditTeam: (_) => true,
           isAdmin: false, canEditOwnDecont: true, canViewOtherDecont: false,
           onChanged: () { changes++; }, notifyUser: (a, b, c) { fail('Unexpected notification'); },
           log: (a, b) => logs.add('$a:$b'), saveExpense: save,
           savePerDiem: savePerDiemOverride ?? (_) async { fail('Unexpected per-diem write'); },
-          saveFinance: (_) async { fail('Unexpected finance write'); },
+          saveFinance: saveFinanceOverride ?? (_) async { fail('Unexpected finance write'); },
           saveSettlement: saveSettlementOverride ?? (_) async { fail('Unexpected settlement write'); },
           documentImagePicker: pick, documentTextRecognizer: recognize,
         );

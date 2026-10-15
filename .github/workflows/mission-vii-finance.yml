@@ -1,4 +1,4 @@
-name: Mission VII baseline financial defect witnesses
+name: Mission VII financial integrity and remaining RED
 on:
   pull_request:
     branches: [main]
@@ -35,11 +35,11 @@ jobs:
           grep -Fq 'EDIT_FAILURE_PRECONDITIONS_PASS' "$RUNNER_TEMP/settlement-edit-red.log"
           grep -Fq 'SETTLEMENT_EDIT_LOCAL_STATE_NOT_RESTORED' "$RUNNER_TEMP/settlement-edit-red.log"
       - name: Repaired lifecycle witnesses must actually pass
-        run: flutter test test/settlement_create_cancel.red.dart test/vision_settlement_controller.red.dart test/finance_dialog_lifecycle_test.dart --reporter expanded
+        run: flutter test test/settlement_create_cancel.red.dart test/vision_settlement_controller.red.dart test/finance_dialog_lifecycle_test.dart test/finance_received_amount_nonfinite.red.dart test/finance_received_amount_validation_test.dart --reporter expanded
       - name: Strict close and numeric RED witnesses
         shell: bash
         run: |
-          for spec in 'finance_settlement_close_rollback.red.dart:END_DATE_ROLLBACK_MISSING' 'finance_received_amount_nonfinite.red.dart:NON_FINITE_AMOUNT_ACCEPTED_NAN'; do
+          for spec in 'finance_settlement_close_rollback.red.dart:END_DATE_ROLLBACK_MISSING'; do
             file="${spec%%:*}"
             marker="${spec#*:}"
             set +e

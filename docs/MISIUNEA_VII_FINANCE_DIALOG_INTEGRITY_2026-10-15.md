@@ -24,3 +24,10 @@ Baseline 5250918: workflow38685978298 SUCCESS ca detector, cele cinci defecte sp
 FinanceDialogFields (bibliotecă Flutter independentă, import main) creează controllere în State și le dispose numai la unmount. Create/edit/money transferate; edit capturează text înainte de pop. Datepicker callbacks cer context mounted. Închiderea cere ruta curentă pentru a ignora al doilea tap în reverse transition. Nicio schimbare de save/mutații/sume în acest lot. 22 probe lifecycle noi, inclusiv dovadă explicită controller viu în tranziție și disposed după unmount. Testele #41/#46 au aceleași aserțiuni; poarta proprie cere acum exit0 pentru cele două lifecycle witnesses, nu exit1. Edit/close/NaN rămân expected RED, fără mascare.
 
 Hash settlement old13a2dd2aaa9b50ef8172ca1ebc5468bb4cf286b9a454385936ca67f0c017ba33 → new88b39531c23bf7d23b6b39a98e939e6f7d663f786130ef344907197998cdc43f. Actualizat strict entryul acestui fișier din freeze VI și pinul fără hook din inversion; OCR/per-diem/Home/AuthGate/116hashuri păstrate. CI Flutter în așteptare; fără revendicare de remediere verificată până la GREEN.
+
+## VII-03: validare numerică minimală
+VII-02 ea70d4494e9da8b92e9b6eb8c2a96429a55363f9 validat: standard38686340436 SUCCESS5/5, identity38686340354 SUCCESS, probe38686340372 SUCCESS:24PASS lifecycle (22noi+2martori originali), control pozitivPASS, edit/close/NaN încăRED la acelHEAD.
+
+Singura schimbare runtime VII-03: `!amount.isFinite` după tryParse. Zero/negativ/gol/invalid/nume gol rămân respinse; 200/200.00/200,00/0.01 și123.456 păstrează valoarea exactă a parserului. Nu introducem rotunjire sau plafon nou; precizia peste2zecimale rămâne regula existentă, nu o decizie nouă. OCR și istoricul nemodificate. 26probe noi (22settlement+4legacy), fixture opțional legacy/saveFinance cu fallbackurile originale. ProbaNaN portată din#45 cere acum PASS real, fără schimbarea aserțiunilor.
+
+Hash settlement 88b39531c23bf7d23b6b39a98e939e6f7d663f786130ef344907197998cdc43f → 3c8931aff9b31830670d2ad72f8fc3aba37cf2798e46dee5042e3a49a6028681; aceleași două pinuri specifice actualizate,116hashuri protejate intacte. CI pe noulHEAD în așteptare.

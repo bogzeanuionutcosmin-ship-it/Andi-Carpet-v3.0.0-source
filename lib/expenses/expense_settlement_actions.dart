@@ -249,7 +249,7 @@ extension _ExpenseSettlementActions on _ExpensePageState {
           FilledButton(onPressed:(){
             final amount=double.tryParse(amountC.text.trim().replaceAll(',','.'));
             final from=fromC.text.trim();
-            if(amount==null||amount<=0||from.isEmpty)return;
+            if(amount==null||!amount.isFinite||amount<=0||from.isEmpty)return;
             FinanceDialogFields.close(d,ReceivedMoneyEntry(
               id:idNow(),
               kind:departure?'departure':'during',
