@@ -102,7 +102,7 @@ void main() {
   test('restore refuses malformed or cross-bound immutable evidence before opening a transaction',(){
     for(final change in <Map<String,Object?>>[
       {'targetPath':'settlements/other'},{'teamId':'other'},{'actorUid':''},{'actorUid':'a/b'},
-      {'operationId':'c'*32},{'baseRevision':1},{'baseRevision':0.0},{'revision':0},{'digest':'bad'},
+      {'operationId':'c'*32},{'baseRevision':1},{'baseRevision':0.5},{'revision':0},{'digest':'bad'},
       {'kind':'unknown'},{'unexpected':'field'},
     ]) {
       final f=fixture();
