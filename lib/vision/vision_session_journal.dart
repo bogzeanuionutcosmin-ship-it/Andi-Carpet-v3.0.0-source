@@ -29,6 +29,8 @@ class VisionSessionJournal {
 
   Object? _currentKey;
   VisionErrorLog? _activeLog;
+  // Pure Dart, synchronous lifecycle subscribers; no timer or background work.
+  final Map<Object, Set<void Function()>> _revocationListeners = {};
 
   /// Always creates a fresh lease, even if the same UID logs in again.
   ///
@@ -37,6 +39,9 @@ class VisionSessionJournal {
   VisionSessionJournalLease startSession({
     required bool Function() isSessionCurrent,
   }) {
+    // A new owner invalidates the old epoch *before* creating a new log.
+    // Notify any visible diagnostics route so it hides stale history.
+    revoke();
     final key = Object();
     _currentKey = key;
     _activeLog = VisionErrorLog(
@@ -50,8 +55,40 @@ class VisionSessionJournal {
 
   /// Explicit logout, disposal or revocation discards all collected events.
   void revoke() {
+    final previousKey = _currentKey;
     _currentKey = null;
     _activeLog = null;
+    if (previousKey == null) return;
+    // Drop the registered callbacks before notifying. Re-entrant startSession
+    // cannot resurrect the old lease or receive a duplicate notification.
+    final listeners = _revocationListeners.remove(previousKey);
+    if (listeners == null) return;
+    for (final listener in listeners.toList(growable: false)) {
+      try {
+        listener();
+      } catch (_) {
+        // Revocation must remain fail-closed even if a UI listener is faulty.
+      }
+    }
+  }
+
+  void Function() _subscribe(
+    Object key,
+    bool Function() verify,
+    void Function() listener,
+  ) {
+    if (!_owns(key, verify)) return () {};
+    final listeners = _revocationListeners.putIfAbsent(
+      key, () => <void Function()>{},
+    );
+    listeners.add(listener);
+    return () {
+      final currentListeners = _revocationListeners[key];
+      currentListeners?.remove(listener);
+      if (currentListeners != null && currentListeners.isEmpty) {
+        _revocationListeners.remove(key);
+      }
+    };
   }
 
   bool _owns(Object key, bool Function() verify) {
@@ -84,6 +121,15 @@ class VisionSessionJournalLease {
   final bool Function() _verify;
 
   bool get isCurrent => _journal._owns(_key, _verify);
+
+  /// Subscribe to immediate in-memory invalidation of this lease. A caller
+  /// must invoke [revoke] or [startSession] at its authoritative AuthGate
+  /// transition; merely changing an external callback cannot emit an event.
+  ///
+  /// Returns an unsubscribe closure. Listening does not grant access to data.
+  /// A stale lease cannot subscribe to or revoke a newer owner's session.
+  void Function() listenRevocation(void Function() listener) =>
+      _journal._subscribe(_key, _verify, listener);
 
   /// Reports only fixed, sanitized diagnostic identifiers.
   /// Returns false for revoked/expired ownership, without side effects.
