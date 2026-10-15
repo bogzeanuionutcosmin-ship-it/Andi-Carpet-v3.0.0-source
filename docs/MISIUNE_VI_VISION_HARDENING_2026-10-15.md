@@ -95,3 +95,27 @@ Lot7 d220da5562bbc10012202a70a4bc2ac14ea58c54 / tree1360a2cdffb72f4547befbdd99a5
 Lot8 extinde numai workflow-ul compile-only existent, pe noua ramură, cu aapt după build: package com.example.andi_carpeta, versionName3.0.1/versionCode33 și lista de permissions sunt inspectate în runner, fără upload APK. Manifest/Gradle/pubspec/lock/signing sunt păstrate; nu schimbăm identificatorul sau versiunea. Eticheta internă _appVersionLabel3.0.0+32 diferă preexistent de pubspec3.0.1+33; trebuie reconciliată înainte de release, nu este remediată aici.
 
 Testele rulează pe lib/main.dart real, nu smoke offline #34. CI pe acest workflow și ultimul HEAD se verifică la închidere; auditul/predarea următoare sunt numai documentație și nu cer repetarea loturilor de cod. Hardware/loginFirebase/GPS/FCM/cameră/Keystore real:NEEXECUTAT. CI build nu le certifică. Standard web-build este numai artifact CI, nu hosting/deploy.
+
+## Lot9 — audit diferențial / contractele etapei următoare
+
+Comparat #38 7a87d1d cu #34 LIVE d84641b (neschimbat la reverificare). Șapte module core Vision sunt identice sursei; bootstrap este adaptorul #38, absent în laboratorul #34. Diferența coverage este numai comentariu. #38 are _persistenceStarted și init/bootstrap unice înainte de Firebase, deci nu importăm adaptorul telemetry #34 care ar pierde această protecție. Coalescingul din lot1 este singura diferență lib a misiunii VI. Nu sunt importate Home/main/Expense monolitice, OCR/PDF/version/config din #34.
+
+Inventar local:253Dart/59part/194biblioteci (include probaRED ca bibliotecă separată), fără missing/orphan/duplicate/cycles detectate; audit lexical, nu dovadă generală de cod mort. Niciun nou runtime seam nefolosit; verifier-ul neconectat este o limită intenționată moștenită. 116hashuri și21freezechecks trec. Source #28/#29/#34/#35/#36/#38/main toate revalidate neschimbate.
+
+| Domeniu | IMPLEMENTAT | TESTAT-Fake | TESTAT-CI | TESTAT-HARDWARE | BLOCAT / DECIZIE / următorul contract |
+|---|---|---|---|---|---|
+| Coalescing/log bounded/status | Da, local | Read/write gates, bursts1200/10000, TTL/NTP, failure | Flutter430 și contracts; Android final obligatoriu | NEEXECUTAT | Nu certifică discul/Keystore real, kill best effort |
+| UI diagnostics | Doar intern/test, refuz device-wide | A→B→A, cold restore, epoch, clipboard/rebuild/logout | Widget suites | NEEXECUTAT | Politică explicită + proiecție persistentă UID/epoch demonstrată înainte de acces public; developer nu devine admin |
+| FCM/GPS ownership | Protecțiile #35 păstrate | B legitim + A întârziat la6gates | Flutter/identity, compilare finală | NEEXECUTAT | ReverseHTTP/boost250/Web700 neexecutate dinamic; cere fixture separat, fără modificarea pragurilor |
+| Observații OCR/diurne/finance | 13hookuri existente păstrate | 4probe noi + probe V; fake mutation nu este server evidence | Pozitive în CI | NEEXECUTAT | Nicio auto-confirmare/retry/write nou |
+| Formular Sumă primită | Preexistent, neschimbat | Repro strict RED controller-disposed | Rulare RED explicită, nu acceptanță verde | NEEXECUTAT | Remediere lifecycle într-un mandat separat; verificare rollback local separat |
+| Verifier / Issue32 | Pur, NECONECTAT | Fără server evidence→pending | Pure suites | NEEXECUTAT | Drepturi/query ownership/fresh server evidence și idempotency cer contract separat |
+| PDF | Magic păstrat, Million absent în baza #38 | Hashuri sursă | Protecții inventar existente | NEEXECUTAT | Integrare Million numai din original #20/sursă hash3bece2fa… într-un scope separat |
+| Backup/migrare/Admin | Doar comportamentul moștenit | Caracterizări III păstrate | Suite originale păstrate | NEEXECUTAT | Atomicitate/preview/ownership/rollback și migrare badge rămân neimplementate |
+| Learning GPS | Learning durate existent; nicio automatizare nouă | Doar fixture-uri existente | Regresii originale | NEEXECUTAT | Sosire/plecare adaptivă/START idempotent/STOP confirmat, protocol hardware separat |
+| Costuri / AI / multi-device | Niciun provider sau colector cloud nou | Import/API contracts | 0 transport nou în Vision | Billing live NEEXECUTAT | Nu garantăm cost zero al întregii infrastructuri; niciun upgrade/paid API autorizat |
+| Avatar | Amânat | Nu | Nu | Nu | Corp/animații constituie altă misiune |
+
+Million original din #34 reverificat SHA2563bece2fa6f39d1bbba904ea45856d60215c8cfb3f0d23c80767662ffa4bdcd23; assets/pv_magic.pdf eaf7be7d1ff77aafaa328c1ffd08c8e3c668f689104be432436cf5fb40eaaa6b. Niciun asset schimbat.
+
+Lot8 code/CI checkpoint7eaa3aa783e8ceadfe8360b926862bcd5e0c5fd1/tree f40b33193e188036e9fc07824938b607f0f252df; commitul9 este numai acest audit și ChatGpt. Validarea finală include și metadata aapt, probaRED și lib/main.dart real. Nu facem CI redundant manual pentru fiecare paragraf; ultimele trei checkpointuri documentare sunt certificate de ultimul HEAD verificat, conform politicii Issue39.
