@@ -1,0 +1,63 @@
+name: Mission VII baseline financial defect witnesses
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: settlement-characterization-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  isolated-probes:
+    if: github.head_ref == 'fix/finance-dialog-integrity-mission-vii-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: git rev-parse HEAD HEAD^{tree}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Positive confirmed-save control
+        run: flutter test test/settlement_edit_confirmed_characterization_test.dart --reporter expanded
+      - name: Strict edit-failure RED in its own process
+        shell: bash
+        run: |
+          set +e
+          flutter test test/settlement_edit_failure.red.dart --reporter expanded > "$RUNNER_TEMP/settlement-edit-red.log" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/settlement-edit-red.log"
+          test "$result" -eq 1
+          grep -Fq 'EDIT_FAILURE_PRECONDITIONS_PASS' "$RUNNER_TEMP/settlement-edit-red.log"
+          grep -Fq 'SETTLEMENT_EDIT_LOCAL_STATE_NOT_RESTORED' "$RUNNER_TEMP/settlement-edit-red.log"
+      - name: Strict create-cancel lifecycle RED in its own process
+        shell: bash
+        run: |
+          set +e
+          flutter test test/settlement_create_cancel.red.dart --reporter expanded > "$RUNNER_TEMP/settlement-create-red.log" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/settlement-create-red.log"
+          test "$result" -eq 1
+          grep -Fq 'CREATE_CANCEL_PRECONDITIONS_PASS' "$RUNNER_TEMP/settlement-create-red.log"
+          grep -Fq 'CREATE_DIALOG_CANCEL_LIFECYCLE_BROKEN' "$RUNNER_TEMP/settlement-create-red.log"
+          grep -Fq 'A TextEditingController was used after being disposed.' "$RUNNER_TEMP/settlement-create-red.log"
+      # No runtime changes, APK, install, upload, deploy, secrets or live Firebase.
+      - name: Strict close and numeric RED witnesses
+        shell: bash
+        run: |
+          for spec in 'finance_settlement_close_rollback.red.dart:END_DATE_ROLLBACK_MISSING' 'finance_received_amount_nonfinite.red.dart:NON_FINITE_AMOUNT_ACCEPTED_NAN' 'vision_settlement_controller.red.dart:A TextEditingController was used after being disposed.'; do
+            file="${spec%%:*}"
+            marker="${spec#*:}"
+            set +e
+            flutter test "test/$file" --reporter expanded > "$RUNNER_TEMP/$file.log" 2>&1
+            result=$?
+            set -e
+            cat "$RUNNER_TEMP/$file.log"
+            test "$result" -eq 1
+            grep -Fq "$marker" "$RUNNER_TEMP/$file.log"
+          done
