@@ -8,7 +8,7 @@ void main() {
     operationId:'d'*32, actorUid:'actor', teamId:'team', collection:'settlements',
     documentId:'trip', baseRevision:0, kind:FinanceIntentKind.edit, changes:changes);
   test('historical timestamp nanos survive a financial edit and nested receipt rewrite', () {
-    const historical = Timestamp(1790812800, 123456789);
+    final historical = Timestamp(1790812800, 123456789);
     final previous = decodeFinanceFirestoreDocument({
       'teamId':'team','name':'Original','startDate':historical,
       'receivedEntries':[{'date':historical,'amount':25}],
