@@ -88,3 +88,24 @@ test('stale envelope rejects before rules expression exhaustion',async()=>{
  assert.equal(error.code,'permission-denied');
  assert.doesNotMatch(error.message,/maximum of 1000/);
 });
+
+test('view-own-only manager can create with real marker-first transaction reads',async()=>{
+ await env.withSecurityRulesDisabled(c=>updateDoc(doc(c.firestore(),'users/manager'),{effectivePermissions:['viewOwnDecont']}));
+ const d=db('manager'),i=intent(3,{kind:'create'});i.target='fresh';
+ await assertSucceeds(runTransaction(d,async tx=>{
+  assert.equal((await tx.get(doc(d,markerPath(i)))).exists(),false);
+  assert.equal((await tx.get(doc(d,target(i)))).exists(),false);
+  tx.set(doc(d,target(i)),{...history(),receivedDeparture:0,receivedDuring:0,receivedOpeningDeparture:0,receivedOpeningDuring:0,revision:1,lastOperationId:i.id,updatedAt:serverTimestamp()});
+  tx.set(doc(d,markerPath(i)),marker(i));
+ },{maxAttempts:3}));
+});
+test('legacy worker permission fallback still allows the existing manager',async()=>{
+ await env.withSecurityRulesDisabled(async c=>{
+  const d=c.firestore();const u=(await getDoc(doc(d,'users/manager'))).data();delete u.effectivePermissions;await setDoc(doc(d,'users/manager'),u);
+ });
+ await assertSucceeds(submit(db('manager'),intent(1)));
+});
+test('explicit empty permissions do not acquire legacy manager permission',async()=>{
+ await env.withSecurityRulesDisabled(c=>updateDoc(doc(c.firestore(),'users/manager'),{effectivePermissions:[]}));
+ await assertFails(submit(db('manager'),intent(1)));
+});

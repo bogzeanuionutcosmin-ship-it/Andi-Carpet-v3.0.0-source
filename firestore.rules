@@ -182,6 +182,24 @@ service cloud.firestore {
     function finiteMoney(n) {
       return n is number && n >= 0 && n - n == 0;
     }
+    // Financial request-local predicates use one cached profile instead of the
+    // general permission tree repeatedly expanding isActive/userData calls.
+    function financialPermission(u, permission) {
+      let legacy = u.get('function', '');
+      let definition = /databases/$(database)/documents/functions/$(legacy);
+      return ('effectivePermissions' in u) ?
+        (u.effectivePermissions is list && permission in u.effectivePermissions) :
+        (legacy == 'director' ||
+          (exists(definition) && get(definition).data.active == true
+            && permission in get(definition).data.permissions) ||
+          (legacy in ['driver','worker','developer'] && permission == 'viewOwnDecont'));
+    }
+    function financialRead(teamId) {
+      let u = userData();
+      return signedIn() && u.active == true && (u.role == 'admin'
+        || financialPermission(u, 'viewOtherDecont')
+        || request.auth.uid in get(teamPath(teamId)).data.members);
+    }
     function financialDirector() {
       let u = userData();
       return u.get('role', '') == 'director'
@@ -198,8 +216,7 @@ service cloud.firestore {
       let u = userData();
       return signedIn() && u.active == true && (u.role == 'admin'
         || (!financialDirector()
-          && ((u.get('effectivePermissions', null) is list && 'viewOwnDecont' in u.effectivePermissions)
-            || (!('effectivePermissions' in u) && hasLegacyPermission('viewOwnDecont')))
+          && financialPermission(u, 'viewOwnDecont')
           && request.auth.uid in get(teamPath(d.teamId)).data.members
           && financeManager(d) == request.auth.uid));
     }
@@ -472,10 +489,13 @@ service cloud.firestore {
     }
 
     match /finance/{teamId} {
-      allow read: if isAdmin() || hasPermission('viewOtherDecont') || isTeamMember(teamId);
+      allow read: if financialRead(teamId);
     }
     match /settlements/{settlementId} {
-      allow read: if isAdmin() || hasPermission('viewOtherDecont') || isTeamMember(resource.data.teamId);
+      allow read: if financialRead(resource.data.teamId);
+      allow get: if !exists(/databases/$(database)/documents/settlements/$(settlementId))
+        && signedIn() && userData().active == true
+        && (userData().role == 'admin' || financialPermission(userData(), 'viewOwnDecont'));
     }
     match /{financialCollection}/{targetId} {
       function targetPath() {
@@ -562,8 +582,13 @@ service cloud.firestore {
         && ((newMarker().kind == 'receipt' && receiptChange()) || settlementEdit());
       allow delete: if false;
       match /financialIntents/{operationId} {
-        allow get: if isFinancial() && isActive() && (isAdmin() || (hasPermission('viewOwnDecont')
-          && (!exists(targetPath()) || isTeamMember(get(targetPath()).data.teamId))));
+        function markerReadable() {
+          let u = userData();
+          return signedIn() && u.active == true && (u.role == 'admin'
+            || (financialPermission(u, 'viewOwnDecont') && (!exists(targetPath())
+              || request.auth.uid in get(teamPath(get(targetPath()).data.teamId)).data.members)));
+        }
+        allow get: if isFinancial() && markerReadable();
         allow list: if isFinancial() && isAdmin();
         allow create: if isFinancial()
           && request.resource.data.get('revision', -1) ==

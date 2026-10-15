@@ -36,3 +36,13 @@ before authorisation/binding/transition helpers. Stale envelopes are rejected
 with the same required successor revision; no permission or atomicity condition
 is removed. Added a focused stale-envelope case which explicitly rejects an
 expression-budget error. Rules pin bd024d10fb3e4e7fd5a74e3e5633af366d4d998e5afe81bd36dcdb60c15f3ee6 -> 0c446a3d99c12d5ccbb0d52deec17de12fd7daf075eb771acfff3d7d31229591. Actual CI pending.
+
+Guard reordering ab518dd still had38PASS/3FAIL, including the new focused
+stale test; it is not accepted. Follow-up removes repeated general isActive/
+userData/permission expansion from financial reads, marker reads and write
+authority, using one profile binding and an explicit effective-permission
+ternary. Legacy fallback semantics are retained and tested (worker manager
+allowed; explicit empty list denied). Creation now permits reading an absent
+settlement to an active view-own manager, necessary for the actual marker-first
+transaction; no existing foreign document gets a new read grant. New rules pin
+a59b0a27d5e58b2e7e3c9e4936addeeff52c71dce29901e340795842b8060cf4. All previous assertions retained. CI pending.
