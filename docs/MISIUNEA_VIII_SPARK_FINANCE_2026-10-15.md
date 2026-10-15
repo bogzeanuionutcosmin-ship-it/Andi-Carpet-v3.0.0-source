@@ -412,3 +412,17 @@ ModelulSpark adaugă5probe (192PythonlocalPASS),concentrațiapeosingurățintă 
 retenția5ani. JSONscenariiauditabilpublicat;valorilesuntipoteze,nuusage/billinglive.
 production_readyfalse;indexuri/wiresize/baseline/egress șimigrareaistoricului rămân
 necertificate. CIcomplet peHEADnou urmează;nuînsumămprobesuprapuse dreptunice.
+
+
+## Checkpoint consolidat — continuare UI/Restore/offline/capacitate
+Cod9f5e37ab67efa1b80af2db9a2cda7922e92a853e:129DartPASS,47JSemulatorPASS;
+192PythonlocalPASS pecheckoutsincronizat. Cele8probeSDK+rawserver sunt demonstrate
+pe860e2e7; validarea lor finală și Android/Chrome se citesc dinworkflowurileHEADfinal,
+nu se presupun. Auditread-only actualizat pe9f5e37a:21pinuri/branch,116catalog,
+2overlap,checkpointprefixpreserved,zerointegrareShiva.
+Raport detaliat:docs/MISIUNEA_VIII_CONTINUARE_2026-10-15.md. Acestcheckpoint
+este documentar;HEAD/tree/CIfinal se raportează înPR55 după verificareaexactă.
+MisiuneaNUesteînchisăintegral:Home/ExpensePagevechi,Restorecomplet/inventar,
+backwardcompat,storage/hardware șiSparkusage/indexuri/egress rămânblocante.
+NoileharnessuriNUcertificăreparareavechilor28caracterizăriVII. production_readyfalse.
+Fărămerge/deploy/producție/billing/APKpublicat/instalat sauPR50/51/52modificate.

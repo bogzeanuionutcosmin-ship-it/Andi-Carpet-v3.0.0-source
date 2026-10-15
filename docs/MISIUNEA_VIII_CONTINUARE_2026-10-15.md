@@ -28,7 +28,7 @@ Acesta NU este restauratorul complet al aplicației. Manifestul nu exportă înt
 
 Harnessul nu înlocuiește Home/ExpensePage și nu certifică toate writepath-urile existente. Cele 28 de caracterizări VII nu sunt declarate reparate prin aceste probe separate.
 
-Proba SDK disableNetwork/cache/reconnect folosește transportul real Chrome + emulator și jurnal injectat în memorie. Nu certifică persistență pe disc, restart de proces, secure storage fizic sau Android/iOS offline.
+Proba SDK cache/reconnect taie efectiv transportul printr-un proxy exclusiv loopback, deoarece disableNetwork singur nu a oprit tranzacțiile web. Folosește SDK real Chrome + emulator și jurnal injectat în memorie. Nu certifică persistență pe disc, restart de proces, secure storage fizic sau Android/iOS offline.
 
 ## Capacitate și Spark
 
@@ -44,8 +44,15 @@ Surse: https://firebase.google.com/docs/firestore/storage-size și https://fireb
 
 ## Verificare și restanțe
 
-La pregătirea acestui document, noile harnessuri Restore/UI/offline și gardul de capacitate sunt încă în validare. Rezultatele finale și SHA/tree se citesc din descrierea PR #55 și din workflowurile acelui SHA; numerele nu se certifică anticipat.
+Pe 860e2e7 sunt demonstrate 116 probe Dart, 47 JS emulator, 8 Flutter SDK browser și verificarea JS raw. Pe 4333410 sunt demonstrate 125 probe Dart, inclusiv cele 9 probe UI. Pe 9f5e37a sunt demonstrate 129 probe Dart, inclusiv cele 4 probe de capacitate, și 47 JS emulator. Cele 192 teste Python locale au trecut după sincronizarea checkoutului. CI complet al HEAD-ului care publică acest checkpoint trebuie verificat separat; rezultatele finale și SHA/tree sunt raportate în descrierea PR #55, fără autocertificarea unui commit viitor.
 
 Rămân blocante pentru integrare: toate fluxurile UI existente, Restore complet cu inventar/export/import, compatibilitatea clienților vechi, storage/restart pe dispozitiv fizic, deciziile legacy perDiem și verificarea consumului/planului live. Nici Issue #32, nici #53/#54 nu se închid pe baza acestui candidat.
 
 Flutter local a fost blocat de auto-review pentru o încercare de acces la serviciul metadata al mediului; refuzul nu a fost ocolit. Validările Flutter sunt efectuate prin CI-ul existent din GitHub. Nu se solicită acces la credențiale sau metadata.
+
+
+## Checkpoint de reluare
+
+Cod sursă: `9f5e37ab67efa1b80af2db9a2cda7922e92a853e`. Audit read-only pe acest cod: 21 pinuri per ramură, 116 surse protejate, exact două fișiere comune cu #52, prefixele istorice păstrate și zero integrare. Raportul JSON include SHA exact.
+
+Comandă: «Continuă PR #55 din HEAD-ul real și verifică CI-ul acelui SHA. Citește ChatGpt, acest raport și matricea VIII-14. Nu repeta probele validate și nu declara toate fluxurile vechi reparate. Urmează integrarea dialogurilor Home/ExpensePage în harness demo, Restore complet cu inventar și strategie compatibilă cu dovezile financiare imuabile, istoricul paginat și probe fizice numai cu autorizarea aferentă. PR #50/#51/#52 read-only. Fără merge, deploy, Firebase live, billing, instalare sau distribuție.»
