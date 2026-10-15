@@ -32,12 +32,21 @@ Inițial am înlocuit și cele patru mesaje din două module `schedule`. **CI Py
 
 ## Protecție automată
 
-`test/appwide_console_privacy_test.py`, descoperit de suita Python standard, are 3 teste:
+`test/appwide_console_privacy_test.py`, descoperit de suita Python standard, are **5 teste** (3 controale de bază + 2 probe adversariale pentru scanner):
 1. Enumeră toate apelurile `debugPrint` din `lib/**/*.dart`, cere literal fix fără `$`, **cu exact patru excepții explicite `KNOWN_UNSAFE_ROUTING`**, fiecare legată de sursa și textul original. Orice caz nou din afara allowlistului eșuează. Cele patru rămân numărate și vizibile, **nu sunt numite GREEN privacy**.
 2. Respinge apeluri directe `print()` și dumpuri `debugPrintStack()`.
 3. Verifică cele două coduri constante noi Dashboard.
 
 Acestea sunt **contracte de sursă** (nu un parser Dart complet și nici un test al logurilor native OS/SDK). Testele existente PR #51 pentru Home, `VisionErrorTelemetry.report`, `vision_hardening_freeze` și `routing_pdf_boundary_test.py` rămân obligatorii. Nu modificați răspunsul așteptat doar pentru a masca un eșec.
+
+
+### Hardened scanner, fără modificări runtime
+
+Verificarea lexicală a fost întărită după primul CI GREEN pe baza de cod:
+- `KNOWN_UNSAFE_ROUTING` este acum verificat cu **`Counter` și exact o apariție per pereche (fișier, expresie)**; o a doua interpolare cu text identic nu mai poate trece prin deduplicarea accidentală a unui `set`.
+- Literele fixe sunt verificate cu expresie întreagă `fullmatch`, în locul unui simplu început/sfârșit de ghilimele. Astfel, `'prefix' + privateValue + 'suffix'` este respins, chiar dacă începe și se termină cu ghilimele.
+- Sunt executate două probe sintetice ale scannerului: respingerea dinamicii (`$uid`, `$value/$error`, concatenări și expresii), respectiv a unui al doilea apel brut duplicat în sursa protejată.
+- Aceste teste **NU repară cele patru excepții cunoscute**, nu simulează date reale și nu deschid canale noi de logging. Niciun fișier Dart, manifest de protecție, regulă Firebase sau workflow nu a fost schimbat în această întărire.
 
 ## CI, independență și limite
 
