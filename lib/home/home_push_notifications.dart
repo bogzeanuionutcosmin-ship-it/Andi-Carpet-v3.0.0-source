@@ -159,7 +159,7 @@ extension _HomePushNotifications on _HomePageState {
 
       await _savePushToken(token);
       if (!_sessionActive) return;
-      debugPrint('[push] Token FCM înregistrat AUTOMAT și salvat pentru $currentUserId.');
+      debugPrint('[push] token_saved');
 
       if (!_pushListenersAttached) {
         _pushListenersAttached = true;
@@ -168,7 +168,7 @@ extension _HomePushNotifications on _HomePageState {
           onError: (Object error) {
             if (!_sessionActive) return;
             VisionErrorTelemetry.report(area: 'fcm', code: 'token_refresh_failed');
-            debugPrint('[push] onTokenRefresh: $error');
+            debugPrint('[push] token_refresh_failed');
           },
         ));
         _coreSubscriptions.add((widget.messageOpenedApp ?? FirebaseMessaging.onMessageOpenedApp).listen((message) {
@@ -189,10 +189,10 @@ extension _HomePushNotifications on _HomePageState {
           WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_openChatFromAlert(senderId)));
         }
       }
-    } catch (e, st) {
+    } catch (_) {
       if (_sessionActive) VisionErrorTelemetry.report(area: 'fcm', code: 'initialization_failed');
-      debugPrint('[push] Inițializarea FCM a eșuat: $e');
-      debugPrintStack(stackTrace: st);
+      debugPrint('[push] initialization_failed');
+      // Raw SDK stack omitted from app-owned console. Vision keeps constant codes.
       // Butonul din Profil rămâne doar ca diagnostic/fallback. Înregistrarea
       // normală se face automat la fiecare pornire/login.
     } finally {
