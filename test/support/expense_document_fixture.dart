@@ -29,6 +29,7 @@ class ExpenseDocumentFixture {
   bool legacyFinance = false;
   bool initialSettlementClosed = false;
   DateTime? initialSettlementEnd;
+  TravelSettlement? settlementOverride;
   Future<void> Function(TeamFinance)? saveFinanceOverride;
   bool Function()? diagnosticSessionIsCurrent;
   Completer<void>? saveGate;
@@ -66,7 +67,7 @@ class ExpenseDocumentFixture {
           currentUser: user, teams: [Team(id: 'team', name: 'Synthetic Team', members: [user.id], financialManagerId: manager ? user.id : 'other')],
           users: [user], expenses: expenses, perDiems: perDiems,
           finances: [TeamFinance(teamId: 'team', managerId: manager ? user.id : 'other', receivedDeparture: legacyFinance ? 1 : 0)],
-          settlements: legacyFinance ? [] : [TravelSettlement(id: 'settlement', teamId: 'team', name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), closed: initialSettlementClosed, endDate: initialSettlementEnd, managerId: manager ? user.id : 'other')],
+          settlements: legacyFinance ? [] : [settlementOverride ?? TravelSettlement(id: 'settlement', teamId: 'team', name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), closed: initialSettlementClosed, endDate: initialSettlementEnd, managerId: manager ? user.id : 'other')],
           settings: AppSettings(), canEditTeam: (_) => true,
           isAdmin: false, canEditOwnDecont: !readOnlyDirector, canViewOtherDecont: readOnlyDirector,
           onChanged: () { changes++; }, notifyUser: (a, b, c) { fail('Unexpected notification'); },

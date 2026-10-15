@@ -37,3 +37,14 @@ jobs:
         run: flutter test test/finance_cross_action_serialization_test.dart --reporter expanded
       - name: Uncertain outcomes are characterizations, not repaired financial acceptance
         run: flutter test test/finance_uncertain_outcome_test.dart --reporter expanded
+      - name: Reproduce stale close shared-object mutation before session fix
+        shell: bash
+        run: |
+          set +e
+          flutter test test/finance_stale_close.red.dart --reporter expanded 2>&1 | tee "$RUNNER_TEMP/stale-close.txt"
+          test_result=${PIPESTATUS[0]}
+          set -e
+          test "$test_result" -eq 1
+          grep -Fq 'STALE_CLOSE_MUTATED_SHARED_OBSERVATION' "$RUNNER_TEMP/stale-close.txt"
+          grep -Fq 'Some tests failed' "$RUNNER_TEMP/stale-close.txt"
+          if grep -Fq 'Compilation failed' "$RUNNER_TEMP/stale-close.txt"; then exit 1; fi
