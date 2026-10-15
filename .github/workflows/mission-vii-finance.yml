@@ -35,3 +35,5 @@ jobs:
         run: flutter test test/finance_settlement_close_rollback.red.dart test/finance_close_rejection_test.dart --reporter expanded
       - name: Settlement writers must exclude each other while pending
         run: flutter test test/finance_cross_action_serialization_test.dart --reporter expanded
+      - name: Uncertain outcomes are characterizations, not repaired financial acceptance
+        run: flutter test test/finance_uncertain_outcome_test.dart --reporter expanded

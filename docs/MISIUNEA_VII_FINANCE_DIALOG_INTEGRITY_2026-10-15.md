@@ -160,3 +160,12 @@ Total continuare față de cadbf00:60testeFlutter noi (7edit+17close+29receipt+7
 Serializare `lib/expenses/expense_page.dart`: SHA256 9016fe9e1d79e5fc8ce3686bf72e29a5c2dcfd28351698361c5f93f155cc249e → f6a3976dbe52fa81c1599d78207803c35362c2cba5ece9c68182cb68a8af511d.
 
 Serializare `lib/expenses/expense_settlement_actions.dart`: SHA256 4a5fa16106be54cc7667fcd462aab534b498577c333bf26cd9b6aebc925ae5ba → db37036095f0f8f54b3e820cb0eb9230a8f8243f12aaae55f4d87b2559cbf87d.
+
+
+## VII-04/05/06 — audit rezultate incerte, continuare 2026-10-15
+
+Bază verificată: c49c1f2765f3cb06e08adc46fe3b78c2982ff1b0, tree947c9c3fb5cea0fe9276c3acffb46d6b7688f039, checkout curat. Standard38693180067/identity38693180026/finance38693180131/platforms38693179790 SUCCESS; 568Flutter/172Python,132financeChrome+2Web700 și APK debug real+aapt. Niciun lot validat nu a fost reluat.
+
+19 probe Flutter noi execută handlerii reali ExpensePage cu o limită de persistență sintetică ce capturează la invocare și separă commit/ack: pending30s, succes, timeout fără commit, commit apoi timeout, reintroducere manuală după rezultat incert, două instanțe independente/ordine inversată a commiturilor, A→B→A2 cu commit întârziat, divergență closed/endDate după commit+timeout. Settlement și finance legacy rămân distincte. Fake-ul proiectează numai câmpurile observate, fără a reimplementa SDK/codec sau a pretinde Firebase live. Timeoutul este injectat la limita aplicației: nu afirmăm că Firestore.set expiră automat offline. CI pe noul commit este în așteptare.
+
+KNOWN UNSAFE (detectoare PASS, nu reparații): reintroducerea manuală poate persista două intenții echivalente cu ID-uri diferite, chiar dacă primul apel nu a comis deoarece memoria conține deja mutația; snapshotul concurent poate înlocui lista/totalurile altui writer; close poate rămâne deschis local după un commit închis. Zero retry/rollback/reconciliere nouă. Succesul sintetic este control pozitiv; verificăm 0 audit succes la timeout și 0 telemetrie pentru epoch vechi. Sursele runtime și firestore.rules sunt neschimbate în acest lot. Contractul detaliat și compatibilitatea #51 urmează separat, fără integrare.
