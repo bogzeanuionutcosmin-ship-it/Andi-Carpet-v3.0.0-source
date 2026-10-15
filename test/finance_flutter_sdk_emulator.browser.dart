@@ -1,5 +1,6 @@
 // Explicit CI invocation only; not part of offline unit-test discovery.
 import 'dart:async';
+import 'dart:html' as html;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -65,8 +66,8 @@ void main(){
   await sdkStage('persistence_primary',()=>auth.setPersistence(Persistence.NONE));await sdkStage('persistence_second',()=>secondAuth.setPersistence(Persistence.NONE));
   db=FirebaseFirestore.instanceFor(app:app);secondDb=FirebaseFirestore.instanceFor(app:secondApp);
   db.settings=const Settings(persistenceEnabled:false);secondDb.settings=const Settings(persistenceEnabled:false);
-  port=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:db));
-  secondPort=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:secondDb));
+  port=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:db,port:8081));
+  secondPort=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:secondDb,port:8081));
   await sdkStage('sign_in_primary',()=>signIn(auth,'a'));await sdkStage('sign_in_second',()=>signIn(secondAuth,'a'));uid=auth.currentUser!.uid;
  });
  tearDownAll(()async{for(final a in createdAuths){await sdkStage('cleanup_auth',()=>a.signOut());}for(final a in createdApps.reversed){await sdkStage('cleanup_app',()=>a.delete());}});
@@ -174,6 +175,7 @@ void main(){
   final request=receipt('flutter-offline',60,uid),before=await server('flutter-offline');
   var current=coordinator();final calls=port.atomicCalls;
   await db.disableNetwork();
+  await html.HttpRequest.request('http://127.0.0.1:8082/network',method:'POST',sendData:'offline');
   try {
    final cached=await db.doc(request.targetPath).get(const GetOptions(source:Source.cache));
    expect(cached.metadata.isFromCache,true);
@@ -181,7 +183,10 @@ void main(){
    expect((await current.reconcileExplicitly(request)).result.status,FinanceIntentStatus.uncertain);
    expect(port.atomicCalls,calls+1);
    expect((await current.journal.pending()).single.digest,request.digest);
-  } finally {await db.enableNetwork();}
+  } finally {
+   await html.HttpRequest.request('http://127.0.0.1:8082/network',method:'POST',sendData:'online');
+   await db.enableNetwork();
+  }
   current=coordinator();
   expect((await current.journal.pending()).single.digest,request.digest);
   final after=await server('flutter-offline');expect(after['receivedDeparture'],before['receivedDeparture']);
@@ -190,5 +195,5 @@ void main(){
   expect((await current.executeExplicitly(request)).result.replayed,true);
   expect((await server('flutter-offline'))['receivedEntries'],hasLength(1));
   expect(await current.journal.pending(),isEmpty);
- });
+ },timeout:const Timeout(Duration(minutes:2)));
 }

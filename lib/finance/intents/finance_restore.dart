@@ -2,6 +2,22 @@ import 'dart:convert';
 import 'finance_intent.dart';
 import 'finance_repository.dart';
 
+Map<String,Object?> _freezeManifest(Map<String,Object?> value) {
+  Object? normalize(Object? item) {
+    if(item is Map) {
+      if(item.keys.any((key)=>key is! String))throw const FormatException();
+      return <String,Object?>{for(final entry in item.entries) entry.key as String:normalize(entry.value)};
+    }
+    if(item is List)return item.map(normalize).toList();
+    return item;
+  }
+  try {
+    return freezeFinanceValue(normalize(value)) as Map<String,Object?>;
+  } on FormatException {
+    throw const FinanceRefusal('finance_restore_invalid_manifest');
+  }
+}
+
 // Bounded, targeted DEMO restore, not collection replacement or migration.
 // Financial targets and immutable evidence are guards ONLY, never writes.
 class FinanceRestorePlan {
@@ -9,8 +25,8 @@ class FinanceRestorePlan {
   final Map<String,Object?> expected, replacements;
   FinanceRestorePlan({required Map<String,Object?> expected,
     required Map<String,Object?> replacements})
-    : expected = freezeFinanceValue(expected) as Map<String,Object?>,
-      replacements = freezeFinanceValue(replacements) as Map<String,Object?> {
+    : expected = _freezeManifest(expected),
+      replacements = _freezeManifest(replacements) {
     if (expected.isEmpty || expected.length > maxDocuments || replacements.isEmpty ||
         !expected.keys.toSet().containsAll(replacements.keys) ||
         !expected.keys.any(_financialPath)) {

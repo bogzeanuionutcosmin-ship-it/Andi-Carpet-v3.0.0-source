@@ -2816,3 +2816,16 @@ esteinjectatînmemorie;nu reprezintăstoragefizic saurestartOS.
 Restorevechimultibatch/exportinventarcomplet rămânKNOWNUNSAFE. Raportuldetaliat
 este docs/MISIUNEA_VIII_CONTINUARE_2026-10-15.md. UIharness și capacitate sunt
 pregătitepentru loturileurmătoare, nu declarate dejaPASS.
+
+
+### Restore/offline — remediere CI fără relaxarea acceptanțelor
+513a987 /38773418300:113DartPASS/3FAIL. Intrărilecu mapuri goale inferate
+Map<dynamic,dynamic> erau refuzate cu FormatException înaintea clasificării;
+normalizarea verifică acum cheiString și păstrează refuzul FinanceRefusal.
+ProbaSDK a avut7PASS/1FAIL: disableNetwork() NU a împiedicat singur tranzacția
+web. Nu acceptăm confirmed drept offlinePASS și nu declarăm acel flag o pană reală.
+HarnessulCI adaugă un proxy exclusivloopback8081→8080 și un control8082 care
+închide socketurile și refuză orice transport până la reconectare. Nu sunt servicii
+noi înaplicație sau rețeaexternă. Aserțiuneauncertain/noautomaticreplay rămâne
+neschimbată; timeoutulprobei este2minute pentru retryurileSDKbounded existente.
+Rezultatele nouluiHEAD trebuie reverificate.192PythonlocalPASS.
