@@ -110,3 +110,5 @@ Trei probe noi candidate acoperă legături falsificate/malformed, limitele revi
 ### Limită UI și portabilitate
 
 Lista de recuperare este scrollabilă și ocupă o porțiune bounded a ecranului, fără a scoate ExpensePage din zona sa scrollabilă. O probă suplimentară încarcă toate cele 32 de intenții pe 320×480, ajunge la ultima fără overflow și cere zero execuții/citiri server. Martorul de baseRevision fracționar folosește 0.5 pe VM și Chrome; nu depinde de distincția runtime dintre un double integral și int în JavaScript. CI final și SHA/tree exacte sunt consemnate în PR după încheiere, fără a certifica un commit viitor aici.
+
+Proba bounded UI de pe 11aaca0 a trecut încărcarea celor 32 și verificarea fără overflow, dar nu a ajuns la ultimul element în bugetul implicit de 50 gesturi ×100px; helperul a încheiat cu No element. Fixture-ul folosește acum maximum 100 gesturi ×250px și cere explicit ultimul element hitTestable, nu doar existent în arbore. Limita jurnalului, numărul celor 32 operații și aserțiunile zero SDK/overflow rămân neschimbate. Celelalte 154 probe Dart au trecut pe acel SHA; proba UI se revalidează pe noul commit.

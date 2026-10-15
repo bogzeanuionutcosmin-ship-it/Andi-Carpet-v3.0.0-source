@@ -2922,3 +2922,6 @@ db4e2f5:151Dart+47JS+9SDKrealemulator+rawPASS. Întărit manifest Restore exclus
 
 MISIUNEA VIII — boundedUIrecovery și martorportabil:
 Recuperarea32intenții are listăscrollabilă și probă320x480/ultimulitem/zerooverflow/zeroSDK. MartorbaseRevision0.5 validneîntregpeVM+Chrome; evităm diferența doubleintegral/intînJS. Nicio aserțiune de integritate relaxată. CI finalobligatoriu peHEADnou, rezultateexacteînPR55; toateblocajeledeproducție rămân.
+
+MISIUNEA VIII — fixture boundedscroll:
+11aaca0:154DartPASS/1FAIL, proba32 a trecut load/nooverflow dar helperul nu a atinsultimul în50x100px(Noelement). Bugetgesturi explicit100x250px și aserțiune întărită hitTestablelast;32operații/zeroSDK/zerooverflow neschimbate. Nu declarăm probaPASS înainte de noulCI.

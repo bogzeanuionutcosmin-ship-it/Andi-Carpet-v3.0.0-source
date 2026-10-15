@@ -256,9 +256,9 @@ void main(){
     await t.tap(find.text('Verifică operațiile în așteptare'));await t.pumpAndSettle();
     expect(h.adapter.pendingCodes,hasLength(32));expect(t.takeException(),isNull);
     final last=find.byKey(const ValueKey(('finance-pending','settlements/trip31')));
-    await t.scrollUntilVisible(last,100,scrollable:find.descendant(
+    await t.scrollUntilVisible(last,250,maxScrolls:100,scrollable:find.descendant(
       of:find.byKey(const ValueKey('finance-pending-list')),matching:find.byType(Scrollable)));
-    expect(last,findsOneWidget);expect(t.takeException(),isNull);
+    expect(last.hitTestable(),findsOneWidget);expect(t.takeException(),isNull);
     expect(h.db.calls,0);expect(h.db.serverReads,0);
     await t.pumpWidget(const SizedBox());h.adapter.dispose();
   });
