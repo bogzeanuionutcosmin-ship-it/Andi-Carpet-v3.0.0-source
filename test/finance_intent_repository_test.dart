@@ -24,4 +24,15 @@ void main(){
  test('newer Admin-like revision prevents stale receipt',()async{final db=FinanceAtomicFixture()..seed('settlements/trip',history()..['revision']=2);final repo=FinanceRepository(port:db,ownerUid:'manager',sessionIsCurrent:()=>true);expect((await repo.execute(receipt(1))).status,FinanceIntentStatus.conflict);expect(db.writes,0);});
  for(final kind in [FinanceIntentKind.edit,FinanceIntentKind.close]){test('$kind serializes and preserves unrelated financial history',()async{final db=FinanceAtomicFixture()..seed('settlements/trip',history());final repo=FinanceRepository(port:db,ownerUid:'manager',sessionIsCurrent:()=>true);final i=FinanceIntent(operationId:'a'*32,actorUid:'manager',teamId:'team',collection:'settlements',documentId:'trip',baseRevision:0,kind:kind,changes:kind==FinanceIntentKind.edit?{'name':'Revised'}:{'closed':true,'endDate':DateTime.utc(2026,10,15)});expect((await repo.execute(i)).status,FinanceIntentStatus.confirmed);expect(db.documents['settlements/trip']!['receivedDeparture'],25);expect((await repo.execute(i)).replayed,true);expect(db.writes,2);});}
  test('create has stable target and cannot overwrite an existing document',()async{final db=FinanceAtomicFixture();final repo=FinanceRepository(port:db,ownerUid:'manager',sessionIsCurrent:()=>true);final i=FinanceIntent(operationId:'a'*32,actorUid:'manager',teamId:'team',collection:'settlements',documentId:'trip',baseRevision:0,kind:FinanceIntentKind.create,changes:{'name':'Trip','startDate':DateTime.utc(2026,10,1),'managerId':'manager','perDiemRate':50,'createdAt':DateTime.utc(2026,10,1)});expect((await repo.execute(i)).status,FinanceIntentStatus.confirmed);expect((await repo.execute(FinanceIntent.decode(i.encode()))).replayed,true);expect(db.writes,2);});
+ test('positive receipt lost by floating-point precision is refused without mutation',()async{
+  final before=history()..['receivedDeparture']=1e20;
+  final db=FinanceAtomicFixture()..seed('settlements/trip',before);
+  final repo=FinanceRepository(port:db,ownerUid:'manager',sessionIsCurrent:()=>true);
+  expect(1e20+1,1e20);
+  final result=await repo.execute(receipt(1,amount:1));
+  expect(result.status,FinanceIntentStatus.rejectedBeforeWrite);
+  expect(result.code,'finance_increment_lost_to_precision');expect(db.writes,0);
+  expect(db.documents['settlements/trip']!['receivedEntries'],isEmpty);
+ });
+
 }

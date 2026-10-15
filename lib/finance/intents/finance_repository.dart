@@ -74,6 +74,9 @@ Map<String, Object?> applyFinanceIntent(FinanceIntent intent, Map<String, Object
         final departure = oldDeparture + (intent.changes['kind'] == 'departure' ? amount : 0);
         final during = oldDuring + (intent.changes['kind'] == 'during' ? amount : 0);
         if (!departure.isFinite || !during.isFinite) throw const FinanceRefusal('finance_aggregate_overflow');
+        if ((intent.changes['kind'] == 'departure' ? departure <= oldDeparture : during <= oldDuring)) {
+          throw const FinanceRefusal('finance_increment_lost_to_precision');
+        }
         entries.add({'id':intent.operationId,...intent.changes});
         data.addAll({'receivedEntries':entries,'receivedDeparture':departure,'receivedDuring':during,
           'receivedOpeningDeparture':openingDeparture,'receivedOpeningDuring':openingDuring});

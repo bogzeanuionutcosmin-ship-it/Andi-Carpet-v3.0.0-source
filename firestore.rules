@@ -184,15 +184,20 @@ service cloud.firestore {
     }
     // Financial request-local predicates use one cached profile instead of the
     // general permission tree repeatedly expanding isActive/userData calls.
-    function financialPermission(u, permission) {
+    function legacyFinancialPermission(u, permission) {
       let legacy = u.get('function', '');
       let definition = /databases/$(database)/documents/functions/$(legacy);
+      return legacy == 'director' ||
+        (legacy != '' && exists(definition) && get(definition).data.active == true
+          && permission in get(definition).data.permissions) ||
+        (legacy in ['driver','worker','developer'] && permission == 'viewOwnDecont');
+    }
+    function financialPermission(u, permission) {
+      // An effective-permission profile need not have the old function field.
+      // Construct its legacy definition path only in the legacy branch.
       return ('effectivePermissions' in u) ?
         (u.effectivePermissions is list && permission in u.effectivePermissions) :
-        (legacy == 'director' ||
-          (exists(definition) && get(definition).data.active == true
-            && permission in get(definition).data.permissions) ||
-          (legacy in ['driver','worker','developer'] && permission == 'viewOwnDecont'));
+        legacyFinancialPermission(u, permission);
     }
     function financialRead(teamId) {
       let u = userData();
@@ -202,9 +207,10 @@ service cloud.firestore {
     }
     function financialDirector() {
       let u = userData();
+      let ids = u.get('functionIds', []);
       return u.get('role', '') == 'director'
         || u.get('function', '') == 'director'
-        || 'director' in u.get('functionIds', []);
+        || (ids is list && 'director' in ids);
     }
     function financeManager(d) {
       let legacy = /databases/$(database)/documents/finance/$(d.teamId);
@@ -544,6 +550,7 @@ service cloud.firestore {
           && finiteMoney(d.receivedDeparture) && finiteMoney(d.receivedDuring)
           && d.receivedDeparture == departure + (entry.kind == 'departure' ? entry.amount : 0)
           && d.receivedDuring == during + (entry.kind == 'during' ? entry.amount : 0)
+          && (entry.kind == 'departure' ? d.receivedDeparture > departure : d.receivedDuring > during)
           && d.receivedOpeningDeparture == old.get('receivedOpeningDeparture', entries.size() == 0 ? departure : 0)
           && d.receivedOpeningDuring == old.get('receivedOpeningDuring', entries.size() == 0 ? during : 0);
       }

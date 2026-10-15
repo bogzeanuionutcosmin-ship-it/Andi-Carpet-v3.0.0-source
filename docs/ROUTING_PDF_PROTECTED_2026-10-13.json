@@ -84,7 +84,7 @@
     "assets/ui/teams.png": "c662ceb24d96f30158fd04c40484c75493dd1eac7a52f6c4b0927d219f3f0632",
     "firebase.json": "3d14c4ffdf69d1d91b071d77011149f4819045162caa8aa4859bf25c71d1a19b",
     "firebase.rules-test.json": "778163377670b37f37ef1db096c81bcde791e8eec62c8f906d955b32cf12cba1",
-    "firestore.rules": "a59b0a27d5e58b2e7e3c9e4936addeeff52c71dce29901e340795842b8060cf4",
+    "firestore.rules": "4b744fd1ce9826041513e680affbdbdc2713deb9d87e1cf5677ea1bfc50833e7",
     "lib/admin/admin_dashboard_actions.dart": "d7857679caf3aeeaf21c1cb35a2e7e407f41b1e450b0dd30f20614aa9f088d77",
     "lib/documents/documents_page.dart": "47ca0f592f31d217bd9ca1a9c0d8bca20ed014fc70d197705d0a0a58d33b7223",
     "lib/download_file.dart": "8c7ce47316ada93fc7d718390f6ac20e8588e28bec902c128a8fd324dc776334",

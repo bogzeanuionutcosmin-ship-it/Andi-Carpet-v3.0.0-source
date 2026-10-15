@@ -109,3 +109,20 @@ test('explicit empty permissions do not acquire legacy manager permission',async
  await env.withSecurityRulesDisabled(c=>updateDoc(doc(c.firestore(),'users/manager'),{effectivePermissions:[]}));
  await assertFails(submit(db('manager'),intent(1)));
 });
+
+test('server rejects positive receipt invisible at aggregate precision',async()=>{
+ await env.withSecurityRulesDisabled(c=>updateDoc(doc(c.firestore(),'settlements/trip'),{receivedDeparture:1e20}));
+ const before=(await getDoc(doc(db('manager'),'settlements/trip'))).data();
+ assert.equal(before.receivedDeparture+1,before.receivedDeparture);
+ await assertFails(malicious(intent(1,{amount:1}),{}));
+ const after=(await getDoc(doc(db('manager'),'settlements/trip'))).data();assert.deepEqual(after,before);
+});
+
+test('effective-permission manager does not require legacy function field',async()=>{
+ await env.withSecurityRulesDisabled(async c=>{const d=c.firestore();const ref=doc(d,'users/manager');const data=(await getDoc(ref)).data();delete data.function;await setDoc(ref,data);});
+ await assertSucceeds(submit(db('manager'),intent(1)));
+});
+test('null optional functionIds do not break worker manager profile',async()=>{
+ await env.withSecurityRulesDisabled(c=>updateDoc(doc(c.firestore(),'users/manager'),{functionIds:null}));
+ await assertSucceeds(submit(db('manager'),intent(1)));
+});
