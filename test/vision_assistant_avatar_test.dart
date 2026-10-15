@@ -6,7 +6,6 @@ void main() {
   testWidgets('Vision body has a stable, accessible identity',
       (WidgetTester tester) async {
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
 
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(body: Center(child: VisionAssistantAvatar())),
@@ -23,6 +22,8 @@ void main() {
     ), findsNothing);
     expect(find.byType(IconButton), findsNothing);
     expect(tester.takeException(), isNull);
+    // Flutter verifies SemanticsHandle disposal before tearDown callbacks.
+    semantics.dispose();
   });
 
   testWidgets('body scales to compact, normal and large sizes without overflow',
