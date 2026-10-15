@@ -167,7 +167,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         'retentionDays': settings.backupRetentionDays,
       }, SetOptions(merge: true));
     } catch (e) {
-      debugPrint('Mentenanță automată: $e');
+      debugPrint('[home] maintenance_failed');
     } finally {
       _automaticBackupInFlight = false;
     }
@@ -221,7 +221,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      debugPrint('[learning] Nu s-a putut salva evenimentul $category/$event: $e');
+      debugPrint('[learning] save_event_failed');
     }
   }
 
