@@ -21,7 +21,8 @@ class VisionLocalPersistence {
   final VisionPersistenceTracker status = VisionPersistenceTracker();
 
   Future<void>? _loading;
-  Future<void> _lastWrite = Future<void>.value();
+  Future<void>? _draining;
+  String? _savedSnapshot;
 
   Future<void> initialize() => _loading ??= _restore();
 
@@ -40,25 +41,36 @@ class VisionLocalPersistence {
   /// Called when a new event enters the bounded log.
   void changed() => status.changed();
 
-  /// Await all earlier writes and the initial restore before taking a snapshot.
-  ///
-  /// Errors are recorded in the status; diagnostic failures never prevent
-  /// normal app operation or trigger recursive error reports.
-  Future<void> flush() {
-    _lastWrite = _lastWrite.then((_) async {
+  /// One shared drain, even for thousands of simultaneous critical reports.
+  /// Encoding waits for restore; dirty events during a write are included in
+  /// the final snapshot even if their caller did not request another flush.
+  /// Explicit flush retries failures, but no automatic same-revision retry
+  /// or unbounded queue of futures is created.
+  Future<void> flush() => _draining ??= _drain();
+
+  Future<void> _drain() async {
+    try {
       await initialize();
-      final revision = status.revision;
-      try {
-        // Snapshot encoding can fail too (e.g. unexpected clock errors).
-        // Catching it inside the queue prevents one bad attempt from
-        // poisoning every future flush.
-        final snapshot = log.encode();
-        await _write(snapshot);
-        status.writeSucceeded(revision);
-      } catch (_) {
-        status.writeFailed(revision);
+      while (true) {
+        final revision = status.revision;
+        try {
+          // Re-encode on explicit flush: TTL pruning can change the snapshot
+          // without a new report/revision. Unchanged successful snapshots
+          // need no additional secure-storage write.
+          final snapshot = log.encode();
+          if (snapshot != _savedSnapshot ||
+              status.state != VisionPersistenceState.saved) {
+            await _write(snapshot);
+            _savedSnapshot = snapshot;
+          }
+          status.writeSucceeded(revision);
+        } catch (_) {
+          status.writeFailed(revision);
+        }
+        if (status.revision <= revision) break;
       }
-    });
-    return _lastWrite;
+    } finally {
+      _draining = null;
+    }
   }
 }

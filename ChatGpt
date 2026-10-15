@@ -2375,3 +2375,8 @@ Cele 294 teste din bază, 12 acceptanțe/8 controale și fixture-urile de securi
 PDF Magic, OCR operațional/parser, finanțe/rules/config sunt păstrate. Million era absent în #35 și nu a fost importat; originalul #34 are hashul 3bece2fa... verificat. Raport autoritativ: docs/MISIUNE_V_VISION_INTEGRARE_2026-10-14.md, cu matrice, CI URLs/job IDs, arbori și limite.
 
 Hardware/login Firebase live, GPS/FCM/cameră/Keystore fizic sunt NEEXECUTATE. Nu s-a instalat/publicat APK, publicat web, făcut deploy/merge sau schimbat producția/billing. Nu se revendică integrare în producție. Checkpointul documentar are SHA/tree/CI proprii în PR după verificare. La reluare verifică HEAD real; nu repeta loturile IV/V validate. Accesul UI public/per UID, hardware/release, Issue #32, PDF și backup/OCR necesită scope separat.
+
+
+## MISIUNEA VI — lot 1 coalescing, 15.10.2026
+
+Issue39, ramură nouă hardening/vision-authgate-v1-20261015 din #38 7a87d1d; nu repetăm III–V. Coalescing selectiv comparat cu #34 d84641b: single active drain, no-op snapshot salvat, TTL flush și dirty during write inclus fără alt flush. Șase teste adversariale noi, status/restore/format/ownership/business păstrate. 167 Python local PASS; Flutter/Dart local indisponibile, CI urmează pe SHA exact. Android workflow existent extins numai pentru noul head_ref, zero release/upload. Raport docs/MISIUNE_VI_VISION_HARDENING_2026-10-15.md. Urmează CI lot1, apoi lot2; restul NEEXECUTAT. Fără merge/deploy/APK/web/producție/surse editate.
