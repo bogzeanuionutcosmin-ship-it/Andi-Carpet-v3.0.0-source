@@ -49,7 +49,13 @@ class FinanceRestorePlan {
     for(final target in targets) {
       if(target.value is! Map<String,Object?>)throw const FinanceRefusal('finance_restore_missing_target');
       final data=target.value as Map<String,Object?>,revision=data['revision']??0;
-      if(revision is! int || revision<0)throw const FinanceRefusal('finance_restore_invalid_revision');
+      if(revision is! int || revision<0 || revision>9007199254740991)throw const FinanceRefusal('finance_restore_invalid_revision');
+      final team=data['teamId'];
+      if(team is! String || team.isEmpty || team.length>128 || team.contains('/') ||
+          (target.key.startsWith('finance/') && target.key.split('/').last!=team) ||
+          (revision==0 && data['lastOperationId']!=null)) {
+        throw const FinanceRefusal('finance_restore_invalid_binding');
+      }
       if(revision>0) {
         final id=data['lastOperationId'];
         final marker=this.expected['${target.key}/financialIntents/$id'];
@@ -60,8 +66,20 @@ class FinanceRestorePlan {
       }
     }
     for(final path in this.expected.keys.where((path)=>path.contains('/financialIntents/'))) {
-      if(!this.expected.containsKey(path.split('/financialIntents/').first)) {
-        throw const FinanceRefusal('finance_restore_missing_target');
+      final targetPath=path.split('/financialIntents/').first;
+      if(!this.expected.containsKey(targetPath))throw const FinanceRefusal('finance_restore_missing_target');
+      final target=this.expected[targetPath] as Map<String,Object?>;
+      final marker=this.expected[path];
+      if(marker is! Map<String,Object?>)throw const FinanceRefusal('finance_restore_invalid_evidence');
+      final revision=marker['revision'],actor=marker['actorUid'],digest=marker['digest'];
+      if(marker.keys.any((key)=>!const {'operationId','actorUid','teamId','targetPath','baseRevision','revision','kind','digest','createdAt'}.contains(key)) ||
+          marker['operationId']!=path.split('/').last || marker['targetPath']!=targetPath ||
+          marker['teamId']!=target['teamId'] || actor is! String || actor.isEmpty || actor.length>128 || actor.contains('/') ||
+          revision is! int || revision<1 || revision>(target['revision'] as int? ?? 0) ||
+          marker['baseRevision'] is! int || marker['baseRevision']!=revision-1 || digest is! String || !RegExp(r'^[a-f0-9]{64}$').hasMatch(digest) ||
+          !FinanceIntentKind.values.any((kind)=>kind.name==marker['kind']) ||
+          (targetPath.startsWith('finance/') && marker['kind']!='receipt')) {
+        throw const FinanceRefusal('finance_restore_invalid_evidence');
       }
     }
     if (utf8.encode(encode()).length > maxBytes) {

@@ -18,11 +18,13 @@ class _RestoreTx implements FinanceRestoreTransaction {
 void main() {
   const target='settlements/trip', room='locations/room';
   final marker='$target/financialIntents/${'a'*32}';
-  Map<String,Object?> finance()=>{'revision':1,'lastOperationId':'a'*32,
+  Map<String,Object?> finance()=>{'teamId':'team','revision':1,'lastOperationId':'a'*32,
     'startDate':FinanceTimestamp(1790812800,123456789),'receivedDeparture':200};
+  Map<String,Object?> evidence()=>{'operationId':'a'*32,'digest':'b'*64,'revision':1,
+    'baseRevision':0,'targetPath':target,'teamId':'team','actorUid':'manager','kind':'receipt'};
   RestoreFixture fixture() {
     final f=RestoreFixture();
-    f.db.seed(target,finance());f.db.seed(marker,{'operationId':'a'*32,'digest':'b'*64,'revision':1});
+    f.db.seed(target,finance());f.db.seed(marker,evidence());
     f.db.seed(room,{'name':'Current'});return f;
   }
   FinanceRestorePlan plan(RestoreFixture f)=>FinanceRestorePlan(expected:{
@@ -42,7 +44,7 @@ void main() {
     expect(r.status,FinanceIntentStatus.confirmed);expect(f.db.reads,3);expect(f.db.writes,1);
     expect(f.db.documents[room],{'name':'Restored'});
     expect(canonicalFinanceJson(f.db.documents[target]),financialBefore);
-    expect(f.db.documents[marker],{'operationId':'a'*32,'digest':'b'*64,'revision':1});
+    expect(f.db.documents[marker],evidence());
   });
   test('stale financial target rejects entire restore before unrelated writes',()async {
     final f=fixture(),p=plan(f);f.db.seed(target,{...finance(),'revision':2});
@@ -96,6 +98,38 @@ void main() {
     final f=fixture();
     expect(()=>FinanceRestorePlan(expected:plan(f).expected,replacements:{room:{'name':'x'*(256*1024)}}),
       throwsA(isA<FinanceRefusal>().having((e)=>e.code,'code','finance_restore_capacity')));
+  });
+  test('restore refuses malformed or cross-bound immutable evidence before opening a transaction',(){
+    for(final change in <Map<String,Object?>>[
+      {'targetPath':'settlements/other'},{'teamId':'other'},{'actorUid':''},{'actorUid':'a/b'},
+      {'operationId':'c'*32},{'baseRevision':1},{'baseRevision':0.0},{'revision':0},{'digest':'bad'},
+      {'kind':'unknown'},{'unexpected':'field'},
+    ]) {
+      final f=fixture();
+      expect(()=>FinanceRestorePlan(expected:{target:finance(),marker:{...evidence(),...change},room:{}},
+        replacements:{room:{}}),throwsA(isA<FinanceRefusal>()));
+      expect(f.db.calls,0);
+    }
+  });
+  test('restore refuses inconsistent legacy and out-of-range revision bindings',(){
+    for(final change in <Map<String,Object?>>[
+      {'teamId':''},{'teamId':'a/b'},{'revision':9007199254740992},
+      {'revision':0,'lastOperationId':'a'*32},
+    ]) {
+      expect(()=>FinanceRestorePlan(expected:{target:{...finance(),...change},marker:evidence(),room:{}},
+        replacements:{room:{}}),throwsA(isA<FinanceRefusal>()));
+    }
+  });
+  test('valid historical and latest evidence stay immutable across targeted restore',()async{
+    final f=fixture(),latest='$target/financialIntents/${'c'*32}';
+    f.db.seed(target,{...finance(),'revision':2,'lastOperationId':'c'*32});
+    f.db.seed(latest,{...evidence(),'operationId':'c'*32,'revision':2,'baseRevision':1,'kind':'edit'});
+    final expected=<String,Object?>{target:f.db.documents[target],marker:f.db.documents[marker],
+      latest:f.db.documents[latest],room:f.db.documents[room]};
+    final p=FinanceRestorePlan(expected:expected,replacements:{room:{'name':'Restored'}});
+    final r=await FinanceDemoRestore(port:f,sessionIsCurrent:()=>true).executeExplicitly(p);
+    expect(r.status,FinanceIntentStatus.confirmed);expect(f.db.reads,4);expect(f.db.writes,1);
+    for(final path in [target,marker,latest])expect(sameFinanceValue(f.db.documents[path],p.expected[path]),true);
   });
   test('missing latest marker or orphan evidence is rejected before SDK access',() {
     expect(()=>FinanceRestorePlan(expected:{target:finance(),room:{}},replacements:{room:{}}),throwsA(isA<FinanceRefusal>()));
