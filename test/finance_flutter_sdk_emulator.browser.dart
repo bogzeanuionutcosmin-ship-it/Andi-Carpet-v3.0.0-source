@@ -11,6 +11,10 @@ import 'package:cloud_firestore_web/cloud_firestore_web.dart';
 import 'package:andi_carpeta/finance/intents/finance_intent.dart';
 import 'package:andi_carpeta/finance/intents/finance_repository.dart';
 import 'package:andi_carpeta/finance/intents/firestore_finance_port.dart';
+import 'package:andi_carpeta/finance/intents/finance_restore.dart';
+import 'package:andi_carpeta/finance/intents/firestore_restore_port.dart';
+import 'package:andi_carpeta/finance/intents/finance_coordinator.dart';
+import 'package:andi_carpeta/finance/intents/finance_journal.dart';
 
 // Bounded synthetic setup diagnostics; never emit token/UID/financial payload.
 Future<T> sdkStage<T>(String code,Future<T> Function() action) async {
@@ -30,6 +34,13 @@ class ObservedPort implements FinanceAtomicPort {
  @override Future<FinanceServerObservation> readServer(String path)async{
   serverReads++;final result=await inner.readServer(path);await afterServerRead?.call();return result;
  }
+}
+// In-memory journal fixture isolates transport acceptance from physical secure
+// storage durability. Reconstructing it does not model an OS process restart.
+class BrowserJournalStorage implements FinanceJournalStorage {
+ final values=<String,String>{};
+ @override Future<String?> read(String key)async=>values[key];
+ @override Future<void> write(String key,String value)async{values[key]=value;}
 }
 FinanceIntent receipt(String target,int id,String uid,{int revision=0})=>FinanceIntent(operationId:id.toRadixString(16).padLeft(32,'0'),actorUid:uid,teamId:'flutter-team',collection:'settlements',documentId:target,baseRevision:revision,kind:FinanceIntentKind.receipt,changes:{'kind':'departure','amount':200.0,'method':'Cash','fromName':'Synthetic payer','date':DateTime.utc(2026,10,15)});
 void main(){
@@ -121,5 +132,63 @@ void main(){
   // Independent JS verifier reads raw server Timestamp seconds/nanos after the
   // Flutter suite. Flutter web's decoded view alone cannot certify precision.
   expect(data['receivedDeparture'],225);expect(data['receivedEntries'],hasLength(2));
+ });
+ test('actual Flutter SDK targeted Admin restore preserves evidence and globally refuses stale finance',()async{
+  final repo=FinanceRepository(port:port,ownerUid:uid,sessionIsCurrent:()=>true);
+  final initial=receipt('flutter-restore',50,uid);
+  expect((await repo.execute(initial)).status,FinanceIntentStatus.confirmed);
+  await secondAuth.signOut();await signIn(secondAuth,'admin');
+  try {
+   const room='locations/flutter-restore-room';
+   Future<Map<String,Object?>?> snapshot(String path)async {
+    final value=await secondDb.doc(path).get(const GetOptions(source:Source.server));
+    expect(value.metadata.isFromCache,false);expect(value.metadata.hasPendingWrites,false);
+    return decodeFinanceFirestoreDocument(value.data());
+   }
+   final expected=<String,Object?>{
+    initial.targetPath:await snapshot(initial.targetPath),
+    initial.markerPath:await snapshot(initial.markerPath),room:await snapshot(room),
+   };
+   final plan=FinanceRestorePlan.decode(FinanceRestorePlan(expected:expected,
+    replacements:{room:{'name':'Restored demo room'}}).encode());
+   final restore=FinanceDemoRestore(port:FirestoreDemoRestorePort.fromFinanceEmulator(secondPort.inner as FirestoreFinanceAtomicPort),
+    sessionIsCurrent:()=>secondAuth.currentUser!=null);
+   expect((await restore.executeExplicitly(plan)).status,FinanceIntentStatus.confirmed);
+   expect(await snapshot(room),{'name':'Restored demo room'});
+   expect(sameFinanceValue(await snapshot(initial.targetPath),expected[initial.targetPath]),true);
+   expect(sameFinanceValue(await snapshot(initial.markerPath),expected[initial.markerPath]),true);
+   final stale=FinanceRestorePlan(expected:{...expected,room:await snapshot(room)},
+    replacements:{room:{'name':'Must not be written'}});
+   expect((await repo.execute(receipt('flutter-restore',51,uid,revision:1))).status,FinanceIntentStatus.confirmed);
+   expect((await restore.executeExplicitly(stale)).status,FinanceIntentStatus.conflict);
+   expect(await snapshot(room),{'name':'Restored demo room'});
+   expect((await server('flutter-restore'))['revision'],2);
+   expect((await server('flutter-restore'))['receivedEntries'],hasLength(2));
+  } finally {await secondAuth.signOut();await signIn(secondAuth,'a');}
+ });
+ test('actual Flutter SDK disableNetwork cached read and reconnect never replay financial intent automatically',()async{
+  final storage=BrowserJournalStorage();
+  FinanceIntentCoordinator coordinator()=>FinanceIntentCoordinator(
+   repository:FinanceRepository(port:port,ownerUid:uid,sessionIsCurrent:()=>auth.currentUser?.uid==uid),
+   journal:FinanceIntentJournal(storage:storage,ownerUid:uid,sessionIsCurrent:()=>auth.currentUser?.uid==uid));
+  final request=receipt('flutter-offline',60,uid),before=await server('flutter-offline');
+  var current=coordinator();final calls=port.atomicCalls;
+  await db.disableNetwork();
+  try {
+   final cached=await db.doc(request.targetPath).get(const GetOptions(source:Source.cache));
+   expect(cached.metadata.isFromCache,true);
+   expect((await current.executeExplicitly(request)).result.status,FinanceIntentStatus.uncertain);
+   expect((await current.reconcileExplicitly(request)).result.status,FinanceIntentStatus.uncertain);
+   expect(port.atomicCalls,calls+1);
+   expect((await current.journal.pending()).single.digest,request.digest);
+  } finally {await db.enableNetwork();}
+  current=coordinator();
+  expect((await current.journal.pending()).single.digest,request.digest);
+  final after=await server('flutter-offline');expect(after['receivedDeparture'],before['receivedDeparture']);
+  expect(after['receivedEntries'],before['receivedEntries']);expect(port.atomicCalls,calls+1);
+  expect((await current.executeExplicitly(request)).result.status,FinanceIntentStatus.confirmed);
+  expect((await current.executeExplicitly(request)).result.replayed,true);
+  expect((await server('flutter-offline'))['receivedEntries'],hasLength(1));
+  expect(await current.journal.pending(),isEmpty);
  });
 }
