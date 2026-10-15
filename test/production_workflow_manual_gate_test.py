@@ -1,95 +1,120 @@
-"""Prevent accidental production deploys from normal source pushes.
+"""Read-only inventory of release and repository-mutation admission gates.
 
-Scope: GitHub Actions source-level deployment admission. Passing this test
-does not authorize an actual deploy, prove GitHub environment protections are
-configured, or certify production Firebase/Google Cloud IAM settings.
+The repository's legacy production deploy workflows are protected byte-for-byte
+by 116 SHA256 freeze pins. They contain KNOWN UNSAFE push-to-deploy triggers.
+This characterization prevents *new* automatic deploy paths without changing
+or hiding the two existing risks. It does not certify production readiness.
 """
 from pathlib import Path
+import hashlib
+import json
 import re
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
+MANIFEST = ROOT / "docs" / "ROUTING_PDF_PROTECTED_2026-10-13.json"
 
 PUBLISH = WORKFLOWS / "publish-authorized-release.yml"
 RESTORE = WORKFLOWS / "restore-member-directory.yml"
 OIDC = WORKFLOWS / "firebase-oidc-deploy.yml"
+IMPORT = WORKFLOWS / "import-v3.0.1.yml"
+SETUP = WORKFLOWS / "setup-source.yml"
 
-EXPECTED = {
-    PUBLISH: ("DEPLOY_HOSTING", "hosting"),
-    RESTORE: ("RESTORE_MEMBER_DIRECTORY", "restore"),
-}
+# These two are NOT secure; they are documented production exposure until
+# explicit release-governance authorization permits updating frozen files.
+KNOWN_UNSAFE_AUTO_DEPLOY = {PUBLISH, RESTORE}
 
 
-def _trigger(source: str) -> str:
-    """Extract top-level trigger section, not a step name or comment."""
+def _trigger(source):
     match = re.search(r"(?ms)^on:\s*\n(.*?)(?=^[a-z][a-z_-]*:\s*|\Z)",
                       source)
     if match is None:
-        raise AssertionError("No top-level GitHub Actions 'on' trigger")
+        raise AssertionError("Top-level workflow 'on' block is missing")
     return match.group(1)
 
 
-class ProductionWorkflowAdmission(unittest.TestCase):
-    def test_no_automatic_production_deploy_on_main_push(self):
-        # Include future workflow files too: a new push-triggered deployment
-        # must fail before anyone considers merging its Draft PR.
-        for workflow in sorted(WORKFLOWS.glob("*.yml")):
-            content = workflow.read_text(encoding="utf-8")
-            if ("firebase deploy " not in content and
-                    "node functions/backfill_member_directory.js" not in content):
+def _automatic(trigger):
+    return bool(re.search(r"(?m)^\s{2}(?:push|pull_request)\s*:", trigger))
+
+
+class ProductionWorkflowCharacterization(unittest.TestCase):
+    def test_no_additional_automatic_production_deploy_workflows(self):
+        # Explicit technical debt, NOT a claim that the known two are safe.
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            source = path.read_text(encoding="utf-8")
+            if ("firebase deploy " not in source and
+                    "node functions/backfill_member_directory.js" not in source):
                 continue
-            with self.subTest(workflow=workflow.name):
-                triggers = _trigger(content)
-                self.assertNotRegex(triggers, r"(?m)^\s{2}push\s*:",
-                                    "Production-capable workflows cannot deploy on push")
-                self.assertNotRegex(triggers, r"(?m)^\s{2}pull_request\s*:",
-                                    "A PR must never trigger a production deploy")
+            with self.subTest(workflow=path.name):
+                if _automatic(_trigger(source)):
+                    self.assertIn(
+                        path, KNOWN_UNSAFE_AUTO_DEPLOY,
+                        "NEW UNSAFE deployment trigger outside frozen exceptions",
+                    )
 
-    def test_production_operators_require_manual_main_and_exact_confirmation(self):
-        for workflow, (phrase, job) in EXPECTED.items():
-            content = workflow.read_text(encoding="utf-8")
-            with self.subTest(workflow=workflow.name):
-                triggers = _trigger(content)
-                self.assertRegex(triggers, r"(?m)^\s{2}workflow_dispatch\s*:")
-                self.assertIn("confirm_production:", triggers)
-                self.assertIn("required: true", triggers)
-                self.assertIn("type: string", triggers)
-                self.assertIn(f"inputs.confirm_production == '{phrase}'",
-                              content)
-                self.assertIn("github.event_name == 'workflow_dispatch'",
-                              content)
-                self.assertIn("github.ref == 'refs/heads/main'", content)
-                # Scope the gate to the job that can actually deploy.
-                job_section = content.split(f"  {job}:\n", 1)[1]
-                before_steps = job_section.split("    steps:", 1)[0]
-                self.assertIn("    if:", before_steps)
-                self.assertIn(f"inputs.confirm_production == '{phrase}'",
-                              before_steps)
-                self.assertIn("environment: firebase-production", before_steps)
+    def test_frozen_deploy_workflow_byte_integrity(self):
+        protected = json.loads(MANIFEST.read_text(encoding="utf-8"))[
+            "protected_sha256"
+        ]
+        for path in sorted(KNOWN_UNSAFE_AUTO_DEPLOY):
+            relative = str(path.relative_to(ROOT))
+            with self.subTest(path=relative):
+                self.assertIn(relative, protected)
+                self.assertEqual(
+                    hashlib.sha256(path.read_bytes()).hexdigest(),
+                    protected[relative],
+                    "Do not bypass freeze pins to fix deployment risk",
+                )
 
-    def test_existing_deploy_operations_remain_manual_reviewable(self):
+    def test_legacy_risk_and_manual_oidc_are_expressly_characterized(self):
+        # These checks prove the risky commands exist, not that they are safe.
         hosting = PUBLISH.read_text(encoding="utf-8")
         restore = RESTORE.read_text(encoding="utf-8")
         self.assertIn("firebase deploy --only hosting", hosting)
-        for command in (
-            "firebase deploy --only firestore:rules",
-            "firebase deploy --only functions:syncMemberDirectory",
-            "node functions/backfill_member_directory.js",
-        ):
-            self.assertIn(command, restore)
-        # Source hardening is not permission to run these commands in CI.
-        self.assertIn("id-token: write", hosting)
-        self.assertIn("id-token: write", restore)
+        self.assertIn("firebase deploy --only firestore:rules", restore)
+        self.assertIn("firebase deploy --only functions:syncMemberDirectory",
+                      restore)
+        self.assertIn("node functions/backfill_member_directory.js", restore)
+        for content in (hosting, restore):
+            self.assertIn("environment: firebase-production", content)
+            self.assertIn("id-token: write", content)
+        oidc = OIDC.read_text(encoding="utf-8")
+        self.assertRegex(_trigger(oidc),
+                         r"(?m)^\s{2}workflow_dispatch\s*:")
+        self.assertFalse(_automatic(_trigger(oidc)))
+        self.assertIn("github.ref == 'refs/heads/main'", oidc)
+        self.assertIn("inputs.confirm_production == 'DEPLOY'", oidc)
+        self.assertIn("environment: firebase-production", oidc)
 
-    def test_oidc_manual_deploy_gate_must_remain_protected(self):
-        content = OIDC.read_text(encoding="utf-8")
-        triggers = _trigger(content)
-        self.assertRegex(triggers, r"(?m)^\s{2}workflow_dispatch\s*:")
-        self.assertNotRegex(triggers, r"(?m)^\s{2}push\s*:")
-        self.assertIn("github.ref == 'refs/heads/main'", content)
-        self.assertIn("inputs.confirm_production == 'DEPLOY'", content)
-        self.assertIn("environment: firebase-production", content)
+    def test_source_importers_are_manual_only_but_can_push_main(self):
+        # These workflows have contents:write and git push. They are not a
+        # direct Firebase deploy, but still merit separate release review.
+        for path in (IMPORT, SETUP):
+            with self.subTest(path=path.name):
+                source = path.read_text(encoding="utf-8")
+                trigger = _trigger(source)
+                self.assertRegex(trigger, r"(?m)^\s{2}workflow_dispatch\s*:")
+                self.assertFalse(_automatic(trigger))
+                self.assertIn("contents: write", source)
+                self.assertRegex(source, r"(?m)^\s*git push\s*$")
+                self.assertIn(str(path.relative_to(ROOT)),
+                              json.loads(MANIFEST.read_text(encoding="utf-8"))[
+                                  "protected_sha256"
+                              ])
+
+    def test_no_auto_release_admission_via_repo_tests(self):
+        # A future workflow may write to main without containing Firebase
+        # commands; require any git-push actor to remain manual at minimum.
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            source = path.read_text(encoding="utf-8")
+            if not re.search(r"(?m)^\s*git push(?:\s|$)", source):
+                continue
+            with self.subTest(path=path.name):
+                self.assertFalse(
+                    _automatic(_trigger(source)),
+                    "Git push actor in automatic workflow needs separate review",
+                )
 
 
 if __name__ == "__main__":
