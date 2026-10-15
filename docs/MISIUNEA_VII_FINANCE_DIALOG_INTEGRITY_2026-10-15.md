@@ -65,3 +65,38 @@ Pin autorizat VII-08 `lib/expenses/expense_settlement_actions.dart`: 3c8931aff9b
 
 ### Corecție fixture VII-08
 HEAD9c02ebe: probe38689600569FAIL înainte deexecuție la două cascade Dart cu arrow closure (setter interpretat peFuture/bool). Controller/numeric51PASS, receiptRED specific confirmat și director1PASS; nu revendicăm20session/3telemetryPASS. Atribuirile fixture devin statementuri separate, fără schimbarea aserțiunilor/runtime. Dublaconfirmare dinlifecycle invocă acum handlerul real de douăori; aldoileatap hit-tested în animație putea rata widgetul (warningCI), deci acea probă anterioară nu certifica reentrancy.
+
+## VII-10/11 — porți separate și platforme
+HEAD6d53127035fa05672944824a20f5ee2b024a81f1/tree591f3a55435fb8d2d3db26e794f05e48fdea4c64: standard38689824155 SUCCESS5/5, identity38689824183 SUCCESS, probe38689824104 SUCCESS. 51PASS lifecycle/numeric originale+noi;24PASS session/telemetry/director;1control edit-successPASS. Cele3probeRED au eșuat din motivele specifice, nu compilare. Dublaconfirmare este acum invocată efectiv de2ori șiPASS.
+
+Workflowul nou mission-vii-platforms.yml este izolat prin branch+concurrency proprii; păstrează workflowurile istorice și hashul probei originale controller. Rulează AuthGate/Vision, martorii financiari devenițiGREEN, testelefinance înVM șiChrome, plus2probeWeb700, apoi compileazălib/main.dart înAPKdebug și inspecteazăaapt. Nu uploadăm/instalăm/publicămAPK, nu modificăm versiuni/manifest/semnare/dependențe. Rezultatul peHEADul final se verifică înGitHubActions și se înscrie înPR50; nu este revendicat anticipat.
+
+## VII-12 — checkpoint parțial și reluare
+**MisiuneaVII NU este încheiată integral.** VII-01,02,03 și07 au probe funcționale; VIII certificăExpensePage (limitaHome/Learning rămâne); IX este diferențialread-only; X păstreazăfreeze și porțile distincte; XI urmează validarea platformelor peultimulHEAD. IV/V/VI rămânKNOWN RED și implementarea rezultatului incert necesităreview separat. NiciunGREENdedetector nu este numărat caBUGFIXED.
+
+| Defect | Înainte | După pecheckpointul6d53127 |
+|---|---|---|
+| create cancel controller | RED #46 | PASS real, aserțiuni originale |
+| receipt controller | RED #41 | PASS real, corp probă original păstrat |
+| NaN ajunge la save | RED #45 | PASS real, zero save invalid;26teste noi |
+| completare UI/audit dupăUIDswitch | lipsăgardă locală înExpensePage |20probePASS cuState reutilizat; nu certificăefecteHome/SDK |
+| edit save rejection | RED #46 | încăRED |
+| close endDate failure | RED #44 | încăRED |
+| receipt entries/totals failure | riscstatic #42 | RED dinamic distinct, nereparat |
+
+72testeFlutter noi descoperite automat (22lifecycle+26numeric+20session+3telemetry+1director) și1martorRED nou pentrustareareceipt. Nu sunt72testehardware. Standardulfinal include și testelemoștenite; numărul exact se citește dinlog. Toate cele116hashuriprotejate PASS; numai settlement/ExpensePage și pinurile specifice lor au fostmodificateexplicit.
+
+**Reluare exactă:** citeșteHEADulreal alPR50 șiCIultim, făfetch curat, păstreazăramuraDraft; nu repetaIII–VI sau testelevalidate. Prioritatea următoare: contractulcerte/incertereconciliere demai jos pentruVII04/05/06; sourceprobesRED rămânobligatorii. Nu editaIssue47/HomeGPS/FCM/Learninglogging, nu face merge/deploy/publicare/producție/rules/billing.
+
+Hardware, GPS/FCM/Firebase live, MLKit/cameră și commiturile unui serverreal:NEEXECUTATE. UIownerPASS nu înseamnă că ACLservereste securizat.
+
+## Contract concret pentru continuarea VII-04/05/06 — propunere, neimplementată
+
+- Reprezentare explicită a rezultatului: confirmat; respins înainte de scriere; incert. O excepție generică nu decide singură categoria. Gărzile client din Home resping înainte de `.set`; excepțiile SDK/timeout și eventualele side effects după write nu sunt clasificate arbitrar.
+- Un candidat de editare trebuie separat de snapshotul local confirmat; compatibilitatea callbackurilor și actualizărilor prin listener se testează. La respingere certă se restaurează numai starea propriei operații, fără a suprascrie o versiune mai nouă primită între timp.
+- Închidere: snapshot comun pentru closed/endDate; succesul păstrează semantica existentă; eșecul cert reface ambele. Redeschiderea și drepturile rămân neschimbate.
+- Încasare: `ReceivedMoneyEntry.id` există deja (`idNow()`), dar un ID în payload nu este singur o garanție de idempotency server. O eventuală reluare trebuie să păstreze același ID și să verifice autorizat documentul/revizia; nu să creeze alt transfer. Se separă settlement de finance legacy și se păstrează agregatele istorice fără inventarea transferurilor.
+- La rezultat incert: fără retry/scriere de compensare automată, fără sumă declarată confirmată sau definitiv respinsă; reconcilierea cere verificare server și protecție UID+epoch, în limitele contractului aprobat. Nu logăm sume, ID-uri, nume sau payloaduri în Vision.
+- Acceptanță: exact un write inițial; controale before/after pentru fiecare câmp; failure înainte de commit; write-success-then-throw; timeout; event listener mai nou; duplicate confirm; UID switch; zero audit de succes pe respingere; verificare explicită a ID-ului operației. Regresii pentru avansuri și schemele distincte de diurnă.
+
+Această propunere este concretă pentru review separat al cazurilor incerte, conform Issue48. Nu a fost implementată ca politică financiară și nu autorizează schimbări de rules/server/retry.
