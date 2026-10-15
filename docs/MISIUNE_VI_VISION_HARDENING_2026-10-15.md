@@ -49,3 +49,11 @@ acff78e, standard38662978602:417PASS/1FAIL, numai TypeError RawTooltip→IconBut
 Lot3 corectiv b235f48466ba0e0f8222e56c8a0ea28cefa31543 / tree184d33416e1c4e9fcead34da980ddcb1d7406532. Standard38663228002 SUCCESS5/5, 418Flutter/167Python; identity38663227995 SUCCESS5. Runtime neschimbat; Android final va recertifica toate testele noi.
 
 Lot4: două probe noi pe bootstrap real/porturi și persistență reală/lifecycle. Storage read blocat/eșuat, start dublu cu un singur read, handlers Flutter/async lipsă (presentError păstrat, false pentru async), Firebase init failure propagat exact și o singură încercare, fără a aștepta storage. Storm100×lifecycle share-one-drain; saved numai după write, detach fără schimbare nu multiplică snapshoturi. Kill rămâne best effort. Fără schimbare runtime. CI lot4 urmează.
+
+## Lot4 GREEN / lot5 SDK epoch ownership
+
+Lot4 bfa9dcc4af67bfc48694d56a302be68d8fc8792c / tree968d11eb407bb7b872da8250ae0c069b856ddadc. Standard38663598978 SUCCESS5/5,420Flutter/167Python; identity38663598984 SUCCESS5.
+
+Lot5: șase widget tests noi pe State Home și closure UID+epoch AuthGate reale, cu plugin/effect boundaries fake. FCM A blocat la permission/requestPermission/getToken, B token+refresh legitime și eroare refresh observată o dată; A1 nu scrie/atașează nici după A→B→A2. GPS A blocat la service/checkPermission/requestPermission, B stream legitim și un cod constant la eroare; zero late attach A, cancel B exact. Fără token/poziții reale, fără HTTP/Firestore live, zero praguri sau runtime schimbate.
+
+Limite dinamice explicite lot5: reverse-geocoding HTTP, boost250 și Web700 nu sunt executate de aceste șase probe. Sunt verificate în sursa înghețată (guard după await / revalidare la intrarea metodei). Fluxul live-location încă folosește HTTP și Firebase singleton direct; este necesar un fixture separat pentru a demonstra aceste subcazuri fără I/O, nu schimbăm fluxul operațional în această misiune. Fără certificare hardware/backgroundOS sau revocarea writes deja expediate. CI lot5 urmează.
