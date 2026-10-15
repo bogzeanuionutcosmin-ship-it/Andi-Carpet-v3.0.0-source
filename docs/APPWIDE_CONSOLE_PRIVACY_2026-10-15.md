@@ -1,38 +1,49 @@
-# AndiCarpet — privacy logging (extindere aplicație întreagă) — 15.10.2026
+# AndiCarpet — privacy console beyond Home: Dashboard fix / Routing known unsafe (15.10.2026)
 
-**Proveniență:** PR #51 HEAD `bc058bc9c11f8fb249ee842bf45f50a3817ddc27`, care a reparat mesajele Home GPS/FCM/Learning și are CI verde pe HEAD. Ramură separată, fără modificarea #51, #50, #49 sau `main`.
+**Proveniență:** PR #51 HEAD `bc058bc9c11f8fb249ee842bf45f50a3817ddc27`, cu reparația Home validată. PR Draft nou pe ramură proprie, fără modificarea #50/#51/#49/main.
 
-## Audit sursă
+## Audit read-only al surselor
 
-Arborele GitHub al bazei #51 conține 681 intrări, inclusiv sursele Dart din `lib/`. Auditul manual programatic al apelurilor directe `debugPrint/print` din fișierele Dart a identificat încă **șase** expresii cu date necontrolate în trei module de geocodare și Learning:
+Arborele de bază verificat conține 681 intrări GitHub. Au fost inspectate apelurile directe `debugPrint` și `print` din fișierele Dart din `lib`. Au fost identificate **șase** mesaje necontrolate, în trei module:
 
-| Fișier | Locuri identificate | Expunerea posibilă |
+| Modul | Probleme din sursa de bază | Decizie |
 | --- | --- | --- |
-| `lib/dashboard/dashboard_work_actions.dart` | viaServer / viaNominatim | text brut `$e`, în fallback și `$value` (nume/adresă căutată) |
-| `lib/schedule/program_graph_actions.dart` | viaServer / viaNominatim | text brut `$e` și `$value` |
-| `lib/schedule/program_route_learning_actions.dart` | read routing history / write routing choice | text brut `$e` la eșec de acces Firestore |
+| `lib/dashboard/dashboard_work_actions.dart` | 2 × `$e`, dintre care una și `$value` cu adresă/nume căutat | **REPARATE** punctual |
+| `lib/schedule/program_graph_actions.dart` | 2 × `$e`, dintre care una și `$value` | **RĂMASE KNOWN UNSAFE** |
+| `lib/schedule/program_route_learning_actions.dart` | 2 × `$e` la Firestore read/write | **RĂMASE KNOWN UNSAFE** |
 
-Această constatare este **audit de cod**, NU dovadă de exfiltrare, colectare într-un backend sau de logare pe hardware real. Jurnalul Vision local cu evenimente `area/code` este separat.
+Aceasta este dovadă de **sursă**, nu că datele au ajuns în backend ori că au fost observate efectiv pe un telefon.
 
-## Schimbare tehnică
+## Corecție efectivă, limitată la Dashboard
 
-Au fost înlocuite **doar cele șase mesaje controlate de aplicație** cu marcaje fixe, explicite: `dashboard_server_failed`, `dashboard_nominatim_failed`, `program_server_failed`, `program_nominatim_failed`, `routing_history_read_failed`, `routing_choice_write_failed`. Blocurile `catch` continuă să aibă aceleași returnări și efecte; variabilele de excepție devenite nefolosite sunt eliminate fără mutarea ori repetarea operațiilor.
+Au fost înlocuite numai două mesaje din `lib/dashboard/dashboard_work_actions.dart` cu:
+- `[geocode] dashboard_server_failed`
+- `[geocode] dashboard_nominatim_failed`
 
-**Nu s-au schimbat:** HTTP request URL/body, proxy, Firebase, geocoding source order, Learning logic, scoring route, permisii, autentificare, datele utilizatorilor, acces Firestore, diagrame, sume sau rularea GPS/FCM. Nu se adaugă transport de loguri, SDK sau servicii noi.
+Au fost eliminate doar variabilele de excepție nefolosite în aceste două blocuri `catch`; căile HTTP/Firebase, autentificarea, ordinea server → Nominatim, parsing, rezultat returnat și UI rămân nemodificate. Nu există nou transport, stocare sau serviciu cu plată.
 
-## Protecție permanentă
+## Restricție de integritate identificată în CI
 
-`test/appwide_console_privacy_test.py` adaugă **3** verificări descoperite automat de CI-ul standard:
-1. TOATE apelurile `debugPrint(...)` din `lib/**/*.dart` acceptă numai un **literal fix fără `$`**, deci nu pot imprima direct UID, adresă din geocodare, token, excepție sau OCR prin interpolare. Testul este lexical și nu inspectează un transport indirect sau loguri OS/SDK.
-2. Nu există `print(...)` direct ori `debugPrintStack(...)` brut în sursele Dart inspectate.
-3. Cele șase marcaje de eroare există o singură dată în modulele operaționale așteptate. Testele privacy existente în #51 (Home), freeze și contractele Vision rămân active.
+Inițial am înlocuit și cele patru mesaje din două module `schedule`. **CI Python a respins acele modificări**, deoarece ambele module sunt incluse în manifestul imutabil `docs/ROUTING_PDF_PROTECTED_2026-10-13.json` cu **116 SHA256 protejate**:
+- `program_graph_actions.dart`: SHA256 obligatoriu `0ad775da6ee079bca134bf0ef126a3d0a4cfe8f8ba3d6dcf256192931a6a2f35`
+- `program_route_learning_actions.dart`: SHA256 obligatoriu `61a4c3544ead87343ef1ec04cefea81d689dcb6fb421cd80c4ad987274635145`
 
-Nu modificăm hashurile altor fișiere protejate, nu dezactivăm vreo aserțiune și nu ștergem istoricul probei RED din #49.
+**Am restaurat ambele surse byte-identic la baza #51**. NU am schimbat manifestul, nu am dezactivat tests/freeze, nu am schimbat algoritmul Grafic/Learning. Cele patru loguri nesanitizate **nu sunt reparate** și necesită o autorizare distinctă de schimbare a surselor protejate, cu justificare old/new și verificare completă.
 
-## CI și continuare
+## Protecție automată
 
-PR Draft separat, neaprobat pentru merge/deploy. Verificați **HEAD-ul și toate workflowurile pe ultimul commit**, inclusiv standard 5/5, identity, Android debug build/metadata și numerele reale de teste. Compilarea APK în CI nu înseamnă publicare, instalare sau validare pe hardware.
+`test/appwide_console_privacy_test.py`, descoperit de suita Python standard, are 3 teste:
+1. Enumeră toate apelurile `debugPrint` din `lib/**/*.dart`, cere literal fix fără `$`, **cu exact patru excepții explicite `KNOWN_UNSAFE_ROUTING`**, fiecare legată de sursa și textul original. Orice caz nou din afara allowlistului eșuează. Cele patru rămân numărate și vizibile, **nu sunt numite GREEN privacy**.
+2. Respinge apeluri directe `print()` și dumpuri `debugPrintStack()`.
+3. Verifică cele două coduri constante noi Dashboard.
 
-**Separare de Luna:** Misiunea VII se desfășoară în #50 și nu este atinsă aici. După finalizarea acesteia, o eventuală integrare va necesita concilierea atentă a `ChatGpt` și a hashurilor `test/vision_hardening_freeze_test.py` din #50/#51; acestea nu sunt combinate acum. Finance SQL/Firebase rules, roluri, avansuri, billing, producție și release rămân interzise.
+Acestea sunt **contracte de sursă** (nu un parser Dart complet și nici un test al logurilor native OS/SDK). Testele existente PR #51 pentru Home, `VisionErrorTelemetry.report`, `vision_hardening_freeze` și `routing_pdf_boundary_test.py` rămân obligatorii. Nu modificați răspunsul așteptat doar pentru a masca un eșec.
 
-**Limitări:** nu putem pretinde absența tuturor excepțiilor sau stackurilor de la pluginuri/OS și nici confidențialitate absolută. Controlul se aplică doar apelurilor console directe din aplicație, iar o modificare viitoare poate necesita extinderea scannerului pentru alte API-uri de logging.
+## CI, independență și limite
+
+- Runul inițial al PR-ului pe modificarea intermediară a arătat **3 teste privacy noi PASS, dar 2 erori SHA256** pentru `schedule`; acestea au determinat revert, nu modificarea manifestului. **Nu raportați runul inițial ca verde.**
+- Pentru HEAD final verificați standard CI 5/5, Identity, Android real compile-only. Fără APK instalat/publicat, Firestore producție, date reale sau billing.
+- Luna lucrează autonom în Issue #48 / PR #50. Nu am editat această ramură, nu am integrat PR #50 și nu am intervenit asupra comportamentului financiar sau asupra ACL backend.
+- Orice combinare cu #50 necesită review al `ChatGpt`, al hashurilor freeze și rularea CI pe tree combinat, nu presupunerea că două PR-uri verzi sunt automat compatibile.
+
+**Nicio modificare de producție, merge, deploy, publicare APK/web, cost nou sau schimbare de permisiuni.**
