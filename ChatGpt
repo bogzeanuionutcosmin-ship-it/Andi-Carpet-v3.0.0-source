@@ -2465,3 +2465,12 @@ PR46 caracterizare confirmată pe ee7ab669/tree3f587602: workflow38682160481 con
 - De verificat la reluare, fără a presupune că persistă checkpointul vechi: HEAD real PR #50, CI și probleme rămase; PR #51 este munca separată a lui Shiva, CI validat anterior. Reconcilierea lor nu este autorizată automat.
 
 **Această notă consemnează o decizie pentru VIITOR, nu execută o schimbare tehnică nouă sau un deploy.**
+
+
+## 15.10.2026 — Shiva, mandat autonom activ / Vision corp static în ramură separată
+
+Proprietarul a dat mandat general lui Shiva să continue autonom loturile tehnice sigure în AndiCarpet, fără întrebare după fiecare lot, respectând producția și munca Lunei. Luna execută independent MISIUNEA VIII financiară în [Issue #54](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/issues/54), autorizată **numai dacă soluția rămâne compatibilă cu Firestore/Firebase Spark fără billing**, fără merge/deploy/producție.
+
+Shiva a început un lot vizual complet izolat de finanțe și de ecranele autentificate: `feat/vision-avatar-body-only-20261015` din PR #52 HEAD `950f736a4e2e32799db5c61ccd8388fe1acae70e`. Fișiere adăugate: `lib/vision/vision_assistant_avatar.dart` (corp de robot vectorial, static, tematic, semantic), `test/vision_assistant_avatar_test.dart` (4 teste Flutter), `test/vision_avatar_source_contract_test.py` (4 teste Python), `docs/VISION_AVATAR_BODY_ONLY_2026-10-15.md`; workflow Android compile-only permis pe această ramură. Nicio modificare la Vision DiagnosticsPage, autentificare, sesiuni, UID, jurnale, Firebase, HTTP, financiare, reguli sau 116 surse protejate. Corpul nu este vizibil încă în aplicația de producție; animațiile și rutarea se decid ulterior.
+
+**Nu pretinde CI SUCCESS înainte de execuția pe HEAD final**; găsește starea efectivă în Draft PR-ul dedicat. Nu duplica fixurile PR #50/#52 și nu interpreta faptul că un widget există ca integrare publică Vision. Fără merge, deploy, billing ori APK distribuit.
