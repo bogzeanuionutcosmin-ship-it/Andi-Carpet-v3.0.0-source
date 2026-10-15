@@ -10,8 +10,11 @@ const {doc,getDoc}=require('firebase/firestore');
   const value=(await getDoc(doc(context.firestore(),'settlements/flutter-nanos'))).data();
   assert.equal(value.revision,2);assert.equal(value.receivedDeparture,225);
   assert.equal(value.receivedEntries.length,2);
-  for(const [timestamp,nanos] of [[value.startDate,123456789],[value.createdAt,987654321],[value.receivedEntries[0].date,123456789]]){
-   assert.equal(timestamp.seconds,1790812800);assert.equal(timestamp.nanoseconds,nanos);
+  const baseline=JSON.parse(fs.readFileSync('/tmp/andicarpet-viii-timestamp-baseline.json','utf8'));
+  // Compare actual server BEFORE/AFTER; the server may canonicalize the seed's
+  // nanoseconds before Flutter ever reads it. Never invent pre-existing data.
+  for(const [timestamp,expected] of [[value.startDate,baseline.startDate],[value.createdAt,baseline.createdAt],[value.receivedEntries[0].date,baseline.historicalReceipt]]){
+   assert.deepEqual([timestamp.seconds,timestamp.nanoseconds],expected);
   }
  });}finally{await env.cleanup();}
  console.log('PASS raw server history timestamps unchanged after Flutter receipt/edit.');

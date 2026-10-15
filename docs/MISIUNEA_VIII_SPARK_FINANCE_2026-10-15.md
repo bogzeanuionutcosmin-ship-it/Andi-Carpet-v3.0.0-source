@@ -350,3 +350,14 @@ snapshotul decodat. Gate-ul nou JS citește independent serverul și cere exact
 Testulbrowser compară în plus snapshoturile sale înainte/după; comparațiaJS raw
 este obligatorie, nu opțională. Nicio aserțiune de integritate nu este înlocuită
 cu simpla acceptare a statusului confirmed. CI acestui follow-up încă în așteptare.
+
+
+### Corecție de interpretare a probei raw
+318a0c8:6/6testeFlutterSDK PASS, dar verificatorulJS cu valorile trimise inițial
+seedului a eșuat. Verificarea corectă de conservare trebuie să compare starea
+SERVER înainte/după, deoarece serverul poate normaliza timestampul încă din seed.
+Seedul salvează acum numai cele3perechi seconds/nanos ale fixture-ului citit raw,
+fără UID/token/datefinanciare, iar verificatorul cere egalitate exactă cu ele.
+Dacă serverul a normalizat deja submicrosecundele, proba NU dovedește pierdere
+istorică live. MartorulDart rămâne strict123456789→123456789 și păstrează aceeași
+aserțiuneRED originală. Nu pretindem că Flutter-only dovedește formatulrawserver.
