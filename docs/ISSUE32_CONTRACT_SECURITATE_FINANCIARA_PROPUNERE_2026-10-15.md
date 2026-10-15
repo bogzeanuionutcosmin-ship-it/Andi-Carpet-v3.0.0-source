@@ -104,3 +104,19 @@ Acestea sunt **numai punctele încă nerezolvate**. Deciziile din secțiunea A r
 5. **Context director:** dreptul `viewOtherDecont` nu este echivalent cu `editOwnFinancialEntries`. Definiți explicit comportamentul unei persoane director+gestionar pentru propria echipă înainte de testele finale RED→DENY.
 
 **Separare:** Acest document și testele nu sunt remedieri de producție. Corecțiile `firestore.rules`, fluxul `_money` din dialog și mutația locală `receivedEntries` înainte de eșecul salvării rămân lucrări distincte, în funcție de aprobările și acceptanța viitoare. Incidentul controller-used-after-dispose este documentat separat în PR #41 ca proba RED, nu tratat drept fix implementat. Nicio intervenție în Firebase live, PR #41, `main` ori APK.
+
+
+## I. Valori monetare nefinite / money finite — probe emulator 15.10.2026
+
+**Proveniență:** commit `fcaa0a1f7e95a9f830083fc6978ec53b8017c597`, [workflow financiar 38671239681](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38671239681), **53/53 PASS**, dintre care cazurile 50–53 sunt probe noi executate în emulator Firestore DEMO. Valorile sunt doar sintetice; regulile producției nu au fost inspectate.
+
+- Un membru activ cu `viewOwnDecont`, membru al echipei și câmpul injectat `distributedBy=auth.uid`, poate crea `expenses.amount=NaN` și `expenses.amount=Infinity`.
+- Un coleg autorizat doar pentru vizualizare proprie poate modifica suma unei cheltuieli confirmate în `NaN`.
+- Poate modifica `settlements.receivedEntries` într-un decont închis incluzând o intrare cu `amount=Infinity`.
+- Toate aceste `assertSucceeds` sunt **defecte de validare caracterizate**, nu permisiuni dorite și nici dovadă că UI-ul le salvează în mod curent.
+
+**Problemă de interfață observată lexical, de confirmat prin test widget separat:** în `lib/expenses/expense_settlement_actions.dart::_money` se validează numai `amount == null || amount <= 0`, fără `!amount.isFinite`; `double.tryParse` poate reprezenta `NaN` și `Infinity`. Introducerea tastaturii numerice nu asigură imposibilitatea de paste ori valori speciale. Traseul UI, Flutter și salvarea reală rămân **NEEXECUTATE** pentru acest caz; vezi [Issue #43](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/issues/43).
+
+**Invariante viitoare, propuneri ce necesită aprobare înainte de implementare:** pentru fiecare flux bănesc validarea trebuie să impună tip numeric, finitudine, semn și limite potrivite operațiunii; limitele nu se stabilesc arbitrar, iar avansul de diurnă deja aprobat nu poate fi interzis printr-un plafon aplicat generic. Păstrați distinct stornările/retururile aprobate și documentele istorice. Folosiți teste atât pentru SDK direct / rules, cât și pentru editorul Flutter; după autorizarea fixului, caracterizările de abuz trebuie să devină `assertFails`.
+
+**Nicio modificare de reguli, date live, diagrame de sumă sau cod financiar runtime din acest lot.** PR #40 rămâne Draft / DO NOT MERGE, separat de Luna PR #41.
