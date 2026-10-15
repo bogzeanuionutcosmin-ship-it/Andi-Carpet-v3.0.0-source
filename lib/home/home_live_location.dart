@@ -67,12 +67,12 @@ extension _HomeLiveLocation on _HomePageState {
         onError: (Object e) {
           if (!_sessionActive) return;
           VisionErrorTelemetry.report(area: 'gps', code: 'background_stream_failed');
-          debugPrint('[location] Background stream: $e');
+          debugPrint('[location] background_stream_failed');
         },
       );
     } catch (e) {
       if (_sessionActive) VisionErrorTelemetry.report(area: 'gps', code: 'background_start_failed');
-      debugPrint('[location] Nu am putut porni tracking-ul nativ în background: $e');
+      debugPrint('[location] background_start_failed');
     }
   }
 
@@ -147,7 +147,7 @@ extension _HomeLiveLocation on _HomePageState {
         }
       }
     } catch (e) {
-      debugPrint('[location] Localitatea nu a putut fi identificată: $e');
+      debugPrint('[location] reverse_geocoding_failed');
     }
     return _lastLiveLocalityLabel;
   }
@@ -222,7 +222,7 @@ extension _HomeLiveLocation on _HomePageState {
       await _applyWorkAutomationFromPosition(p, now, workDate);
     } catch (e) {
       if (_sessionActive) VisionErrorTelemetry.report(area: 'gps', code: 'location_update_failed');
-      debugPrint('[location] Actualizarea locației a eșuat: $e');
+      debugPrint('[location] location_update_failed');
     }
   }
 
