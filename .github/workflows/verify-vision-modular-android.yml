@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   integrated-android:
-    if: github.head_ref == 'integration/vision-authgate-modular-20261014' || github.head_ref == 'hardening/vision-authgate-v1-20261015'
+    if: github.head_ref == 'integration/vision-authgate-modular-20261014' || github.head_ref == 'hardening/vision-authgate-v1-20261015' || github.head_ref == 'fix/home-console-privacy-20261015'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
