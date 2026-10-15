@@ -2526,3 +2526,12 @@ Pornit din HEAD PR #61 `473e985f4d1a253e887fa9665d758af7509443fd`, pe ramura nou
 **IMPORTANT:** componenta nu este injectată în `VisionDiagnosticsPage`, AuthGate, Home sau Navigator. Jurnalul global instalat rămâne inaccesibil utilizatorilor în pagina reală. Pentru integrarea viitoare este obligatoriu callbackul autoritativ AuthGate (UID + generation), plus revalidare înainte de render/copy/share și probe reale pe dispozitive. Nu pretindeți izolarea completă a funcției Vision încă.
 
 Workflow Android compile-only existent este activat doar pentru această ramură (fără upload/install/deploy). Ci-ul final trebuie verificat pe HEAD, nu împrumutat de la #61. Fără merge, deploy, APK publicat, modificări costuri/producție ori intervenție în PR #55.
+
+
+## 16.10.2026 — Shiva: adaptor read-only Vision din lease revocabil
+
+Din HEAD verificat PR #62 `be90a9cb4a6612ff955536c85f3d71566a1a4b2c` (standard/Identity/Android GREEN) s-a creat branchul separat `feat/vision-lease-diagnostics-adapter-20261016`. Între timp Luna continuă PR #55; niciun fișier al ei/financiar/Home/AuthGate/Firebase rules nu este atins.
+
+Nou: `VisionSessionJournalLease.snapshotForDisplay()` returnează numai o copie temporară detașată, bounded, verificată din nou pentru ownership; `lib/vision/vision_scoped_diagnostics_page.dart` prezintă acest snapshot în `VisionDiagnosticsPage` cu `isSessionCurrent: () => lease.isCurrent`. Teste noi: 7 Flutter în `test/vision_scoped_diagnostics_page_test.dart` și 4 Python în `test/vision_scoped_diagnostics_adapter_contract_test.py`. Documentul de referință `docs/VISION_LEASE_DIAGNOSTICS_ADAPTER_2026-10-16.md`; verificările compile-only Android au fost activate pe branch.
+
+**Păstrați limitările:** adaptorul nu este montat în Home/Authenticator, nicio rută nu este adăugată în aplicația folosită acum, jurnalul singleton device-wide rămâne refuzat. Înainte de integrare trebuie callback autoritativ UID + epoch din AuthGate, invalidare imediată la logout și teste A→B→A2/hardware. Snapshoturile reținute extern pot rămâne în RAM, nu sunt credentiale; nu prezentați asta drept securizare completă. CI pe HEAD-ul ultim trebuie verificat efectiv. Fără merge/deploy/producție/APK publicat/billing.
