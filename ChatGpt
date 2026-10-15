@@ -2483,3 +2483,10 @@ Mandatul autonom al proprietarului continuă; Luna a reluat separat MISIUNEA VII
 Previzualizarea prezintă **același** avatar vectorial static cu temă deschisă/închisă și dimensiuni 64/112/176dp. Fără Firebase/rețea/diagnostic/loguri/timere, fără rută publică în `lib/main.dart` (nemodificat), fără animații încă. Nu reprezintă un agent AI real; este numai un instrument de verificare vizuală. Nu au fost schimbate finanțele, rules, UID/AuthGate, Vision SDK, hashuri înghețate, main/producție, APK/web publicat sau costuri Spark.
 
 Obligatoriu: nu afirma PASS până la rezultatele reale standard CI și workflowul standalone pe ultimul SHA; verificați Chrome/web compile-only și păstrați statutul `DRAFT / DO NOT MERGE`. Următorul pas după aprobare vizuală: decizie separată pentru integrarea într-un ecran autenticat și animațiile ușoare. Previzualizarea **nu** deschide jurnalul persistent device-wide, care rămâne fail-closed.
+
+
+## 15.10.2026 — Shiva: verificare Android pentru preview Vision (fără interferență Luna)
+
+Misiunea VIII a Lunei continuă în PR #55, ultim HEAD observat la audit `5efd647e211231456c2db2c8cd2eadf653c9b598`, workflowuri active GREEN dar încă neintegrat și fără validare producție. Nu intervenim în ramura ei. PR #57 (avatar preview offline) a fost finalizat separat la HEAD `4ebb32002a1aae454fab67f704a6adf0de98c397`, standard 5/5, 446 Flutter, 189 Python, Identity și web-preview build PASS, fără Android preview compile.
+
+Shiva a deschis ramura **`ci/vision-avatar-offline-android-20261015`** pornind din PR #57 HEAD, adăugând numai workflow condițional compile-only Android pentru **entrypoint-ul offline** `lib/vision/vision_avatar_preview_main.dart`, 4 teste Python de protecție a CI (fără install, deploy, secrets, upload), și `docs/VISION_AVATAR_ANDROID_PREVIEW_CI_2026-10-15.md`. Nicio schimbare în `lib/`, finanțe, `firestore.rules`, Vision Auth/telemetry, SHA freeze sau `main`. APK debug rămâne local jobului CI; nu pretindem că Android manifestul/permisiunile native sunt absente ori că a fost verificat pe telefon. Verificați rezultatele exacte ale workflowului înainte de verdictul final. Fără merge/deploy/publicare/billing.
