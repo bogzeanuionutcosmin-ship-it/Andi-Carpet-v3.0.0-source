@@ -2928,3 +2928,6 @@ MISIUNEA VIII — fixture boundedscroll:
 
 MISIUNEA VIII — proba ultimuluicontrol:
 491c404:154PASS/1FAIL, scrollulajunge la ultimulbanner darhitTestablecontainernuesteprobaacțiunii. Țintaesteacumbutonulultim, adusînviewport+apăsat:0readînainte/1markerreadexplicitdupă,0tranzacții,32pendingpăstrate. Fărărelaxare integritate/dimensionare/jurnal. CIseverificădin nou.
+
+MISIUNEA VIII — Admin ledger paginat,2026-10-16:
+Pornire02efbebcurat/remoteconfirmat. Candidatdemo read-only max20markeri/singurățintă, reviziesuperioarăfixată, queryexplicitrevision<=next/orderdesc/limit, fărăscanareglobală/offset/listener/polling/writes. Cursorlegatdeinstanță+sesiune; gap/duplicate/cache/pending/bindingrefuzate; panoureține1pagină. ACLlistAdminnemodificat.8pure+3widget+1SDKcandidate(managerpermissiondenied,Admin[3,2],concurentrev4,oldcursor[1],fresh[4,3]). Coststaticpaginiadăugat:exemplu2first+3next/20=1122readssuplimentare/0write, index/egressUNKNOWN.197PythonlocalPASS,scenariiJSONhashregenerat. Nu migreazăreceivedEntries și nu certificăRestorecomplet/Home/hardware/Sparklive. CIexacturmează.

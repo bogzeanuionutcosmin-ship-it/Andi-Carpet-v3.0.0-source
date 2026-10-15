@@ -1,5 +1,7 @@
 // Explicit CI invocation only; not part of offline unit-test discovery.
 import 'dart:async';
+import 'package:andi_carpeta/finance/intents/finance_ledger.dart';
+import 'package:andi_carpeta/finance/intents/firestore_ledger_port.dart';
 import 'package:andi_carpeta/main.dart' show TravelSettlement;
 import 'package:andi_carpeta/finance/intents/finance_demo_panel.dart';
 import 'package:andi_carpeta/finance/intents/finance_expense_demo_adapter.dart';
@@ -209,6 +211,31 @@ void main(){
     expect(await second.scope.coordinator.journal.pending(),isEmpty);
    }finally{second.dispose();}
   }finally{port.afterLostAck=null;port.loseAcknowledgement=false;}
+ });
+ test('actual Flutter SDK Admin bounded ledger pages exclude revisions appended after the captured watermark',()async{
+  final repo=FinanceRepository(port:port,ownerUid:uid,sessionIsCurrent:()=>auth.currentUser?.uid==uid);
+  FinanceIntent request(int n)=>FinanceIntent(operationId:n.toRadixString(16).padLeft(32,'0'),actorUid:uid,
+   teamId:'flutter-team',collection:'settlements',documentId:'flutter-ledger',baseRevision:n-1,
+   kind:n==1?FinanceIntentKind.create:FinanceIntentKind.edit,changes:n==1?
+    {'name':'Ledger','startDate':DateTime.utc(2026,10,1),'createdAt':DateTime.utc(2026,10,15),'managerId':uid,'perDiemRate':50}:
+    {'name':'Ledger revised $n'});
+  for(var n=1;n<=3;n++)expect((await repo.execute(request(n))).status,FinanceIntentStatus.confirmed);
+  final managerReader=FinanceLedgerReader(port:FirestoreDemoLedgerPort.fromFinanceEmulator(port.inner as FirestoreFinanceAtomicPort),
+   sessionIsCurrent:()=>auth.currentUser?.uid==uid,pageSize:2);
+  await expectLater(managerReader.firstExplicitly('settlements/flutter-ledger'),
+   throwsA(isA<FirebaseException>().having((e)=>e.code,'code','permission-denied')));
+  await secondAuth.signOut();await signIn(secondAuth,'admin');
+  final adminUid=secondAuth.currentUser!.uid;
+  try {
+  final reader=FinanceLedgerReader(port:FirestoreDemoLedgerPort.fromFinanceEmulator(secondPort.inner as FirestoreFinanceAtomicPort),
+   sessionIsCurrent:()=>secondAuth.currentUser?.uid==adminUid,pageSize:2);
+  final first=await reader.firstExplicitly('settlements/flutter-ledger');
+  expect(first.rows.map((r)=>r.data['revision']),[3,2]);expect(first.upperRevision,3);
+  expect((await repo.execute(request(4))).status,FinanceIntentStatus.confirmed);
+  final last=await reader.nextExplicitly(first.next!);
+  expect(last.rows.map((r)=>r.data['revision']),[1]);expect(last.upperRevision,3);expect(last.next,isNull);
+  expect((await reader.firstExplicitly('settlements/flutter-ledger')).rows.map((r)=>r.data['revision']),[4,3]);
+  }finally{await secondAuth.signOut();await signIn(secondAuth,'a');}
  });
  test('actual Flutter SDK disableNetwork cached read and reconnect never replay financial intent automatically',()async{
   final storage=BrowserJournalStorage();

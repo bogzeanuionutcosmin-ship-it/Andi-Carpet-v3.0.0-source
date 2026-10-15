@@ -25,6 +25,9 @@ class Scenario:
     # Each successful UI completion also reads the authoritative target.
     # Unknown count conservatively allows one after every operation/check.
     confirmation_refreshes_per_day: int | None = None
+    ledger_first_pages_per_day: int = 0
+    ledger_next_pages_per_day: int = 0
+    ledger_page_size: int = 20
 
     def estimate(self):
         if min(self.operations_per_day, self.reconciliations_per_day, self.days,
@@ -33,12 +36,15 @@ class Scenario:
             raise ValueError('Invalid scenario or unbounded transaction attempts')
         optional = [self.existing_daily_reads, self.existing_daily_writes,
                     self.existing_storage_bytes, self.busiest_target_receipts_per_day,
-                    self.current_target_document_bytes, self.confirmation_refreshes_per_day]
+                    self.current_target_document_bytes, self.confirmation_refreshes_per_day,
+                    self.ledger_first_pages_per_day, self.ledger_next_pages_per_day, self.ledger_page_size]
         if any(v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 0)
                for v in optional):
             raise ValueError('Invalid baseline or target concentration')
         if self.busiest_target_receipts_per_day is not None and self.busiest_target_receipts_per_day > self.operations_per_day:
             raise ValueError('Target receipts cannot exceed total operations')
+        if not 1 <= self.ledger_page_size <= 20:
+            raise ValueError('Invalid bounded ledger page size')
         # 2 client document reads and worst-case 20 rules access calls per
         # transaction attempt. No assumption that repeated accesses are cached.
         reads = self.operations_per_day * self.attempts * 22 + self.reconciliations_per_day * 11
@@ -47,7 +53,8 @@ class Scenario:
             refreshes = self.operations_per_day + self.reconciliations_per_day
         # One server document read plus up to ten rules access calls per read.
         refresh_reads = refreshes * 11
-        reads += refresh_reads
+        ledger_reads = (self.ledger_first_pages_per_day + self.ledger_next_pages_per_day) * self.ledger_page_size * 11 + self.ledger_first_pages_per_day * 11
+        reads += refresh_reads + ledger_reads
         writes = self.operations_per_day * 2
         storage = self.operations_per_day * self.days * self.marker_bytes_with_indexes
         history_storage = self.operations_per_day * self.days * self.target_entry_bytes_with_indexes
@@ -71,6 +78,8 @@ class Scenario:
             total_storage + self.existing_storage_bytes <= 256 * 1024**2
         return dict(additional_reads_per_day_upper=reads, additional_writes_per_day=writes,
                     confirmation_refresh_reads_per_day_upper=refresh_reads,
+                    ledger_document_and_rules_reads_per_day_upper=ledger_reads,
+                    ledger_index_reads_verified=False,
                     marker_storage_upper_bytes=storage,
                     target_history_storage_estimate_bytes=history_storage,
                     total_additional_storage_estimate_bytes=total_storage,

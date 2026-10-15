@@ -114,3 +114,24 @@ class SparkBudgetTest(unittest.TestCase):
         for value in [-1, True, 1.5]:
             with self.assertRaises(ValueError):
                 budget.Scenario(1, confirmation_refreshes_per_day=value).estimate()
+
+    def test_explicit_ledger_pages_include_rows_rules_and_first_page_target_read(self):
+        report = budget.Scenario(0, ledger_first_pages_per_day=2, ledger_next_pages_per_day=3).estimate()
+        self.assertEqual(report['ledger_document_and_rules_reads_per_day_upper'], 1122)
+        self.assertEqual(report['additional_reads_per_day_upper'], 1122)
+        self.assertEqual(report['additional_writes_per_day'], 0)
+        self.assertFalse(report['ledger_index_reads_verified'])
+
+    def test_ledger_page_and_frequency_limits_fail_closed(self):
+        for kwargs in [{'ledger_page_size': 0}, {'ledger_page_size': 21},
+                       {'ledger_page_size': True}, {'ledger_first_pages_per_day': -1},
+                       {'ledger_next_pages_per_day': 1.5}]:
+            with self.assertRaises(ValueError):
+                budget.Scenario(0, **kwargs).estimate()
+
+    def test_ledger_reads_can_exceed_daily_reserve_without_enabling_writes(self):
+        report = budget.Scenario(0, ledger_first_pages_per_day=200, existing_daily_reads=0,
+                                 existing_daily_writes=0, existing_storage_bytes=0).estimate()
+        self.assertFalse(report['within_internal_reserve'])
+        self.assertEqual(report['additional_writes_per_day'], 0)
+        self.assertFalse(report['production_ready'])

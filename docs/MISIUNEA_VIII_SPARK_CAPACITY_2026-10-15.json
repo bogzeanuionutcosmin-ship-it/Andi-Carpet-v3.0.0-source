@@ -1,6 +1,6 @@
 {
   "date": "2026-10-15",
-  "model_sha256": "ef3c20ef0cdc85f3216389983c1b75a9a1efbcb78b44670930e33bb0636e807f",
+  "model_sha256": "35aadc0f1e9df925d86315664fd089867b0a03c65f6ed4bfea13ae148ea1aa82",
   "synthetic_assumptions_only": true,
   "live_usage_measured": false,
   "production_ready": false,
@@ -20,12 +20,17 @@
         "busiest_target_receipts_per_day": 20,
         "current_target_document_bytes": 4096,
         "receipt_document_bytes": 1024,
-        "confirmation_refreshes_per_day": null
+        "confirmation_refreshes_per_day": null,
+        "ledger_first_pages_per_day": 0,
+        "ledger_next_pages_per_day": 0,
+        "ledger_page_size": 20
       },
       "result": {
         "additional_reads_per_day_upper": 3960,
         "additional_writes_per_day": 80,
         "confirmation_refresh_reads_per_day_upper": 880,
+        "ledger_document_and_rules_reads_per_day_upper": 0,
+        "ledger_index_reads_verified": false,
         "marker_storage_upper_bytes": 29900800,
         "target_history_storage_estimate_bytes": 14950400,
         "total_additional_storage_estimate_bytes": 44851200,
@@ -58,12 +63,17 @@
         "busiest_target_receipts_per_day": 20,
         "current_target_document_bytes": 4096,
         "receipt_document_bytes": 1024,
-        "confirmation_refreshes_per_day": null
+        "confirmation_refreshes_per_day": null,
+        "ledger_first_pages_per_day": 0,
+        "ledger_next_pages_per_day": 0,
+        "ledger_page_size": 20
       },
       "result": {
         "additional_reads_per_day_upper": 3960,
         "additional_writes_per_day": 80,
         "confirmation_refresh_reads_per_day_upper": 880,
+        "ledger_document_and_rules_reads_per_day_upper": 0,
+        "ledger_index_reads_verified": false,
         "marker_storage_upper_bytes": 149504000,
         "target_history_storage_estimate_bytes": 74752000,
         "total_additional_storage_estimate_bytes": 224256000,
