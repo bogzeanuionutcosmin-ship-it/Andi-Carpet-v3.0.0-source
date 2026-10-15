@@ -612,3 +612,43 @@ test('managerId claim alone does not authorize finance write without own-decont 
     receivedDeparture: 15,
   }));
 });
+
+
+// NONFINITE MONEY — CHARACTERIZATION ONLY. Firestore stores special floating
+// point values; the current expense rules have no amount type/finite/range
+// validation. An assertSucceeds is evidence of this gap, NOT desired policy.
+// All IDs, actors and values are synthetic emulator fixtures.
+test('unsafe: expense create accepts NaN amount with forged distributedBy', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'expenses/expense-ocr-nan-create'),
+    { ...expenseOcrPayload(), distributedBy: 'expense-ocr-member', amount: Number.NaN },
+  ));
+});
+
+test('unsafe: expense create accepts positive Infinity amount with forged distributedBy', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'expenses/expense-ocr-infinity-create'),
+    { ...expenseOcrPayload(), distributedBy: 'expense-ocr-member', amount: Number.POSITIVE_INFINITY },
+  ));
+});
+
+test('unsafe: existing confirmed expense amount can be changed to NaN by teammate', async () => {
+  const path = 'expenses/expense-ocr-nan-update';
+  await seedExpenseFieldProbe(path);
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    amount: Number.NaN,
+  }));
+});
+
+test('unsafe: settlement can receive nonfinite receivedEntries values via teammate update', async () => {
+  const path = 'settlements/expense-ocr-nonfinite-received';
+  await seedFinanceFieldProbe(path, {
+    teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin',
+    closed: true, receivedEntries: [],
+  });
+  await assertSucceeds(updateDoc(doc(db('expense-ocr-member'), path), {
+    receivedEntries: [{ id: 'synthetic-nonfinite', amount: Number.POSITIVE_INFINITY, kind: 'departure' }],
+  }));
+});
