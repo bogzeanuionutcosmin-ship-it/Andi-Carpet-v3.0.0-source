@@ -16,6 +16,25 @@ class SparkBudgetTest(unittest.TestCase):
         self.assertEqual(report['additional_writes_per_day'], 80)
         self.assertEqual(report['marker_storage_upper_bytes'], 29900800)
 
+    def test_receipt_history_growth_is_included_in_reserve(self):
+        report = budget.Scenario(40, 40).estimate()
+        self.assertEqual(report['target_history_storage_estimate_bytes'], 14950400)
+        self.assertEqual(report['total_additional_storage_estimate_bytes'], 44851200)
+        self.assertTrue(report['storage_is_assumption_not_measured_bound'])
+        self.assertFalse(report['target_document_capacity_verified'])
+        self.assertFalse(report['egress_verified'])
+
+    def test_marker_only_fit_does_not_hide_large_history_growth(self):
+        report = budget.Scenario(300, existing_daily_reads=0, existing_daily_writes=0,
+                                 existing_storage_bytes=0).estimate()
+        self.assertLess(report['marker_storage_upper_bytes'], 256 * 1024**2)
+        self.assertGreater(report['total_additional_storage_estimate_bytes'], 256 * 1024**2)
+        self.assertFalse(report['within_internal_reserve'])
+
+    def test_negative_history_size_assumption_is_rejected(self):
+        with self.assertRaises(ValueError):
+            budget.Scenario(1, target_entry_bytes_with_indexes=-1).estimate()
+
     def test_unknown_usage_fails_closed(self):
         self.assertFalse(budget.Scenario(1).estimate()['within_internal_reserve'])
 

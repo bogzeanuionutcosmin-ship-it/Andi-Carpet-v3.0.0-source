@@ -10,6 +10,9 @@ class Scenario:
     attempts: int = 3
     days: int = 365
     marker_bytes_with_indexes: int = 2048
+    # Conservative scenario assumes every operation also appends a receipt.
+    # Both byte inputs are assumptions, NOT measured maximums.
+    target_entry_bytes_with_indexes: int = 1024
     # UNKNOWN usage cannot produce a production readiness result.
     existing_daily_reads: int | None = None
     existing_daily_writes: int | None = None
@@ -17,20 +20,27 @@ class Scenario:
 
     def estimate(self):
         if min(self.operations_per_day, self.reconciliations_per_day, self.days,
-               self.marker_bytes_with_indexes) < 0 or not 1 <= self.attempts <= 3:
+               self.marker_bytes_with_indexes, self.target_entry_bytes_with_indexes) < 0 or not 1 <= self.attempts <= 3:
             raise ValueError('Invalid scenario or unbounded transaction attempts')
         # 2 client document reads and worst-case 20 rules access calls per
         # transaction attempt. No assumption that repeated accesses are cached.
         reads = self.operations_per_day * self.attempts * 22 + self.reconciliations_per_day * 11
         writes = self.operations_per_day * 2
         storage = self.operations_per_day * self.days * self.marker_bytes_with_indexes
+        history_storage = self.operations_per_day * self.days * self.target_entry_bytes_with_indexes
+        total_storage = storage + history_storage
         known = all(v is not None and v >= 0 for v in [self.existing_daily_reads,
                     self.existing_daily_writes, self.existing_storage_bytes])
         fits = known and reads + self.existing_daily_reads <= 25000 and \
             writes + self.existing_daily_writes <= 10000 and \
-            storage + self.existing_storage_bytes <= 256 * 1024**2
+            total_storage + self.existing_storage_bytes <= 256 * 1024**2
         return dict(additional_reads_per_day_upper=reads, additional_writes_per_day=writes,
-                    marker_storage_upper_bytes=storage, new_deletes=0, new_listeners=0,
+                    marker_storage_upper_bytes=storage,
+                    target_history_storage_estimate_bytes=history_storage,
+                    total_additional_storage_estimate_bytes=total_storage,
+                    storage_is_assumption_not_measured_bound=True,
+                    target_document_capacity_verified=False, egress_verified=False,
+                    new_deletes=0, new_listeners=0,
                     new_polling=0, usage_known=known, within_internal_reserve=bool(fits),
                     production_ready=False)
 
