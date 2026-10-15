@@ -1,0 +1,39 @@
+"""Static upper-bound model; never reads Firebase or enables billing."""
+from dataclasses import dataclass
+import json
+
+
+@dataclass(frozen=True)
+class Scenario:
+    operations_per_day: int
+    reconciliations_per_day: int = 0
+    attempts: int = 3
+    days: int = 365
+    marker_bytes_with_indexes: int = 2048
+    # UNKNOWN usage cannot produce a production readiness result.
+    existing_daily_reads: int | None = None
+    existing_daily_writes: int | None = None
+    existing_storage_bytes: int | None = None
+
+    def estimate(self):
+        if min(self.operations_per_day, self.reconciliations_per_day, self.days,
+               self.marker_bytes_with_indexes) < 0 or not 1 <= self.attempts <= 3:
+            raise ValueError('Invalid scenario or unbounded transaction attempts')
+        # 2 client document reads and worst-case 20 rules access calls per
+        # transaction attempt. No assumption that repeated accesses are cached.
+        reads = self.operations_per_day * self.attempts * 22 + self.reconciliations_per_day * 11
+        writes = self.operations_per_day * 2
+        storage = self.operations_per_day * self.days * self.marker_bytes_with_indexes
+        known = all(v is not None and v >= 0 for v in [self.existing_daily_reads,
+                    self.existing_daily_writes, self.existing_storage_bytes])
+        fits = known and reads + self.existing_daily_reads <= 25000 and \
+            writes + self.existing_daily_writes <= 10000 and \
+            storage + self.existing_storage_bytes <= 256 * 1024**2
+        return dict(additional_reads_per_day_upper=reads, additional_writes_per_day=writes,
+                    marker_storage_upper_bytes=storage, new_deletes=0, new_listeners=0,
+                    new_polling=0, usage_known=known, within_internal_reserve=bool(fits),
+                    production_ready=False)
+
+
+if __name__ == '__main__':
+    print(json.dumps({str(n): Scenario(n, n).estimate() for n in [40, 200, 1000]}, indent=2))
