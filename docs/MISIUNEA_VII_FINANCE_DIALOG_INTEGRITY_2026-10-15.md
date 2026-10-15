@@ -62,3 +62,6 @@ Avansul și schemeleperDiems/per_diem_settlements_v2 neschimbate. Testeleabuzass
 Pin autorizat VII-08 `lib/expenses/expense_page.dart`: 6c948fe71f19246a3c71bd2d2a20ac963bdf0b783f694a14ef81ed73f1ff71d3 → efd42ce1c1944bcf0288aea6ec54d2d9448ecf36dbba833454c8c43603cce01c.
 
 Pin autorizat VII-08 `lib/expenses/expense_settlement_actions.dart`: 3c8931aff9b31830670d2ad72f8fc3aba37cf2798e46dee5042e3a49a6028681 → 3976d0bb5e0eef4c1c54d44443deade6938e6d6498293999e9dab0ad00b459f3.
+
+### Corecție fixture VII-08
+HEAD9c02ebe: probe38689600569FAIL înainte deexecuție la două cascade Dart cu arrow closure (setter interpretat peFuture/bool). Controller/numeric51PASS, receiptRED specific confirmat și director1PASS; nu revendicăm20session/3telemetryPASS. Atribuirile fixture devin statementuri separate, fără schimbarea aserțiunilor/runtime. Dublaconfirmare dinlifecycle invocă acum handlerul real de douăori; aldoileatap hit-tested în animație putea rata widgetul (warningCI), deci acea probă anterioară nu certifica reentrancy.

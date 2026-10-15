@@ -57,8 +57,14 @@ void main() {
           await tester.tapAt(const Offset(5, 5));
         } else {
           final action = exit == 'cancel' ? 'Anulează' : kind == 'create' ? 'Creează' : kind == 'edit' ? 'Salvează' : 'Adaugă';
-          await tester.tap(find.text(action));
-          if (exit == 'double-confirm') await tester.tap(find.text(action));
+          if (exit == 'double-confirm') {
+            // Invoke the actual button handler twice before another frame. A
+            // second hit-tested tap could miss the route that is closing.
+            final button = tester.widget<FilledButton>(find.widgetWithText(FilledButton, action));
+            button.onPressed!(); button.onPressed!();
+          } else {
+            await tester.tap(find.text(action));
+          }
         }
         await tester.pumpAndSettle();
         expect(saves, (exit == 'confirm' || exit == 'double-confirm') ? 1 : 0);

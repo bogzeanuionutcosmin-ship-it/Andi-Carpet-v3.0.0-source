@@ -16,10 +16,10 @@ void main() {
             saves++; await gate.future;
             if (reject) throw StateError('PRIVATE_OLD_A_FAILURE');
           }
-          final first = ExpenseDocumentFixture('', userId: 'A')
-            ..legacyFinance = kind == 'legacy-money'
-            ..saveSettlementOverride = (_) => save()
-            ..saveFinanceOverride = (_) => save();
+          final first = ExpenseDocumentFixture('', userId: 'A');
+          first.legacyFinance = kind == 'legacy-money';
+          first.saveSettlementOverride = (_) => save();
+          first.saveFinanceOverride = (_) => save();
           await first.mount(tester);
           final originalState = tester.state(find.byType(ExpensePage));
           final label = kind == 'create' ? 'Nouă' : kind == 'edit' ? 'Editează deplasarea' : kind == 'close' ? 'Închide decontul' : 'Primit la plecare';

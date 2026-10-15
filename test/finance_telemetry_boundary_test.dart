@@ -12,9 +12,9 @@ void main() {
       var attempts = 0;
       final gate = Completer<void>();
       final before = count();
-      final fixture = ExpenseDocumentFixture('')
-        ..diagnosticSessionIsCurrent = () => active
-        ..saveSettlementOverride = (_) async {
+      final fixture = ExpenseDocumentFixture('');
+      fixture.diagnosticSessionIsCurrent = () => active;
+      fixture.saveSettlementOverride = (_) async {
           attempts++; await gate.future;
           if (outcome != 'success') throw StateError('PRIVATE_SENTINEL 321.09 token uid OCR');
         };
