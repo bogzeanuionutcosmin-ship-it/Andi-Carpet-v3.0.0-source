@@ -33,3 +33,9 @@ Commit 08492f64f5f4b8544d1bc151de8e39227f43bf88, tree ecacc77fbb7e8e09f6de12692d
 ### Corecție de fixture lot 2
 
 La revizuirea testului maximal-identifiers am observat că 150 rânduri valide maxime încap în 48 KiB; nu este corect să cerem eviction de bytes la această combinație. Proba folosește acum o limită injectată mai strictă, 4096 bytes, și identificatori exact48, păstrând toate assertions de cap/severity/restore. Limita de producție 48KiB/150 este în continuare verificată separat. Nu schimbăm runtime sau politica pentru a satisface o presupunere greșită de test. CI inițial/correctiv sunt raportate separat după observare.
+
+## Lot 2 GREEN / lot 3 sécurité multi-compte
+
+Lot2 final 6ee5b257954fd573005defe393b1fa608b9f5bfe, tree908fc831fa307eb766e528e0af2b8166ff1c4d5c. Standard38662610600 SUCCESS5/5, 414Flutter/167Python, identity38662610626 SUCCESS5tests. Flutter checkout5265e8e; merge-tree verificat separat. Prima rulare38662503072 a fost anulată la publicarea corecției de fixture; nu există dovadă RED comportamentală revendicată. Android test-only38662610691 era încă în build la trecerea la următorul lot; numai lot1runtime este deja certificat Android, iar finalul va cere propria compilare.
+
+Lot3: patru teste noi, trei platforme-simbol (android/web/windows) × cold restore al jurnalului device-wide + write-failure/RAM fallback, cu root AuthGate real și loginB; rebuilduri repetate nu afișează/copiază istoricul și nu șterg cache. Nu sunt rulări engine-web/windows sau hardware. Testul epocilor capturează callbackul Clipboard în A1, parcurge A→B→A2, invocă acel callback și cere zero copieri; copierea legitimă A2 funcționează. Ownership este closure-ul UID+epoch real, nu un bool substituit. UI numai test, nicio rută nouă runtime. CI lot3 urmează.
