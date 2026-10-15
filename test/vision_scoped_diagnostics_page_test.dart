@@ -164,7 +164,7 @@ void main() {
     expect(find.text('ocr / only_before_logout'), findsOneWidget);
 
     journal.revoke(); // AuthGate logout, without parent pumpWidget or tap.
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('ocr / only_before_logout'), findsNothing);
     expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
     expect(find.byTooltip('Copiază raport tehnic anonimizat'), findsNothing);
@@ -183,7 +183,7 @@ void main() {
 
     final b = journal.startSession(isSessionCurrent: () => true);
     b.record(area: 'gps', code: 'only_B', platform: 'android');
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('ocr / only_A'), findsNothing);
     expect(find.text('gps / only_B'), findsNothing);
     expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
@@ -194,7 +194,7 @@ void main() {
     ));
     expect(find.text('gps / only_B'), findsOneWidget);
     journal.revoke();
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('gps / only_B'), findsNothing);
     expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
     expect(tester.takeException(), isNull);
