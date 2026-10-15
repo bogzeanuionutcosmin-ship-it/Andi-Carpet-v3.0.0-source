@@ -7,6 +7,7 @@ import 'vision_diagnostic_report.dart';
 import 'vision_diagnostic_advisor.dart';
 import 'vision_diagnostic_coverage.dart';
 import 'vision_error_telemetry.dart';
+import 'vision_assistant_avatar.dart';
 
 /// Read-only diagnostics from THIS device only; no remote-user data queries.
 class VisionDiagnosticsPage extends StatefulWidget {
@@ -64,7 +65,17 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
     // from login and Firebase.
     if (!_canInspect) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Vision')),
+        appBar: AppBar(title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            VisionAssistantAvatar(
+              key: Key('vision-diagnostics-avatar'),
+              size: 40,
+            ),
+            SizedBox(width: 8),
+            Text('Vision'),
+          ],
+        )),
         body: const Center(
           child: Padding(
             padding: EdgeInsets.all(20),
@@ -83,7 +94,17 @@ class _VisionDiagnosticsPageState extends State<VisionDiagnosticsPage> {
     final insights = VisionDiagnosticAdvisor.assess(currentLog, maxInsights: 1);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vision'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            VisionAssistantAvatar(
+              key: Key('vision-diagnostics-avatar'),
+              size: 40,
+            ),
+            SizedBox(width: 8),
+            Text('Vision'),
+          ],
+        ),
         actions: <Widget>[
           // Only debug builds can create a harmless local persistence probe.
           // Release builds remain read-only; this never writes to Firebase.
