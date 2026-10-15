@@ -10,7 +10,7 @@ Această etapă nouă, independentă de finanțele Lunei [PR #55](https://github
 
 - `lib/vision/vision_avatar_preview_app.dart`: ecran complet offline `VisionAvatarPreviewApp`, cu switch de temă light/dark și alegere de dimensiune 64/112/176 dp. Vizualul rămâne exclusiv `VisionAssistantAvatar`, nu o implementare separată duplicată.
 - `lib/vision/vision_avatar_preview_main.dart`: **entrypoint separat**, pentru build explicit `--target` — `lib/main.dart` rămâne intact.
-- `test/vision_avatar_preview_app_test.dart`: 5 teste widget pentru lansarea fără diagnostic, light/dark, dimensiuni, layout compact portrait/landscape și lipsă butoane/fluxuri de date.
+- `test/vision_avatar_preview_app_test.dart`: 6 teste widget pentru lansarea fără diagnostic, light/dark, dimensiuni, layout compact portrait/landscape și lipsă butoane/fluxuri de date.
 - `test/vision_avatar_preview_boundary_test.py`: 4 contracte de sursă: importuri limitate, entrypoint opt-in, fără Firebase/telemetrie/rețea/timer/navigare și producție `main.dart` fără acest preview.
 - `.github/workflows/vision-avatar-offline-preview.yml`: compile-only pentru Flutter web target separat, plus testele de avatar, **fără upload-artifact, deploy, signing sau billing**.
 
