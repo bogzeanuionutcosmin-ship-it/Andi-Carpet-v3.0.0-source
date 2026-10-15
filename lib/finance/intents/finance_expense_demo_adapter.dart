@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../../main.dart' show TravelSettlement, TeamFinance, ReceivedMoneyEntry, FinanceSaveRejected;
 import 'finance_demo_panel.dart';
 import 'finance_intent.dart';
@@ -39,17 +40,21 @@ class _Save {
 // Explicit DEMO composition for the existing ExpensePage callback signatures.
 // Production Home never constructs this adapter. Bind ExpensePage's session
 // guard to the SAME scope. acceptServerSnapshot must replace mutable UI models.
-class FinanceExpenseDemoAdapter {
+class FinanceExpenseDemoAdapter extends ChangeNotifier {
   final FinanceDemoScope scope;
   final FinanceAtomicPort port;
   final Future<void> Function(String path,Map<String,Object?> data) acceptServerSnapshot;
+  bool _open=true;
+  bool isBusy(String path)=>_saves[path]?.busy??false;
+  void _notify(){if(_open)notifyListeners();}
+  @override void dispose(){_open=false;scope.dispose();super.dispose();}
   final _baselines=<String,_Baseline>{};
   final _saves=<String,_Save>{};
   FinanceExpenseDemoAdapter({required this.scope,required this.port,required this.acceptServerSnapshot}) {
     if(!identical(scope.coordinator.repository.port,port))throw ArgumentError('finance_scope_port_mismatch');
   }
   Map<String,String> get pendingCodes=>Map.unmodifiable(_saves.map((p,s)=>MapEntry(p,s.code)));
-  void _guard(){if(!scope.sessionIsCurrent())throw FinanceSaveRejected('finance_session_expired');}
+  void _guard(){if(!_open||!scope.sessionIsCurrent())throw FinanceSaveRejected('finance_session_expired');}
   void observeSettlement(TravelSettlement model,FinanceServerObservation server)=>
     _observe('settlements/${model.id}',_settlement(model),server);
   void observeFinance(TeamFinance model,FinanceServerObservation server)=>
@@ -144,7 +149,7 @@ class FinanceExpenseDemoAdapter {
   }
   Future<void> _run(String path,_Save save,bool reconcile) async {
     if(save.busy||!scope.sessionIsCurrent())return;
-    save.busy=true;
+    save.busy=true;_notify();
     try {
       final outcome=save.confirmed?null:(reconcile?await scope.coordinator.reconcileExplicitly(save.intent):
         await scope.coordinator.executeExplicitly(save.intent));
@@ -170,6 +175,6 @@ class FinanceExpenseDemoAdapter {
     } catch(_) {
       // Never send a generic error into the old close-dialog rollback path.
       save.code='finance_result_uncertain';
-    } finally {save.busy=false;}
+    } finally {save.busy=false;_notify();}
   }
 }

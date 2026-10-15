@@ -12,7 +12,7 @@ spec.loader.exec_module(budget)
 class SparkBudgetTest(unittest.TestCase):
     def test_two_teams_with_twenty_daily_intents_include_rules_and_reconciliation(self):
         report = budget.Scenario(40, 40).estimate()
-        self.assertEqual(report['additional_reads_per_day_upper'], 3080)
+        self.assertEqual(report['additional_reads_per_day_upper'], 3960)
         self.assertEqual(report['additional_writes_per_day'], 80)
         self.assertEqual(report['marker_storage_upper_bytes'], 29900800)
 
@@ -102,3 +102,15 @@ class SparkBudgetTest(unittest.TestCase):
                        {'current_target_document_bytes': -1}, {'receipt_document_bytes': -1}]:
             with self.assertRaises(ValueError):
                 budget.Scenario(1, **kwargs).estimate()
+
+    def test_ui_refresh_cost_cannot_disappear_after_a_successful_marker_check(self):
+        report = budget.Scenario(40, 40).estimate()
+        self.assertEqual(report['confirmation_refresh_reads_per_day_upper'], 880)
+        explicit = budget.Scenario(40, 40, confirmation_refreshes_per_day=3).estimate()
+        self.assertEqual(explicit['confirmation_refresh_reads_per_day_upper'], 33)
+        self.assertEqual(explicit['additional_reads_per_day_upper'], 3113)
+
+    def test_invalid_refresh_counts_fail_closed(self):
+        for value in [-1, True, 1.5]:
+            with self.assertRaises(ValueError):
+                budget.Scenario(1, confirmation_refreshes_per_day=value).estimate()

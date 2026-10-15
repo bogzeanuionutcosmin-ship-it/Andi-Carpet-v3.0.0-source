@@ -22,6 +22,9 @@ class Scenario:
     busiest_target_receipts_per_day: int | None = None
     current_target_document_bytes: int | None = None
     receipt_document_bytes: int = 1024
+    # Each successful UI completion also reads the authoritative target.
+    # Unknown count conservatively allows one after every operation/check.
+    confirmation_refreshes_per_day: int | None = None
 
     def estimate(self):
         if min(self.operations_per_day, self.reconciliations_per_day, self.days,
@@ -30,7 +33,7 @@ class Scenario:
             raise ValueError('Invalid scenario or unbounded transaction attempts')
         optional = [self.existing_daily_reads, self.existing_daily_writes,
                     self.existing_storage_bytes, self.busiest_target_receipts_per_day,
-                    self.current_target_document_bytes]
+                    self.current_target_document_bytes, self.confirmation_refreshes_per_day]
         if any(v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 0)
                for v in optional):
             raise ValueError('Invalid baseline or target concentration')
@@ -39,6 +42,12 @@ class Scenario:
         # 2 client document reads and worst-case 20 rules access calls per
         # transaction attempt. No assumption that repeated accesses are cached.
         reads = self.operations_per_day * self.attempts * 22 + self.reconciliations_per_day * 11
+        refreshes = self.confirmation_refreshes_per_day
+        if refreshes is None:
+            refreshes = self.operations_per_day + self.reconciliations_per_day
+        # One server document read plus up to ten rules access calls per read.
+        refresh_reads = refreshes * 11
+        reads += refresh_reads
         writes = self.operations_per_day * 2
         storage = self.operations_per_day * self.days * self.marker_bytes_with_indexes
         history_storage = self.operations_per_day * self.days * self.target_entry_bytes_with_indexes
@@ -61,6 +70,7 @@ class Scenario:
             writes + self.existing_daily_writes <= 10000 and \
             total_storage + self.existing_storage_bytes <= 256 * 1024**2
         return dict(additional_reads_per_day_upper=reads, additional_writes_per_day=writes,
+                    confirmation_refresh_reads_per_day_upper=refresh_reads,
                     marker_storage_upper_bytes=storage,
                     target_history_storage_estimate_bytes=history_storage,
                     total_additional_storage_estimate_bytes=total_storage,

@@ -1,6 +1,7 @@
 import 'package:andi_carpeta/main.dart';
 import 'package:andi_carpeta/finance/intents/finance_demo_panel.dart';
 import 'package:andi_carpeta/finance/intents/finance_expense_demo_adapter.dart';
+import 'package:andi_carpeta/finance/intents/finance_expense_demo_recovery.dart';
 import 'package:andi_carpeta/finance/intents/finance_journal.dart';
 import 'package:andi_carpeta/finance/intents/finance_repository.dart';
 import 'package:flutter/material.dart';
@@ -145,6 +146,44 @@ void main(){
     expect(h.fixture.settlementOverride!.id,pending.documentId);
     expect(h.fixture.settlementOverride!.revision,1);
     await t.pumpWidget(const SizedBox());
+  });
+  testWidgets('recovery banner in the original page explicitly reconciles without rebuild network traffic',(t)async{
+    final h=_Harness();h.db.commitThenThrow=true;
+    h.fixture.wrapPage=(page)=>FinanceExpenseDemoRecovery(adapter:h.adapter,child:page);
+    await h.fixture.mount(t);expect(h.db.calls,0);expect(h.db.serverReads,0);
+    await h.receipt(t);expect(h.fixture.logs,isEmpty);
+    expect(find.text('Rezultatul salvării nu este încă confirmat.'),findsOneWidget);
+    h.fixture.rebuild((){});await t.pumpAndSettle();expect(h.db.calls,1);expect(h.db.serverReads,0);
+    await t.tap(find.text('Verifică salvarea'));await t.pumpAndSettle();
+    expect(h.db.calls,1);expect(h.db.serverReads,2);expect(h.fixture.logs,hasLength(1));
+    expect(find.text('Verifică salvarea'),findsNothing);
+    await t.pumpWidget(const SizedBox());h.adapter.dispose();
+  });
+  testWidgets('real legacy receipt dialog preserves opening balance and distinct equal intentions',(t)async{
+    final h=_Harness();h.fixture.legacyFinance=true;
+    h.fixture.financeOverride=TeamFinance(teamId:'team',managerId:'worker',receivedDeparture:1,receivedOpeningDeparture:1);
+    h.db.seed('finance/team',{'teamId':'team','managerId':'worker','perDiemRate':50,
+      'receivedDeparture':1,'receivedDuring':0,'receivedOpeningDeparture':1,'receivedOpeningDuring':0,
+      'receivedEntries':<Object?>[]});
+    final adapter=FinanceExpenseDemoAdapter(scope:h.scope,port:h.db,acceptServerSnapshot:(path,data)async{
+      h.fixture.financeOverride=TeamFinance(teamId:'team',managerId:'worker',revision:data['revision'] as int,
+        lastOperationId:data['lastOperationId'] as String,receivedDeparture:(data['receivedDeparture'] as num).toDouble(),
+        receivedOpeningDeparture:1,receivedEntries:(data['receivedEntries'] as List).map((raw){final e=raw as Map;
+          return ReceivedMoneyEntry(id:e['id'] as String,kind:e['kind'] as String,amount:(e['amount'] as num).toDouble(),
+            method:e['method'] as String,fromName:e['fromName'] as String,date:e['date'] as DateTime);}).toList());
+      h.fixture.rebuild((){});
+    });
+    h.fixture.saveFinanceOverride=adapter.saveFinance;
+    void observe()=>adapter.observeFinance(h.fixture.financeOverride!,
+      FinanceServerObservation(h.db.documents['finance/team'],fromCache:false,pendingWrites:false));
+    observe();await h.fixture.mount(t);await h.receipt(t);
+    expect(h.fixture.financeOverride!.receivedDeparture,201);expect(h.fixture.logs,hasLength(1));
+    observe();await h.receipt(t);
+    final entries=h.fixture.financeOverride!.receivedEntries;
+    expect(entries,hasLength(2));expect(entries.first.id,isNot(entries.last.id));
+    expect(h.fixture.financeOverride!.receivedDeparture,401);expect(h.fixture.financeOverride!.receivedOpeningDeparture,1);
+    expect(h.db.calls,2);expect(h.db.writes,4);expect(h.fixture.logs,hasLength(2));
+    await t.pumpWidget(const SizedBox());adapter.dispose();
   });
   test('cached observation never becomes an adapter baseline',(){
     final h=_Harness();

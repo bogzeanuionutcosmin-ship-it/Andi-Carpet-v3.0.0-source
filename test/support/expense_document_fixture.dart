@@ -36,6 +36,7 @@ class ExpenseDocumentFixture {
   Completer<void>? saveGate;
   String text;
   late StateSetter rebuild;
+  Widget Function(Widget)? wrapPage;
   late final Uint8List image = Uint8List.fromList(img.encodePng(img.Image(width: 2, height: 2)));
   ExpenseDocumentFixture(this.text, {String userId = 'worker'})
       : user = AppUser(id: userId, name: 'Synthetic Worker', role: UserRole.member);
@@ -63,7 +64,7 @@ class ExpenseDocumentFixture {
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: StatefulBuilder(
       builder: (context, setState) {
         rebuild = setState;
-        return ExpensePage(
+        final page = ExpensePage(
           diagnosticSessionIsCurrent: diagnosticSessionIsCurrent,
           currentUser: user, teams: [Team(id: 'team', name: 'Synthetic Team', members: [user.id], financialManagerId: manager ? user.id : 'other')],
           users: [user], expenses: expenses, perDiems: perDiems,
@@ -78,6 +79,7 @@ class ExpenseDocumentFixture {
           saveSettlement: saveSettlementOverride ?? (_) async { fail('Unexpected settlement write'); },
           documentImagePicker: pick, documentTextRecognizer: recognize,
         );
+        return wrapPage?.call(page) ?? page;
       },
     ))));
     await tester.pumpAndSettle();

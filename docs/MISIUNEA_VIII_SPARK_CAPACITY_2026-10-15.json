@@ -1,6 +1,6 @@
 {
   "date": "2026-10-15",
-  "model_sha256": "7ace30d548a98cbe6410ec547084664b73ba9838374361cf3048354f225ca8dc",
+  "model_sha256": "ef3c20ef0cdc85f3216389983c1b75a9a1efbcb78b44670930e33bb0636e807f",
   "synthetic_assumptions_only": true,
   "live_usage_measured": false,
   "production_ready": false,
@@ -19,11 +19,13 @@
         "existing_storage_bytes": 0,
         "busiest_target_receipts_per_day": 20,
         "current_target_document_bytes": 4096,
-        "receipt_document_bytes": 1024
+        "receipt_document_bytes": 1024,
+        "confirmation_refreshes_per_day": null
       },
       "result": {
-        "additional_reads_per_day_upper": 3080,
+        "additional_reads_per_day_upper": 3960,
         "additional_writes_per_day": 80,
+        "confirmation_refresh_reads_per_day_upper": 880,
         "marker_storage_upper_bytes": 29900800,
         "target_history_storage_estimate_bytes": 14950400,
         "total_additional_storage_estimate_bytes": 44851200,
@@ -55,11 +57,13 @@
         "existing_storage_bytes": 0,
         "busiest_target_receipts_per_day": 20,
         "current_target_document_bytes": 4096,
-        "receipt_document_bytes": 1024
+        "receipt_document_bytes": 1024,
+        "confirmation_refreshes_per_day": null
       },
       "result": {
-        "additional_reads_per_day_upper": 3080,
+        "additional_reads_per_day_upper": 3960,
         "additional_writes_per_day": 80,
+        "confirmation_refresh_reads_per_day_upper": 880,
         "marker_storage_upper_bytes": 149504000,
         "target_history_storage_estimate_bytes": 74752000,
         "total_additional_storage_estimate_bytes": 224256000,
