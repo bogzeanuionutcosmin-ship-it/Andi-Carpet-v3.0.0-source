@@ -26,8 +26,25 @@ before(async () => {
         ...(role === 'member' ? { effectivePermissions: ['viewOwnDecont'] } : {}),
       });
     }
+    // Boundary fixtures: inactive member, read-only director, and developer are
+    // distinct from the admin role. No real accounts or production data used.
+    for (const [uid, data] of [
+      ['expense-ocr-inactive', {
+        active: false, role: 'member', effectivePermissions: ['viewOwnDecont'],
+      }],
+      ['expense-ocr-director', {
+        active: true, role: 'member', function: 'director',
+        effectivePermissions: ['viewOtherDecont'],
+      }],
+      ['expense-ocr-developer', {
+        active: true, role: 'member', function: 'developer',
+        effectivePermissions: [],
+      }],
+    ]) {
+      await setDoc(doc(ctx.firestore(), 'users', uid), data);
+    }
     await setDoc(doc(ctx.firestore(), 'teams', 'expense-ocr-team'), {
-      members: ['expense-ocr-member'],
+      members: ['expense-ocr-member', 'expense-ocr-inactive'],
     });
   });
 });
@@ -213,4 +230,106 @@ test('expenses characterization: current create rule does not validate positive 
       distributedBy: 'expense-ocr-member', amount: -10, confirmed: true,
     },
   ));
+});
+
+
+// ISSUE #32 — authorization boundaries. These are *currently denied* cases;
+// unlike the preceding vulnerability proofs, GREEN here means the baseline
+// rejected the attempted operation in the Firestore rules emulator.
+// These tests do not assert that the entire finance policy is safe.
+async function seedBoundaryDocuments() {
+  const { setDoc } = require('firebase/firestore');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const storage = ctx.firestore();
+    await setDoc(doc(storage, 'expenses/expense-ocr-boundary'), {
+      ...expenseOcrPayload(), confirmed: false,
+    });
+    await setDoc(doc(storage, 'finance/expense-ocr-team'), {
+      teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin',
+      receivedDeparture: 10,
+    });
+    await setDoc(doc(storage, 'settlements/expense-ocr-boundary'), {
+      teamId: 'expense-ocr-team', managerId: 'expense-ocr-admin', closed: true,
+    });
+  });
+}
+before(seedBoundaryDocuments);
+
+test('inactive team member: cannot read its team expense', async () => {
+  const { getDoc } = require('firebase/firestore');
+  await assertFails(getDoc(doc(db('expense-ocr-inactive'), 'expenses/expense-ocr-boundary')));
+});
+
+test('inactive team member: cannot alter an expense even while listed in team', async () => {
+  await assertFails(updateDoc(doc(db('expense-ocr-inactive'), 'expenses/expense-ocr-boundary'), {
+    amount: 0, confirmed: true,
+  }));
+});
+
+test('inactive team member: cannot create an expense with forged distributedBy', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertFails(setDoc(doc(db('expense-ocr-inactive'), 'expenses/expense-ocr-inactive-create'), {
+    ...expenseOcrPayload(), distributedBy: 'expense-ocr-inactive',
+  }));
+});
+
+test('inactive team member: cannot overwrite finance even when it belonged to team', async () => {
+  await assertFails(updateDoc(doc(db('expense-ocr-inactive'), 'finance/expense-ocr-team'), {
+    managerId: 'expense-ocr-inactive',
+  }));
+});
+
+test('inactive team member: cannot reopen a settlement', async () => {
+  await assertFails(updateDoc(doc(db('expense-ocr-inactive'), 'settlements/expense-ocr-boundary'), {
+    closed: false,
+  }));
+});
+
+test('director permission: can read expense outside own team', async () => {
+  const { getDoc } = require('firebase/firestore');
+  await assertSucceeds(getDoc(doc(db('expense-ocr-director'), 'expenses/expense-ocr-boundary')));
+});
+
+test('director permission: can read finance outside own team', async () => {
+  const { getDoc } = require('firebase/firestore');
+  await assertSucceeds(getDoc(doc(db('expense-ocr-director'), 'finance/expense-ocr-team')));
+});
+
+test('director permission: can read settlement outside own team', async () => {
+  const { getDoc } = require('firebase/firestore');
+  await assertSucceeds(getDoc(doc(db('expense-ocr-director'), 'settlements/expense-ocr-boundary')));
+});
+
+test('director permission: cannot alter an expense without team edit rights', async () => {
+  await assertFails(updateDoc(doc(db('expense-ocr-director'), 'expenses/expense-ocr-boundary'), {
+    amount: 0, confirmed: true,
+  }));
+});
+
+test('director permission: cannot replace the finance manager', async () => {
+  await assertFails(updateDoc(doc(db('expense-ocr-director'), 'finance/expense-ocr-team'), {
+    managerId: 'expense-ocr-director',
+  }));
+});
+
+test('director permission: cannot reopen a team settlement', async () => {
+  await assertFails(updateDoc(doc(db('expense-ocr-director'), 'settlements/expense-ocr-boundary'), {
+    closed: false,
+  }));
+});
+
+test('developer profession is not admin: cannot read another team expense', async () => {
+  const { getDoc } = require('firebase/firestore');
+  await assertFails(getDoc(doc(db('expense-ocr-developer'), 'expenses/expense-ocr-boundary')));
+});
+
+test('developer profession is not admin: cannot change another team manager', async () => {
+  await assertFails(updateDoc(doc(db('expense-ocr-developer'), 'finance/expense-ocr-team'), {
+    managerId: 'expense-ocr-developer',
+  }));
+});
+
+test('non-admin member cannot delete its own team expense', async () => {
+  const { deleteDoc } = require('firebase/firestore');
+  await assertFails(deleteDoc(doc(db('expense-ocr-member'), 'expenses/expense-ocr-boundary')));
 });
