@@ -75,7 +75,7 @@ class VisionOperationalDiagnosticsContracts(unittest.TestCase):
         self.assertIn("showErrorMessage(context, 'Nu s-a putut salva diurna: $e')", EXPENSE)
         self.assertIn("showErrorMessage(context, 'Nu s-a putut salva documentul: $err')", EXPENSE)
         self.assertIn("showErrorMessage(context, 'Nu s-a putut salva confirmarea diurnei: $e')", EXPENSE)
-        self.assertIn("debugPrint('[location] Actualizarea locației a eșuat: $e')", HOME)
+        self.assertIn("debugPrint('[location] location_update_failed')", HOME)
 
     def test_every_operational_code_has_one_guarded_hook_in_its_real_module(self):
         expected = {
