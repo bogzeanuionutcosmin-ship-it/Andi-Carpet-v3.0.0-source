@@ -8,6 +8,12 @@ import 'package:andi_carpeta/finance/intents/finance_intent.dart';
 import 'package:andi_carpeta/finance/intents/finance_repository.dart';
 import 'package:andi_carpeta/finance/intents/firestore_finance_port.dart';
 
+// Bounded synthetic setup diagnostics; never emit token/UID/financial payload.
+Future<T> sdkStage<T>(String code,Future<T> Function() action) async {
+ print('VIII_SDK_STAGE $code');
+ return action().timeout(const Duration(seconds:30),onTimeout:()=>throw TimeoutException('VIII_SDK_STAGE_TIMEOUT $code'));
+}
+
 class ObservedPort implements FinanceAtomicPort {
  final FinanceAtomicPort inner;int atomicCalls=0,serverReads=0;
  bool loseAcknowledgement=false;
@@ -29,17 +35,17 @@ void main(){
  late ObservedPort port,secondPort;late String uid;
  Future<void> signIn(FirebaseAuth a,String suffix)=>a.signInWithEmailAndPassword(email:'viii-$suffix@example.test',password:'SyntheticEmulatorOnly123!');
  setUpAll(()async{
-  app=await Firebase.initializeApp(name:'viii-primary',options:options);
-  secondApp=await Firebase.initializeApp(name:'viii-second-device',options:options);
+  app=await sdkStage('initialize_primary',()=>Firebase.initializeApp(name:'viii-primary',options:options));
+  secondApp=await sdkStage('initialize_second',()=>Firebase.initializeApp(name:'viii-second-device',options:options));
   auth=FirebaseAuth.instanceFor(app:app);secondAuth=FirebaseAuth.instanceFor(app:secondApp);
-  await auth.useAuthEmulator('127.0.0.1',9099,automaticHostMapping:false);
-  await secondAuth.useAuthEmulator('127.0.0.1',9099,automaticHostMapping:false);
-  await auth.setPersistence(Persistence.NONE);await secondAuth.setPersistence(Persistence.NONE);
+  await sdkStage('auth_emulator_primary',()=>auth.useAuthEmulator('127.0.0.1',9099,automaticHostMapping:false));
+  await sdkStage('auth_emulator_second',()=>secondAuth.useAuthEmulator('127.0.0.1',9099,automaticHostMapping:false));
+  await sdkStage('persistence_primary',()=>auth.setPersistence(Persistence.NONE));await sdkStage('persistence_second',()=>secondAuth.setPersistence(Persistence.NONE));
   db=FirebaseFirestore.instanceFor(app:app);secondDb=FirebaseFirestore.instanceFor(app:secondApp);
   db.settings=const Settings(persistenceEnabled:false);secondDb.settings=const Settings(persistenceEnabled:false);
   port=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:db));
   secondPort=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:secondDb));
-  await signIn(auth,'a');await signIn(secondAuth,'a');uid=auth.currentUser!.uid;
+  await sdkStage('sign_in_primary',()=>signIn(auth,'a'));await sdkStage('sign_in_second',()=>signIn(secondAuth,'a'));uid=auth.currentUser!.uid;
  });
  tearDownAll(()async{await auth.signOut();await secondAuth.signOut();await app.delete();await secondApp.delete();});
  Future<Map<String,dynamic>> server(String target)async{

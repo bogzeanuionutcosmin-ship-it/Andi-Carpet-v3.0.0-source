@@ -61,4 +61,4 @@ jobs:
       - run: flutter pub get
       - run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
       - name: Actual Flutter Chrome SDK against local demo Auth and Firestore
-        run: npx firebase emulators:exec --only auth,firestore --project demo-andi-carpet --config firebase.mission-viii-test.json 'node tests/firestore/finance_viii_flutter_seed.cjs && flutter test --platform chrome test/finance_flutter_sdk_emulator.browser.dart --reporter expanded'
+        run: timeout --signal=TERM --kill-after=20s 8m npx firebase emulators:exec --only auth,firestore --project demo-andi-carpet --config firebase.mission-viii-test.json 'node tests/firestore/finance_viii_flutter_seed.cjs && flutter test --platform chrome test/finance_flutter_sdk_emulator.browser.dart --reporter expanded'
