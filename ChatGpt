@@ -2759,3 +2759,21 @@ Reluare:«ContinuăPR55/MisiuneaVIII dinHEADreal șiCI dindescriereaPR. Citește
 ChatGptșimatriceaVIII14plusaceastănotă. Păstreazăoricecommitnou. Nurepetafixurile
 validate;reparăoriceCIREDfărărelaxare,apoiintegrareUI-emulator/Restore/compatibilitate
 istoric/capacitateSpark. PR50/51/52read-only,producțieși billinginterzise.»
+
+
+## Continuare VIII — precizie Timestamp, 15.10.2026 seara
+
+Baseline test-only 02884dd33e9d11d69406dff28c9acd191a70cfb3, workflow38770734627,
+job116545814562:98PASS/1FAIL real. Aceeași aserțiune așteaptă nanos123456789,
+primește123456000 după vechiul Timestamp→DateTime→Timestamp. Prima încercare
+957f3ee a avut eroare de fixture constTimestamp, NU martor de defect; corectată
+în02884dd fără relaxare. Noul tip pur FinanceTimestamp păstrează exact valorile
+submicrosecundă, inclusiv în istoric nested, digest și jurnal; DateTime existent
+rămâne neschimbat pentru timestampuri reprezentabile exact. Tagul rezervat nu
+poate fi imitat prin mapuri furnizate de utilizator. Test SDK real suplimentar
+verifică receipt/edit fără schimbarea timestampurilor istorice.
+CI corecției urmează; nu declarăm GREEN înainte de rezultat.192Python localPASS
+include5noi probe separate de capacitate/retentie, încă nepublicate în acest lot.
+Execuția locală Flutter a fost oprită de auto-review pentru acces metadata169.254.169.254;
+nu s-a ocolit refuzul. Validarea Flutter continuă exclusiv prin CI existent.
+Fără schimbări main/PR50/51/52, rules, producție, billing, deploy sau distribuție.

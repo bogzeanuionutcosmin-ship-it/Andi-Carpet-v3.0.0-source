@@ -93,7 +93,7 @@ Map<String, Object?> applyFinanceIntent(FinanceIntent intent, Map<String, Object
   }
   if (data.containsKey('name') && (data['name'] is! String || (data['name'] as String).trim().isEmpty)) throw const FinanceRefusal('finance_invalid_name');
   for (final field in ['startDate','endDate']) {
-    if (data[field] != null && data[field] is! DateTime) throw const FinanceRefusal('finance_invalid_date');
+    if (data[field] != null && data[field] is! DateTime && data[field] is! FinanceTimestamp) throw const FinanceRefusal('finance_invalid_date');
   }
   data.addAll({'revision':intent.baseRevision+1,'lastOperationId':intent.operationId});
   return data;

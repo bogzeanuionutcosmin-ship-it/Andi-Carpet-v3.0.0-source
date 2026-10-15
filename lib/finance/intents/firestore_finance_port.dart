@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'finance_repository.dart';
+import 'finance_intent.dart';
 
 // Mission VIII is an emulator-only staging protocol. No default Firebase app,
 // live endpoint, listener, timer, background retry or production switch exists.
@@ -54,7 +55,10 @@ void _validatePath(String path) {
   }
 }
 Object? _decode(Object? value) {
-  if (value is Timestamp) return value.toDate().toUtc();
+  if (value is Timestamp) {
+    return value.nanoseconds % 1000 == 0 ? value.toDate().toUtc() :
+      FinanceTimestamp(value.seconds, value.nanoseconds);
+  }
   if (value is List) return value.map(_decode).toList();
   if (value is Map) return value.map((key, item) => MapEntry(key as String, _decode(item)));
   return value;
@@ -62,6 +66,7 @@ Object? _decode(Object? value) {
 Map<String,Object?>? decodeFinanceFirestoreDocument(Map<String,dynamic>? value) =>
   value == null ? null : Map<String,Object?>.from(_decode(value) as Map);
 Object? _encode(Object? value) {
+  if (value is FinanceTimestamp) return Timestamp(value.seconds, value.nanoseconds);
   if (value is DateTime) return Timestamp.fromDate(value.toUtc());
   if (value is List) return value.map(_encode).toList();
   if (value is Map) return value.map((key, item) => MapEntry(key as String, _encode(item)));
@@ -72,6 +77,8 @@ Map<String,dynamic> encodeFinanceFirestoreDocument(String path, Map<String,Objec
   return <String,dynamic>{...Map<String,dynamic>.from(_encode(value) as Map),
     path.contains('/financialIntents/') ? 'createdAt' : 'updatedAt': FieldValue.serverTimestamp()};
 }
+Map<String,dynamic> encodeFinanceFirestoreSnapshot(Map<String,Object?> value) =>
+  Map<String,dynamic>.from(_encode(value) as Map);
 class _FirestoreFinanceTransaction implements FinanceTransaction {
   final FirebaseFirestore firestore;
   final Transaction transaction;

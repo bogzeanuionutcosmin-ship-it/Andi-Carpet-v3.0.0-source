@@ -5,23 +5,36 @@ import 'package:crypto/crypto.dart';
 enum FinanceIntentKind { create, edit, close, receipt }
 enum FinanceIntentStatus { confirmed, rejectedBeforeWrite, uncertain, conflict }
 
+// DateTime cannot retain the nanoseconds of historical Firestore timestamps.
+// Keep sub-microsecond values exact across snapshots, journals and rewrites.
+class FinanceTimestamp {
+  final int seconds, nanoseconds;
+  FinanceTimestamp(this.seconds, this.nanoseconds) {
+    if (seconds < -62135596800 || seconds > 253402300799 ||
+        nanoseconds < 0 || nanoseconds > 999999999) {
+      throw const FormatException('finance_invalid_timestamp');
+    }
+  }
+}
+
 // Deep immutable request, created once BEFORE persistence/network submission.
 // DateTime survives restart as a tagged value; no model/list references escape.
 Object? freezeFinanceValue(Object? value) {
-  if (value == null || value is String || value is bool || value is DateTime) return value;
+  if (value == null || value is String || value is bool || value is DateTime || value is FinanceTimestamp) return value;
   if (value is num) {
     if (!value.isFinite) throw const FormatException('finance_nonfinite');
     return value;
   }
   if (value is List) return List<Object?>.unmodifiable(value.map(freezeFinanceValue));
   if (value is Map<String, Object?>) {
-    if (value.containsKey('@date')) throw const FormatException('finance_reserved_date_tag');
+    if (value.containsKey('@date') || value.containsKey('@timestamp')) throw const FormatException('finance_reserved_date_tag');
     return Map<String, Object?>.unmodifiable(
       value.map((key, value) => MapEntry(key, freezeFinanceValue(value))));
   }
   throw const FormatException('finance_unsupported_value');
 }
 Object? _jsonValue(Object? value) {
+  if (value is FinanceTimestamp) return {'@timestamp': [value.seconds, value.nanoseconds]};
   if (value is DateTime) return {'@date': value.toUtc().toIso8601String()};
   // Canonicalise safe integral doubles identically on VM and JavaScript. This
   // changes encoding only, never the immutable request's monetary value.
@@ -35,6 +48,13 @@ Object? _jsonValue(Object? value) {
 }
 Object? _fromJson(Object? value) {
   if (value is Map<String, dynamic>) {
+    if (value.length == 1 && value['@timestamp'] is List) {
+      final parts = value['@timestamp'] as List;
+      if (parts.length != 2 || parts[0] is! int || parts[1] is! int) {
+        throw const FormatException('finance_invalid_timestamp');
+      }
+      return FinanceTimestamp(parts[0] as int, parts[1] as int);
+    }
     if (value.length == 1 && value['@date'] is String) return DateTime.parse(value['@date'] as String).toUtc();
     return value.map((key, value) => MapEntry(key, _fromJson(value)));
   }
@@ -42,6 +62,7 @@ Object? _fromJson(Object? value) {
   return value;
 }
 String canonicalFinanceJson(Object? value) => jsonEncode(_jsonValue(value));
+Object? decodeCanonicalFinanceJson(String value) => _fromJson(jsonDecode(value));
 bool sameFinanceValue(Object? a, Object? b) => canonicalFinanceJson(a) == canonicalFinanceJson(b);
 
 class FinanceIntent {
