@@ -38,6 +38,27 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('size heading follows the preview theme rather than outer root',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const VisionAvatarPreviewApp());
+
+    final heading = find.byKey(const Key('vision-preview-size-heading'));
+    expect(heading, findsOneWidget);
+    final lightTheme = Theme.of(tester.element(heading));
+    expect(lightTheme.brightness, Brightness.light);
+    expect(tester.widget<Text>(heading).style?.color,
+        lightTheme.textTheme.titleMedium?.color);
+
+    await tester.tap(find.byKey(const Key('vision-preview-theme-toggle')));
+    await tester.pumpAndSettle();
+
+    final darkTheme = Theme.of(tester.element(heading));
+    expect(darkTheme.brightness, Brightness.dark);
+    expect(tester.widget<Text>(heading).style?.color,
+        darkTheme.textTheme.titleMedium?.color);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('size choices redraw the same static body',
       (WidgetTester tester) async {
     await tester.pumpWidget(const VisionAvatarPreviewApp());
