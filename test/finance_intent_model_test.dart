@@ -16,4 +16,16 @@ void main(){
  test('diagnostic interpolation excludes private binding and money',(){expect(intent().toString(),isNot(contains('PRIVATE')));expect(intent().toString(),isNot(contains('200')));});
  test('unknown durable version fails closed',(){expect(()=>FinanceIntent.decode(intent().encode().replaceFirst('"version":1','"version":2')),throwsFormatException);});
  test('storage cap does not discard or truncate an intent',(){expect(()=>intent(changes:{'name':'x'*17000}),throwsFormatException);});
+ test('integral numeric encoding has a VM and Chrome golden representation',(){
+  final decimal=intent(changes:{'amount':200.0,'fraction':0.25});
+  final integer=intent(changes:{'amount':200,'fraction':0.25});
+  expect(decimal.encode(),contains('"amount":200,'));
+  expect(decimal.encode(),isNot(contains('200.0')));expect(decimal.digest,integer.digest);
+  expect(decimal.changes['amount'],200.0);expect(FinanceIntent.decode(decimal.encode()).digest,decimal.digest);
+ });
+ test('a user map cannot masquerade as a persisted DateTime',(){
+  expect(()=>intent(changes:{'date':{'@date':'2026-10-15T00:00:00.000Z'}}),throwsFormatException);
+  expect(()=>intent(changes:{'nested':[{'@date':'invalid','extra':1}]}),throwsFormatException);
+ });
+
 }

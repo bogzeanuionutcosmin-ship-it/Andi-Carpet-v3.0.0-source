@@ -14,12 +14,18 @@ Object? freezeFinanceValue(Object? value) {
     return value;
   }
   if (value is List) return List<Object?>.unmodifiable(value.map(freezeFinanceValue));
-  if (value is Map<String, Object?>) return Map<String, Object?>.unmodifiable(
-    value.map((key, value) => MapEntry(key, freezeFinanceValue(value))));
+  if (value is Map<String, Object?>) {
+    if (value.containsKey('@date')) throw const FormatException('finance_reserved_date_tag');
+    return Map<String, Object?>.unmodifiable(
+      value.map((key, value) => MapEntry(key, freezeFinanceValue(value))));
+  }
   throw const FormatException('finance_unsupported_value');
 }
 Object? _jsonValue(Object? value) {
   if (value is DateTime) return {'@date': value.toUtc().toIso8601String()};
+  // Canonicalise safe integral doubles identically on VM and JavaScript. This
+  // changes encoding only, never the immutable request's monetary value.
+  if (value is num && value.abs() <= 9007199254740991 && value == value.truncateToDouble()) return value.toInt();
   if (value is List) return value.map(_jsonValue).toList();
   if (value is Map) {
     final keys = value.keys.cast<String>().toList()..sort();
