@@ -1,11 +1,11 @@
-"""KNOWN RED: console messages must not expose user IDs or raw SDK failures.
+"""Former KNOWN RED assertions from PR #49, now mandatory GREEN on the fix branch.
 
-Tests inspect the real, unchanged Home source. No fake exception is fed to
+Tests inspect the real Home source; PR #49 keeps the original RED evidence. No fake exception is fed to
 Firebase or GPS, so these are SOURCE characterization tests, not evidence of
 actual console exfiltration, production logs or real device behavior.
 
 Run explicitly: python3 test/home_console_privacy.red.py TestHomeConsolePrivacy.test_no_uid_in_push_console
-They intentionally aren't matched by unittest discover -p '*test.py'.
+They intentionally aren't matched by unittest discover -p '*test.py';\n# the dedicated fix workflow runs the unchanged assertions explicitly.
 """
 from pathlib import Path
 import re
