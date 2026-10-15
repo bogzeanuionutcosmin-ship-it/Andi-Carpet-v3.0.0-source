@@ -152,4 +152,107 @@ void main() {
     expect(find.text('fcm / old'), findsNothing);
     expect(find.text('Nu există erori locale în jurnal.'), findsOneWidget);
   });
+
+  testWidgets('logout immediately hides a mounted diagnostic without tap',
+      (tester) async {
+    final journal = VisionSessionJournal();
+    final lease = journal.startSession(isSessionCurrent: () => true);
+    lease.record(area: 'ocr', code: 'only_before_logout', platform: 'android');
+    await tester.pumpWidget(MaterialApp(
+      home: VisionScopedDiagnosticsPage(lease: lease),
+    ));
+    expect(find.text('ocr / only_before_logout'), findsOneWidget);
+
+    journal.revoke(); // AuthGate logout, without parent pumpWidget or tap.
+    await tester.pump();
+    expect(find.text('ocr / only_before_logout'), findsNothing);
+    expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
+    expect(find.byTooltip('Copiază raport tehnic anonimizat'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('new epoch automatically invalidates mounted A before B route swap',
+      (tester) async {
+    final journal = VisionSessionJournal();
+    final a = journal.startSession(isSessionCurrent: () => true);
+    a.record(area: 'ocr', code: 'only_A', platform: 'android');
+    await tester.pumpWidget(MaterialApp(
+      home: VisionScopedDiagnosticsPage(lease: a),
+    ));
+    expect(find.text('ocr / only_A'), findsOneWidget);
+
+    final b = journal.startSession(isSessionCurrent: () => true);
+    b.record(area: 'gps', code: 'only_B', platform: 'android');
+    await tester.pump();
+    expect(find.text('ocr / only_A'), findsNothing);
+    expect(find.text('gps / only_B'), findsNothing);
+    expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
+
+    // Same widget type, different lease: didUpdateWidget must resubscribe.
+    await tester.pumpWidget(MaterialApp(
+      home: VisionScopedDiagnosticsPage(lease: b),
+    ));
+    expect(find.text('gps / only_B'), findsOneWidget);
+    journal.revoke();
+    await tester.pump();
+    expect(find.text('gps / only_B'), findsNothing);
+    expect(find.textContaining('istoricul poate fi izolat sigur'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('disposed lease adapter never tries to rebuild on later logout',
+      (tester) async {
+    final journal = VisionSessionJournal();
+    final lease = journal.startSession(isSessionCurrent: () => true);
+    lease.record(area: 'gps', code: 'temporary', platform: 'web');
+    await tester.pumpWidget(MaterialApp(
+      home: VisionScopedDiagnosticsPage(lease: lease),
+    ));
+    await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+    journal.revoke();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
+  test('revocation listeners are single-shot and removable without timers', () {
+    final journal = VisionSessionJournal();
+    final lease = journal.startSession(isSessionCurrent: () => true);
+    var calls = 0;
+    final cancel = lease.listenRevocation(() => calls++);
+    final cancelAnother = lease.listenRevocation(() => calls += 10);
+    cancelAnother();
+    journal.revoke();
+    expect(calls, 1);
+    journal.revoke();
+    expect(calls, 1);
+    cancel(); // Safe even after the journal discarded its listener set.
+    expect(lease.isCurrent, isFalse);
+  });
+
+  test('faulty revocation subscriber cannot stop clearing the log', () {
+    final journal = VisionSessionJournal();
+    final lease = journal.startSession(isSessionCurrent: () => true);
+    lease.record(area: 'fcm', code: 'stored_before_logout', platform: 'android');
+    var success = 0;
+    lease.listenRevocation(() => throw StateError('UI disposed unexpectedly'));
+    lease.listenRevocation(() => success++);
+    journal.revoke();
+    expect(success, 1);
+    expect(lease.entries, isEmpty);
+    final after = journal.startSession(isSessionCurrent: () => true);
+    expect(after.entries, isEmpty);
+  });
+
+  test('old lease cannot subscribe to or revoke replacement owner', () {
+    final journal = VisionSessionJournal();
+    final old = journal.startSession(isSessionCurrent: () => true);
+    final current = journal.startSession(isSessionCurrent: () => true);
+    current.record(area: 'gps', code: 'new_only', platform: 'android');
+    var calls = 0;
+    old.listenRevocation(() => calls++);
+    expect(old.isCurrent, isFalse);
+    expect(current.entries.single.code, 'new_only');
+    journal.revoke();
+    expect(calls, 0);
+  });
 }
