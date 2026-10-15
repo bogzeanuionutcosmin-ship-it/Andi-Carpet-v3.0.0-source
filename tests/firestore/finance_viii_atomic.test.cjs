@@ -49,10 +49,21 @@ beforeEach(async()=>{await env.clearFirestore();await env.withSecurityRulesDisab
 after(async()=>{if(env)await env.cleanup();});
 for(const collection of ['settlements','finance']){
  test(`real atomic receipt and same ID replay ${collection}`,async()=>{const i=intent(1,{collection}),d=db('manager');assert.equal(await submit(d,i),'applied');assert.equal(await submit(d,i),'replayed');const final=(await getDoc(doc(d,target(i)))).data();assert.equal(final.receivedDeparture,225);assert.equal(final.receivedDuring,10);assert.equal(final.receivedOpeningDeparture,25);assert.equal(final.receivedEntries.length,1);assert.equal(final.revision,1);});
- test(`two devices same revision conflict ${collection}`,async()=>{const a=db('manager'),b=db('manager');const results=await Promise.allSettled([submit(a,intent(1,{collection})),submit(b,intent(2,{collection}))]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.match(results.find(r=>r.status==='rejected').reason.message,/synthetic_revision_conflict/);assert.equal((await getDoc(doc(a,`${collection}/${collection==='finance'?'team':'trip'}`))).data().receivedEntries.length,1);});
+ test(`two devices same revision conflict ${collection}`,async()=>{const a=db('manager'),b=db('manager');const results=await Promise.allSettled([submit(a,intent(1,{collection})),submit(b,intent(2,{collection}))]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);const losing=results.find(r=>r.status==='rejected').reason;
+ // permission-denied is NOT proof of no commit and must not trigger a new intent.
+ assert.doesNotMatch(losing.message,/maximum of 1000/);
+ assert.ok(losing.message.includes('synthetic_revision_conflict') || losing.code==='permission-denied');
+ const markers=await Promise.all([getDoc(doc(a,markerPath(intent(1,{collection})))),getDoc(doc(a,markerPath(intent(2,{collection}))))]);
+ assert.equal(markers.filter(m=>m.exists()).length,1);
+ for(const m of markers)assert.equal(m.metadata.fromCache,false);assert.equal((await getDoc(doc(a,`${collection}/${collection==='finance'?'team':'trip'}`))).data().receivedEntries.length,1);});
  test(`two legitimate equal receipts survive ${collection}`,async()=>{const d=db('manager');await submit(d,intent(1,{collection}));await submit(d,intent(2,{collection,base:1}));const final=(await getDoc(doc(d,`${collection}/${collection==='finance'?'team':'trip'}`))).data();assert.equal(final.receivedDeparture,425);assert.equal(final.receivedEntries.length,2);});
 }
-test('20 copies of the same durable ID cannot double apply',async()=>{const i=intent(1);const results=await Promise.all(Array.from({length:20},()=>submit(db('manager'),i)));assert.equal(results.filter(r=>r==='applied').length,1);assert.equal((await getDoc(doc(db('manager'),target(i)))).data().receivedEntries.length,1);});
+test('20 copies of the same durable ID cannot double apply',async()=>{const i=intent(1);const results=await Promise.allSettled(Array.from({length:20},()=>submit(db('manager'),i)));
+ assert.equal(results.filter(r=>r.status==='fulfilled' && r.value==='applied').length,1);
+ for(const r of results)if(r.status==='rejected'){assert.equal(r.reason.code,'permission-denied');assert.doesNotMatch(r.reason.message,/maximum of 1000/);}
+ // Explicit read-only evidence check for every uncertain client; no financial retry.
+ for(const r of results)if(r.status==='rejected'){const m=await getDoc(doc(db('manager'),markerPath(i)));assert.equal(m.metadata.fromCache,false);assert.equal(m.metadata.hasPendingWrites,false);assert.equal(m.data().digest,i.digest);}
+ assert.equal((await getDoc(doc(db('manager'),target(i)))).data().receivedEntries.length,1);});
 test('synthetic lost ack after real commit reconciles by immutable evidence',async()=>{const d=db('manager'),i=intent(1);await assert.rejects((async()=>{await submit(d,i);throw new Error('synthetic_lost_ack');})(),/synthetic_lost_ack/);const evidence=await getDoc(doc(d,markerPath(i)));assert.equal(evidence.metadata.fromCache,false);assert.equal(evidence.metadata.hasPendingWrites,false);assert.equal(evidence.data().digest,i.digest);assert.equal(await submit(d,i),'replayed');});
 for(const uid of ['worker','director','multiDirector','developer','outsider','inactive'])test(`unauthorised ${uid} cannot append even with matching evidence`,async()=>{await assertFails(malicious(intent(1,{actor:uid}),{}, {uid}));});
 test('target alone denied atomically',()=>assertFails(malicious(intent(1),{},{onlyTarget:true})));
