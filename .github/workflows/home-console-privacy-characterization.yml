@@ -7,7 +7,7 @@ on:
       - 'lib/home/home_page.dart'
       - 'lib/home/home_live_location.dart'
       - 'lib/home/home_push_notifications.dart'
-      - 'test/home_console_privacy.red.py'
+      - 'test/home_console_privacy_regression_test.py'
       - 'test/home_console_privacy_baseline_test.py'
       - 'test/vision_hardening_freeze_test.py'
       - 'test/vision_operational_diagnostics_contract_test.py'
@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Former known RED assertions must now all pass
-        run: python3 test/home_console_privacy.red.py -v
+        run: python3 test/home_console_privacy_regression_test.py -v
       - name: Non-growth contract and Vision positive controls
         run: python3 test/home_console_privacy_baseline_test.py -v
       - name: Freeze and operational Vision contracts
