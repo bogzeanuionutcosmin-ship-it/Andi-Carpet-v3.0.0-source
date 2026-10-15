@@ -26,7 +26,8 @@ jobs:
       - name: Former known RED assertions must now all pass
         run: python3 test/home_console_privacy.red.py -v
       - name: Non-growth contract and Vision positive controls
-        run: python3 -m unittest test/home_console_privacy_baseline_test.py -v
+        run: python3 test/home_console_privacy_baseline_test.py -v
       - name: Freeze and operational Vision contracts
-        run: python3 -m unittest test/vision_hardening_freeze_test.py test/vision_operational_diagnostics_contract_test.py -v
+        run: python3 test/vision_hardening_freeze_test.py -v
+        python3 test/vision_operational_diagnostics_contract_test.py -v
       # No Firebase live, secrets, billing, deployment, APK or logs upload.
