@@ -184,3 +184,35 @@ VII-08 martor f10b892: workflow38695842560/job116292104540 a reprodus strict 4 c
 Baseline89e7c19bc3b5255f282141320a972de7f0ada76c: probe38696207176/job116293249872 a reprodus toate8 cazurile strict la STALE_CLOSE_MUTATED_SHARED_OBSERVATION (expectedtrue/actualfalse), fără overflow sau compilare eșuată. Guardul nou din catch returnează înainte de orice mutație dacă sesiunea originală nu mai este validă. Nu introduce rollback/retry/reconciliere; comportamentul necunoscut din sesiunea activă este păstrat, inclusiv divergența close+timeout caracterizată separat. Cele8 aserțiuni originale nu se schimbă; wrapperul *_test.dart le include în standard și Chrome, iar poarta dedicată cere acum PASS real.
 
 Scope runtime exact: un comentariu și `if (!operationIsCurrent()) return;` în catch-ul close. `expense_settlement_actions.dart` SHA256 db37036095f0f8f54b3e820cb0eb9230a8f8243f12aaae55f4d87b2559cbf87d → 0348242c2def81ac693ded3e3a64c96b9df701fff2b0895f4e6e2b1b09bc92b8. Pin fără hook Vision f8537f12ab5b28facbafb56d9da18785ece1edeee843ee5b1c5c449f6fc16060 → d2959a8077fd4e625fb8e5d561c03514b7af62a26aecdb5dd446c3c8af727b76. Numai aceste2pinuri specifice actualizate; 116hashuri și celelalte pinuri intacte. Test nou Python reconstruiește byte-exact sursa precedentă prin înlăturarea exclusivă a guardului nou. CI pe noulHEAD urmează. Drafturile suplimentare pentru contract/Admin/compatibilitate sunt încă nelivrate.
+
+
+## Continuare — Admin / contract incert / compatibilitate #51
+
+Lot nou TEST/DOC ONLY:9probeFlutter suplimentare (4Admin restore vs receipt în curs ×settlement/legacy×ordine;2commit târziu dupătimeout;2edit timeout cu/fărăcommit;1create comis apoi recreatmanual cuIDnou). Împreună cu19probe anterioare:28probe pentru rezultate incerte. Payloadul este capturat la invocare și are cheia documentului; modelul durable este strict sintetic. Admin execută handlerul real de restore prin porturileexistente; nu presupunem un writer receipt nou în Admin.
+
+Propunerea completă, neimplementată, este `docs/MISIUNEA_VII_UNCERTAIN_FINANCE_CONTRACT_2026-10-15.md`: stareexplicită, intențiestabilă, revizie, dovadăserver, audit separat, alternative și costuri/decizii. Nu s-au adăugat timeout/retry/rollback/reconciliere în aplicație. Patru testePython noi pentru auditorul read-only #50/#51 refuză guard lipsă/nou și suprapunerea pinurilor; reuniunea disjunctă păstrează toate verificările. Raport `docs/MISIUNEA_VII_PRIVACY_COMPATIBILITY_2026-10-15.md`,21pinuri verificate independent în fiecare ramură, exact2fișierecomune și5pinuri noi. Nicio sursă #51 importată; niciun build integrat revendicat.
+
+Diferențial #32/#40 reverificat read-only: `firestore.rules` SHA256589fe5eadc06cae665eaa27e9c9df0aea54eea6dffc10994438b4d97c58367da, identic bazei șiPR40. TestelePR40 care acceptă modificări neautorizate/manager/reopen rămân dovezi KNOWN UNSAFE, nu validare de securitate. Nu sunt importate/rerulate59probe istorice și nu sunt numărate ca teste noi. OCR parser/document actions/perdiem/codecs/financialsync/Adminbackup byte-identicePR46; contractele existente rulează înCI final.
+
+Total continuare față de c49c1f2:36Flutter noi (28caracterizări+8acceptanțe staleclose),5Python noi (1conservare guard+4auditor). AșteptareCI peSHAfinal înainte de PASS. CumulativPR50 față dePR46:168Flutter noi. Hardware/SDKcache/Firebase live/MLKit/GPS/FCM reale NEEXECUTATE. Restulblocajelor sunt contracte financiare/server/rules sau verificări live neautorizate, nu motive de a inventa implementări.
+
+### Matrice curentă, care înlocuiește stările cronologice anterioare
+| Lot | Stare și limită |
+|---|---|
+| VII-01 | Inventar și martori istorici efectuați; nu reluăm misiunileIII–VI |
+| VII-02 | Lifecycle reparat și validat anterior; regresii menținute |
+| VII-03 | Valori nefinite respinse; sume/precizie pozitive existente păstrate |
+| VII-04 | Respingere locală certă reparată; edittimeout rămâne incert |
+| VII-05 | Closed+endDate restaurate la respingerecertă; commit+timeout încă KNOWN UNSAFE |
+| VII-06 | Entries/agregate restaurate la respingerecertă; reintroducere/concurență server KNOWN UNSAFE |
+| VII-07 | Vision codconstant fără payloadprivat; probe reale menținute |
+| VII-08 | Epoch și serializare UI anteriorGREEN; staleclose8RED reproduse, guardnou înCI |
+| VII-09 | Audit diferențial #32/#40; rules nemodificate, KNOWN UNSAFE rămâne; OCR contracts nemodificate |
+| VII-10 | Porți dedicatePASS real pentru defectele reparate; hashuri menținute, auditorunion verificat |
+| VII-11 | CI final peSHAactual obligatoriu; VM/Chrome/Androidcompile fără instalare/publicare |
+| VII-12 | Contract, matrice, auditcompatibilitate și checkpointGitHub; misiune neînchisă integral |
+
+Comandă reluare: verifică HEAD real #50 și CI, citește acest ultimcheckpoint și cele2rapoarte noi; nu repeta cele36probe sau fixurileGREEN fără regresie. Continuă numai pași tehnici siguri rămași; implementarea contractului incert necesită decizie separată. #51read-only926ed1e; păstrează cele5pinuri și ambelecheckpointuri la o integrare viitoare autorizată. Fără merge/deploy/publicare/producție/rules/roluri/plăți/billing.
+
+
+VII-08 fix24914642fba7b7637506052da104816eaa24dbfd: probe38696712845/job116294867702 SUCCESS, cele8 cazuri staleclose sunt acumPASS real, plus19caracterizări incerte și toateprobele anterioare. Nu revendicăm repararea cazurilor KNOWN UNSAFE. Standard/Android pe acestcheckpoint erau încă în progres la pregătirea lotului test/doc următor; rezultatele finale se raportează peHEADexact înPR50. Inventar runtime identic acestuifix; lotulurmător nu modificălib/rules.

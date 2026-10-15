@@ -17,8 +17,10 @@ Map<String, Object?> financeEvidence(dynamic value) => {
 
 class PendingFinanceWrite {
   final Map<String, Object?> payload;
+  final String documentKey;
   final done = Completer<void>();
-  PendingFinanceWrite(dynamic value) : payload = financeEvidence(value);
+  PendingFinanceWrite(dynamic value) : payload = financeEvidence(value),
+      documentKey = value is TravelSettlement ? 'settlements/${value.id}' : 'finance/${value.teamId}';
 }
 
 class FinanceUncertainStore {

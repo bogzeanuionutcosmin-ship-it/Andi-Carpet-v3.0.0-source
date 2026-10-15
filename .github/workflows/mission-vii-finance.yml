@@ -39,3 +39,5 @@ jobs:
         run: flutter test test/finance_uncertain_outcome_test.dart --reporter expanded
       - name: Obsolete close completions must preserve the shared observation
         run: flutter test test/finance_stale_close.red.dart --reporter expanded
+      - name: Admin and other uncertain writers remain explicitly characterized
+        run: flutter test test/finance_other_writer_uncertainty_test.dart --reporter expanded
