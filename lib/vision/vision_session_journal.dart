@@ -116,6 +116,27 @@ class VisionSessionJournalLease {
     return current.resolve(fingerprint) && isCurrent;
   }
 
+  /// Build a detached, bounded read-only *view snapshot* for the diagnostics
+  /// widget. No caller receives the live mutable session journal.
+  ///
+  /// The caller MUST pass [isCurrent] to the consuming UI and re-check it at
+  /// render/copy/share time. A detached snapshot is NOT an auth credential:
+  /// retaining/displaying it after revocation would be a privacy bug.
+  VisionErrorLog? snapshotForDisplay() {
+    final current = _journal._read(_key, _verify);
+    if (current == null) return null;
+    final snapshot = VisionErrorLog(
+      maxEntries: _journal.maxEntries,
+      maxBytes: _journal.maxBytes,
+      retention: _journal.retention,
+      clock: _journal._clock,
+    );
+    // A validated summary round-trip; no global journal, I/O or backend.
+    snapshot.restore(current.encode());
+    if (!isCurrent) return null;
+    return snapshot;
+  }
+
   /// Optional, anonymous opt-in handoff, not a background upload.
   /// This never gives access to the device-wide persisted journal.
   String? buildReport() {
