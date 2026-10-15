@@ -126,3 +126,7 @@ Permisiunea existentă list pentru financialIntents rămâne exclusiv Admin. Nu 
 Costul static include separat primele pagini și paginile următoare. La 20 elemente/pagină, 2 deschideri + 3 pagini ulterioare pe zi estimează 1.122 document/rules reads suplimentare și zero writes: 5×20×11 + 2×11. Index reads, egress și baseline live rămân neverificate. Modelul poate refuza scenarii care depășesc rezerva internă; nu există activare automată pe baza lui. 197 Python locale PASS; JSON de scenarii regenerat cu hashul modelului. Nicio modificare de index/deploy/plan/billing.
 
 Referință oficială consultată: https://firebase.google.com/docs/firestore/query-data/query-cursors — paginare/range/order/limit. Validarea reală a query-ului, ACL și concurenței este separată, în emulatoare. Blocajele pentru Home implicit, Restore complet, schema istoricului monetar, clienți vechi, hardware și Spark live rămân explicite.
+
+### Lifecycle al readerului paginat
+
+În verificarea continuării a fost găsit cazul în care închiderea panoului, cu Auth încă valabil, putea permite query-ul paginii după întoarcerea citirii inițiale. Readerul are acum invalidare monotonă: dispose închide scope-ul, schimbarea țintei schimbă tokenul, iar verificările de după fiecare await refuză tokenul vechi înainte de altă cerere sau rezultat UI. Panoul închide readerul la dispose/înlocuire. O a patra probă widget ține citirea inițială în așteptare, închide numai panoul (fără revocarea UID), apoi cere zero query-uri de pagină. Nicio schimbare de rol/permisiune sau scriere financiară.

@@ -98,6 +98,14 @@ void main(){
     current=false;await t.pumpWidget(const SizedBox());release.complete();await t.pumpAndSettle();
     expect(p.queries,0);expect(t.takeException(),isNull);
   });
+  testWidgets('closing the ledger view alone revokes its reader before a second network request',(t)async{
+    final p=_Port(),release=Completer<void>();p.afterRead=()=>release.future;
+    final reader=FinanceLedgerReader(port:p,sessionIsCurrent:()=>true);
+    await t.pumpWidget(MaterialApp(home:Scaffold(body:FinanceLedgerDemoPanel(reader:reader,targetPath:'settlements/trip'))));
+    await t.tap(find.text('Deschide registrul operațiilor'));await t.pump();expect(p.reads,1);
+    await t.pumpWidget(const SizedBox());expect(reader.sessionIsCurrent(),false);
+    release.complete();await t.pumpAndSettle();expect(p.queries,0);expect(t.takeException(),isNull);
+  });
   test('returned pages and row payloads are immutable and diagnostic strings are anonymous',()async{
     final page=await FinanceLedgerReader(port:_Port(),sessionIsCurrent:()=>true).firstExplicitly('settlements/trip');
     expect(()=>page.rows.clear(),throwsUnsupportedError);expect(()=>page.rows.first.data.clear(),throwsUnsupportedError);

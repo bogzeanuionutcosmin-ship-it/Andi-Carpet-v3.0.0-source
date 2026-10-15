@@ -41,17 +41,21 @@ bool _id(Object? value)=>value is String&&value.isNotEmpty&&value.length<=128&&!
 // not a collection scan, export, full snapshot, migration or history deletion.
 class FinanceLedgerReader {
   final FinanceLedgerPort port;
-  final bool Function() sessionIsCurrent;
+  final bool Function() _owner;
+  bool _open=true;
+  bool sessionIsCurrent()=>_open&&_owner();
+  void invalidate(){_scope=Object();}
+  void dispose(){_open=false;invalidate();}
   final int pageSize;
-  final Object _scope=Object();
-  FinanceLedgerReader({required this.port,required this.sessionIsCurrent,this.pageSize=20}) {
+  Object _scope=Object();
+  FinanceLedgerReader({required this.port,required bool Function() sessionIsCurrent,this.pageSize=20}):_owner=sessionIsCurrent {
     if(pageSize<1||pageSize>20)throw ArgumentError('finance_ledger_page_limit');
   }
-  void _guard(){if(!sessionIsCurrent())throw const FinanceRefusal('finance_session_expired');}
+  void _guard([Object? epoch]){if(!sessionIsCurrent()||(epoch!=null&&!identical(epoch,_scope)))throw const FinanceRefusal('finance_session_expired');}
   Future<FinanceLedgerPage> firstExplicitly(String path) async {
-    _guard();
+    final epoch=_scope;_guard(epoch);
     if(!RegExp(r'^(finance|settlements)/[^/]{1,128}$').hasMatch(path))throw const FinanceRefusal('finance_invalid_path');
-    final observed=await port.target(path);_guard();
+    final observed=await port.target(path);_guard(epoch);
     final data=observed.data;
     if(observed.fromCache||observed.pendingWrites||data==null)throw const FinanceRefusal('finance_ledger_server_required');
     final revision=data['revision']??0,team=data['teamId'],last=data['lastOperationId'];
@@ -62,12 +66,12 @@ class FinanceLedgerReader {
       throw const FinanceRefusal('finance_ledger_invalid_target');
     }
     if(revision==0)return FinanceLedgerPage._([],null,0);
-    return nextExplicitly(FinanceLedgerCursor._(_scope,path,team as String,last as String,revision,revision));
+    return nextExplicitly(FinanceLedgerCursor._(epoch,path,team as String,last as String,revision,revision));
   }
   Future<FinanceLedgerPage> nextExplicitly(FinanceLedgerCursor cursor) async {
     _guard();
     if(!identical(cursor._scope,_scope))throw const FinanceRefusal('finance_ledger_scope_mismatch');
-    final observed=await port.page(cursor.targetPath,cursor.nextRevision,pageSize);_guard();
+    final observed=await port.page(cursor.targetPath,cursor.nextRevision,pageSize);_guard(cursor._scope);
     if(observed.fromCache||observed.pendingWrites)throw const FinanceRefusal('finance_ledger_server_required');
     final count=cursor.nextRevision<pageSize?cursor.nextRevision:pageSize;
     if(observed.rows.length!=count)throw const FinanceRefusal('finance_ledger_gap_or_limit');

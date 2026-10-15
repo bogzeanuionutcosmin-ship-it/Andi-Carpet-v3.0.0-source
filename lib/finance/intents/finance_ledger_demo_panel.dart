@@ -15,9 +15,12 @@ class _LedgerPanelState extends State<FinanceLedgerDemoPanel> {
   int generation=0;
   @override void didUpdateWidget(covariant FinanceLedgerDemoPanel old){
     super.didUpdateWidget(old);
-    if(!identical(old.reader,widget.reader)||old.targetPath!=widget.targetPath){generation++;page=null;busy=false;failed=false;}
+    if(!identical(old.reader,widget.reader)||old.targetPath!=widget.targetPath){
+      if(!identical(old.reader,widget.reader)){old.reader.dispose();}else{old.reader.invalidate();}
+      generation++;page=null;busy=false;failed=false;
+    }
   }
-  @override void dispose(){generation++;super.dispose();}
+  @override void dispose(){generation++;widget.reader.dispose();super.dispose();}
   Future<void> run(bool next)async{
     if(busy||!widget.reader.sessionIsCurrent())return;
     final epoch=generation,reader=widget.reader,path=widget.targetPath,cursor=page?.next;
