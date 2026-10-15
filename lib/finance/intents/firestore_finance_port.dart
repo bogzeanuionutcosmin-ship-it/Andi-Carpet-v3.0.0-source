@@ -15,9 +15,31 @@ class FirestoreFinanceAtomicPort implements FinanceAtomicPort {
     firestore.useFirestoreEmulator(host, port);
   }
   @override
-  Future<T> atomic<T>(Future<T> Function(FinanceTransaction tx) action) =>
-    firestore.runTransaction<T>((transaction) => action(_FirestoreFinanceTransaction(firestore, transaction)),
-      maxAttempts: 3, timeout: const Duration(seconds: 30));
+  Future<T> atomic<T>(Future<T> Function(FinanceTransaction tx) action) async {
+    Object? localRefusal;
+    StackTrace? localStack;
+    var anyWriteScheduled = false;
+    try {
+      return await firestore.runTransaction<T>((transaction) async {
+        final tx = _FirestoreFinanceTransaction(firestore, transaction,
+          () { anyWriteScheduled = true; });
+        try { return await action(tx); }
+        on FinanceRefusal catch (error, stack) {
+          localRefusal = error; localStack = stack; rethrow;
+        } on FinanceRevisionConflict catch (error, stack) {
+          localRefusal = error; localStack = stack; rethrow;
+        }
+      }, maxAttempts: 3, timeout: const Duration(seconds: 30));
+    } catch (_) {
+      // Web SDK can wrap a Dart callback refusal in a generic Firebase error.
+      // Only a typed local refusal with ZERO scheduled writes in ALL callback
+      // attempts proves this invocation could not have committed a write.
+      if (!anyWriteScheduled && localRefusal != null) {
+        Error.throwWithStackTrace(localRefusal!, localStack!);
+      }
+      rethrow;
+    }
+  }
   @override
   Future<FinanceServerObservation> readServer(String path) async {
     _validatePath(path);
@@ -53,7 +75,8 @@ Map<String,dynamic> encodeFinanceFirestoreDocument(String path, Map<String,Objec
 class _FirestoreFinanceTransaction implements FinanceTransaction {
   final FirebaseFirestore firestore;
   final Transaction transaction;
-  _FirestoreFinanceTransaction(this.firestore, this.transaction);
+  final void Function() onWriteScheduled;
+  _FirestoreFinanceTransaction(this.firestore, this.transaction, this.onWriteScheduled);
   @override
   Future<Map<String,Object?>?> read(String path) async {
     _validatePath(path);
@@ -61,6 +84,9 @@ class _FirestoreFinanceTransaction implements FinanceTransaction {
   }
   @override
   void write(String path, Map<String,Object?> value) {
-    transaction.set(firestore.doc(path), encodeFinanceFirestoreDocument(path, value));
+    final document = firestore.doc(path);
+    final encoded = encodeFinanceFirestoreDocument(path, value);
+    onWriteScheduled();
+    transaction.set(document, encoded);
   }
 }

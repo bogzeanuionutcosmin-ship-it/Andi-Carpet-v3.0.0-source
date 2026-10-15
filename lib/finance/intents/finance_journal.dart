@@ -50,17 +50,18 @@ class FinanceIntentJournal {
     await storage.write(_key,raw);_guard();
   }
   Future<List<FinanceIntent>> pending() => _locked(() async=>List.unmodifiable(await _read()));
-  Future<void> prepare(FinanceIntent intent) => _locked(() async {
+  Future<bool> prepare(FinanceIntent intent) => _locked(() async {
     _guard();if(intent.actorUid!=ownerUid)throw const FinanceRefusal('finance_wrong_owner');
     final items=await _read();
     for(final old in items){
       if(old.operationId==intent.operationId){
         if(old.digest!=intent.digest)throw const FinanceRefusal('finance_identity_reuse');
-        return;
+        return false;
       }
       if(old.targetPath==intent.targetPath)throw const FinanceRefusal('finance_unresolved_target');
     }
     await _write([...items,intent]);
+    return true;
   });
   Future<void> recordResult(FinanceIntent intent,FinanceIntentResult result) => _locked(() async {
     _guard();if(intent.actorUid!=ownerUid)throw const FinanceRefusal('finance_wrong_owner');

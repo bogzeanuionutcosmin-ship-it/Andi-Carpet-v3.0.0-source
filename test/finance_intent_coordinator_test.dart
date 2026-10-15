@@ -25,4 +25,14 @@ void main(){
  test('A to B to A2 late commit cannot complete the successor session',()async{final db=FinanceAtomicFixture()..seed('settlements/trip',seed());final storage=PrivateStorage();var generation=1;final entered=Completer<void>(),release=Completer<void>();db.beforeCommit=()async{entered.complete();await release.future;};final old=scope(db,storage,current:()=>generation==1);final saving=old.executeExplicitly(makeIntent(1));await entered.future;generation=2;final b=scope(db,storage,uid:'B',current:()=>generation==2);expect(await b.journal.pending(),isEmpty);generation=3;final a2=scope(db,storage,current:()=>generation==3);expect(await a2.journal.pending(),hasLength(1));release.complete();expect((await saving).result.status,FinanceIntentStatus.uncertain);expect(db.writes,2);expect((await a2.reconcileExplicitly(makeIntent(1))).result.status,FinanceIntentStatus.confirmed);expect(db.calls,1);});
  test('confirmed server outcome is preserved if local cleanup fails',()async{final db=FinanceAtomicFixture()..seed('settlements/trip',seed());final storage=PrivateStorage();db.beforeCommit=()async{storage.fail=true;};final r=await scope(db,storage).executeExplicitly(makeIntent(1));expect(r.result.status,FinanceIntentStatus.confirmed);expect(r.journalPending,true);expect(db.writes,2);storage.fail=false;expect(await scope(db,storage).journal.pending(),hasLength(1));});
  test('cross-owner coordinator construction is refused',(){final db=FinanceAtomicFixture();final storage=PrivateStorage();expect(()=>FinanceIntentCoordinator(repository:FinanceRepository(port:db,ownerUid:'A',sessionIsCurrent:()=>true),journal:FinanceIntentJournal(storage:storage,ownerUid:'B',sessionIsCurrent:()=>true)),throwsArgumentError);});
+ test('local rejection during manual resume cannot erase an earlier uncertain attempt',()async{
+  final db=FinanceAtomicFixture()..seed('settlements/trip',seed())..failBeforeCommit=true;
+  final storage=PrivateStorage();final coordinator=scope(db,storage);final i=makeIntent(1);
+  expect((await coordinator.executeExplicitly(i)).result.status,FinanceIntentStatus.uncertain);
+  db.failBeforeCommit=false;db.seed('settlements/trip',seed()..['closed']=true);
+  final result=await coordinator.executeExplicitly(FinanceIntent.decode(i.encode()));
+  expect(result.result.status,FinanceIntentStatus.uncertain);expect(result.result.code,'finance_prior_attempt_unresolved');
+  expect(result.journalPending,true);expect(await coordinator.journal.pending(),hasLength(1));expect(db.writes,0);
+ });
+
 }
