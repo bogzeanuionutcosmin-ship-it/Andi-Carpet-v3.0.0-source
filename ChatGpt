@@ -2584,3 +2584,102 @@ Unchanged legacy perDiems over-declared receipt characterization remains explici
 
 ### VIII-13 — final platform regression workflow
 New branch-isolated read-only CI runs AuthGate/Vision, all financial unit/widget cases plus strict repaired .red.dart witnesses, all finance Chrome probes under no_default_http_client, and actual lib/main.dart Android debug compilation with package/SDK metadata verification. No APK upload,installation,signing change or deployment. StandardCI separately runs allFlutter/Python,Functions/Node,legacy emulator and web compilation. MissionVIII emulator44 uses synthetic JS SDK+realrules; Android build alone does NOT execute new financial SDK transactions, physical secure storage,realofflineor live GPS/FCM/MLKit. Candidate protocol remains unwired to production UI. Results pending exact HEAD; skipped historical VII workflows are not counted as new PASS.
+
+
+## VIII-14 — checkpoint de continuitate, 15.10.2026
+
+PR55 Draft, ramură fix/finance-spark-safe-mission-viii-20261015.
+Părinte înaintea acestui checkpoint: e2ad85a8a71a7d5fc4d7e2c728fb80a1b2f97c8e; tree c6a5ecc2e4aebcd614a1ae96ad120417a50125dc.
+HEAD/tree și CI ale commitului care conține acest checkpoint se citesc din PR55
+și se verifică prin git rev-parse HEAD HEAD^{tree}; nu se autocertifică un SHA viitor.
+
+| Lot | Stare și limite |
+|---|---|
+|1| Audit writers și model Spark; baseline live/egress/capacitate UNKNOWN, fără readiness |
+|2|6defecte ACL reproduse RED; aceleași acceptanțe ulterior PASS |
+|3|ID128biți,requestimmutable,persistențăversionată,digest;tagdate protejat,encodingnumeric VM/Chrome |
+|4|PortCAS și concurență deterministă,zero retry financiar automat |
+|5|Adaptor explicitdemo/emulator;max3callbackSDK;FlutterSDKnetwork E2E încă neexecutat |
+|6|Markerimutabil atomic + jurnalbounded;20copiiaceluiașiID aplică o dată în emulator |
+|7|Create/edit/close/receipt testate în candidat;UI existent încă neconectat |
+|8|6probleme ACL reparateînregulileDraft;Issue32 integral NU închis |
+|9|44/44emulatorPASS pe5e1819d,zero1000-expression errors;asertările păstrate |
+|10|Openingbalances și codec-uri cu teste;Restoremultibatch/exportmarkeri NEFINALIZAT |
+|11|Epochguarddupăread,6probeîntârziere/offline;hardware/cache/restartreal NEEXECUTAT |
+|12|Auditread-onlyShiva21pinuri/branch+116catalog,bugetcuistoric;4privacyriscuriKNOWNUNSAFE |
+|13|Workflow nouAuth/Vision+financeVM/Chrome+APKmain compileonly;rezultate finale se verifică înPR |
+|14|Checkpoint și matrice actualizate; misiunea NU este declarată închisă integral |
+
+### Progres demonstrat și ce NU este reparat în aplicația existentă
+
+Noul protocol are44acceptanțeJS SDK emulator,iar modelul/repository/jurnalul/
+coordonatorul au probeDart. Noile solduri inițiale sunt citite de codec-urileHome.
+Vechile callbackuriHome/ExpensePage folosesc în continuare scrieri de snapshot.
+Nu activați aceste reguli în producție cu acei clienți: vor refuza writes fărămarker.
+Cele28detectoareVII de timeout/duplicare/Restore ale vechiului UI rămân caracterizări
+KNOWNUNSAFE. Nu le redenumim în reparații pentru că noul repository trece separat.
+
+Restanțe tehnice: conectareUI și toatewritepaths pe protocol într-un harnessdemonstrabil
+emulator-only,probeFlutterSDKnetwork de tranzacții și reconciliere,AuthGateepoch real
+pentru noulcoordonator,confirmareprivatestorage peplatforme,Restorepreflight înainte
+deoricebatch și export/import care păstreazămarkeri/revizii. Nu începeți restaurare
+parțială și nu ștergeți dovezi pentru a ocoli regulile. Acestea sunt lucrări rămase,
+nu cereri noi de autorizare: mandatul tehnic Draft/emulator este deja acordat.
+
+RegulilefinancialeLegacyperDiem privind încasări peste suma declarată rămân o
+caracterizare de risc/decizie funcțională; nu se plafonează/rotunjesc bani automat.
+Problemele de date/capacitate trebuie refuzate sau marcatepentru review, nu reparate
+prin inventarea de transferuri/reconciliere automată.
+
+### Cost și retenție
+
+40operații+40verificăriexplicite/zi,max3callback:3080reads,80writes,44,851,200bytes/an
+în scenariul2KiBmarker+1KiBistoric/op.200/zi:15400reads,400writes,224,256,000bytes/an.
+1000/zi:77000reads,2000writes,1,121,280,000bytes/an — scenariu nepotrivit.
+Acestea sunt ipoteze, nu măsurarefacturare saugaranțiehardware. Indexurile/egress/
+baseline live/capacitatea1MiBdocument/mai mulțiani nu sunt demonstrate. Retenția
+markerilor este durabilă, fărăTTL/cleanup/polling/listener nou. Gateproduction_ready
+rămâne false chiar dacă rezerva numerică încape. Fărăbilling/Blaze/Functions noi.
+
+### Probe și CI
+
+187PythonlocalPASS. Pe5e1819d MissionVIII38740966147:69Dart și44emulatorPASS;
+pe1d71279 lot10 dedicatedPASS;lot11 ccec788 dedicatedDartPASS. După hardeningul
+encodingului sunt87probeDart noi față dePR50 (suprapuse cu suitaFlutter integrală),
+numărul final și toate workflowurile trebuie confirmate din logurile HEAD final.
+Suita standard urmărește691Flutter/187Python/3Node/10emulator,Identity5;aceste
+totaluri sunt ținte de verificat, nu rezultate inventate. CI actual pee2ad85a:MissionVIII
+șiIdentitySUCCESS;standard/platforme înprogres la pregătirea checkpointului.
+WorkflowurileVIIistorice rămân SKIPPED, nu PASS. Buildweb standard produce artifactul
+CI existent; workflowul Android nou nu încarcăAPK. Niciun deploy/instalare/publicare.
+
+### Commituri publicate înaintea acestui checkpoint
+
+```text
+49edcb15a953391e8f9f8e537edf670b9acfc2e7 docs(finance): audit Mission VIII writers and model Spark quota reserve
+d3a8f41cf6db1ed7809219a50a6fba7cdf4cc789 test(finance): add strict Mission VIII ACL RED witnesses and positive controls
+f2e79355e44d5fd10bcfe0ab9ea842e56f19b35d feat(finance): add immutable durable intent identity and canonical request digest
+140179c9c55d27dd62879167a740cd3bd08febd3 feat(finance): add atomic intent port and deterministic concurrency and ambiguity probes
+82d9a7100061b293b52bb72ded4e092b6b807d30 feat(finance): add explicitly emulator-only Firestore atomic adapter
+ac0ab58fe70525aba8adcc669b5175d246707e45 test(finance): match pinned Firestore emulator API in injected SDK fixture
+3ac70bcd16fa50f74f1a6efb53a428c0b83fc0c4 feat(finance): retain bounded per-owner durable intents and block unresolved local duplicates
+9930acb0e1062b9134ae8e5f3a7153ddcf64631b feat(finance): coordinate durable explicit submission and read-only uncertain-result checks
+497291888e97d53b095075de55ad90a34b9d2a61 fix(firestore): stage atomic financial evidence and manager ACL without Admin catch-all bypass
+231059e1130d2d04c4d4441595fd5eaeb4a02609 test(firestore): verify real atomic receipts, concurrency, evidence and Restore authorization
+a72223846f668f734eb5f5bced9c91833d97a0fe fix(firestore): reduce financial rules evaluation and verify SDK contention uncertainty without retry
+ab518dd2796e492303681d26ebb2ab3f18a0daec fix(firestore): reject stale financial revisions before expanding costly rule predicates
+5e1819d24c4cc157767ad5a4b13204acfc900001 fix(firestore): cache financial access predicates and allow transactional reads before creation
+1d71279282b23cec903968cbac9dd42a3ae76596 fix(finance): preserve legacy opening balances and revision metadata in models and Home codecs
+ccec7880edb520e93c3e121fda5f038c0e0f7f18 fix(finance): stop stale session reads and cover offline and delayed server evidence
+0aa2803e105a8717f899c1f8ffa376ca0d536663 audit(finance): preserve Shiva pin compatibility and account for receipt history storage growth
+f308283de644050d1acf7b6aff7b03620ca8e468 ci(finance): require Mission VIII AuthGate Vision Chrome and integrated Android regressions
+e2ad85a8a71a7d5fc4d7e2c728fb80a1b2f97c8e fix(finance): make durable numeric encoding portable and reject date-tag aliasing
+```
+
+### Comanda de reluare
+
+«Continuă MISIUNEA VIII în PR55 din HEAD-ul real. Citește ChatGpt, matriceaVIII14 și
+descriereaPR55 cu HEAD/tree/CIfinal. Păstrează oricecommit nou și oricefișierlocal.
+Nu reface probele/fixurilevalidate. Mai întâi repară oriceCIRED fără relaxare, apoi
+continuă integrarea UI/FlutterSDK-emulator,Restorepreflight și capabilitateaSpark
+pe scenarii documentate. PR50/51/52 read-only;zero merge/deploy/live/billing.»
