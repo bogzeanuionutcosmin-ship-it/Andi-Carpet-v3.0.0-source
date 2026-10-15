@@ -216,3 +216,10 @@ Comandă reluare: verifică HEAD real #50 și CI, citește acest ultimcheckpoint
 
 
 VII-08 fix24914642fba7b7637506052da104816eaa24dbfd: probe38696712845/job116294867702 SUCCESS, cele8 cazuri staleclose sunt acumPASS real, plus19caracterizări incerte și toateprobele anterioare. Nu revendicăm repararea cazurilor KNOWN UNSAFE. Standard/Android pe acestcheckpoint erau încă în progres la pregătirea lotului test/doc următor; rezultatele finale se raportează peHEADexact înPR50. Inventar runtime identic acestuifix; lotulurmător nu modificălib/rules.
+
+
+## VII-11 — Chrome găsește4eșecuri noi de fixture Admin, diagnostic păstrândassertions
+
+HEAD7b1e808: standard38697134490 SUCCESS5/5, log604FlutterPASS/177Python/3Node/10emulator, identity38697134438 SUCCESS5 și probe38697134364 SUCCESS175execuții. Platforme38697134467/job116296357367: Auth/Vision161VM,Web7002Chrome,financiar174VM PASS; financiarChrome164PASS/4FAIL, toate4 în fixtureAdminrestore. BuildAndroid a fost SKIPPED după eșec, nu îl declarămcompilat. Browserul nu a transmis cauza excepțiilor în logultestului; adăugăm numai diagnosticprint pentru datele sintetice, forward la handleruloriginal și rethrow, cu restorefinally. Nicio aserțiune/slăbire/skip sau runtimefix. PasChromeizolat timpuriu reproduce cele9probe înaintea întregii suite; continuăm cu cauza concretă, nu ascundem RED.
+
+Între timp #51 a avansat read-only la bc058bc9c11f8fb249ee842bf45f50a3817ddc27, tree28d305cbad02640b6479a94c37145c2a7a9bb40a. Delta față de926ed1e este numai13liniiChatGpt (mandatShivaamânat), fără runtime/hashchanges. Auditorul local a trecut și pe acestHEAD; la viitoarea integrare se păstrează și noua notă. #51 nu a fost modificat de Luna.

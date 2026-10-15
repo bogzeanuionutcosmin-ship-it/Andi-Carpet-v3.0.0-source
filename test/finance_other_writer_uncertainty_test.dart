@@ -27,6 +27,12 @@ void main() {
   for (final legacy in [false, true]) {
     for (final receiptLast in [false, true]) {
       testWidgets('KNOWN UNSAFE Admin restore versus pending receipt legacy=$legacy receiptLast=$receiptLast', (t) async {
+        final previousErrorHandler = FlutterError.onError;
+        FlutterError.onError = (details) {
+          print('SYNTHETIC_ADMIN_BROWSER_ERROR: ${details.exceptionAsString()}');
+          previousErrorHandler?.call(details);
+        };
+        try {
         final pending = FinanceUncertainStore(); final fixture = ExpenseDocumentFixture('');
         fixture.legacyFinance = legacy;
         fixture.saveSettlementOverride = (s) => pending.save(s);
@@ -59,6 +65,12 @@ void main() {
         // Actual Admin commands and actual ExpensePage submission, synthetic
         // durable application only. No server lock/ACL/atomicity is certified.
         await h.finish(t);
+        } catch (error, stack) {
+          print('SYNTHETIC_ADMIN_TEST_FAILURE: $error\n$stack');
+          rethrow;
+        } finally {
+          FlutterError.onError = previousErrorHandler;
+        }
       });
     }
     testWidgets('late commit after receipt timeout legacy=$legacy does not trigger an automatic second call', (t) async {

@@ -57,3 +57,10 @@ Reluare audit (după fetch read-only al obiectelor exacte, fără merge):
 Dacă #51 avansează, comparați diferențele și actualizați auditul înainte de orice
 integrare autorizată. Firebase live, native SDK logs/hardware și Learning după
 write rămân limite independente; niciun pin nu oferă certificat ACL server.
+
+
+## VII-11 — Chrome găsește4eșecuri noi de fixture Admin, diagnostic păstrândassertions
+
+HEAD7b1e808: standard38697134490 SUCCESS5/5, log604FlutterPASS/177Python/3Node/10emulator, identity38697134438 SUCCESS5 și probe38697134364 SUCCESS175execuții. Platforme38697134467/job116296357367: Auth/Vision161VM,Web7002Chrome,financiar174VM PASS; financiarChrome164PASS/4FAIL, toate4 în fixtureAdminrestore. BuildAndroid a fost SKIPPED după eșec, nu îl declarămcompilat. Browserul nu a transmis cauza excepțiilor în logultestului; adăugăm numai diagnosticprint pentru datele sintetice, forward la handleruloriginal și rethrow, cu restorefinally. Nicio aserțiune/slăbire/skip sau runtimefix. PasChromeizolat timpuriu reproduce cele9probe înaintea întregii suite; continuăm cu cauza concretă, nu ascundem RED.
+
+Între timp #51 a avansat read-only la bc058bc9c11f8fb249ee842bf45f50a3817ddc27, tree28d305cbad02640b6479a94c37145c2a7a9bb40a. Delta față de926ed1e este numai13liniiChatGpt (mandatShivaamânat), fără runtime/hashchanges. Auditorul local a trecut și pe acestHEAD; la viitoarea integrare se păstrează și noua notă. #51 nu a fost modificat de Luna.
