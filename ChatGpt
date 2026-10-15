@@ -2708,7 +2708,7 @@ modifică numai documentația/raportul audit; HEAD/tree/CI final se citesc din P
 
 MissionVIII38747592786 SUCCESS3/3:98DartPASS (job116465221691),47JSemulatorPASS
 (job116465221637),5FlutterSDKChrome+Auth/Firestore emulatorPASS (job116465221925).
-Logulreal:14:02:30UTC +5Alltestspassed. Aceleași5asertăristricte,nu mocksdeSDK: 
+Logulreal:14:02:30UTC +5Alltestspassed. Aceleași5asertăristricte,nu mocksdeSDK:
 receipt/replay/edit/close,ackpierdutdupăcommit,reconcilefărăwrite,2instanțeconcurente,
 AuthA→B→A2/actorBneautorizat/epochvechi,crearecuviewOwn. Primaîncercare58ac66d a
 rămasînsetup;98bbe35 a localizatinitialize_primaryTimeout;fce0138 a înregistratSDKweb
