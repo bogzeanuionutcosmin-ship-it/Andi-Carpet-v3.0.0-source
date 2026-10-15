@@ -79,3 +79,28 @@ Acestea sunt **numai punctele încă nerezolvate**. Deciziile din secțiunea A r
 - **Shiva PR #40 / Issue #32**: doar teste de caracterizare și acest contract DRAFT.
 - PR #38, #34, #35, #28, #29, #41, `main`, `firestore.rules` și Firebase producție sunt read-only.
 - Niciun test nu utilizează utilizatori, bani ori documente reale. Rezultatul final se verifică **pe ultimul HEAD**, nu doar pe un commit anterior.
+
+
+## H. Probe suplimentare de integritate financiară — 15.10.2026 (confirmate în emulator)
+
+**Sursă și verdict:** PR #40, `a31824ff37bab292e416957a4b3ede8db53bf138`; workflow [finance-characterization #38667275432](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/actions/runs/38667275432) **49 PASS / 0 FAIL**. Nouă teste de caracterizare (41–49) în `tests/firestore/expense_security_characterization.test.cjs`, fără date reale. Toate `assertSucceeds` denumite `unsafe` probează vulnerabilități; un test negativ probează o limită corect aplicată.
+
+**Comportamente permisive demonstrate pentru membrul activ cu `viewOwnDecont` și apartenență la echipa documentului:**
+- Poate înlocui `expenses.documentImageBase64`, `imageFingerprint` și `documentNumber` ale unei cheltuieli deja confirmate. Integritatea dovezii OCR nu este protejată de regulile actuale.
+- Poate reasocia `expenses.settlementId` la un alt identificator (sintetic) și schimba `description` fără verificarea relației cu decontul.
+- Poate introduce `confirmedBy`, `confirmedAt` și modifica `supplier` fără o listă permisă de câmpuri. **Nu pretindem că toate aceste câmpuri sunt afișate sau procesate de UI; proba este despre date acceptate la nivel de server.**
+- Poate schimba `expenses.amount` în text nenumeric și poate CREA o cheltuială cu `amount` text după injectarea `distributedBy=auth.uid`. În `_expenseFromDoc`, valorile neconvertibile ajung în fallback numeric 0, risc de interpretare; nu echivalăm aceasta cu un bilanț alterat demonstrat în producție.
+- Poate rescrie `finance.receivedEntries` și `perDiemRate`, precum și `settlements.receivedEntries` și `perDiemRate` într-un decont deja `closed=true`. Sumele sunt exclusiv sintetice; niciun ban real nu a fost atins.
+
+**Permisiuni cumulative/director:** Un actor activ cu `role=member`, `function=director`, `effectivePermissions=['viewOtherDecont','viewOwnDecont']` și membru al echipei poate modifica `finance.receivedDeparture` din acea echipă. Cu simplul `viewOtherDecont` fără apartenență echipă, testele anterioare au demonstrat doar citire. **Precedența director read-only vs funcție operațională cumulată rămâne o decizie explicită a proprietarului**, nu o schimbare implicită la reguli.
+
+**Control pozitiv al restricției existente:** Simpla valoare `finance.managerId=uid` nu conferă drept de write unui membru cu `effectivePermissions=[]`, chiar dacă aparține echipei. Viitorul fix trebuie să păstreze revocarea, dar să introducă permisiune contextuală explicită de gestionar, nu să folosească `viewOwnDecont` drept autorizație globală.
+
+### Invariante propuse pentru viitoarea remediere (NEAPROBATE)
+1. **Document OCR:** `documentImageBase64`, `imageFingerprint`, `documentNumber`, `teamId`, `settlementId`, autorul și starea de confirmare nu se pot schimba fără un flux explicit de rectificare și audit. Trebuie decis separat cine poate rectifica înainte de confirmare și cum se corectează după aceasta. Nu scriem unilateral aceste reguli.
+2. **Schema sumelor:** tip numeric, valoare și interval validat în contextul operației; sumele negative sunt permise doar în fluxul de storno/retur dacă este definit și aprobat. Nu confunda cheltuielile cu diurna acordată în avans.
+3. **Predări/încasări:** `receivedEntries`, `receivedDeparture`, `receivedDuring`, `perDiemRate` și `closed` cer matrice separată de scriere, identitatea gestionarului canonic protejată, tranziții auditate și eventual revizii/optimistic concurrency.
+4. **Câmpuri suplimentare:** validați `keys().hasOnly` la create și `diff().affectedKeys().hasOnly` la update, însoțite de compatibilitate cu documente vechi și cu DTO real; nu ștergeți sau normalizați automat date istorice.
+5. **Context director:** dreptul `viewOtherDecont` nu este echivalent cu `editOwnFinancialEntries`. Definiți explicit comportamentul unei persoane director+gestionar pentru propria echipă înainte de testele finale RED→DENY.
+
+**Separare:** Acest document și testele nu sunt remedieri de producție. Corecțiile `firestore.rules`, fluxul `_money` din dialog și mutația locală `receivedEntries` înainte de eșecul salvării rămân lucrări distincte, în funcție de aprobările și acceptanța viitoare. Incidentul controller-used-after-dispose este documentat separat în PR #41 ca proba RED, nu tratat drept fix implementat. Nicio intervenție în Firebase live, PR #41, `main` ori APK.
