@@ -56,21 +56,26 @@ void main(){
  webPluginRegistrar.registerMessageHandler();
  final createdApps=<FirebaseApp>[];final createdAuths=<FirebaseAuth>[];
  const options=FirebaseOptions(apiKey:'synthetic-emulator-key',appId:'1:123:web:synthetic',messagingSenderId:'123',projectId:'demo-andi-carpet');
- late FirebaseApp app,secondApp;late FirebaseAuth auth,secondAuth;late FirebaseFirestore db,secondDb;
- late ObservedPort port,secondPort;late String uid;
+ late FirebaseApp app,secondApp,offlineApp;late FirebaseAuth auth,secondAuth,offlineAuth;late FirebaseFirestore db,secondDb,offlineDb;
+ late ObservedPort port,secondPort,offlinePort;late String uid;
  Future<void> signIn(FirebaseAuth a,String suffix)=>a.signInWithEmailAndPassword(email:'viii-$suffix@example.test',password:'SyntheticEmulatorOnly123!');
  setUpAll(()async{
   app=await sdkStage('initialize_primary',()=>Firebase.initializeApp(name:'viii-primary',options:options));createdApps.add(app);
   secondApp=await sdkStage('initialize_second',()=>Firebase.initializeApp(name:'viii-second-device',options:options));createdApps.add(secondApp);
-  auth=FirebaseAuth.instanceFor(app:app);secondAuth=FirebaseAuth.instanceFor(app:secondApp);createdAuths.addAll([auth,secondAuth]);
+  offlineApp=await sdkStage('initialize_offline_client',()=>Firebase.initializeApp(name:'viii-offline-client',options:options));createdApps.add(offlineApp);
+  auth=FirebaseAuth.instanceFor(app:app);secondAuth=FirebaseAuth.instanceFor(app:secondApp);offlineAuth=FirebaseAuth.instanceFor(app:offlineApp);createdAuths.addAll([auth,secondAuth,offlineAuth]);
   await sdkStage('auth_emulator_primary',()=>auth.useAuthEmulator('127.0.0.1',9099,automaticHostMapping:false));
   await sdkStage('auth_emulator_second',()=>secondAuth.useAuthEmulator('127.0.0.1',9099,automaticHostMapping:false));
+  await sdkStage('auth_emulator_offline',()=>offlineAuth.useAuthEmulator('127.0.0.1',9099,automaticHostMapping:false));
   await sdkStage('persistence_primary',()=>auth.setPersistence(Persistence.NONE));await sdkStage('persistence_second',()=>secondAuth.setPersistence(Persistence.NONE));
-  db=FirebaseFirestore.instanceFor(app:app);secondDb=FirebaseFirestore.instanceFor(app:secondApp);
-  db.settings=const Settings(persistenceEnabled:false);secondDb.settings=const Settings(persistenceEnabled:false);
-  port=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:db,port:8081));
-  secondPort=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:secondDb,port:8081));
+  await sdkStage('persistence_offline',()=>offlineAuth.setPersistence(Persistence.NONE));
+  db=FirebaseFirestore.instanceFor(app:app);secondDb=FirebaseFirestore.instanceFor(app:secondApp);offlineDb=FirebaseFirestore.instanceFor(app:offlineApp);
+  db.settings=const Settings(persistenceEnabled:false);secondDb.settings=const Settings(persistenceEnabled:false);offlineDb.settings=const Settings(persistenceEnabled:false);
+  port=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:db));
+  secondPort=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:secondDb));
+  offlinePort=ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:offlineDb,port:8081));
   await sdkStage('sign_in_primary',()=>signIn(auth,'a'));await sdkStage('sign_in_second',()=>signIn(secondAuth,'a'));uid=auth.currentUser!.uid;
+  await sdkStage('sign_in_offline',()=>signIn(offlineAuth,'a'));
  });
  tearDownAll(()async{for(final a in createdAuths){await sdkStage('cleanup_auth',()=>a.signOut());}for(final a in createdApps.reversed){await sdkStage('cleanup_app',()=>a.delete());}});
  Future<Map<String,dynamic>> server(String target)async{
@@ -175,27 +180,28 @@ void main(){
  test('actual Flutter SDK disableNetwork cached read and reconnect never replay financial intent automatically',()async{
   final storage=BrowserJournalStorage();
   FinanceIntentCoordinator coordinator()=>FinanceIntentCoordinator(
-   repository:FinanceRepository(port:port,ownerUid:uid,sessionIsCurrent:()=>auth.currentUser?.uid==uid),
-   journal:FinanceIntentJournal(storage:storage,ownerUid:uid,sessionIsCurrent:()=>auth.currentUser?.uid==uid));
+   repository:FinanceRepository(port:offlinePort,ownerUid:uid,sessionIsCurrent:()=>offlineAuth.currentUser?.uid==uid),
+   journal:FinanceIntentJournal(storage:storage,ownerUid:uid,sessionIsCurrent:()=>offlineAuth.currentUser?.uid==uid));
   final request=receipt('flutter-offline',60,uid),before=await server('flutter-offline');
-  var current=coordinator();final calls=port.atomicCalls;
-  await db.disableNetwork();
+  await offlineDb.doc(request.targetPath).get(const GetOptions(source:Source.server));
+  var current=coordinator();final calls=offlinePort.atomicCalls;
+  await offlineDb.disableNetwork();
   await html.HttpRequest.request('http://127.0.0.1:8082/network',method:'POST',sendData:'offline');
   try {
-   final cached=await db.doc(request.targetPath).get(const GetOptions(source:Source.cache));
+   final cached=await offlineDb.doc(request.targetPath).get(const GetOptions(source:Source.cache));
    expect(cached.metadata.isFromCache,true);
    expect((await current.executeExplicitly(request)).result.status,FinanceIntentStatus.uncertain);
    expect((await current.reconcileExplicitly(request)).result.status,FinanceIntentStatus.uncertain);
-   expect(port.atomicCalls,calls+1);
+   expect(offlinePort.atomicCalls,calls+1);
    expect((await current.journal.pending()).single.digest,request.digest);
   } finally {
    await html.HttpRequest.request('http://127.0.0.1:8082/network',method:'POST',sendData:'online');
-   await db.enableNetwork();
+   await offlineDb.enableNetwork();
   }
   current=coordinator();
   expect((await current.journal.pending()).single.digest,request.digest);
   final after=await server('flutter-offline');expect(after['receivedDeparture'],before['receivedDeparture']);
-  expect(after['receivedEntries'],before['receivedEntries']);expect(port.atomicCalls,calls+1);
+  expect(after['receivedEntries'],before['receivedEntries']);expect(offlinePort.atomicCalls,calls+1);
   expect((await current.executeExplicitly(request)).result.status,FinanceIntentStatus.confirmed);
   expect((await current.executeExplicitly(request)).result.replayed,true);
   expect((await server('flutter-offline'))['receivedEntries'],hasLength(1));

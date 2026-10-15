@@ -449,3 +449,12 @@ BarierawaitForPendingWrites a fostînlăturată dinprobaackpierdut. Noulcounter 
 căfixture-ul a ajuns efectivdupăcommitînainte deeroareasintetică; nuconfundă o
 tranzacțieSDKeșuată cuackpierdut. Codurileproxy sunt constante sanitizate, fărăURL,
 request,UID,sume sautoken. Runtime/rules neschimbate. CIacestuifollow-up urmează.
+
+
+### Izolarea acceptanței offline
+Clientulterț offline foloseșteexclusivproxy8081; cele2clientedetranzacții/restore
+rămânconectatedirectla8080. Astfel panade transport controlată și infrastructura
+proxy nu sunt introduse încontroaleleonline existente. Clientuloffline areAuth
+emulat separat,cacheRAM propriu șiacelașiUIDsintetic; jurnalul și toatewriteurile
+probei offline folosesc numaiportul său. Verificarea serverului dupăreconectare
+se faceindependent princlientuldirect. Zeroassertslăbite și niciunretryadăugat.
