@@ -39,3 +39,26 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter test test/finance_intent*_test.dart --reporter expanded
+  flutter-sdk-emulator:
+    if: github.head_ref == 'fix/finance-spark-safe-mission-viii-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: git rev-parse HEAD HEAD^{tree}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
+      - name: Actual Flutter Chrome SDK against local demo Auth and Firestore
+        run: npx firebase emulators:exec --only auth,firestore --project demo-andi-carpet --config firebase.mission-viii-test.json 'node tests/firestore/finance_viii_flutter_seed.cjs && flutter test --platform chrome test/finance_flutter_sdk_emulator.browser.dart --reporter expanded'
