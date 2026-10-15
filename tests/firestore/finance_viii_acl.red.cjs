@@ -1,4 +1,5 @@
-// New strict acceptances. Baseline MUST fail; no assertSucceeds for an abuse.
+// Strict acceptance unchanged from six demonstrated baseline failures.
+// VIII-08 expects all eight PASS; historical filename preserves the RED witness.
 const {test,before,after}=require('node:test');
 const fs=require('node:fs');
 const {initializeTestEnvironment,assertFails,assertSucceeds}=require('@firebase/rules-unit-testing');
