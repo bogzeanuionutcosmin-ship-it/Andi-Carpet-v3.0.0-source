@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   integrated-android:
-    if: github.head_ref == 'integration/vision-authgate-modular-20261014' || github.head_ref == 'hardening/vision-authgate-v1-20261015' || github.head_ref == 'fix/home-console-privacy-20261015' || github.head_ref == 'fix/appwide-console-privacy-20261015' || github.head_ref == 'feat/vision-avatar-body-only-20261015' || github.head_ref == 'feat/vision-diagnostics-static-avatar-safe-20261016'
+    if: github.head_ref == 'integration/vision-authgate-modular-20261014' || github.head_ref == 'hardening/vision-authgate-v1-20261015' || github.head_ref == 'fix/home-console-privacy-20261015' || github.head_ref == 'fix/appwide-console-privacy-20261015' || github.head_ref == 'feat/vision-avatar-body-only-20261015' || github.head_ref == 'feat/vision-diagnostics-static-avatar-safe-20261016' || github.head_ref == 'feat/vision-ephemeral-session-journal-20261016'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
