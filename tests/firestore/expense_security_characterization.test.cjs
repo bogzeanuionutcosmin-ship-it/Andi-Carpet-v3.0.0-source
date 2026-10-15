@@ -47,6 +47,9 @@ before(async () => {
       members: ['expense-ocr-member', 'expense-ocr-inactive'],
     });
   });
+  // Seed additional boundary documents AFTER initializeTestEnvironment, never in
+  // a separate top-level before() hook (hook registration is not ordered).
+  await seedBoundaryDocuments();
 });
 after(async () => { if (env) await env.cleanup(); });
 
@@ -253,7 +256,6 @@ async function seedBoundaryDocuments() {
     });
   });
 }
-before(seedBoundaryDocuments);
 
 test('inactive team member: cannot read its team expense', async () => {
   const { getDoc } = require('firebase/firestore');
