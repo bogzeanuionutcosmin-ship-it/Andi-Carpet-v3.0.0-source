@@ -61,3 +61,44 @@ class SparkBudgetTest(unittest.TestCase):
         report = budget.Scenario(40).estimate()
         for key in ['new_deletes', 'new_listeners', 'new_polling']:
             self.assertEqual(report[key], 0)
+
+    def test_single_target_can_overflow_even_when_total_storage_fits(self):
+        report = budget.Scenario(40, existing_daily_reads=0, existing_daily_writes=0,
+                                 existing_storage_bytes=0, busiest_target_receipts_per_day=20,
+                                 current_target_document_bytes=4096).estimate()
+        self.assertTrue(report['within_internal_reserve'])
+        self.assertFalse(report['within_target_document_scenario'])
+        self.assertEqual(report['target_full_days_within_internal_reserve'], 25)
+        self.assertFalse(report['target_document_capacity_verified'])
+        self.assertFalse(report['production_ready'])
+
+    def test_unknown_target_distribution_is_never_reported_as_capacity_pass(self):
+        report = budget.Scenario(40).estimate()
+        self.assertFalse(report['target_document_scenario_known'])
+        self.assertIsNone(report['within_target_document_scenario'])
+        self.assertIsNone(report['target_document_estimate_bytes'])
+
+    def test_multiyear_retention_is_not_silently_reset_each_year(self):
+        one = budget.Scenario(200, days=365).estimate()
+        five = budget.Scenario(200, days=365 * 5, existing_daily_reads=0,
+                               existing_daily_writes=0, existing_storage_bytes=0).estimate()
+        self.assertEqual(five['total_additional_storage_estimate_bytes'],
+                         one['total_additional_storage_estimate_bytes'] * 5)
+        self.assertFalse(five['within_internal_reserve'])
+
+    def test_zero_growth_and_exact_capacity_boundary_are_explicit(self):
+        for days, expected in [(25, True), (26, False)]:
+            report = budget.Scenario(20, days=days, busiest_target_receipts_per_day=20,
+                                     current_target_document_bytes=4096).estimate()
+            self.assertEqual(report['within_target_document_scenario'], expected)
+        report = budget.Scenario(0, busiest_target_receipts_per_day=0,
+                                 current_target_document_bytes=4096).estimate()
+        self.assertTrue(report['within_target_document_scenario'])
+        self.assertIsNone(report['target_full_days_within_internal_reserve'])
+
+    def test_invalid_baseline_or_target_concentration_fails_closed(self):
+        for kwargs in [{'existing_daily_reads': -1}, {'existing_storage_bytes': True},
+                       {'busiest_target_receipts_per_day': 2},
+                       {'current_target_document_bytes': -1}, {'receipt_document_bytes': -1}]:
+            with self.assertRaises(ValueError):
+                budget.Scenario(1, **kwargs).estimate()

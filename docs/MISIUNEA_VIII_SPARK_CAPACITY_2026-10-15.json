@@ -1,0 +1,82 @@
+{
+  "date": "2026-10-15",
+  "model_sha256": "7ace30d548a98cbe6410ec547084664b73ba9838374361cf3048354f225ca8dc",
+  "synthetic_assumptions_only": true,
+  "live_usage_measured": false,
+  "production_ready": false,
+  "official_storage_reference": "https://firebase.google.com/docs/firestore/storage-size",
+  "scenarios": {
+    "40_per_day_1_years_concentrated_20_per_target": {
+      "inputs": {
+        "operations_per_day": 40,
+        "reconciliations_per_day": 40,
+        "attempts": 3,
+        "days": 365,
+        "marker_bytes_with_indexes": 2048,
+        "target_entry_bytes_with_indexes": 1024,
+        "existing_daily_reads": 0,
+        "existing_daily_writes": 0,
+        "existing_storage_bytes": 0,
+        "busiest_target_receipts_per_day": 20,
+        "current_target_document_bytes": 4096,
+        "receipt_document_bytes": 1024
+      },
+      "result": {
+        "additional_reads_per_day_upper": 3080,
+        "additional_writes_per_day": 80,
+        "marker_storage_upper_bytes": 29900800,
+        "target_history_storage_estimate_bytes": 14950400,
+        "total_additional_storage_estimate_bytes": 44851200,
+        "storage_is_assumption_not_measured_bound": true,
+        "target_document_capacity_verified": false,
+        "egress_verified": false,
+        "target_document_scenario_known": true,
+        "target_document_estimate_bytes": 7479296,
+        "within_target_document_scenario": false,
+        "target_full_days_within_internal_reserve": 25,
+        "new_deletes": 0,
+        "new_listeners": 0,
+        "new_polling": 0,
+        "usage_known": true,
+        "within_internal_reserve": true,
+        "production_ready": false
+      }
+    },
+    "40_per_day_5_years_concentrated_20_per_target": {
+      "inputs": {
+        "operations_per_day": 40,
+        "reconciliations_per_day": 40,
+        "attempts": 3,
+        "days": 1825,
+        "marker_bytes_with_indexes": 2048,
+        "target_entry_bytes_with_indexes": 1024,
+        "existing_daily_reads": 0,
+        "existing_daily_writes": 0,
+        "existing_storage_bytes": 0,
+        "busiest_target_receipts_per_day": 20,
+        "current_target_document_bytes": 4096,
+        "receipt_document_bytes": 1024
+      },
+      "result": {
+        "additional_reads_per_day_upper": 3080,
+        "additional_writes_per_day": 80,
+        "marker_storage_upper_bytes": 149504000,
+        "target_history_storage_estimate_bytes": 74752000,
+        "total_additional_storage_estimate_bytes": 224256000,
+        "storage_is_assumption_not_measured_bound": true,
+        "target_document_capacity_verified": false,
+        "egress_verified": false,
+        "target_document_scenario_known": true,
+        "target_document_estimate_bytes": 37380096,
+        "within_target_document_scenario": false,
+        "target_full_days_within_internal_reserve": 25,
+        "new_deletes": 0,
+        "new_listeners": 0,
+        "new_polling": 0,
+        "usage_known": true,
+        "within_internal_reserve": true,
+        "production_ready": false
+      }
+    }
+  }
+}

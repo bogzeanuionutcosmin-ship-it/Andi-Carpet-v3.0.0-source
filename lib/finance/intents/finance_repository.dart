@@ -1,4 +1,5 @@
 import 'finance_intent.dart';
+import 'finance_capacity.dart';
 
 abstract interface class FinanceTransaction {
   Future<Map<String, Object?>?> read(String path);
@@ -96,6 +97,9 @@ Map<String, Object?> applyFinanceIntent(FinanceIntent intent, Map<String, Object
     if (data[field] != null && data[field] is! DateTime && data[field] is! FinanceTimestamp) throw const FinanceRefusal('finance_invalid_date');
   }
   data.addAll({'revision':intent.baseRevision+1,'lastOperationId':intent.operationId});
+  if(estimateFinanceDocumentBytes(intent.targetPath,data,includesServerUpdate:true)>financeDocumentLimitBytes) {
+    throw const FinanceRefusal('finance_document_capacity_requires_review');
+  }
   return data;
 }
 

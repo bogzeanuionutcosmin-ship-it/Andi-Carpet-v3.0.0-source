@@ -400,3 +400,15 @@ LotulUI adaugă FinanceDemoScope/FinanceIntentDemoPanel,neconectateproducției.
 9probe noi verificăcreate/edit/close/receipt,doubletap,ackpierdut,storagefailure,
 disposal șiAndiCarpetaApp/AuthGateA→B→A2. Nu regenereazăoperationId larebuild,
 nu facebackgroundreplay șinuînchidecaracterizărilevechiUI. CI nou în așteptare.
+
+
+## Continuare VIII — gard capacitate și scenarii multianuale
+4333410 /38805509945:125DartPASS și47JSemulatorPASS;9probeUI incluse.
+NoulestimatorDart aplicăformulaoficialădestocarepevalori suportate,inclusivUTF8,
+mapuri,arrays,path șiupdatedAtserver. Refuză înainte dewrite otranzițiepeste1MiB,
+fărăplafonmonetar/rotunjire/trunchiere/ștergere.4probe noi includ exempluloficial
+147bytes șicazul încare unreceipt depășeștedocumentullegacy,fărămarker/write.
+ModelulSpark adaugă5probe (192PythonlocalPASS),concentrațiapeosingurățintă și
+retenția5ani. JSONscenariiauditabilpublicat;valorilesuntipoteze,nuusage/billinglive.
+production_readyfalse;indexuri/wiresize/baseline/egress șimigrareaistoricului rămân
+necertificate. CIcomplet peHEADnou urmează;nuînsumămprobesuprapuse dreptunice.
