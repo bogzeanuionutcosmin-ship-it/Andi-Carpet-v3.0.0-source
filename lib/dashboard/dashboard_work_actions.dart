@@ -33,7 +33,7 @@ extension _DashboardWorkActions on _DashboardPageState {
         ).timeout(const Duration(seconds:12));
         if(response.statusCode!=200||response.body.isEmpty)return null;
         return parsePoint(jsonDecode(response.body));
-      }catch(e){debugPrint('[geocode] Dashboard server fallback: $e');return null;}
+      }catch(_){debugPrint('[geocode] dashboard_server_failed');return null;}
     }
 
     Future<Map<String,dynamic>?> viaNominatim(String value) async {
@@ -48,7 +48,7 @@ extension _DashboardWorkActions on _DashboardPageState {
         final decoded=jsonDecode(response.body);
         if(decoded is! List||decoded.isEmpty)return null;
         return parsePoint(decoded.first);
-      }catch(e){debugPrint('[geocode] Dashboard Nominatim $value: $e');return null;}
+      }catch(_){debugPrint('[geocode] dashboard_nominatim_failed');return null;}
     }
 
     if(kIsWeb){
