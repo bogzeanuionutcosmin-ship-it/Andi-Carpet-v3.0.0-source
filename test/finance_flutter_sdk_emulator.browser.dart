@@ -1,5 +1,8 @@
 // Explicit CI invocation only; not part of offline unit-test discovery.
 import 'dart:async';
+import 'package:andi_carpeta/main.dart' show TravelSettlement;
+import 'package:andi_carpeta/finance/intents/finance_demo_panel.dart';
+import 'package:andi_carpeta/finance/intents/finance_expense_demo_adapter.dart';
 import 'dart:html' as html;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -28,11 +31,11 @@ class ObservedPort implements FinanceAtomicPort {
  FinanceServerObservation? lastObservation;
  int lostAcknowledgements=0;
  bool loseAcknowledgement=false;
- Future<void> Function()? afterServerRead;
+ Future<void> Function()? afterServerRead,afterLostAck;
  ObservedPort(this.inner);
  @override Future<T> atomic<T>(Future<T> Function(FinanceTransaction) action)async{
   atomicCalls++;final result=await inner.atomic(action);
-  if(loseAcknowledgement){lostAcknowledgements++;throw TimeoutException('synthetic_ack_loss_after_real_commit');}return result;
+  if(loseAcknowledgement){lostAcknowledgements++;await afterLostAck?.call();throw TimeoutException('synthetic_ack_loss_after_real_commit');}return result;
  }
  @override Future<FinanceServerObservation> readServer(String path)async{
   serverReads++;lastObservation=null;final result=await inner.readServer(path);lastObservation=result;await afterServerRead?.call();return result;
@@ -176,6 +179,36 @@ void main(){
    expect((await server('flutter-restore'))['revision'],2);
    expect((await server('flutter-restore'))['receivedEntries'],hasLength(2));
   } finally {await secondAuth.signOut();await signIn(secondAuth,'a');}
+ });
+ test('actual Flutter SDK adapter recovers committed create after scope recreation without resubmission',()async{
+  final storage=BrowserJournalStorage(),committed=Completer<void>();
+  final calls=port.atomicCalls,lost=port.lostAcknowledgements;
+  Map<String,Object?>? refreshed;
+  FinanceExpenseDemoAdapter make()=>FinanceExpenseDemoAdapter(
+   scope:FinanceDemoScope(ownerUid:uid,sessionIsCurrent:()=>auth.currentUser?.uid==uid,port:port,storage:storage),
+   port:port,acceptServerSnapshot:(_,data)async{refreshed=data;});
+  final first=make();
+  port.loseAcknowledgement=true;port.afterLostAck=()async{committed.complete();};
+  try {
+   unawaited(first.createSettlement(TravelSettlement(id:'flutter-adapter-recovery',teamId:'flutter-team',
+    name:'Scope recovery fixture',managerId:uid,startDate:DateTime.utc(2026,10,1),createdAt:DateTime.utc(2026,10,15))));
+   await committed.future.timeout(const Duration(seconds:30));
+   final original=(await first.scope.coordinator.journal.pending()).single;
+   first.dispose();port.afterLostAck=null;port.loseAcknowledgement=false;
+   final second=make();
+   try {
+    expect(second.pendingCodes,isEmpty);
+    await second.loadPendingForReviewExplicitly();
+    expect((await second.scope.coordinator.journal.pending()).single.encode(),original.encode());
+    expect(port.atomicCalls,calls+1);expect(refreshed,isNull);
+    await second.reconcileExplicitly(original.targetPath);
+    expect(second.pendingCodes,isEmpty);expect(port.atomicCalls,calls+1);
+    expect(port.lostAcknowledgements,lost+1);
+    expect(refreshed!['lastOperationId'],original.operationId);expect(refreshed!['revision'],1);
+    expect(refreshed!['receivedEntries'],isEmpty);
+    expect(await second.scope.coordinator.journal.pending(),isEmpty);
+   }finally{second.dispose();}
+  }finally{port.afterLostAck=null;port.loseAcknowledgement=false;}
  });
  test('actual Flutter SDK disableNetwork cached read and reconnect never replay financial intent automatically',()async{
   final storage=BrowserJournalStorage();

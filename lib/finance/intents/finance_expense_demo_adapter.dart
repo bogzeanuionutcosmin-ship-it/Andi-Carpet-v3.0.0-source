@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../main.dart' show TravelSettlement, TeamFinance, ReceivedMoneyEntry, FinanceSaveRejected;
 import 'finance_demo_panel.dart';
 import 'finance_intent.dart';
+import 'finance_journal.dart';
 import 'finance_repository.dart';
 
 Map<String,Object?> _entry(ReceivedMoneyEntry e)=>{'id':e.id,'kind':e.kind,
@@ -45,6 +46,30 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
   final FinanceAtomicPort port;
   final Future<void> Function(String path,Map<String,Object?> data) acceptServerSnapshot;
   bool _open=true;
+  bool recoveryBusy=false;
+  String? recoveryCode;
+  // Local recovery is explicit and read-only: never execute an old request or
+  // invent an ID while recreating a view/account scope.
+  Future<void> loadPendingForReviewExplicitly() async {
+    _guard();if(recoveryBusy)return;
+    recoveryBusy=true;_notify();
+    try {
+      final pending=await scope.coordinator.journal.pending();_guard();
+      final paths={..._saves.keys,...pending.map((i)=>i.targetPath)};
+      if(paths.length>FinanceIntentJournal.maxPending)throw const FinanceRefusal('finance_demo_scope_full');
+      for(final intent in pending) {
+        final current=_saves[intent.targetPath];
+        if(current!=null&&current.intent.digest!=intent.digest)throw const FinanceRefusal('finance_unresolved_target');
+      }
+      // Validate the ENTIRE local manifest before attaching any request.
+      for(final intent in pending) {
+        _saves.putIfAbsent(intent.targetPath,()=>_Save(intent)..code='finance_result_uncertain');
+      }
+      recoveryCode=null;
+    } catch(_) {
+      if(_open&&scope.sessionIsCurrent())recoveryCode='finance_local_recovery_unavailable';
+    } finally {recoveryBusy=false;_notify();}
+  }
   bool isBusy(String path)=>_saves[path]?.busy??false;
   void _notify(){if(_open)notifyListeners();}
   @override void dispose(){_open=false;scope.dispose();super.dispose();}
@@ -104,6 +129,7 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
   Future<void> _save(String path,Map<String,Object?> candidate) {
     _guard();
     if(_saves.containsKey(path))throw FinanceSaveRejected('finance_unresolved_target');
+    if(_saves.length>=FinanceIntentJournal.maxPending)throw FinanceSaveRejected('finance_demo_scope_full');
     final baseline=_baselines[path];
     if(baseline==null)throw FinanceSaveRejected('finance_authoritative_refresh_required');
     final before=baseline.model;

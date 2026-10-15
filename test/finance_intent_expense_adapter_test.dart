@@ -3,6 +3,7 @@ import 'package:andi_carpeta/finance/intents/finance_demo_panel.dart';
 import 'package:andi_carpeta/finance/intents/finance_expense_demo_adapter.dart';
 import 'package:andi_carpeta/finance/intents/finance_expense_demo_recovery.dart';
 import 'package:andi_carpeta/finance/intents/finance_journal.dart';
+import 'package:andi_carpeta/finance/intents/finance_intent.dart';
 import 'package:andi_carpeta/finance/intents/finance_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -184,6 +185,61 @@ void main(){
     expect(h.fixture.financeOverride!.receivedDeparture,401);expect(h.fixture.financeOverride!.receivedOpeningDeparture,1);
     expect(h.db.calls,2);expect(h.db.writes,4);expect(h.fixture.logs,hasLength(2));
     await t.pumpWidget(const SizedBox());adapter.dispose();
+  });
+  testWidgets('recreated view loads exact lost-ack intent and reconciles without another submit',(t)async{
+    final h=_Harness();h.db.commitThenThrow=true;await h.fixture.mount(t);await h.receipt(t);
+    final old=(await h.scope.coordinator.journal.pending()).single;
+    final accept=h.adapter.acceptServerSnapshot;
+    await t.pumpWidget(const SizedBox());h.adapter.dispose();
+    h.scope=FinanceDemoScope(ownerUid:'worker',sessionIsCurrent:()=>true,port:h.db,storage:h.storage);
+    h.adapter=FinanceExpenseDemoAdapter(scope:h.scope,port:h.db,acceptServerSnapshot:accept);
+    h.fixture.diagnosticSessionIsCurrent=h.scope.sessionIsCurrent;
+    h.fixture.saveSettlementOverride=h.adapter.saveSettlement;
+    h.fixture.wrapPage=(page)=>FinanceExpenseDemoRecovery(adapter:h.adapter,child:page);
+    await h.fixture.mount(t);
+    expect(h.adapter.pendingCodes,isEmpty);expect(h.db.calls,1);expect(h.db.serverReads,0);
+    await t.tap(find.text('Verifică operațiile în așteptare'));await t.pumpAndSettle();
+    expect(h.adapter.pendingCodes,hasLength(1));expect(h.db.calls,1);expect(h.db.serverReads,0);
+    expect((await h.scope.coordinator.journal.pending()).single.encode(),old.encode());
+    await t.tap(find.text('Verifică salvarea'));await t.pumpAndSettle();
+    expect(h.db.calls,1);expect(h.db.writes,2);expect(h.db.serverReads,2);
+    expect(h.fixture.settlementOverride!.lastOperationId,old.operationId);
+    expect(h.fixture.logs,isEmpty,reason:'A recreated view does not invent the old dialog success audit');
+    expect(await h.scope.coordinator.journal.pending(),isEmpty);
+    await t.pumpWidget(const SizedBox());h.adapter.dispose();
+  });
+  test('loading an uncommitted persisted request never executes it',()async{
+    final h=_Harness();
+    final intent=FinanceIntent(operationId:'8'*32,actorUid:'worker',teamId:'team',
+      collection:'settlements',documentId:'settlement',baseRevision:0,kind:FinanceIntentKind.close,
+      changes:{'closed':true,'endDate':DateTime.utc(2026,10,15)});
+    await h.scope.coordinator.journal.prepare(intent);
+    await h.adapter.loadPendingForReviewExplicitly();
+    await h.adapter.loadPendingForReviewExplicitly();
+    expect(h.adapter.pendingCodes,hasLength(1));expect(h.db.calls,0);expect(h.db.serverReads,0);
+    await h.adapter.reconcileExplicitly(intent.targetPath);
+    expect(h.db.calls,0);expect(h.db.writes,0);expect(h.db.serverReads,1);
+    expect((await h.scope.coordinator.journal.pending()).single.digest,intent.digest);
+    h.adapter.dispose();
+  });
+  test('corrupt local recovery is reported without a partial attachment or server access',()async{
+    final h=_Harness();h.storage.values['finance_intents_v1_worker']='{broken';
+    await h.adapter.loadPendingForReviewExplicitly();
+    expect(h.adapter.recoveryCode,'finance_local_recovery_unavailable');
+    expect(h.adapter.pendingCodes,isEmpty);expect(h.db.calls,0);expect(h.db.serverReads,0);
+    expect(h.storage.values['finance_intents_v1_worker'],'{broken');h.adapter.dispose();
+  });
+  test('a successor account cannot attach or submit another owners journal',()async{
+    final h=_Harness();
+    final intent=FinanceIntent(operationId:'9'*32,actorUid:'worker',teamId:'team',
+      collection:'settlements',documentId:'settlement',baseRevision:0,kind:FinanceIntentKind.edit,changes:{'name':'Pending'});
+    await h.scope.coordinator.journal.prepare(intent);
+    final successor=FinanceExpenseDemoAdapter(scope:FinanceDemoScope(ownerUid:'other',
+      sessionIsCurrent:()=>true,port:h.db,storage:h.storage),port:h.db,acceptServerSnapshot:(_,__)async{});
+    await successor.loadPendingForReviewExplicitly();
+    expect(successor.pendingCodes,isEmpty);expect(h.db.calls,0);expect(h.db.serverReads,0);
+    expect((await h.scope.coordinator.journal.pending()).single.digest,intent.digest);
+    successor.dispose();h.adapter.dispose();
   });
   test('cached observation never becomes an adapter baseline',(){
     final h=_Harness();

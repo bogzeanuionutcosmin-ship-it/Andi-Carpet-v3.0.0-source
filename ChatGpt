@@ -2913,3 +2913,6 @@ f1c6cf5 a trecut 147Dart/47JS/8SDK+raw/194Python. Standard și platforms au eșu
 
 MISIUNEA VIII — fixture Chrome Admin:
 b56a017 Standard5/5 SUCCESS(751Flutter/194Python/web), identitySUCCESS, MissionVIII147Dart/47JS/8SDK+rawSUCCESS. Platforms161AuthVision+329financeVM PASS, Chrome309PASS/6FAIL în cele șase fixture-uri Admin noi; APK NOT RUN. Izolat clientul Mapbox al dashboardului cu runWithClient ca în proba financiară existentă, plus zeroHTTP/zeroFirebaseimplicit strict. Nu relaxăm no_default_http_client, nu skipuim teste, nu schimbăm cod financiar pentru fixture. CI se verifică din nou pe HEAD nou.
+
+MISIUNEA VIII — 2026-10-16, recuperare după recreare scope:
+Reluare din723ab55curat/Draft55, remoteHEADconfirmat. Adaptorul demo încarcă explicit jurnalul bounded32 înaintea reconcilierii, fără IDnou/tranzacție/serverread în load; manifestglobalpreflight, jurnalcorupt păstrat, izolareaUID.4probeDartnoi și1SDKrealemulator candidate(createcommis+ackpierdut+scopenou+unicsubmit). Nu se inventează auditul vechiului dialog după recreare. Storage injectat acelașiproces, NU restartOS/securestoragefizic. CI exact urmează. Fără activareHome/migrare/importfinanciarcomplet/producție/billing/APKdistribuit.
