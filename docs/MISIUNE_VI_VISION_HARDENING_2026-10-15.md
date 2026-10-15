@@ -87,3 +87,11 @@ Lot6 corectiv c91f7a233b4d9ca540dd447c3375923baddda4da / tree7138737020485ff643a
 Lot7: patru contracte Python noi în vision_hardening_freeze_test.py:21hashuri suplimentare pentru AuthGate/root/operațional/parser/telemetry/status/verifier/securityfixtures/configAndroid; allowlist strict de importuri fără transport/backend în Vision; fără timer/listă de Futures sau veche coadă în persistență; proba financiară RED și wrapperul CI nu pot fi slăbite. Corpul inițial al probei RED are SHA2568c82ee6e21b75ffe6404716983a702b191a8c3265be30c421aa6070e046d7644, identic textului din3c823108.
 
 171Python local PASS,116protectedhashes intacte. Contractele V existente13hookuri/publicUI/ownership sunt păstrate, nu duplicate. Matricea combinată includeUIDepoch×storage×lifecycle×platformlabels și SDKAndroidfake; nu o prezentăm drept produs cartezian exhaustiv sau hardware. Zero runtime în lot7. CI urmează; apoi loturile8–10 validare/audit/predare.
+
+## Lot7 GREEN / lot8 Android-web fără release
+
+Lot7 d220da5562bbc10012202a70a4bc2ac14ea58c54 / tree1360a2cdffb72f4547befbdd99a56308ccab6b38. Standard38665315100 SUCCESS5/5,430Flutter/171Python, identity38665315109 SUCCESS5; Node3/financial10/Functions/smoke/web sunt în standard.
+
+Lot8 extinde numai workflow-ul compile-only existent, pe noua ramură, cu aapt după build: package com.example.andi_carpeta, versionName3.0.1/versionCode33 și lista de permissions sunt inspectate în runner, fără upload APK. Manifest/Gradle/pubspec/lock/signing sunt păstrate; nu schimbăm identificatorul sau versiunea. Eticheta internă _appVersionLabel3.0.0+32 diferă preexistent de pubspec3.0.1+33; trebuie reconciliată înainte de release, nu este remediată aici.
+
+Testele rulează pe lib/main.dart real, nu smoke offline #34. CI pe acest workflow și ultimul HEAD se verifică la închidere; auditul/predarea următoare sunt numai documentație și nu cer repetarea loturilor de cod. Hardware/loginFirebase/GPS/FCM/cameră/Keystore real:NEEXECUTAT. CI build nu le certifică. Standard web-build este numai artifact CI, nu hosting/deploy.

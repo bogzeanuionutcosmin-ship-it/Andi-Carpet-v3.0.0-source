@@ -50,4 +50,16 @@ jobs:
         run: flutter build apk --debug --target lib/main.dart
       - name: Verify build exists without uploading it
         run: test -s build/app/outputs/flutter-apk/app-debug.apk
+      - name: Inspect compiled Android package and permissions locally in CI
+        if: github.head_ref == 'hardening/vision-authgate-v1-20261015'
+        shell: bash
+        run: |
+          aapt_tool=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          test -n "$aapt_tool"
+          "$aapt_tool" dump badging build/app/outputs/flutter-apk/app-debug.apk > "$RUNNER_TEMP/vision-integrated-badging.txt"
+          grep -Fq "package: name='com.example.andi_carpeta'" "$RUNNER_TEMP/vision-integrated-badging.txt"
+          grep -Fq "versionCode='33'" "$RUNNER_TEMP/vision-integrated-badging.txt"
+          grep -Fq "versionName='3.0.1'" "$RUNNER_TEMP/vision-integrated-badging.txt"
+          sed -n '/^package:/p;/^sdkVersion:/p;/^targetSdkVersion:/p' "$RUNNER_TEMP/vision-integrated-badging.txt"
+          "$aapt_tool" dump permissions build/app/outputs/flutter-apk/app-debug.apk
       # Deliberately no upload-artifact, install, deploy, signing change or secrets.
