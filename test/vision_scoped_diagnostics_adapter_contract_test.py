@@ -24,7 +24,6 @@ class VisionScopedDiagnosticsAdapterContract(unittest.TestCase):
         ]
         self.assertEqual(imports, [
             "import 'package:flutter/material.dart';",
-            "import 'package:flutter/scheduler.dart';",
             "import 'vision_diagnostics_page.dart';",
             "import 'vision_session_journal.dart';",
         ])
@@ -61,8 +60,8 @@ class VisionScopedDiagnosticsAdapterContract(unittest.TestCase):
             "_unsubscribe = widget.lease.listenRevocation(_onLeaseRevoked);",
             "if (!identical(oldWidget.lease, widget.lease))",
             "_unsubscribe?.call();",
-            "SchedulerPhase.persistentCallbacks",
             "WidgetsBinding.instance.addPostFrameCallback",
+            "WidgetsBinding.instance.scheduleFrame();",
             "if (mounted) setState(() {});",
             "void dispose()",
         ):
