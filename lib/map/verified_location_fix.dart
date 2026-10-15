@@ -1,6 +1,6 @@
-part of '../main.dart';
+import '../models/app_enums.dart';
 
-class _VerifiedLocationFix {
+class VerifiedLocationFix {
   final String id;
   final double? latitude;
   final double? longitude;
@@ -9,7 +9,7 @@ class _VerifiedLocationFix {
   final String source = 'Google Maps / verificare web';
   final String confidence;
   final String note;
-  const _VerifiedLocationFix({
+  const VerifiedLocationFix({
     required this.id,
     this.latitude,
     this.longitude,
