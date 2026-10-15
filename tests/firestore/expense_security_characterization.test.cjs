@@ -652,3 +652,72 @@ test('unsafe: settlement can receive nonfinite receivedEntries values via teamma
     receivedEntries: [{ id: 'synthetic-nonfinite', amount: Number.POSITIVE_INFINITY, kind: 'departure' }],
   }));
 });
+
+
+// LEGACY PERDIEM DISTRIBUTION — characterize server-side actor/beneficiary
+// constraints as they exist TODAY. No real money/users, no production calls.
+// A permitted operation does NOT mean it is an approved finance policy.
+// IMPORTANT: old perDiems can legitimately confirm historical payments after
+// team changes; characterization does not mandate denying every cross-team read.
+const syntheticPerDiem = (memberId, amount = 75) => ({
+  teamId: 'expense-ocr-team',
+  memberId,
+  distributedBy: 'expense-ocr-member',
+  amount,
+  status: 'awaitingConfirmation',
+  actualReceivedAmount: null,
+  received: false,
+});
+
+test('unsafe: non-manager team member can create own distributed legacy perDiem', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'perDiems/expense-ocr-self-payment'),
+    syntheticPerDiem('expense-ocr-member'),
+  ));
+});
+
+test('boundary: legacy perDiem create does not validate beneficiary team membership', async () => {
+  const { setDoc } = require('firebase/firestore');
+  // Recipient is active, but outside teams/expense-ocr-team.
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'perDiems/expense-ocr-foreign-beneficiary'),
+    syntheticPerDiem('expense-ocr-outsider'),
+  ));
+});
+
+test('boundary: legacy perDiem create accepts a nonexistent beneficiary ID', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'perDiems/expense-ocr-ghost-beneficiary'),
+    syntheticPerDiem('expense-ocr-nonexistent-account'),
+  ));
+});
+
+test('unsafe: legacy perDiem create accepts positive Infinity as declared amount', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertSucceeds(setDoc(
+    doc(db('expense-ocr-member'), 'perDiems/expense-ocr-infinite-amount'),
+    syntheticPerDiem('expense-ocr-outsider', Number.POSITIVE_INFINITY),
+  ));
+});
+
+test('legacy perDiem: outsider cannot distribute to own account in another team', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertFails(setDoc(
+    doc(db('expense-ocr-outsider'), 'perDiems/expense-ocr-outsider-attempt'),
+    { ...syntheticPerDiem('expense-ocr-outsider'), distributedBy: 'expense-ocr-outsider' },
+  ));
+});
+
+test('legacy perDiem: negative and NaN declared amounts are denied', async () => {
+  const { setDoc } = require('firebase/firestore');
+  await assertFails(setDoc(
+    doc(db('expense-ocr-member'), 'perDiems/expense-ocr-negative-amount'),
+    syntheticPerDiem('expense-ocr-outsider', -5),
+  ));
+  await assertFails(setDoc(
+    doc(db('expense-ocr-member'), 'perDiems/expense-ocr-nan-amount'),
+    syntheticPerDiem('expense-ocr-outsider', Number.NaN),
+  ));
+});
