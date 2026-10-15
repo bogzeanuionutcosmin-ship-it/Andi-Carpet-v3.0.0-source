@@ -32,6 +32,7 @@ class _ExpensePageState extends State<ExpensePage> {
   bool get _visionSessionActive => mounted && (widget.diagnosticSessionIsCurrent?.call() ?? true);
   int _financeSessionEpoch = 0;
   final Set<String> _pendingSettlementClosures = <String>{};
+  final Set<String> _pendingReceiptKeys = <String>{};
 
   @override
   void didUpdateWidget(covariant ExpensePage oldWidget) {

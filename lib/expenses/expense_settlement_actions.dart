@@ -257,80 +257,125 @@ extension _ExpenseSettlementActions on _ExpensePageState {
 
   Future<void> _money(bool departure) async {
     final operationIsCurrent = _financeOperationIsCurrent();
-    String method='Cash';
-    final now=DateTime.now();
-    final result=await showDialog<ReceivedMoneyEntry>(
-      context:context,
-      builder:(d)=>FinanceDialogFields(
-        initialTexts: const ['', ''],
-        builder:(d,fields,setD) { final amountC=fields[0]; final fromC=fields[1]; return AlertDialog(
-        title:Text(departure?'Adaugă sumă primită la plecare':'Adaugă sumă primită în timpul deplasării'),
-        content:SizedBox(width:480,child:Column(mainAxisSize:MainAxisSize.min,children:[
-          TextField(
-            controller:amountC,
-            autofocus:true,
-            keyboardType:const TextInputType.numberWithOptions(decimal:true),
-            decoration:const InputDecoration(labelText:'Valoare',suffixText:'lei'),
-          ),
-          const SizedBox(height:10),
-          DropdownButtonFormField<String>(
-            value:method,
-            decoration:const InputDecoration(labelText:'Metodă'),
-            items:const[
-              DropdownMenuItem(value:'Cash',child:Text('Cash')),
-              DropdownMenuItem(value:'Transfer',child:Text('Transfer')),
-            ],
-            onChanged:(v){if(v!=null)setD(()=>method=v);},
-          ),
-          const SizedBox(height:10),
-          TextField(controller:fromC,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'De la cine')),
-          const SizedBox(height:10),
-          ListTile(
-            contentPadding:EdgeInsets.zero,
-            leading:const Icon(Icons.event_outlined),
-            title:const Text('Data'),
-            subtitle:Text('${two(now.day)}.${two(now.month)}.${now.year} · completată automat'),
-          ),
-        ])),
-        actions:[
-          TextButton(onPressed:()=>FinanceDialogFields.close(d),child:const Text('Anulează')),
-          FilledButton(onPressed:(){
-            final amount=double.tryParse(amountC.text.trim().replaceAll(',','.'));
-            final from=fromC.text.trim();
-            if(amount==null||!amount.isFinite||amount<=0||from.isEmpty)return;
-            FinanceDialogFields.close(d,ReceivedMoneyEntry(
-              id:idNow(),
-              kind:departure?'departure':'during',
-              amount:amount,
-              method:method,
-              fromName:from,
-              date:now,
-            ));
-          },child:const Text('Adaugă')),
-        ],
-      ); }),
-    );
-    if(result==null||!operationIsCurrent())return;
     final settlement = this.settlement;
     final finance = this.finance;
-    try{
-      if(settlement!=null){
-        settlement!.receivedEntries.add(result);
-        settlement!.receivedDeparture=settlement!.departureTotal;
-        settlement!.receivedDuring=settlement!.duringTotal;
-        await widget.saveSettlement(settlement!);
+    final receiptTeamName = team.name;
+    final operationKey = '$_financeSessionEpoch:${team.id}:${settlement?.id ?? _ExpensePageState._legacySettlementKey}';
+    if (!_pendingReceiptKeys.add(operationKey)) return;
+    try {
+      String method='Cash';
+      final now=DateTime.now();
+      final result=await showDialog<ReceivedMoneyEntry>(
+        context:context,
+        builder:(d)=>FinanceDialogFields(
+          initialTexts: const ['', ''],
+          builder:(d,fields,setD) { final amountC=fields[0]; final fromC=fields[1]; return AlertDialog(
+          title:Text(departure?'Adaugă sumă primită la plecare':'Adaugă sumă primită în timpul deplasării'),
+          content:SizedBox(width:480,child:Column(mainAxisSize:MainAxisSize.min,children:[
+            TextField(
+              controller:amountC,
+              autofocus:true,
+              keyboardType:const TextInputType.numberWithOptions(decimal:true),
+              decoration:const InputDecoration(labelText:'Valoare',suffixText:'lei'),
+            ),
+            const SizedBox(height:10),
+            DropdownButtonFormField<String>(
+              value:method,
+              decoration:const InputDecoration(labelText:'Metodă'),
+              items:const[
+                DropdownMenuItem(value:'Cash',child:Text('Cash')),
+                DropdownMenuItem(value:'Transfer',child:Text('Transfer')),
+              ],
+              onChanged:(v){if(v!=null)setD(()=>method=v);},
+            ),
+            const SizedBox(height:10),
+            TextField(controller:fromC,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'De la cine')),
+            const SizedBox(height:10),
+            ListTile(
+              contentPadding:EdgeInsets.zero,
+              leading:const Icon(Icons.event_outlined),
+              title:const Text('Data'),
+              subtitle:Text('${two(now.day)}.${two(now.month)}.${now.year} · completată automat'),
+            ),
+          ])),
+          actions:[
+            TextButton(onPressed:()=>FinanceDialogFields.close(d),child:const Text('Anulează')),
+            FilledButton(onPressed:(){
+              final amount=double.tryParse(amountC.text.trim().replaceAll(',','.'));
+              final from=fromC.text.trim();
+              if(amount==null||!amount.isFinite||amount<=0||from.isEmpty)return;
+              FinanceDialogFields.close(d,ReceivedMoneyEntry(
+                id:idNow(),
+                kind:departure?'departure':'during',
+                amount:amount,
+                method:method,
+                fromName:from,
+                date:now,
+              ));
+            },child:const Text('Adaugă')),
+          ],
+        ); }),
+      );
+      if(result==null||!operationIsCurrent())return;
+      final entries = settlement?.receivedEntries ?? finance.receivedEntries;
+      final previousEntries = List<ReceivedMoneyEntry>.of(entries);
+      final previousDeparture = settlement?.receivedDeparture ?? finance.receivedDeparture;
+      final previousDuring = settlement?.receivedDuring ?? finance.receivedDuring;
+      double? attemptedDeparture;
+      double? attemptedDuring;
+      try{
+        if(settlement!=null){
+          settlement!.receivedEntries.add(result);
+          settlement!.receivedDeparture=settlement!.departureTotal;
+          settlement!.receivedDuring=settlement!.duringTotal;
+          attemptedDeparture = settlement!.receivedDeparture;
+          attemptedDuring = settlement!.receivedDuring;
+          await widget.saveSettlement(settlement!);
+          if (!operationIsCurrent()) return;
+          widget.log('Sumă primită adăugată','${settlement!.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
+        }else{
+          finance.receivedEntries.add(result);
+          finance.receivedDeparture=finance.departureTotal;
+          finance.receivedDuring=finance.duringTotal;
+          attemptedDeparture = finance.receivedDeparture;
+          attemptedDuring = finance.receivedDuring;
+          await widget.saveFinance(finance);
+          if (!operationIsCurrent()) return;
+          widget.log('Sumă primită adăugată','${receiptTeamName} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
+        }
+        if(mounted){setState((){});showSuccessMessage(context,'Suma primită a fost adăugată.');}
+      } catch (e) {
         if (!operationIsCurrent()) return;
-        widget.log('Sumă primită adăugată','${settlement!.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
-      }else{
-        finance.receivedEntries.add(result);
-        finance.receivedDeparture=finance.departureTotal;
-        finance.receivedDuring=finance.duringTotal;
-        await widget.saveFinance(finance);
-        if (!operationIsCurrent()) return;
-        widget.log('Sumă primită adăugată','${team.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
+        if (e is FinanceSaveRejected) {
+          final currentEntries = settlement?.receivedEntries ?? finance.receivedEntries;
+          var ownAttempt = identical(entries, currentEntries) &&
+              entries.length == previousEntries.length + 1 && identical(entries.last, result) &&
+              (settlement?.receivedDeparture ?? finance.receivedDeparture) == attemptedDeparture &&
+              (settlement?.receivedDuring ?? finance.receivedDuring) == attemptedDuring;
+          if (ownAttempt) {
+            for (var i = 0; i < previousEntries.length; i++) {
+              if (!identical(entries[i], previousEntries[i])) { ownAttempt = false; break; }
+            }
+          }
+          if (ownAttempt) {
+            setState(() {
+              entries..clear()..addAll(previousEntries);
+              if (settlement != null) {
+                settlement.receivedDeparture = previousDeparture;
+                settlement.receivedDuring = previousDuring;
+              } else {
+                finance.receivedDeparture = previousDeparture;
+                finance.receivedDuring = previousDuring;
+              }
+            });
+          }
+        }
+        if (_visionSessionActive) VisionErrorTelemetry.report(area: 'finance', code: 'received_amount_save_failed');
+        showErrorMessage(context,'Nu s-a putut salva suma: $e');
       }
-      if(mounted){setState((){});showSuccessMessage(context,'Suma primită a fost adăugată.');}
-    }catch(e){if (!operationIsCurrent()) return; if (_visionSessionActive) VisionErrorTelemetry.report(area: 'finance', code: 'received_amount_save_failed'); if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');}
+    } finally {
+      _pendingReceiptKeys.remove(operationKey);
+    }
   }
 
 

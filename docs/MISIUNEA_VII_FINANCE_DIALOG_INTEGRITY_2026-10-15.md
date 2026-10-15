@@ -130,3 +130,19 @@ Un set cu cheie epoch+settlementId împiedică două dialoguri sau două scrieri
 VII-05 `lib/expenses/expense_page.dart`: SHA256 efd42ce1c1944bcf0288aea6ec54d2d9448ecf36dbba833454c8c43603cce01c → 176fa1a7e904747d55dfd17b6a035c7a0db20b498c46ceab1daef719a0d1ea29.
 
 VII-05 `lib/expenses/expense_settlement_actions.dart`: SHA256 105bb0fa1d4141e610ecd765bb5afe61013e038d655bb118d1a264353c863d02 → 0fc0c21e6b23d481fee3dbc2072b70a163515093a5418c9af212738dff29d914.
+
+## Continuare VII-06 — integritatea încasărilor la respingere certă
+
+VII-05 `f96b109cebbfeba7f7197fb6f808e5e47d73c19e`: standard38692128716 SUCCESS5/5; identity38692128867 SUCCESS; probe38692128850 SUCCESS, inclusiv17teste noi și martorulclose/endDate devenitPASS. Receipt era ultimul martorRED pe acelHEAD.
+
+Încasarea capturează ținta settlement/finance și numele echipei la deschiderea dialogului. După confirmarea utilizatorului păstrează un snapshot al intrărilor și celor două agregate. La `FinanceSaveRejected` restaurează snapshotul numai dacă lista, prefixul istoric, intrarea proprie și totalurile încă sunt încercarea proprie. O observație mai nouă nu este ștearsă. Agregatele legacy sunt restaurate exact, nu recalculate sau transformate în transferuri inventate. Calea de succes și sumele rămân cele existente.
+
+Cheia epoch+team+settlement blochează intrările paralele plecare/în timpul deplasării și se eliberează înfinally la cancel, Back, barrier, eșec sau succes. O operație nouă în contulB/A2 are alt epoch și nu este blocată de save-ul vechi. Nu este un mecanism de idempotency server sau cross-device. CodulVision received_amount_save_failed rămâne unul singur, constant, numai pentru sesiunea activă.
+
+**29 teste noi:**16combinații settlement/legacy×departure/during×succes/reject cert/generic/write-then-throw; agregate legacy fără intrări;4cazuri observație nouă/revocare;2intrări duplicate; recovery explicit;2cazuri cont succesor legitim;3cancel/back/barrier urmate de acțiune nouă. Martorulreceipt păstrează toate aserțiunile și acum declară explicit fake-no-write prin marker; poarta devinePASS real. Controalele neclasificate nu sunt convertite în respingere certă.
+
+Rezultatele SDK generice, timeouturile, commiturile incerte, reconcilierile și lipsa unui contract atomic/idempotent server rămân NEIMPLEMENTATE/BLOCKED pentru review separat. Nu există server rollback, retry automat, noi reguli financiare sau modificări de Firestore rules. Nicio afirmație de securizare backend ori testare live. CI pe noulHEAD este în așteptare.
+
+VII-06 `lib/expenses/expense_page.dart`: SHA256 176fa1a7e904747d55dfd17b6a035c7a0db20b498c46ceab1daef719a0d1ea29 → 9016fe9e1d79e5fc8ce3686bf72e29a5c2dcfd28351698361c5f93f155cc249e.
+
+VII-06 `lib/expenses/expense_settlement_actions.dart`: SHA256 0fc0c21e6b23d481fee3dbc2072b70a163515093a5418c9af212738dff29d914 → 4a5fa16106be54cc7667fcd462aab534b498577c333bf26cd9b6aebc925ae5ba.

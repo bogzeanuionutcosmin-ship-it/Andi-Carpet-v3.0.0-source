@@ -11,7 +11,7 @@ void main() {
     final gate = Completer<void>();
     var attempts = 0;
     final fixture = ExpenseDocumentFixture('')..saveSettlementOverride = (_) async {
-      attempts++; await gate.future; throw StateError('synthetic rejection before commit');
+      attempts++; await gate.future; throw FinanceSaveRejected('synthetic rejection before persistence');
     };
     await fixture.mount(tester);
     final original = tester.widget<ExpensePage>(find.byType(ExpensePage)).settlements.single;
