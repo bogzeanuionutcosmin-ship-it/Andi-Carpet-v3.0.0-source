@@ -83,17 +83,48 @@ class _FirestoreFinanceTransaction implements FinanceTransaction {
   final FirebaseFirestore firestore;
   final Transaction transaction;
   final void Function() onWriteScheduled;
+  final previous=<String,Map<String,Object?>?>{};
   _FirestoreFinanceTransaction(this.firestore, this.transaction, this.onWriteScheduled);
   @override
   Future<Map<String,Object?>?> read(String path) async {
     _validatePath(path);
-    return decodeFinanceFirestoreDocument((await transaction.get(firestore.doc(path))).data());
+    final value=decodeFinanceFirestoreDocument((await transaction.get(firestore.doc(path))).data());
+    previous[path]=value;
+    return value;
   }
   @override
   void write(String path, Map<String,Object?> value) {
     final document = firestore.doc(path);
-    final encoded = encodeFinanceFirestoreDocument(path, value);
+    final old=previous[path];
+    final encoded = old==null || path.contains('/financialIntents/') ?
+      encodeFinanceFirestoreDocument(path,value) : _patch(old,value);
     onWriteScheduled();
-    transaction.set(document, encoded);
+    if(old==null || path.contains('/financialIntents/')) {
+      transaction.set(document, encoded);
+    } else {
+      transaction.update(document, encoded);
+    }
   }
+}
+
+// SDKs may already have reduced timestamp precision when decoding a read.
+// Never rewrite unchanged values from that lossy view. Appending ONLY the new
+// receipt keeps the server's old array elements and their exact timestamps.
+Map<String,dynamic> _patch(Map<String,Object?> old,Map<String,Object?> next) {
+  if(old.keys.any((key)=>!next.containsKey(key)))throw const FinanceRefusal('finance_field_removal');
+  final patch=<String,dynamic>{'updatedAt':FieldValue.serverTimestamp()};
+  for(final entry in next.entries) {
+    if(entry.key=='updatedAt' || sameFinanceValue(old[entry.key],entry.value))continue;
+    if(entry.key=='receivedEntries' && old[entry.key] is List && entry.value is List) {
+      final before=old[entry.key] as List,after=entry.value as List;
+      if(after.length!=before.length+1 ||
+          !sameFinanceValue(before,after.sublist(0,before.length))) {
+        throw const FinanceRefusal('finance_history_replacement_forbidden');
+      }
+      patch[entry.key]=FieldValue.arrayUnion([_encode(after.last)]);
+    } else {
+      patch[entry.key]=_encode(entry.value);
+    }
+  }
+  return patch;
 }

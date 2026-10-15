@@ -337,3 +337,16 @@ include5noi probe separate de capacitate/retentie, încă nepublicate în acest 
 Execuția locală Flutter a fost oprită de auto-review pentru acces metadata169.254.169.254;
 nu s-a ocolit refuzul. Validarea Flutter continuă exclusiv prin CI existent.
 Fără schimbări main/PR50/51/52, rules, producție, billing, deploy sau distribuție.
+
+
+### Precizie — a doua graniță SDK web
+cc8ddf5 a trecut104Dart și47JSemulator, dar6-lea testFlutterSDK a rămasRED
+(job116546880893). Aserțiunea directă din Flutter încă vede123456000:
+această probă singură NU distinge pierderea din readSDK de rescrierea serverului.
+Adaptorul folosește acum update doar pentru câmpurile schimbate și arrayUnion
+pentru singurul receipt nou; istoricul/datele nemodificate nu sunt retrimise din
+snapshotul decodat. Gate-ul nou JS citește independent serverul și cere exact
+123456789/987654321 pentru start/created/receipt istoric după receipt și edit.
+Testulbrowser compară în plus snapshoturile sale înainte/după; comparațiaJS raw
+este obligatorie, nu opțională. Nicio aserțiune de integritate nu este înlocuită
+cu simpla acceptare a statusului confirmed. CI acestui follow-up încă în așteptare.
