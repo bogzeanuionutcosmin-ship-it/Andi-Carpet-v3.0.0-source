@@ -2445,3 +2445,6 @@ PR46 caracterizare confirmată pe ee7ab669/tree3f587602: workflow38682160481 con
 
 ## MISIUNEA VII — preflight 15.10.2026 / Issue48
 Ramură nouă fix/finance-dialog-integrity-mission-vii-20261015 din PR46 736ef9ea. Matrice și limite în docs/MISIUNEA_VII_FINANCE_DIALOG_INTEGRITY_2026-10-15.md. Martori #44/#45 portați selectiv fără runtime changes; workflow independent verifică cele cinci defecte RED și controlul pozitiv. CI nou în așteptare, nicio reparație revendicată. Următor: VII-02 controller ownership, apoi VII-03 finite input. Issue47 și PR-urile existente intacte.
+
+## MISIUNEA VII — VII-01 confirmat / VII-02 în verificare
+PR50 nou, baseline52509189867606b1cdfe63806ef78b1f1a6b4cb7, tree6ee9103ad44762c5ca140116f1c6567bf2a12645: standard38685978288 SUCCESS5/5, identity38685978321 SUCCESS, martori38685978298 SUCCESS ca detector (5defecte RED reale +1controlPASS). VII-02 introduce FinanceDialogFields ownership State, guard de închidere pe ruta curentă și22teste noi. Fără schimbare save semantics. Actualizate strict cele2pinuri settlement autorizate, restul freeze intact. FlutterCI nou obligatoriu înainte de verdict. Următor: VII-03 finite input, apoi evaluarea eșec cert vs commit incert; Issue47 exclus.

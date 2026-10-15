@@ -1,3 +1,4 @@
+import 'expenses/finance_dialog_fields.dart';
 import 'dart:async';
 import 'vision/vision_bootstrap.dart';
 import 'vision/vision_error_telemetry.dart';
