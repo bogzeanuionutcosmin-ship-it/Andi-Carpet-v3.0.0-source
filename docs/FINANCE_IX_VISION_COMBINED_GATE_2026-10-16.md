@@ -45,7 +45,7 @@ Testele verifică ACK pierdut după commit fără retransmitere, respingerea jur
 Între verificarea jurnalului și pregătirea/execuția intenției poate exista o cursă la apăsări simultane pe același buton, chiar și într-un singur widget. Pe această ramură, `FinanceVisionObservedCoordinator` are un **single-flight per target per instanță**:
 - 30 de apăsări identice care se suprapun primesc același `Future` și un singur rezultat/incident Vision, fără 30 de tranzacții;
 - intenții diferite spre același target și combinațiile executare/reconciliere în același timp sunt blocate cu `finance_operation_still_in_flight`, fără să fie confundate cu respingeri server dovedite;
-- două verificări de reconciliere simultane primesc un singur rezultat și o singură pereche de citiri server, fără retry;
+- două verificări de reconciliere simultane primesc un singur rezultat cu **o singură citire a markerului**; actualizarea modelului UI este o citire server separată, explicită, neefectuată de acest wrapper, fără retry;
 - la completare (inclusiv excepție) lockul de instanță se elimină dacă încă deține cheia. Nu există timer, polling, păstrarea payloadului după încheiere ori proces de fundal.
 
 Teste noi deterministe: `test/finance_vision_observed_coordinator_test.dart` + `test/finance_vision_observed_coordinator_contract_test.py` (cinci condiții statice). Contracția pentru UID/epocă și protocolul financiar IX rămân în straturile existente.
