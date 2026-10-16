@@ -109,4 +109,22 @@ void main(){
   expect(a.digest,b.digest);expect(a.row()['date'],{'seconds':-1,'nanoseconds':999999000});
  });
 
+ test('XI replay completion after owner revocation cannot report a certain rejection of committed money',()async{
+  final db=xiDb();var current=true;final r=repo(db,owner:()=>current),i=xi(1);
+  expect((await r.executeExplicitly(i)).status,FinanceIntentStatus.confirmed);
+  db.beforeCommit=()async{current=false;};
+  expect((await r.executeExplicitly(i)).status,FinanceIntentStatus.uncertain);
+  expect(db.calls,2);expect(db.writes,2);
+  expect(db.documents[i.summaryPath]!['receivedDeparture'],200);
+ });
+ test('XI reverse floating sum cannot silently certify a different total or round money',()async{
+  final db=xiDb(),r=repo(db);
+  for(final pair in [(1,0.1),(2,0.2),(3,0.3)])await r.executeExplicitly(xi(pair.$1,revision:pair.$1-1,amount:pair.$2));
+  final summary=db.documents[xi(1).summaryPath]!;
+  expect(summary['receivedDeparture'],0.1+0.2+0.3);
+  final a=HistoryXiConsistency(xi(3,revision:2),summary);
+  expect(()=>a.consume([for(var n=3;n>=1;n--)db.documents[xi(n,revision:n-1).rowPath]!]),throwsA(isA<FinanceRefusal>()));
+  expect(a.complete,false);expect(db.writes,6);
+ });
+
 }

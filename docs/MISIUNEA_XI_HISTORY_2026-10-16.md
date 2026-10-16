@@ -195,3 +195,16 @@ digestul/replay/reconcile și auditul folosesc exact această reprezentare. Nici
 schimbare în codec-ul V1 sau istoricul existent. Noua probă Dart SDK cere
 123456789 exact în hartă și confirmare după ACK pierdut, nu acceptă uncertain
 în locul controlului pozitiv. Nu se pretinde că SDK păstrează Timestamp nativ.
+
+### Owner expirat după replay și limita aritmeticii de audit
+
+Revocarea după întoarcerea tranzacției de replay produce uncertain, niciodată
+rejectedBeforeWrite pentru banii deja comiși. Refuzul inițial înainte de apel
+rămâne separat. Martor nou: replay fără writes, owner revocat înainte de return,
+exact2apeluri/2writes totale, suma200 păstrată.
+
+Auditul invers poate refuza legitimul0.1+0.2+0.3 deoarece double addition nu este
+asociativă. Probă strictă: refuz proof, zero rotunjire, zero modificare a totalului
+server. Acesta este un BLOCKER pentru certificarea universală a snapshotului;
+o reprezentare monetară exactă/ordine de audit necesită contract revizuit înainte
+de activare. Nu impunem tacit două zecimale sau bani întregi peste datele existente.

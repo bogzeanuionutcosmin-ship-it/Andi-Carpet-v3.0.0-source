@@ -112,9 +112,10 @@ class FinanceHistoryXiRepository {
   bool _matches(HistoryXiIntent i,Map<String,Object?> row)=>
     sameFinanceValue({for(final e in row.entries)if(e.key!='createdAt')e.key:e.value},i.row());
   Future<FinanceIntentResult> executeExplicitly(HistoryXiIntent i) async {
-    var scheduled=false;
+    var scheduled=false,started=false;
     try {
       _guard(i);
+      started=true;
       final replayed=await port.atomic((tx) async {
         _guard(i);
         final row=await tx.read(i.rowPath);_guard(i);
@@ -141,15 +142,16 @@ class FinanceHistoryXiRepository {
         scheduled=true;tx.write(i.summaryPath,next);tx.write(i.rowPath,i.row());
         return false;
       });
-      _guard(i);
+      if(!_current())return const FinanceIntentResult(FinanceIntentStatus.uncertain,'history_session_expired');
       return FinanceIntentResult(FinanceIntentStatus.confirmed,'history_confirmed',
         revision:i.receipt.baseRevision+1,replayed:replayed);
     }on FinanceRevisionConflict{
       return FinanceIntentResult(scheduled?FinanceIntentStatus.uncertain:FinanceIntentStatus.conflict,
         scheduled?'history_uncertain':'history_revision_conflict');
     }on FinanceRefusal catch(e){
-      return FinanceIntentResult(scheduled?FinanceIntentStatus.uncertain:FinanceIntentStatus.rejectedBeforeWrite,
-        scheduled?'history_uncertain':e.code);
+      final uncertain=scheduled || (started && e.code=='history_session_expired');
+      return FinanceIntentResult(uncertain?FinanceIntentStatus.uncertain:FinanceIntentStatus.rejectedBeforeWrite,
+        uncertain?'history_uncertain':e.code);
     }catch(_){return const FinanceIntentResult(FinanceIntentStatus.uncertain,'history_uncertain');}
   }
   Future<FinanceIntentResult> reconcileExplicitly(HistoryXiIntent i) async {
