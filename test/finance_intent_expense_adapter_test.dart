@@ -265,7 +265,7 @@ void main(){
     h.db.seed('finance/team',{'teamId':'team','managerId':'worker','perDiemRate':50,
       'receivedDeparture':1,'receivedDuring':0,'receivedOpeningDeparture':1,'receivedOpeningDuring':0,
       'receivedEntries':<Object?>[]});
-    final adapter=FinanceExpenseDemoAdapter(scope:h.scope,port:h.db,acceptServerSnapshot:(path,data)async{
+    final adapter=FinanceExpenseDemoAdapter(scope:h.scope,port:h.db,readAcceptedModel:(_)=>h.fixture.financeOverride,acceptServerSnapshot:(path,data)async{
       h.fixture.financeOverride=TeamFinance(teamId:'team',managerId:'worker',revision:data['revision'] as int,
         lastOperationId:data['lastOperationId'] as String,receivedDeparture:(data['receivedDeparture'] as num).toDouble(),
         receivedOpeningDeparture:1,receivedEntries:(data['receivedEntries'] as List).map((raw){final e=raw as Map;
@@ -278,11 +278,11 @@ void main(){
       FinanceServerObservation(h.db.documents['finance/team'],fromCache:false,pendingWrites:false));
     observe();await h.fixture.mount(t);await h.receipt(t);
     expect(h.fixture.financeOverride!.receivedDeparture,201);expect(h.fixture.logs,hasLength(1));
-    observe();await h.receipt(t);
+    await h.receipt(t);
     final entries=h.fixture.financeOverride!.receivedEntries;
     expect(entries,hasLength(2));expect(entries.first.id,isNot(entries.last.id));
     expect(h.fixture.financeOverride!.receivedDeparture,401);expect(h.fixture.financeOverride!.receivedOpeningDeparture,1);
-    expect(h.db.calls,2);expect(h.db.writes,4);expect(h.fixture.logs,hasLength(2));
+    expect(h.db.calls,2);expect(h.db.writes,4);expect(h.db.serverReads,2);expect(h.fixture.logs,hasLength(2));
     await t.pumpWidget(const SizedBox());adapter.dispose();
   });
   testWidgets('recreated view loads exact lost-ack intent and reconciles without another submit',(t)async{

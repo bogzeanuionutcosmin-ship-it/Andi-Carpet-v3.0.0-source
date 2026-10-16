@@ -217,3 +217,13 @@ rămâne conservator; nu este o măsurare live.
 Python locale PASS. Home implicit, Restore complet, clienții vechi, hardware și
 Spark live rămân distincte/necertificate. Nicio modificare rules/hashuri protejate,
 producție, billing, date reale, merge ori instalare/distribuție APK.
+
+### Control legacy al aceleiași integrări
+
+28cfad0 a trecut Mission VIII #38845201516: 183 Dart, 47 JS emulator și 14 SDK
+reale + raw Timestamp. Standard/platforme încă în verificare la acel checkpoint.
+Proba legacy existentă este întărită separat pentru ramura TeamFinance a noului
+callback: elimină observe manual dintre două încasări egale, cere exact două
+refreshuri, păstrează opening balance 1, totalul 401 și ID-uri distincte. Nu este
+un test duplicat și nu crește artificial numărul suitei. Sursa runtime nu se
+schimbă în acest follow-up; CI final trebuie confirmat pe SHA-ul lui propriu.
