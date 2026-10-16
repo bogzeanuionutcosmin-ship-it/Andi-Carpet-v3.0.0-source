@@ -9,8 +9,15 @@ import 'finance_vision_outcome_observer.dart';
 /// its status is passed to a revocable, anonymous Vision session sink. No
 /// operation IDs, amounts, names, errors or server snapshots go to Vision.
 /// Never treat reporting failure as a financial failure or retry condition.
+class _FinanceVisionFlight {
+  final String digest;
+  final bool reconciliation;
+  final Future<FinanceCoordinatedResult> future;
+  const _FinanceVisionFlight(this.digest, this.reconciliation, this.future);
+}
+
 class FinanceVisionObservedCoordinator {
-  const FinanceVisionObservedCoordinator({
+  FinanceVisionObservedCoordinator({
     required this.coordinator,
     required this.sink,
     required this.platform,
@@ -20,6 +27,52 @@ class FinanceVisionObservedCoordinator {
   final VisionScopedSignalSink sink;
   final VisionSignalPlatform platform;
 
+  // Single-flight ONLY inside this opt-in wrapper instance. This protects
+  // repeated taps/reentrant UI callbacks, not a second tab/process/device.
+  // The server still needs its own atomic operation marker and revision.
+  final Map<String, _FinanceVisionFlight> _flights = {};
+
+  Future<FinanceCoordinatedResult> _explicit(
+    FinanceIntent intent, {
+    required bool reconciliation,
+  }) {
+    final path = intent.targetPath;
+    final active = _flights[path];
+    if (active != null) {
+      // Identical overlapping taps await the SAME completed result and create
+      // exactly one diagnostic observation, not another server transaction.
+      if (active.digest == intent.digest &&
+          active.reconciliation == reconciliation) {
+        return active.future;
+      }
+      return Future<FinanceCoordinatedResult>.value(
+        const FinanceCoordinatedResult(
+          FinanceIntentResult(
+            FinanceIntentStatus.uncertain,
+            'finance_operation_still_in_flight',
+          ),
+          journalPending: true,
+          blockedByPendingIntent: true,
+        ),
+      );
+    }
+    final future = reconciliation
+        ? _reconcileOnce(intent)
+        : _executeOnce(intent);
+    _flights[path] = _FinanceVisionFlight(
+      intent.digest, reconciliation, future,
+    );
+    void clear() {
+      if (identical(_flights[path]?.future, future)) {
+        _flights.remove(path);
+      }
+    }
+    // Register both completion paths. A chained whenComplete() with no error
+    // consumer could emit an unhandled asynchronous exception.
+    future.then((_) => clear(), onError: (Object _, StackTrace __) => clear());
+    return future;
+  }
+
   /// Explicit user action; the underlying coordinator persists-before-send.
   ///
   /// An intent already present in the durable journal must be reconciled, not
@@ -27,6 +80,10 @@ class FinanceVisionObservedCoordinator {
   /// proof that the prior transaction failed. This gate is per invocation and
   /// does not claim cross-process/tab compare-and-swap on secure storage.
   Future<FinanceCoordinatedResult> executeExplicitly(
+    FinanceIntent intent,
+  ) => _explicit(intent, reconciliation: false);
+
+  Future<FinanceCoordinatedResult> _executeOnce(
     FinanceIntent intent,
   ) async {
     late final List<FinanceIntent> pending;
@@ -81,6 +138,10 @@ class FinanceVisionObservedCoordinator {
 
   /// Explicit reconciliation only. Never schedule from login/startup/rebuild.
   Future<FinanceCoordinatedResult> reconcileExplicitly(
+    FinanceIntent intent,
+  ) => _explicit(intent, reconciliation: true);
+
+  Future<FinanceCoordinatedResult> _reconcileOnce(
     FinanceIntent intent,
   ) async {
     final result = await coordinator.reconcileExplicitly(intent);
