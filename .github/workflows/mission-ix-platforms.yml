@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   integrated-platforms:
-    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'integration/finance-ix-vision-scoped-20261016'
+    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'integration/finance-ix-vision-scoped-20261016' || github.head_ref == 'integration/finance-vision-expense-observation-20261016'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
