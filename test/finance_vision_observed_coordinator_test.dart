@@ -79,13 +79,44 @@ void main() {
     expect(lease.buildReport(), isNot(contains('SecretCustomer')));
     expect(lease.buildReport(), isNot(contains('123')));
 
+    // A second explicit Execute on the same persisted intent must never
+    // resubmit an uncertain operation. Only Reconcile is permitted.
+    final secondExecute = await observed.executeExplicitly(intent);
+    expect(secondExecute.result.status, FinanceIntentStatus.uncertain);
+    expect(secondExecute.result.code,
+        'finance_existing_intent_requires_reconciliation');
+    expect(secondExecute.journalPending, isTrue);
+    expect(db.calls, 1);
+    expect(db.documents['settlements/trip']!['receivedEntries'], hasLength(1));
+
     db.commitThenThrow = false;
     final restored = _observed(db, storage, sink, () => true);
     final result = await restored.reconcileExplicitly(intent);
     expect(result.result.status, FinanceIntentStatus.confirmed);
     expect(db.calls, 1);
-    expect(lease.entries.single.count, 1);
+    expect(lease.entries.single.count, 2);
     expect(await restored.coordinator.journal.pending(), isEmpty);
+  });
+
+  test('corrupt durable journal blocks submission rather than resetting', () async {
+    final db = _db();
+    final storage = _MemoryStorage();
+    storage.values['finance_intents_v1_A'] = '{malformed';
+    final lease = VisionSessionJournal().startSession(
+      isSessionCurrent: () => true,
+    );
+    final observed = _observed(
+      db, storage, VisionScopedSignalSink(lease), () => true,
+    );
+    final result = await observed.executeExplicitly(_intent());
+    expect(result.result.status, FinanceIntentStatus.uncertain);
+    expect(result.result.code, 'finance_pending_journal_unavailable');
+    expect(result.journalPending, isTrue);
+    expect(db.calls, 0);
+    expect(db.writes, 0);
+    expect(storage.values['finance_intents_v1_A'], '{malformed');
+    expect(lease.entries.single.fingerprint,
+        'finance/operation_uncertain/android');
   });
 
   test('late completion after logout cannot write to the old Vision lease', () async {
