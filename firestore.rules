@@ -177,24 +177,86 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Mission VIII staging only: new financial protocol is NOT deployable with
+    // old application writers. Emulator acceptance + full client integration required.
+    function finiteMoney(n) {
+      return n is number && n >= 0 && n - n == 0;
+    }
+    // Financial request-local predicates use one cached profile instead of the
+    // general permission tree repeatedly expanding isActive/userData calls.
+    function legacyFinancialPermission(u, permission) {
+      let legacy = u.get('function', '');
+      let definition = /databases/$(database)/documents/functions/$(legacy);
+      return legacy == 'director' ||
+        (legacy != '' && exists(definition) && get(definition).data.active == true
+          && permission in get(definition).data.permissions) ||
+        (legacy in ['driver','worker','developer'] && permission == 'viewOwnDecont');
+    }
+    function financialPermission(u, permission) {
+      // An effective-permission profile need not have the old function field.
+      // Construct its legacy definition path only in the legacy branch.
+      return ('effectivePermissions' in u) ?
+        (u.effectivePermissions is list && permission in u.effectivePermissions) :
+        legacyFinancialPermission(u, permission);
+    }
+    function financialRead(teamId) {
+      let u = userData();
+      return signedIn() && u.active == true && (u.role == 'admin'
+        || financialPermission(u, 'viewOtherDecont')
+        || request.auth.uid in get(teamPath(teamId)).data.members);
+    }
+    function financialDirector() {
+      let u = userData();
+      let ids = u.get('functionIds', []);
+      return u.get('role', '') == 'director'
+        || u.get('function', '') == 'director'
+        || (ids is list && 'director' in ids);
+    }
+    function financeManager(d) {
+      let legacy = /databases/$(database)/documents/finance/$(d.teamId);
+      return d.get('managerId', null) != null ? d.managerId :
+        (exists(legacy) && get(legacy).data.get('managerId', null) != null ?
+          get(legacy).data.managerId : get(teamPath(d.teamId)).data.get('financialManagerId', null));
+    }
+    function financeActor(d) {
+      let u = userData();
+      return signedIn() && u.active == true && (u.role == 'admin'
+        || (!financialDirector()
+          && financialPermission(u, 'viewOwnDecont')
+          && request.auth.uid in get(teamPath(d.teamId)).data.members
+          && financeManager(d) == request.auth.uid));
+    }
+    function expenseParent(d) {
+      return d.get('settlementId', null) == null ?
+        get(/databases/$(database)/documents/finance/$(d.teamId)).data :
+        get(/databases/$(database)/documents/settlements/$(d.settlementId)).data;
+    }
+    function expenseWriter(d) {
+      let parent = expenseParent(d);
+      return isAdmin() || (parent.teamId == d.teamId
+        && parent.get('closed', false) == false && financeActor(parent));
+    }
     match /expenses/{expenseId} {
-      allow read: if isAdmin()
-        || hasPermission('viewOtherDecont')
-        || isTeamMember(resource.data.teamId);
-      allow create: if (isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId)
-          && request.resource.data.distributedBy == request.auth.uid))
-        && (!('supplementaryFor' in request.resource.data)
-          || request.resource.data.supplementaryFor == null
+      allow read: if isAdmin() || hasPermission('viewOtherDecont') || isTeamMember(resource.data.teamId);
+      allow create: if isActive() && finiteMoney(request.resource.data.amount)
+        && request.resource.data.amount > 0 && request.resource.data.confirmed is bool
+        && (isAdmin() || (!financialDirector() && hasPermission('viewOwnDecont')
+          && isTeamMember(request.resource.data.teamId)
+          && request.resource.data.createdBy == request.auth.uid
+          && (request.resource.data.confirmed == false || expenseWriter(request.resource.data))
+          && expenseParent(request.resource.data).teamId == request.resource.data.teamId
+          && expenseParent(request.resource.data).get('closed', false) == false))
+        && (request.resource.data.get('supplementaryFor', null) == null
           || (request.resource.data.supplementaryFor is string
             && exists(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor))
             && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.memberId == request.resource.data.memberId
             && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.distributedBy == request.resource.data.distributedBy
             && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.status == 'confirmed'));
-      allow update: if isAdmin()
-        || (hasPermission('viewOwnDecont')
-          && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+      allow update: if finiteMoney(request.resource.data.amount) && request.resource.data.amount > 0
+        && request.resource.data.teamId == resource.data.teamId
+        && request.resource.data.get('settlementId', null) == resource.data.get('settlementId', null)
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.confirmed is bool && expenseWriter(resource.data);
       allow delete: if isAdmin();
     }
 
@@ -433,25 +495,118 @@ service cloud.firestore {
     }
 
     match /finance/{teamId} {
-      allow read: if isAdmin()
-        || hasPermission('viewOtherDecont')
-        || isTeamMember(teamId);
-      allow create, update: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(teamId));
-      allow delete: if isAdmin();
+      allow read: if financialRead(teamId);
     }
-
     match /settlements/{settlementId} {
-      allow read: if isAdmin()
-        || hasPermission('viewOtherDecont')
-        || isTeamMember(resource.data.teamId);
-      allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
-      allow update: if isAdmin()
-        || (hasPermission('viewOwnDecont')
-          && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
-      allow delete: if isAdmin();
+      allow read: if financialRead(resource.data.teamId);
+      allow get: if !exists(/databases/$(database)/documents/settlements/$(settlementId))
+        && signedIn() && userData().active == true
+        && (userData().role == 'admin' || financialPermission(userData(), 'viewOwnDecont'));
+    }
+    match /{financialCollection}/{targetId} {
+      function targetPath() {
+        return /databases/$(database)/documents/$(financialCollection)/$(targetId);
+      }
+      function isFinancial() { return financialCollection in ['finance', 'settlements']; }
+      function newMarker() {
+        return getAfter(/databases/$(database)/documents/$(financialCollection)/$(targetId)/financialIntents/$(request.resource.data.lastOperationId)).data;
+      }
+      function markerBinding(m, op, d, base) {
+        return m.keys().hasOnly(['operationId','actorUid','teamId','targetPath',
+          'baseRevision','revision','kind','digest','createdAt'])
+          && m.keys().hasAll(['operationId','actorUid','teamId','targetPath',
+          'baseRevision','revision','kind','digest','createdAt'])
+          && op is string && op.matches('^[a-f0-9]{32}$')
+          && m.operationId == op && m.actorUid == request.auth.uid
+          && m.teamId == d.teamId && m.targetPath == financialCollection + '/' + targetId
+          && base is int && base >= 0 && base < 9007199254740991
+          && m.baseRevision == base && m.revision == base + 1
+          && m.digest is string && m.digest.matches('^[a-f0-9]{64}$')
+          && m.kind in ['create','edit','close','receipt'] && m.createdAt == request.time;
+      }
+      function evidence(base) {
+        let d = request.resource.data;
+        let path = /databases/$(database)/documents/$(financialCollection)/$(targetId)/financialIntents/$(d.lastOperationId);
+        return d.revision == base + 1 && d.updatedAt == request.time
+          && !exists(path) && markerBinding(getAfter(path).data,d.lastOperationId,d,base);
+      }
+      function receiptChange() {
+        let d = request.resource.data;
+        let old = resource.data;
+        let entries = old.get('receivedEntries', []);
+        let entry = d.receivedEntries[entries.size()];
+        let departure = old.get('receivedDeparture', 0);
+        let during = old.get('receivedDuring', 0);
+        return old.get('closed', false) == false
+          && d.diff(old).affectedKeys().hasOnly(['receivedEntries','receivedDeparture','receivedDuring',
+            'receivedOpeningDeparture','receivedOpeningDuring','revision','lastOperationId','updatedAt'])
+          && entries is list && d.receivedEntries == entries.concat([entry])
+          && entry.keys().hasOnly(['id','kind','amount','method','fromName','date'])
+          && entry.keys().hasAll(['id','kind','amount','method','fromName','date'])
+          && entry.id == d.lastOperationId && entry.kind in ['departure','during']
+          && finiteMoney(entry.amount) && entry.amount > 0
+          && entry.method in ['Cash','Transfer'] && entry.fromName is string && entry.fromName.size() > 0
+          && entry.date is timestamp && finiteMoney(departure) && finiteMoney(during)
+          && finiteMoney(d.receivedDeparture) && finiteMoney(d.receivedDuring)
+          && d.receivedDeparture == departure + (entry.kind == 'departure' ? entry.amount : 0)
+          && d.receivedDuring == during + (entry.kind == 'during' ? entry.amount : 0)
+          && (entry.kind == 'departure' ? d.receivedDeparture > departure : d.receivedDuring > during)
+          && d.receivedOpeningDeparture == old.get('receivedOpeningDeparture', entries.size() == 0 ? departure : 0)
+          && d.receivedOpeningDuring == old.get('receivedOpeningDuring', entries.size() == 0 ? during : 0);
+      }
+      function settlementEdit() {
+        let d = request.resource.data;
+        return financialCollection == 'settlements' && d.name is string && d.name.size() > 0
+          && d.startDate is timestamp && (d.get('endDate', null) == null || d.endDate is timestamp)
+          && ((newMarker().kind == 'edit' && d.diff(resource.data).affectedKeys().hasOnly([
+            'name','startDate','endDate','revision','lastOperationId','updatedAt']))
+            || (newMarker().kind == 'close' && d.closed is bool
+              && d.diff(resource.data).affectedKeys().hasOnly(['closed','endDate','revision','lastOperationId','updatedAt'])));
+      }
+      function settlementCreation() {
+        let d = request.resource.data;
+        return financialCollection == 'settlements' && d.keys().hasOnly([
+          'teamId','name','startDate','endDate','managerId','perDiemRate','createdAt','updatedAt','closed',
+          'receivedEntries','receivedDeparture','receivedDuring','receivedOpeningDeparture','receivedOpeningDuring','revision','lastOperationId'])
+          && d.name is string && d.name.size() > 0 && d.startDate is timestamp
+          && (d.get('endDate', null) == null || d.endDate is timestamp)
+          && d.createdAt is timestamp && d.managerId is string && d.managerId.size() > 0
+          && finiteMoney(d.perDiemRate) && d.closed == false && d.receivedEntries == []
+          && d.receivedDeparture == 0 && d.receivedDuring == 0
+          && d.receivedOpeningDeparture == 0 && d.receivedOpeningDuring == 0
+          && (isAdmin() || (financeActor({'teamId': d.teamId}) && d.managerId == request.auth.uid))
+          && evidence(0) && newMarker().kind == 'create';
+      }
+      allow create: if isFinancial() && settlementCreation();
+      // Reject a stale envelope before authorisation/marker/transition expansion.
+      // This preserves the predicate and avoids spending the rules expression
+      // budget on a transaction that cannot advance the current revision.
+      allow update: if isFinancial()
+        && request.resource.data.get('revision', -1) == resource.data.get('revision', 0) + 1
+        && request.resource.data.teamId == resource.data.teamId
+        && (financialCollection != 'finance' || targetId == resource.data.teamId)
+        && financeActor(resource.data) && evidence(resource.data.get('revision', 0))
+        && ((newMarker().kind == 'receipt' && receiptChange()) || settlementEdit());
+      allow delete: if false;
+      match /financialIntents/{operationId} {
+        function markerReadable() {
+          let u = userData();
+          return signedIn() && u.active == true && (u.role == 'admin'
+            || (financialPermission(u, 'viewOwnDecont') && (!exists(targetPath())
+              || request.auth.uid in get(teamPath(get(targetPath()).data.teamId)).data.members)));
+        }
+        allow get: if isFinancial() && markerReadable();
+        allow list: if isFinancial() && isAdmin();
+        allow create: if isFinancial()
+          && request.resource.data.get('revision', -1) ==
+            (exists(targetPath()) ? get(targetPath()).data.get('revision', 0) : 0) + 1
+          && isActive()
+          && markerBinding(request.resource.data,operationId,getAfter(targetPath()).data,
+            exists(targetPath()) ? get(targetPath()).data.get('revision', 0) : 0)
+          && getAfter(targetPath()).data.lastOperationId == operationId
+          && getAfter(targetPath()).data.revision == request.resource.data.revision;
+        allow update, delete: if false;
+      }
     }
 
     match /notifications/{notificationId} {
@@ -623,8 +778,10 @@ service cloud.firestore {
       }
     }
 
-    match /{document=**} {
-      allow read, write: if isAdmin();
+    // Overlapping allow grants are ORed: the historical Admin catch-all MUST
+    // exclude protected finance roots, including their immutable marker children.
+    match /{rootCollection}/{document=**} {
+      allow read, write: if !(rootCollection in ['finance','settlements','expenses']) && isAdmin();
     }
   }
 }
