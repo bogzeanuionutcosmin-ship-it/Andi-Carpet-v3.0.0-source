@@ -24,6 +24,9 @@ class ReviewSuiteManifestTest(unittest.TestCase):
             "test_post_xiii_batch_atomicity.py",
             "test_post_xiii_crash_phase.py",
             "test_post_xiii_authority_read_gate.py",
+            "test_post_xiii_receipt_binding.py",
+            "test_post_xiii_power_loss_claims.py",
+            "test_post_xiii_sensitive_logging.py",
         )
         self.assertTrue(all((root / name).is_file() for name in expected))
 
