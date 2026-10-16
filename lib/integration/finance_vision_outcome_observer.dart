@@ -10,12 +10,22 @@ import '../vision/vision_scoped_signal_sink.dart';
 class FinanceVisionOutcomeObserver {
   const FinanceVisionOutcomeObserver._();
 
+  /// Compatibility for existing tests and coordinator results. Does not read
+  /// the result's code, intent, UID, amount or revision.
   static bool observe({
     required FinanceIntentResult result,
     required VisionScopedSignalSink sink,
     required VisionSignalPlatform platform,
+  }) => observeStatus(status: result.status, sink: sink, platform: platform);
+
+  /// Preferred entrypoint for demo UI: no financial payload can cross this
+  /// boundary by type. Even a successful server result produces no telemetry.
+  static bool observeStatus({
+    required FinanceIntentStatus status,
+    required VisionScopedSignalSink sink,
+    required VisionSignalPlatform platform,
   }) {
-    switch (result.status) {
+    switch (status) {
       case FinanceIntentStatus.uncertain:
         return sink.emit(
           VisionDiagnosticSignal.financeOperationUncertain,
