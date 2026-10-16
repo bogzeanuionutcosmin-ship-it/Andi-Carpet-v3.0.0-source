@@ -48,6 +48,10 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
   // Optional synchronous read-back of the model actually installed by the UI.
   // Returns TravelSettlement/TeamFinance; never performs a network read.
   final Object? Function(String path)? readAcceptedModel;
+  // Optional TEST/DEMO-only status listener. Receives only the status enum,
+  // never the finance intent, amount, actor UID, server code or error message.
+  // Monitoring must be best-effort and cannot alter a financial outcome.
+  final void Function(FinanceIntentStatus)? observeStatus;
   bool _open=true;
   bool recoveryBusy=false;
   String? recoveryCode;
@@ -78,7 +82,7 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
   @override void dispose(){_open=false;scope.dispose();super.dispose();}
   final _baselines=<String,_Baseline>{};
   final _saves=<String,_Save>{};
-  FinanceExpenseDemoAdapter({required this.scope,required this.port,required this.acceptServerSnapshot,this.readAcceptedModel}) {
+  FinanceExpenseDemoAdapter({required this.scope,required this.port,required this.acceptServerSnapshot,this.readAcceptedModel,this.observeStatus}) {
     if(!identical(scope.coordinator.repository.port,port))throw ArgumentError('finance_scope_port_mismatch');
   }
   Map<String,String> get pendingCodes=>Map.unmodifiable(_saves.map((p,s)=>MapEntry(p,s.code)));
@@ -222,7 +226,16 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
       final outcome=save.confirmed?null:(reconcile?await scope.coordinator.reconcileExplicitly(save.intent):
         await scope.coordinator.executeExplicitly(save.intent));
       if(!scope.sessionIsCurrent())return;
-      if(outcome!=null)save.code=outcome.result.code;
+      if(outcome!=null) {
+        save.code=outcome.result.code;
+        try {
+          observeStatus?.call(outcome.result.status);
+        } catch (_) {
+          // Telemetry cannot block, confirm or roll back a financial write.
+        }
+        // The optional observer may synchronously revoke its own session.
+        if(!scope.sessionIsCurrent())return;
+      }
       if(outcome!=null&&outcome.result.status==FinanceIntentStatus.rejectedBeforeWrite&&
           (!outcome.journalPending||outcome.blockedByPendingIntent)) {
         _saves.remove(path);
