@@ -167,6 +167,62 @@ void main() {
         intent.operationId);
   });
 
+  test('two wrappers in one isolate cannot race the same financial target', () async {
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    final db = _db()..commitThenThrow = true;
+    db.beforeCommit = () async {
+      if (!entered.isCompleted) entered.complete();
+      await release.future;
+    };
+    final storage = _MemoryStorage();
+    // Two widgets for the SAME account; separate diagnostic sessions and
+    // wrapper objects intentionally do not share financial Future values.
+    final visionA = VisionSessionJournal().startSession(
+      isSessionCurrent: () => true,
+    );
+    final visionB = VisionSessionJournal().startSession(
+      isSessionCurrent: () => true,
+    );
+    final first = _observed(
+      db, storage, VisionScopedSignalSink(visionA), () => true,
+    );
+    final second = _observed(
+      db, storage, VisionScopedSignalSink(visionB), () => true,
+    );
+    final intent = _intent();
+    final inFlight = first.executeExplicitly(intent);
+    await entered.future;
+    final blocked = await second.executeExplicitly(intent);
+    expect(blocked.result.code, 'finance_operation_in_another_scope');
+    expect(blocked.result.status, FinanceIntentStatus.uncertain);
+    expect(blocked.blockedByPendingIntent, isTrue);
+    final blockedRecovery = await second.reconcileExplicitly(intent);
+    expect(blockedRecovery.result.code, 'finance_operation_in_another_scope');
+    expect(db.calls, 1);
+    expect(db.serverReads, 0);
+    expect(visionB.entries, isEmpty); // No cross-session result copied.
+
+    release.complete();
+    expect((await inFlight).result.status, FinanceIntentStatus.uncertain);
+    expect(db.calls, 1);
+    expect(db.documents['settlements/trip']!['receivedEntries'], hasLength(1));
+    expect(visionA.entries.single.fingerprint,
+        'finance/operation_uncertain/android');
+
+    // Releasing the isolate lease does NOT authorize Execute to resubmit a
+    // durable uncertain operation. Explicit marker reconciliation is required.
+    final replay = await second.executeExplicitly(intent);
+    expect(replay.result.code,
+        'finance_existing_intent_requires_reconciliation');
+    expect(db.calls, 1);
+    db.commitThenThrow = false;
+    final confirmed = await second.reconcileExplicitly(intent);
+    expect(confirmed.result.status, FinanceIntentStatus.confirmed);
+    expect(db.calls, 1);
+    expect(await second.coordinator.journal.pending(), isEmpty);
+  });
+
   test('overlapping explicit reconciliation reads server only once', () async {
     final db = _db()..commitThenThrow = true;
     final storage = _MemoryStorage();
