@@ -1,0 +1,53 @@
+name: Shiva isolated release gate review
+
+on:
+  push:
+    branches:
+      - audit/finance-vision-integration-gates-20261016
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shiva-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-evidence:
+    name: Offline fail-closed gate and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests
+        run: python3 -m unittest discover -s test -p 'test_shiva_release_evidence_gate.py' -v
+      - name: Cross-tab epoch contract model (not production proof)
+        run: python3 -m unittest discover -s test -p 'test_shiva_shared_session_contract.py' -v
+      - name: Exhaustive session ordering model
+        run: python3 -m unittest discover -s test -p 'test_shiva_session_interleavings.py' -v
+      - name: UID team protocol epoch isolation model
+        run: python3 -m unittest discover -s test -p 'test_shiva_scope_isolation_contract.py' -v
+      - name: Evidence baseline must block production
+        shell: bash
+        run: |
+          set +e
+          python3 scripts/shiva_release_evidence_gate.py docs/SHIVA_RELEASE_EVIDENCE_2026-10-16.json > shiva-release-gate-report.json
+          code=$?
+          set -e
+          test "$code" -eq 1
+          python3 - <<'PY'
+          import json
+          with open('shiva-release-gate-report.json', encoding='utf-8') as f:
+              report = json.load(f)
+          assert report['production_ready'] is False
+          assert report['blockers']
+          assert report['total'] == 20
+          print('Expected BLOCKED state verified; this is not production approval.')
+          PY
+      - name: Upload non-production evidence report
+        uses: actions/upload-artifact@v4
+        with:
+          name: shiva-release-gate-report
+          path: shiva-release-gate-report.json
+          retention-days: 7

@@ -1,0 +1,82 @@
+{
+  "exact_sha_ci": {
+    "status": "unknown",
+    "reference": "PR #83 SHA 7f3bbba: four active workflows completed SUCCESS (historical isolated candidate); integrated release tree CI remains UNKNOWN."
+  },
+  "protected_hashes": {
+    "status": "unknown",
+    "reference": "Revalidate 116 protected source hashes on the integrated candidate"
+  },
+  "freeze_pins": {
+    "status": "unknown",
+    "reference": "Revalidate 21 pins on the integrated candidate"
+  },
+  "single_finance_authority": {
+    "status": "blocked",
+    "reference": "X Home patch remains unapplied; XI separate candidate"
+  },
+  "legacy_client_server_gate": {
+    "status": "blocked",
+    "reference": "X/XI old APK write incompatibility; no server gate active"
+  },
+  "journal_cross_process_cas": {
+    "status": "blocked",
+    "reference": "PR #83 SHA 7f3bbba: browser V2 IndexedDB STRICT transaction + Web Locks passed two real Chromium renderer processes; native and cross-profile/process-wide universal guarantee BLOCKED."
+  },
+  "journal_crash_durability": {
+    "status": "unknown",
+    "reference": "PR #83 SHA 7f3bbba: Chromium SIGKILL/restart same profile passed; power loss, eviction, profile deletion, native storage remain UNKNOWN."
+  },
+  "uncertain_manual_reconciliation": {
+    "status": "unknown",
+    "reference": "PR #83 explicit server-evidence reconciliation candidate; Home integration and all writer routes not verified."
+  },
+  "finance_writer_inventory": {
+    "status": "blocked",
+    "reference": "X/XI manager rate OCR perDiems and bootstrap not integrated"
+  },
+  "vision_enum_only": {
+    "status": "unknown",
+    "reference": "PR75 and XI observer isolated; no cross-branch acceptance"
+  },
+  "auth_epoch_revocation": {
+    "status": "unknown",
+    "reference": "PR #83 remote-tab atomic session generation not implemented; historical AuthGate local epoch tests do not prove shared-tab revocation."
+  },
+  "money_exactness": {
+    "status": "blocked",
+    "reference": "XI reverse double arithmetic fails for 0.1+0.2+0.3"
+  },
+  "history_bounded": {
+    "status": "unknown",
+    "reference": "XI candidate V2 bounded summary, no deployed protocol"
+  },
+  "backup_restore_consistency": {
+    "status": "blocked",
+    "reference": "Export non-atomic and financial restore incomplete"
+  },
+  "staging_acl": {
+    "status": "unknown",
+    "reference": "No integrated staging run"
+  },
+  "hardware_android": {
+    "status": "unknown",
+    "reference": "No device verification"
+  },
+  "hardware_ios": {
+    "status": "unknown",
+    "reference": "No device verification"
+  },
+  "hardware_windows": {
+    "status": "unknown",
+    "reference": "No device verification"
+  },
+  "quota_measured": {
+    "status": "unknown",
+    "reference": "No actual usage or index measurement"
+  },
+  "explicit_release_approval": {
+    "status": "blocked",
+    "reference": "No separate activation approval"
+  }
+}
