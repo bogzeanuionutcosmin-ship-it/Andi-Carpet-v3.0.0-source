@@ -1,4 +1,5 @@
 import 'package:andi_carpeta/vision/vision_authgate_epoch_bridge.dart';
+import 'package:andi_carpeta/vision/vision_diagnostic_advisor.dart';
 import 'package:andi_carpeta/vision/vision_error_log.dart';
 import 'package:andi_carpeta/vision/vision_scoped_signal_sink.dart';
 import 'package:andi_carpeta/vision/vision_session_journal.dart';
@@ -41,6 +42,24 @@ void main() {
     expect(report, isNot(contains('€')));
     expect(report, isNot(contains('FirebaseAuth')));
     expect(lease.entries.length, 1);
+  });
+
+  test('uncertain finance is not misreported as a failed save', () {
+    final journal = VisionSessionJournal();
+    final lease = journal.startSession(isSessionCurrent: () => true);
+    final sink = VisionScopedSignalSink(lease);
+    expect(sink.emit(
+      VisionDiagnosticSignal.financeOperationUncertain,
+      platform: VisionSignalPlatform.android,
+    ), isTrue);
+    final advice = VisionDiagnosticAdvisor.assess(
+      lease.snapshotForDisplay()!,
+    ).single;
+    expect(advice.title, 'Rezultat financiar incert');
+    expect(advice.explanation, contains('ar putea fi deja aplicată'));
+    expect(advice.explanation, contains('aceeași intenție și revizie'));
+    expect(advice.explanation, contains('Nu retrimite automat'));
+    expect(advice.explanation, isNot(contains('Operațiune financiară nereușită')));
   });
 
   test('different constant platform/signal labels remain separate and bounded',
