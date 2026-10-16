@@ -78,7 +78,10 @@ void main() {
     expect(db.documents['settlements/trip']!['receivedEntries'], hasLength(1));
     expect(lease.entries.single.fingerprint, 'finance/operation_uncertain/android');
     expect(lease.buildReport(), isNot(contains('SecretCustomer')));
-    expect(lease.buildReport(), isNot(contains('123')));
+    // A UTC timestamp may naturally contain "123" in milliseconds.
+    // Verify structured payload exclusion instead of matching arbitrary digits.
+    expect(lease.buildReport(), isNot(contains('amount=123')));
+    expect(lease.buildReport(), isNot(contains(intent.operationId)));
 
     // A second explicit Execute on the same persisted intent must never
     // resubmit an uncertain operation. Only Reconcile is permitted.
