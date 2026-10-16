@@ -1,21 +1,13 @@
-part of '../main.dart';
-
-const String _webPushVapidKey = String.fromEnvironment(
-  'FCM_WEB_VAPID_KEY',
-  defaultValue: 'BMJikC3fON4-4uwRuMOzZRXYjQCbp2ftRsSt_PcBOpf9sTCv4VkwEkzxerxSZCMd5dyooMtHhU6hvLDeqWUkFHw',
-);
-
-Future<void> _initializeFirebaseForPlatform() async {
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS && !DefaultFirebaseOptions.hasIosDartConfig) {
-    // Pe iOS acceptăm configurația nativă standard GoogleService-Info.plist.
-    await Firebase.initializeApp();
+/// Selects the existing native/configured initialization action.
+/// SDK calls and the platform predicate are supplied by the application adapter.
+Future<void> initializeFirebaseForPlatform({
+  required bool Function() useNativeIosConfiguration,
+  required Future<void> Function() initializeNative,
+  required Future<void> Function() initializeConfigured,
+}) async {
+  if (useNativeIosConfiguration()) {
+    await initializeNative();
     return;
   }
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await initializeConfigured();
 }
-
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (Firebase.apps.isEmpty) await _initializeFirebaseForPlatform();
-}
-
