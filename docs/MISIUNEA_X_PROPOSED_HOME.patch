@@ -1,0 +1,72 @@
+--- a/lib/main.dart
++++ b/lib/main.dart
+@@ -1,3 +1,4 @@
++import 'finance/intents/finance_home_candidate.dart';
+ import 'expenses/finance_save_rejected.dart';
+ export 'expenses/finance_save_rejected.dart';
+ import 'expenses/finance_dialog_fields.dart';
+--- a/lib/home/home_page.dart
++++ b/lib/home/home_page.dart
+@@ -1,4 +1,6 @@
+ part of '../main.dart';
++
++const _financeCandidateEnabled = false;
+ 
+ class HomePage extends StatefulWidget {
+   final AppSettings settings;
+@@ -13,17 +15,37 @@
+   final HomeIdentityQueries? identityQueries;
+   final HomeOperationalQueries? operationalQueries;
+   final HomeSystemQueries? systemQueries;
++  final FinanceHomeCandidate? financeCandidate;
+   final bool Function()? sessionIsCurrent;
+   final FirebaseMessaging? messaging;
+   final Stream<RemoteMessage>? messageOpenedApp;
+   final void Function()? startLocation;
+   final Future<void> Function()? initializePush;
+-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.maintenanceFirestore, this.pushFirestore, this.platformEffects, this.messageQueries, this.identityQueries, this.operationalQueries, this.systemQueries, this.sessionIsCurrent, this.messaging, this.messageOpenedApp, this.startLocation, this.initializePush});
++  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.definitionSources, this.syncFirestore, this.maintenanceFirestore, this.pushFirestore, this.platformEffects, this.messageQueries, this.identityQueries, this.operationalQueries, this.systemQueries, this.sessionIsCurrent,this.financeCandidate, this.messaging, this.messageOpenedApp, this.startLocation, this.initializePush});
+   @override State<HomePage> createState() => _HomePageState();
+ }
+ 
+ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomePermissionMaintenance, _HomeDocumentCodecs {
+   int tab = 0;
++  FinanceHomeCandidate get _requiredFinanceCandidate {
++    final candidate = widget.financeCandidate;
++    if (candidate == null || !candidate.sessionIsCurrent()) {
++      throw FinanceSaveRejected('finance_candidate_unavailable');
++    }
++    return candidate;
++  }
++  Future<void> _saveSettlementBoundary(TravelSettlement value) =>
++    _financeCandidateEnabled ? _requiredFinanceCandidate.saveSettlement(value) : _saveSettlementDirect(value);
++  Future<void> _saveFinanceBoundary(TeamFinance value) =>
++    _financeCandidateEnabled ? _requiredFinanceCandidate.saveFinance(value) : _saveFinanceDirect(value);
++
++  @override
++  void didUpdateWidget(covariant HomePage oldWidget) {
++    super.didUpdateWidget(oldWidget);
++    if (!identical(oldWidget.financeCandidate, widget.financeCandidate)) {
++      oldWidget.financeCandidate?.dispose();
++    }
++  }
+   late final String currentUserId;
+   AppSettings get settings => widget.settings;
+   bool get _sessionActive => mounted && (widget.sessionIsCurrent?.call() ?? true);
+@@ -227,6 +249,7 @@
+ 
+   @override
+   void dispose() {
++    widget.financeCandidate?.dispose();
+     for (final sub in _coreSubscriptions) { sub.cancel(); }
+     for (final sub in _financialSubscriptions) { sub.cancel(); }
+     _liveLocationTimer?.cancel();
+@@ -355,7 +378,7 @@
+       CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect),
+       NavigationDestination(icon: appAssetIcon('assets/ui/tab_centralizator.png', size: 24, accent: centralizerColor), selectedIcon: appAssetIcon('assets/ui/tab_centralizator.png', size: 27, accent: centralizerColor, selected: true), label: compactNav ? 'Central.' : 'Centralizator'), centralizerColor);
+     addPage(hasPermission(FunctionPermission.viewOwnDecont) || hasPermission(FunctionPermission.viewOtherDecont),
+-      ExpensePage(diagnosticSessionIsCurrent: () => _sessionActive, currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
++      ExpensePage(diagnosticSessionIsCurrent: () => _sessionActive, currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceBoundary, saveSettlement: _saveSettlementBoundary),
+       NavigationDestination(icon: appAssetIcon('assets/ui/tab_decont.png', size: 24, accent: decontColor), selectedIcon: appAssetIcon('assets/ui/tab_decont.png', size: 27, accent: decontColor, selected: true), label: 'Decont'), decontColor);
+     addPage(hasPermission(FunctionPermission.viewContacts),
+       MessagesContactsPage(locations:locations,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),
