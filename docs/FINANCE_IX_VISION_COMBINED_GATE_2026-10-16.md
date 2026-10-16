@@ -39,3 +39,15 @@ Wrapperul `FinanceVisionObservedCoordinator.executeExplicitly` citește jurnalul
 Testele verifică ACK pierdut după commit fără retransmitere, respingerea jurnalului corupt fără reset și revocarea proprietății la logout.
 
 **Limita nerezolvată:** read-before-send + jurnalul serializat în același isolate NU garantează unicitatea transacțiilor între procese, două taburi web sau dispozitive. Nu se activează în Home pe acest criteriu. Marcajul/revizia server-side și migrarea legacy rămân obligatorii; zero read/write Firebase noi pentru această observație client-side.
+
+## Lot nou: deduplicare sincronă a apelurilor suprapuse
+
+Între verificarea jurnalului și pregătirea/execuția intenției poate exista o cursă la apăsări simultane pe același buton, chiar și într-un singur widget. Pe această ramură, `FinanceVisionObservedCoordinator` are un **single-flight per target per instanță**:
+- 30 de apăsări identice care se suprapun primesc același `Future` și un singur rezultat/incident Vision, fără 30 de tranzacții;
+- intenții diferite spre același target și combinațiile executare/reconciliere în același timp sunt blocate cu `finance_operation_still_in_flight`, fără să fie confundate cu respingeri server dovedite;
+- două verificări de reconciliere simultane primesc un singur rezultat și o singură pereche de citiri server, fără retry;
+- la completare (inclusiv excepție) lockul de instanță se elimină dacă încă deține cheia. Nu există timer, polling, păstrarea payloadului după încheiere ori proces de fundal.
+
+Teste noi deterministe: `test/finance_vision_observed_coordinator_test.dart` + `test/finance_vision_observed_coordinator_contract_test.py` (cinci condiții statice). Contracția pentru UID/epocă și protocolul financiar IX rămân în straturile existente.
+
+**Nu este lock multiproces, multi-tab, între dispozitive sau CAS la nivel secure storage.** Absența dublurilor când rulează 30 de apeluri în același obiect nu autorizează activarea implicită Home, modificarea regulilor live sau eliminarea markerilor Firestore. Fără schimbări în PR #73 sau `main`.
