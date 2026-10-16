@@ -2938,3 +2938,7 @@ Readerdispose/invalidate monoton și verificaretoken dupăawait; panoul îl înc
 
 MISIUNEA VIII — 2026-10-16, revocare registru Admin:
 Baseline strict93f8a647, MissionVIII38838045547/job116771484768:167PASS/4FAIL reale (readerreactivat,ownerthrow,framevechi dupărebuild,disposeextern). Aceleași4probe păstrate. Corecțiacandidat:revocaremonotonă,ownerthrowfailclosed,notificareinvalidarepurDart,curățarepagină/cursor și rebuildsigur,unsubscribe laînlocuire/dispose.3probe suplimentare verificălistenerthrow/unsubscribe,paginăînașteptareinvalidată șireopenexplicit fărăcitiriautomate.197PythonlocalPASS. CI nouSHAobligatoriu,nu sepretindeGREEN înainte derezultat. Raportconsolidat:docs/MISIUNEA_VIII_RAPORT_2026-10-16.md. Homeimplicit/Restorecomplet/backwardcompat/hardware/Sparklive rămânblocante;production_readyfalse. Fărămerge/deploy/live/billing/APKdistribuit,PR50/51/52intacte.
+
+
+MISIUNEA VIII — acceptanță integrată UI+SDK, 2026-10-16:
+Pornire7400863curat, patruworkflowuriSUCCESS. Următorullot leagă dialogurileExpensePage originale deFinanceExpenseDemoAdapter șiSDKAuth/Firestore real dinemulatorul demo: create→receipt→edit→close șireceiptcomis+ackpierdut→butonrecovery→marker+refresh fărăwrite nou. FixtureteamIdinjectabil,implicitteamneschimbat. JurnalRAM explicit, NUstoragefizic/restartOS/Homeimplicit. AșteptareI/O bounded exclusivTEST, fărăpolling/retryaplicativ.197PythonlocalePASS;probeleSDK noi suntCANDIDATEpânălaCIpeSHApublicat. RestanțeRestorecomplet/compatibilitate/hardware/Sparklive rămân;fărămerge/deploy/live/billing/APKdistribuit.

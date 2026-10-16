@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 // image selection, recognition and the save boundary are synthetic.
 class ExpenseDocumentFixture {
   final AppUser user;
+  final String teamId;
   final expenses = <Expense>[];
   final attempts = <Expense>[];
   final perDiems = <PerDiemEntry>[];
@@ -38,7 +39,7 @@ class ExpenseDocumentFixture {
   late StateSetter rebuild;
   Widget Function(Widget)? wrapPage;
   late final Uint8List image = Uint8List.fromList(img.encodePng(img.Image(width: 2, height: 2)));
-  ExpenseDocumentFixture(this.text, {String userId = 'worker'})
+  ExpenseDocumentFixture(this.text, {String userId = 'worker', this.teamId = 'team'})
       : user = AppUser(id: userId, name: 'Synthetic Worker', role: UserRole.member);
   Future<XFile?> pick(bool allowNoImage) async {
     pickerRequests.add(allowNoImage);
@@ -66,10 +67,10 @@ class ExpenseDocumentFixture {
         rebuild = setState;
         final page = ExpensePage(
           diagnosticSessionIsCurrent: diagnosticSessionIsCurrent,
-          currentUser: user, teams: [Team(id: 'team', name: 'Synthetic Team', members: [user.id], financialManagerId: manager ? user.id : 'other')],
+          currentUser: user, teams: [Team(id: teamId, name: 'Synthetic Team', members: [user.id], financialManagerId: manager ? user.id : 'other')],
           users: [user], expenses: expenses, perDiems: perDiems,
-          finances: [financeOverride ?? TeamFinance(teamId: 'team', managerId: manager ? user.id : 'other', receivedDeparture: legacyFinance ? 1 : 0)],
-          settlements: legacyFinance ? [] : [settlementOverride ?? TravelSettlement(id: 'settlement', teamId: 'team', name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), closed: initialSettlementClosed, endDate: initialSettlementEnd, managerId: manager ? user.id : 'other')],
+          finances: [financeOverride ?? TeamFinance(teamId: teamId, managerId: manager ? user.id : 'other', receivedDeparture: legacyFinance ? 1 : 0)],
+          settlements: legacyFinance ? [] : [settlementOverride ?? TravelSettlement(id: 'settlement', teamId: teamId, name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), closed: initialSettlementClosed, endDate: initialSettlementEnd, managerId: manager ? user.id : 'other')],
           settings: AppSettings(), canEditTeam: (_) => true,
           isAdmin: false, canEditOwnDecont: !readOnlyDirector, canViewOtherDecont: readOnlyDirector,
           onChanged: () { changes++; }, notifyUser: (a, b, c) { fail('Unexpected notification'); },

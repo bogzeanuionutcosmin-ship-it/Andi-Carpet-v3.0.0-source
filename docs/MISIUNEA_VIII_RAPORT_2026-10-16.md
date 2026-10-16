@@ -106,3 +106,20 @@ Identity #38822129884 SUCCESS, Platforms #38822129963 SUCCESS (161 Auth/Vision,
 nu se însumează în teste unice. Patru workflowuri istorice sunt SKIPPED.
 
 SHA/tree/workflowurile finale ale continuării se citesc din descrierea PR #55.
+
+## Lot următor: dialogurile originale împreună cu SDK real
+
+Din checkpointul 7400863 complet GREEN, două acceptanțe noi candidate pornesc
+ExpensePage original, cu utilizatorul Auth și echipa seeduite în emulatorul demo.
+Prima execută prin butoanele reale create → receipt → edit → close, cu refresh
+server și revizii 1→4. A doua pierde ack numai după commit real și apasă butonul
+«Verifică salvarea»: un marker server și un refresh, fără o a treia tranzacție,
+fără dublură la reintroducere și fără audit de succes înaintea confirmării.
+
+Fixture-ul comun primește teamId injectabil, păstrând implicit valoarea veche
+pentru toate testele existente. Nu se înlocuiește writerul cu fake și nu se
+schimbă runtime-ul aplicației. Jurnalul rămâne injectat în RAM; această probă
+nu certifică secure storage fizic, restart OS sau fabrica implicită Home.
+Așteptarea bounded a evenimentelor SDK este exclusiv în test, nu polling nou în
+aplicație. Rezultatele sunt candidate până la CI real pe noul SHA; 197 teste
+Python locale PASS. Probele vechi și verificatorul raw Timestamp rămân obligatorii.

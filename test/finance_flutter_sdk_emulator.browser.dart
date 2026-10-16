@@ -1,8 +1,11 @@
 // Explicit CI invocation only; not part of offline unit-test discovery.
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'support/expense_document_fixture.dart';
+import 'package:andi_carpeta/finance/intents/finance_expense_demo_recovery.dart';
 import 'package:andi_carpeta/finance/intents/finance_ledger.dart';
 import 'package:andi_carpeta/finance/intents/firestore_ledger_port.dart';
-import 'package:andi_carpeta/main.dart' show TravelSettlement;
+import 'package:andi_carpeta/main.dart' show TravelSettlement, ReceivedMoneyEntry;
 import 'package:andi_carpeta/finance/intents/finance_demo_panel.dart';
 import 'package:andi_carpeta/finance/intents/finance_expense_demo_adapter.dart';
 import 'dart:html' as html;
@@ -50,6 +53,69 @@ class BrowserJournalStorage implements FinanceJournalStorage {
  @override Future<String?> read(String key)async=>values[key];
  @override Future<void> write(String key,String value)async{values[key]=value;}
 }
+// Original dialogs + genuine SDK, with only journal storage held in memory.
+// This closes the UI/SDK test boundary; it is not a production Home factory.
+class SdkExpenseUi {
+ final ObservedPort port;
+ final ExpenseDocumentFixture fixture;
+ late final FinanceDemoScope scope;
+ late final FinanceExpenseDemoAdapter adapter;
+ SdkExpenseUi(String uid,this.port,bool Function() current)
+   :fixture=ExpenseDocumentFixture('',userId:uid,teamId:'flutter-team'){
+  scope=FinanceDemoScope(ownerUid:uid,sessionIsCurrent:current,port:port,storage:BrowserJournalStorage());
+  adapter=FinanceExpenseDemoAdapter(scope:scope,port:port,acceptServerSnapshot:(path,data)async{
+   fixture.settlementOverride=TravelSettlement(id:path.split('/').last,teamId:data['teamId'] as String,
+    name:data['name'] as String,startDate:data['startDate'] as DateTime,createdAt:data['createdAt'] as DateTime,
+    endDate:data['endDate'] as DateTime?,managerId:data['managerId'] as String?,
+    perDiemRate:(data['perDiemRate'] as num).toDouble(),closed:data['closed'] as bool,
+    revision:data['revision'] as int,lastOperationId:data['lastOperationId'] as String,
+    receivedDeparture:(data['receivedDeparture'] as num).toDouble(),receivedDuring:(data['receivedDuring'] as num).toDouble(),
+    receivedOpeningDeparture:(data['receivedOpeningDeparture'] as num).toDouble(),
+    receivedOpeningDuring:(data['receivedOpeningDuring'] as num).toDouble(),
+    receivedEntries:(data['receivedEntries'] as List).map((raw){final e=raw as Map;
+     return ReceivedMoneyEntry(id:e['id'] as String,kind:e['kind'] as String,amount:(e['amount'] as num).toDouble(),
+      method:e['method'] as String,fromName:e['fromName'] as String,date:e['date'] as DateTime);
+    }).toList());
+   fixture.rebuild((){});
+  });
+  fixture.saveSettlementOverride=(model)=>model.revision==null&&fixture.settlementOverride?.id!=model.id?
+    adapter.createSettlement(model):adapter.saveSettlement(model);
+  fixture.diagnosticSessionIsCurrent=scope.sessionIsCurrent;
+  fixture.wrapPage=(page)=>FinanceExpenseDemoRecovery(adapter:adapter,child:page);
+ }
+ // Bounded TEST-only event-loop wait for real browser I/O. No app polling or
+ // financial retry: timeout fails the acceptance, never fabricates success.
+ Future<void> wait(WidgetTester t,bool Function() ready)async{
+  await t.runAsync(()async{
+   final deadline=DateTime.now().add(const Duration(seconds:30));
+   while(!ready()){
+    if(DateTime.now().isAfter(deadline))throw TimeoutException('finance_ui_sdk_boundary_timeout');
+    await Future<void>.delayed(const Duration(milliseconds:20));
+    await t.pump(); // Drain widget microtasks while genuine SDK I/O advances.
+   }
+  });
+  await t.pumpAndSettle();
+ }
+ Future<void> baseline(WidgetTester t)async{
+  final model=fixture.settlementOverride!;
+  final observation=await t.runAsync(()=>port.readServer('settlements/${model.id}'));
+  adapter.observeSettlement(model,observation!);
+ }
+ Future<void> create(WidgetTester t)async{
+  await t.tap(find.text('Nouă'));await t.pumpAndSettle();
+  await fixture.enter(t,'Denumire','Synthetic real SDK UI');
+  await t.tap(find.widgetWithText(FilledButton,'Creează'));await t.pump();
+  await wait(t,()=>fixture.logs.length==1);
+ }
+ Future<void> receipt(WidgetTester t)async{
+  await t.ensureVisible(find.text('Primit la plecare'));await t.tap(find.text('Primit la plecare'));await t.pumpAndSettle();
+  await fixture.enter(t,'Valoare','200');await fixture.enter(t,'De la cine','Synthetic UI');
+  await t.tap(find.widgetWithText(FilledButton,'Adaugă'));await t.pump();
+ }
+ Future<void> close(WidgetTester t)async{
+  await t.pumpWidget(const SizedBox());adapter.dispose();
+ }
+}
 FinanceIntent receipt(String target,int id,String uid,{int revision=0})=>FinanceIntent(operationId:id.toRadixString(16).padLeft(32,'0'),actorUid:uid,teamId:'flutter-team',collection:'settlements',documentId:target,baseRevision:revision,kind:FinanceIntentKind.receipt,changes:{'kind':'departure','amount':200.0,'method':'Cash','fromName':'Synthetic payer','date':DateTime.utc(2026,10,15)});
 void main(){
  TestWidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +153,51 @@ void main(){
   final snapshot=await db.doc('settlements/$target').get(const GetOptions(source:Source.server));
   expect(snapshot.metadata.isFromCache,false);expect(snapshot.metadata.hasPendingWrites,false);return snapshot.data()!;
  }
+ testWidgets('original ExpensePage create receipt edit close use genuine SDK atomic writes',(t)async{
+  final ui=SdkExpenseUi(uid,ObservedPort(port.inner),()=>auth.currentUser?.uid==uid);
+  // The UI owns its own counter wrapper, sharing only the validated emulator.
+  await ui.fixture.mount(t);expect(ui.port.atomicCalls,0);expect(ui.port.serverReads,0);
+  try {
+   await ui.create(t);expect(ui.port.atomicCalls,1);expect(ui.fixture.settlementOverride!.revision,1);
+   await ui.baseline(t);await ui.receipt(t);await ui.wait(t,()=>ui.fixture.logs.length==2);
+   expect(ui.fixture.settlementOverride!.receivedDeparture,200);expect(ui.fixture.settlementOverride!.revision,2);
+   await ui.baseline(t);
+   await t.ensureVisible(find.text('Editează deplasarea'));await t.tap(find.text('Editează deplasarea'));await t.pumpAndSettle();
+   await ui.fixture.enter(t,'Denumire','SDK UI revised');await t.tap(find.widgetWithText(FilledButton,'Salvează'));await t.pump();
+   await ui.wait(t,()=>ui.fixture.logs.length==3);expect(ui.fixture.settlementOverride!.revision,3);
+   await ui.baseline(t);
+   await t.ensureVisible(find.text('Închide decontul'));await t.tap(find.text('Închide decontul'));await t.pumpAndSettle();
+   await t.tap(find.widgetWithText(FilledButton,'Închide'));await t.pump();
+   await ui.wait(t,()=>ui.fixture.logs.length==4);
+   final data=await t.runAsync(()=>server(ui.fixture.settlementOverride!.id));
+   expect(data!['closed'],true);expect(data['name'],'SDK UI revised');expect(data['revision'],4);
+   expect(data['receivedDeparture'],200);expect(data['receivedEntries'],hasLength(1));
+   expect(ui.port.atomicCalls,4);expect(ui.adapter.pendingCodes,isEmpty);
+   expect(await t.runAsync(()=>ui.scope.coordinator.journal.pending()),isEmpty);
+  } finally {await ui.close(t);}
+ },timeout:const Timeout(Duration(minutes:2)));
+ testWidgets('original receipt recovery button reconciles genuine committed lost ack without another write',(t)async{
+  final ui=SdkExpenseUi(uid,ObservedPort(port.inner),()=>auth.currentUser?.uid==uid);
+  await ui.fixture.mount(t);
+  try {
+   await ui.create(t);await ui.baseline(t);ui.port.loseAcknowledgement=true;
+   await ui.receipt(t);await ui.wait(t,()=>ui.adapter.pendingCodes.values.contains('finance_result_uncertain'));
+   expect(ui.fixture.logs,hasLength(1));expect(ui.port.lostAcknowledgements,1);expect(ui.port.atomicCalls,2);
+   final before=await t.runAsync(()=>ui.scope.coordinator.journal.pending());
+   expect(before,hasLength(1));final digest=before!.single.digest;
+   await t.ensureVisible(find.text('Primit la plecare'));await t.tap(find.text('Primit la plecare'));await t.pumpAndSettle();
+   expect(find.text('Adaugă sumă primită la plecare'),findsNothing);expect(ui.port.atomicCalls,2);
+   final checks=ui.port.serverReads;
+   await t.ensureVisible(find.text('Verifică salvarea'));await t.tap(find.text('Verifică salvarea'));await t.pump();
+   await ui.wait(t,()=>ui.fixture.logs.length==2);
+   expect(ui.port.atomicCalls,2);expect(ui.port.serverReads,checks+2);expect(ui.adapter.pendingCodes,isEmpty);
+   final data=await t.runAsync(()=>server(ui.fixture.settlementOverride!.id));
+   expect(data!['revision'],2);expect(data['receivedDeparture'],200);expect(data['receivedEntries'],hasLength(1));
+   final marker=await t.runAsync(()=>ui.port.readServer('settlements/${ui.fixture.settlementOverride!.id}/financialIntents/${before.single.operationId}'));
+   expect(marker!.data!['digest'],digest);
+   expect(await t.runAsync(()=>ui.scope.coordinator.journal.pending()),isEmpty);
+  } finally {await ui.close(t);}
+ },timeout:const Timeout(Duration(minutes:2)));
  test('actual Flutter SDK receipt replay, editing and closure preserve history',()async{
   final repo=FinanceRepository(port:port,ownerUid:uid,sessionIsCurrent:()=>auth.currentUser?.uid==uid);
   final i=receipt('flutter-main',1,uid);expect((await repo.execute(i)).status,FinanceIntentStatus.confirmed);
