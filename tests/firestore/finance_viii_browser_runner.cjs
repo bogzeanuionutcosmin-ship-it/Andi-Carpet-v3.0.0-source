@@ -3,6 +3,8 @@
 const http=require('node:http');
 const {spawn}=require('node:child_process');
 if(process.env.FIRESTORE_EMULATOR_HOST!=='127.0.0.1:8080' || process.env.FIREBASE_AUTH_EMULATOR_HOST!=='127.0.0.1:9099')throw Error('local_emulators_required');
+const entry=process.argv[2]??'test/finance_flutter_sdk_emulator.browser.dart';
+if(!['test/finance_flutter_sdk_emulator.browser.dart','test/finance_ix_sdk.browser.dart'].includes(entry))throw Error('unsupported_browser_entry');
 let online=true;
 const sockets=new Set();
 function track(socket){if(sockets.has(socket))return;sockets.add(socket);socket.once('close',()=>sockets.delete(socket));}
@@ -42,7 +44,7 @@ function listen(server,port){return new Promise((resolve,reject)=>{
   await listen(proxy,8081);await listen(control,8082);
   console.log('VIII local browser transport gate ready.');
   const code=await new Promise((resolve,reject)=>{
-   const child=spawn('flutter',['test','--platform','chrome','test/finance_flutter_sdk_emulator.browser.dart','--reporter','expanded'],{stdio:'inherit'});
+   const child=spawn('flutter',['test','--platform','chrome',entry,'--reporter','expanded'],{stdio:'inherit'});
    child.on('error',reject);child.on('exit',code=>resolve(code??1));
   });
   process.exitCode=code;

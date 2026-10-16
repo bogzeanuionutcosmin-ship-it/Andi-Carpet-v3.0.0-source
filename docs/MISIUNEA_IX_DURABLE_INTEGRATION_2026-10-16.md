@@ -66,3 +66,20 @@ NU certificat multi-process. Nu se activează în Home/producție pe baza readba
 Payload vechi neînvelit se refuză cu upgrade_required fără migrare/ștergere.
 Coruperea se păstrează și blochează trimiterea; nu este tratată drept jurnal gol.
 Limita payload rămâne 128 KiB/32 intenții, fără evacuarea celor incerte.
+
+
+## IX-03–06 — candidat pregătit pentru CI
+FinanceCheckedJournalStorage învelește portul existent, validează checksum/schema/UID
+și readback înainte de send, cu revocare monotonă inclusiv closure care aruncă.
+FinanceDeviceDemoComposition cere FirestoreFinanceAtomicPort explicit demo și
+setează Android resetOnError=false/migrateOnAlgorithmChange=false. Zero activare
+în Home/AuthGate. Nu oferă multi-process CAS și nu pretinde durabilitate fizică.
+Nouă probe deterministe: recreare, write pierdut/torn, ack local pierdut, ack
+server pierdut, corupere, upgrade legacy refuzat, A→B→A2, revocare și cleanup.
+Două probe SDK suplimentare înregistrează pluginul web real (fără mock), folosesc
+butoanele originale și recreează storage/scope/adaptor. Reconcilierea explicită
+cere exact două tranzacții (create+receipt), două citiri server de recuperare
+(marker+refresh), un receipt, revizie2 și zero audit al dialogului dispărut.
+Sunt ținte de validare până la CI real; recreare de obiecte, nu restart browser/OS.
+Workflowuri IX noi, independente; workflowurile VIII nu sunt modificate. Runnerul
+VIII primește doar o selecție allowlisted de entrypoint; controalele vechi rămân.
