@@ -1,4 +1,4 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
 
 const Map<String, IconData> appIconChoices = {
   'car': Icons.directions_car,
@@ -114,7 +114,7 @@ Widget categoryBrandWidget(String categoryId, {double size = 28, Color? fallback
   return CircleAvatar(radius: size / 2, backgroundColor: fallbackColor ?? Colors.blueGrey, child: const Icon(Icons.category_outlined, color: Colors.white, size: 16));
 }
 
-Widget _badgeGraphic(String asset, {required double size, Color? color}) {
+Widget badgeGraphic(String asset, {required double size, Color? color}) {
   final outline = color ?? Colors.white;
   final inner = size * .88;
   return SizedBox(
