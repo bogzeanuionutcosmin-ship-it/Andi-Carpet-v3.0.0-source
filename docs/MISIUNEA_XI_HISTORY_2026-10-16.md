@@ -37,3 +37,19 @@ certificat printr-o pagină parțială. Reordonarea sau diferențele de aritmeti
 floating la suma inversă refuză dovada; nu rotunjim bani pentru un PASS.
 Rules noi sunt exclusiv fixture emulator separată. Nicio regulă live sau
 firestore.rules existent nu este modificat. Validarea CI urmează pe SHA nou.
+
+## XI-03/04 — probe SDK candidate
+
+JS SDK real: reguli standalone pe demo-history-xi și main SHA-pinned pe alt
+proiect demo. Matrice pozitivă/negativă pentru două echipe, două instanțe, replay,
+ID/digest diferit, două intenții egale, concurrent CAS, ack pierdut, read-only
+Director, worker/outsider refuzați, admin fără bypass, rezumat/marker orphan,
+ștergere/update receipt refuzate, revocare, query pinned și limită20.
+
+Chrome entrypoint XI înregistrează integral IX (18 controale), apoi adaugă
+3 probe genuine Dart Auth/Firestore pentru portul nou: timestamps nanosecunde,
+replay cu contori, lost ACK + envelope recreat + reconciliere, două instanțe
+SDK și signout→same UID re-login fără reactivarea repo vechi. NU două telefoane.
+Fixture-ul XI este inserat în memorie numai în rules ale emulatorului demo;
+catch-all Admin este exclus și pentru noul namespace. firestore.rules rămâne
+nemodificat. Controalele vechi nu sunt omise sau relaxate. CI urmează pe SHA nou.

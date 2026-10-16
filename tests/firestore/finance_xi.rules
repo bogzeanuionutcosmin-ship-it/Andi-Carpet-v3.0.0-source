@@ -6,7 +6,7 @@ service cloud.firestore {
  function h_active(){return request.auth!=null && h_user().active==true;}
  function h_actor(team){
   return h_active() && (h_user().role=='admin' ||
-    (h_user().function!='director' && 'viewOwnDecont' in h_user().effectivePermissions &&
+    (h_user().role!='director' && h_user().get('function','')!='director' && !('director' in h_user().get('functionIds',[])) && 'viewOwnDecont' in h_user().effectivePermissions &&
       request.auth.uid in get(/databases/$(database)/documents/teams/$(team)).data.members &&
       get(/databases/$(database)/documents/teams/$(team)).data.financialManagerId==request.auth.uid));
  }
@@ -39,6 +39,12 @@ service cloud.firestore {
    && h_money(r.amount) && r.amount>0 && r.method in ['Cash','Transfer']
    && r.fromName is string && r.fromName.size()>0 && r.date is timestamp && r.createdAt==request.time;
  }
+ function h_source_actor(d){
+  let source=get(/databases/$(database)/documents/$(d.sourceCollection)/$(d.sourceId)).data;
+  let manager=source.get('managerId',get(/databases/$(database)/documents/teams/$(d.teamId)).data.financialManagerId);
+  return source.teamId==d.teamId && source.get('closed',false)==false &&
+   (h_user().role=='admin' || manager==request.auth.uid);
+ }
  function h_empty_source(d){
   let source=get(/databases/$(database)/documents/$(d.sourceCollection)/$(d.sourceId)).data;
   return source.teamId==d.teamId && source.get('closed',false)==false
@@ -50,7 +56,7 @@ service cloud.firestore {
   let base=b.get('revision',0);
   let departure=b.get('receivedDeparture',0);
   let during=b.get('receivedDuring',0);
-  return h_shape(id,d) && h_actor(d.teamId) && base is int && base>=0 && base<9007199254740991
+  return h_shape(id,d) && h_actor(d.teamId) && h_source_actor(d) && base is int && base>=0 && base<9007199254740991
    && d.revision==base+1 && h_row(r,d.lastOperationId,d,base)
    && (!exists(h_summary(id))?h_empty_source(d):
      (b.teamId==d.teamId && b.sourceCollection==d.sourceCollection && b.sourceId==d.sourceId && b.protocol==2))
@@ -66,7 +72,8 @@ service cloud.firestore {
    && h_transition(id,request.resource.data,h_before(id),getAfter(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(request.resource.data.lastOperationId)).data);
   allow delete: if false;
   match /receipts/{op} {
-   allow get: if h_read(get(h_summary(id)).data.teamId);
+   allow get: if exists(h_summary(id))?h_read(get(h_summary(id)).data.teamId):
+    (!exists(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(op)) && h_active());
    allow list: if request.query.limit!=null && request.query.limit<=20 && h_read(get(h_summary(id)).data.teamId);
    allow create: if h_transition(id,getAfter(h_summary(id)).data,h_before(id),request.resource.data)
     && getAfter(h_summary(id)).data.lastOperationId==op;

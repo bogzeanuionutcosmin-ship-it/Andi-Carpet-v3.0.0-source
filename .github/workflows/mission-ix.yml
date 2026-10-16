@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   emulator:
-    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'fix/finance-home-boundary-mission-x-20261016'
+    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'fix/finance-home-boundary-mission-x-20261016' || github.head_ref == 'fix/finance-history-legacy-safety-mission-xi-20261016'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -24,9 +24,9 @@ jobs:
           java-version: '21'
       - run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
       - name: Strict ACL and atomic financial protocol acceptance
-        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test --test-concurrency=1 tests/firestore/finance_viii_acl.red.cjs tests/firestore/finance_viii_atomic.test.cjs tests/firestore/finance_ix_compatibility.test.cjs'
+        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test --test-concurrency=1 tests/firestore/finance_viii_acl.red.cjs tests/firestore/finance_viii_atomic.test.cjs tests/firestore/finance_ix_compatibility.test.cjs tests/firestore/finance_xi_history.test.cjs'
   dart:
-    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'fix/finance-home-boundary-mission-x-20261016'
+    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'fix/finance-home-boundary-mission-x-20261016' || github.head_ref == 'fix/finance-history-legacy-safety-mission-xi-20261016'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -40,7 +40,7 @@ jobs:
       - run: flutter pub get
       - run: flutter test test/finance_intent*_test.dart --reporter expanded
   flutter-sdk-emulator:
-    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'fix/finance-home-boundary-mission-x-20261016'
+    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'fix/finance-home-boundary-mission-x-20261016' || github.head_ref == 'fix/finance-history-legacy-safety-mission-xi-20261016'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -61,4 +61,7 @@ jobs:
       - run: flutter pub get
       - run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
       - name: Actual Flutter Chrome SDK against local demo Auth and Firestore
-        run: timeout --signal=TERM --kill-after=20s 8m npx firebase emulators:exec --only auth,firestore --project demo-andi-carpet --config firebase.mission-viii-test.json 'node tests/firestore/finance_viii_flutter_seed.cjs && node tests/firestore/finance_viii_browser_runner.cjs test/finance_ix_sdk.browser.dart && node tests/firestore/finance_viii_flutter_verify.cjs'
+        env:
+          XI_HISTORY: ${{ github.head_ref == 'fix/finance-history-legacy-safety-mission-xi-20261016' && '1' || '0' }}
+          XI_ENTRY: ${{ github.head_ref == 'fix/finance-history-legacy-safety-mission-xi-20261016' && 'test/finance_xi_sdk.browser.dart' || 'test/finance_ix_sdk.browser.dart' }}
+        run: timeout --signal=TERM --kill-after=20s 8m npx firebase emulators:exec --only auth,firestore --project demo-andi-carpet --config firebase.mission-viii-test.json 'node tests/firestore/finance_viii_flutter_seed.cjs && if [ "$XI_HISTORY" = 1 ]; then node tests/firestore/finance_xi_flutter_seed.cjs; fi && node tests/firestore/finance_viii_browser_runner.cjs "$XI_ENTRY" && node tests/firestore/finance_viii_flutter_verify.cjs'
