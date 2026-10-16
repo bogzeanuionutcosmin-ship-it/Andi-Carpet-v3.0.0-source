@@ -171,3 +171,12 @@ precizie timestamp observată și refuz server pentru document UTF8 >1MiB.
 de document din instanțe Firestore diferite. Fixture corectat pentru aceeași
 instanță per batch. Asserțiile refuzului, integritatea și drepturile rămân
 neschimbate; aceste FAIL nu sunt prezentate ca vulnerabilități server remediate.
+
+### Compoziție rules în fixture SDK
+
+Fixture-ul Chrome combinat a eșuat înainte de pornirea probelor. Cauza: textul
+regex din rules conține secvența dollar+apostrof, interpretată de String.replace
+ca substituție a sufixului și multiplicând codul sursă. Inserția folosește acum
+callback de replacement, păstrând fragmentul literal exact o singură dată.
+Verificare locală de lungime compoziție; rules de pe disc/producție nemodificate.
+Nu eliminăm controale pentru a masca acest eșec de infrastructură de test.

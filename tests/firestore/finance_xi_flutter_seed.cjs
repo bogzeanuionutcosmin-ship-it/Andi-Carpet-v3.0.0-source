@@ -12,7 +12,7 @@ let stage='guard';
  const excluded="['finance','settlements','expenses']";
  if(!rules.includes(excluded))throw Error('history_fixture_catchall_changed');
  rules=rules.replace(excluded,"['finance','settlements','expenses','financeHistoryXi']");
- rules=rules.replace('function signedIn() {',fragment+'\nfunction signedIn() {');
+ rules=rules.replace('function signedIn() {',()=>fragment+'\nfunction signedIn() {');
  stage='rules';
  const env=await initializeTestEnvironment({projectId:'demo-andi-carpet',firestore:{rules}});
  stage='fixtures';
