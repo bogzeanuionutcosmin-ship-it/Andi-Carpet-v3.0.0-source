@@ -4,7 +4,7 @@ const http=require('node:http');
 const {spawn}=require('node:child_process');
 if(process.env.FIRESTORE_EMULATOR_HOST!=='127.0.0.1:8080' || process.env.FIREBASE_AUTH_EMULATOR_HOST!=='127.0.0.1:9099')throw Error('local_emulators_required');
 const entry=process.argv[2]??'test/finance_flutter_sdk_emulator.browser.dart';
-if(!['test/finance_flutter_sdk_emulator.browser.dart','test/finance_ix_sdk.browser.dart','test/finance_xi_sdk.browser.dart'].includes(entry))throw Error('unsupported_browser_entry');
+if(!['test/finance_flutter_sdk_emulator.browser.dart','test/finance_ix_sdk.browser.dart','test/finance_xi_sdk.browser.dart','test/finance_xii_sdk.browser.dart'].includes(entry))throw Error('unsupported_browser_entry');
 let online=true;
 const sockets=new Set();
 function track(socket){if(sockets.has(socket))return;sockets.add(socket);socket.once('close',()=>sockets.delete(socket));}
@@ -24,6 +24,11 @@ const proxy=http.createServer((req,res)=>{
 });
 proxy.on('connection',track);
 const control=http.createServer((req,res)=>{
+ if(req.method==='GET' && req.url==='/journal-v2.mjs'){
+  res.writeHead(200,{'Access-Control-Allow-Origin':'*','Content-Type':'text/javascript'});
+  const source=require('node:fs').readFileSync('lib/finance/journal_v2/browser_journal_v2.mjs','utf8');
+  res.end(source+'\nglobalThis.andiCreateFinanceJournalV2 = createJournalV2;');return;
+ }
  const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'POST, OPTIONS',
   'Access-Control-Allow-Headers':'Content-Type'};
  if(req.method==='OPTIONS'){res.writeHead(204,headers);res.end();return;}

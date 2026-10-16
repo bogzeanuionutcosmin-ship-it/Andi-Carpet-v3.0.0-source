@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   integrated-platforms:
-    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'fix/finance-home-boundary-mission-x-20261016' || github.head_ref == 'fix/finance-history-legacy-safety-mission-xi-20261016'
+    if: github.head_ref == 'fix/durable-journal-mission-xii-20261016' || github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'fix/finance-home-boundary-mission-x-20261016' || github.head_ref == 'fix/finance-history-legacy-safety-mission-xi-20261016'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
