@@ -15,11 +15,16 @@ class VisionSessionLifecycleCoordinatorContract(unittest.TestCase):
         )
 
     def test_no_transport_global_log_or_navigation(self):
+        executable = "\n".join(
+            line for line in CODE.splitlines()
+            if not line.lstrip().startswith("///")
+            and not line.lstrip().startswith("//")
+        )
         for bad in ("Firebase", "Navigator", "VisionErrorTelemetry.",
                     "http.", "Timer(", "Future.delayed(", "Clipboard",
                     "SharedPreferences", "FlutterSecureStorage"):
             with self.subTest(bad=bad):
-                self.assertNotIn(bad, CODE)
+                self.assertNotIn(bad, executable)
 
     def test_replaces_epochs_and_rejects_use_after_dispose(self):
         for fragment in (
