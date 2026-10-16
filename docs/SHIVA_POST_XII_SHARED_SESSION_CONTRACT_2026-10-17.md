@@ -45,3 +45,7 @@ Implement a pure contract fixture or standalone staging harness that injects ses
 ## Reconciliation authorization rule (Shiva model hardening)
 
 The server-marker lookup is a privileged read, not an exception to revocation. After logout or team transfer, a stale client must preserve its local `uncertain` state but receive `authorization_required` rather than reading an old-team marker. An authorized recovery flow may reconcile later under an independently verified identity/team entitlement. A lack of read permission is **not** evidence that the write failed and must never trigger a second financial send. This rule is now exercised by the isolated model test; it is not wired into production Firestore rules.
+
+## Exhaustive small-state ordering witness
+
+The standalone `test/test_shiva_session_interleavings.py` enumerates all six permutations of **prepare**, **revoke**, and **send**. It proves within this deliberately small model that a local-only lease check admits the `prepare → revoke → send` stale commit, whereas a server epoch check rejects it. It also verifies that `prepare → send → revoke` is already committed and cannot be retroactively undone, and that `revoke → prepare → send` can proceed under a newly issued epoch. This is a contract model, not an SDK, browser, native, Firestore-rules or cross-device integration test. Local standalone reproduction: four tests PASS; GitHub CI on this SHA must be verified separately.
