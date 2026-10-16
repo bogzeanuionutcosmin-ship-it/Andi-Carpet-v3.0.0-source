@@ -152,4 +152,37 @@ void main(){
     await t.pumpWidget(const SizedBox());expect(t.takeException(),isNull);
   });
 
+  test('ledger invalidation notifies safely and removes subscriptions',(){
+    final reader=FinanceLedgerReader(port:_Port(),sessionIsCurrent:()=>true);
+    var calls=0;
+    reader.onInvalidated(()=>throw StateError('ignored consumer'));
+    final cancel=reader.onInvalidated(()=>calls++);
+    reader.invalidate();expect(calls,1);expect(reader.sessionIsCurrent(),true);
+    cancel();reader.dispose();reader.dispose();expect(calls,1);
+    expect(reader.sessionIsCurrent(),false);
+  });
+  test('invalidation while a page is pending prevents a stale result or cursor',()async{
+    final p=_Port(),release=Completer<void>();
+    final reader=FinanceLedgerReader(port:p,sessionIsCurrent:()=>true,pageSize:2);
+    final first=await reader.firstExplicitly('settlements/trip');
+    p.afterRead=()=>release.future;
+    final next=reader.nextExplicitly(first.next!);
+    final denied=expectLater(next,throwsA(isA<FinanceRefusal>()));
+    reader.invalidate();release.complete();await denied;
+    await expectLater(reader.nextExplicitly(first.next!),throwsA(isA<FinanceRefusal>()));
+    expect(p.queries,2);expect(p.reads,1);
+  });
+  testWidgets('explicit invalidation clears the page and allows a fresh manual review',(t)async{
+    final p=_Port(),reader=FinanceLedgerReader(port:_Port(),sessionIsCurrent:()=>true);
+    final actual=FinanceLedgerReader(port:p,sessionIsCurrent:()=>true);
+    await t.pumpWidget(MaterialApp(home:Scaffold(body:FinanceLedgerDemoPanel(reader:actual,targetPath:'settlements/trip'))));
+    await t.tap(find.text('Deschide registrul operațiilor'));await t.pumpAndSettle();
+    actual.invalidate();await t.pumpAndSettle();
+    expect(find.text('Revizie analizată: 5'),findsNothing);expect(p.reads,1);expect(p.queries,1);
+    await t.tap(find.text('Deschide registrul operațiilor'));await t.pumpAndSettle();
+    expect(find.text('Revizie analizată: 5'),findsOneWidget);expect(p.reads,2);expect(p.queries,2);
+    await t.pumpWidget(const SizedBox());actual.dispose();reader.dispose();await t.pump();
+    expect(t.takeException(),isNull);
+  });
+
 }

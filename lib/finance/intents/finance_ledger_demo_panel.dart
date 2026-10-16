@@ -13,14 +13,32 @@ class _LedgerPanelState extends State<FinanceLedgerDemoPanel> {
   FinanceLedgerPage? page;
   bool busy=false,failed=false;
   int generation=0;
+  void Function()? unsubscribe;
+  bool refreshScheduled=false;
+  @override void initState(){super.initState();subscribe();}
+  void subscribe(){unsubscribe=widget.reader.onInvalidated(invalidated);}
+  void invalidated(){
+    generation++;page=null;busy=false;failed=false;
+    // Revocation can happen during an AuthGate rebuild. Clear data immediately,
+    // then request a safe frame without setState during build or disposal.
+    if(refreshScheduled)return;
+    refreshScheduled=true;
+    WidgetsBinding.instance.addPostFrameCallback((_){
+      refreshScheduled=false;
+      if(mounted)setState((){});
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
   @override void didUpdateWidget(covariant FinanceLedgerDemoPanel old){
     super.didUpdateWidget(old);
     if(!identical(old.reader,widget.reader)||old.targetPath!=widget.targetPath){
+      unsubscribe?.call();
       if(!identical(old.reader,widget.reader)){old.reader.dispose();}else{old.reader.invalidate();}
       generation++;page=null;busy=false;failed=false;
+      subscribe();
     }
   }
-  @override void dispose(){generation++;widget.reader.dispose();super.dispose();}
+  @override void dispose(){unsubscribe?.call();generation++;widget.reader.dispose();super.dispose();}
   Future<void> run(bool next)async{
     if(busy||!widget.reader.sessionIsCurrent())return;
     final epoch=generation,reader=widget.reader,path=widget.targetPath,cursor=page?.next;
@@ -35,7 +53,9 @@ class _LedgerPanelState extends State<FinanceLedgerDemoPanel> {
       if(mounted&&epoch==generation)setState(()=>busy=false);
     }
   }
-  @override Widget build(BuildContext context)=>Column(children:[
+  @override Widget build(BuildContext context){
+    if(!widget.reader.sessionIsCurrent())return const Text('Registrul nu este disponibil în această sesiune.');
+    return Column(children:[
     Wrap(children:[
       TextButton(onPressed:busy?null:()=>run(false),child:const Text('Deschide registrul operațiilor')),
       TextButton(onPressed:busy||page?.next==null?null:()=>run(true),child:const Text('Pagina următoare')),
@@ -48,4 +68,5 @@ class _LedgerPanelState extends State<FinanceLedgerDemoPanel> {
           'receipt'=>'Încasare','create'=>'Creare','close'=>'Stare decont',_=>'Modificare'}} · revizia ${row.data['revision']}')),
     ])),
   ]);
+  }
 }

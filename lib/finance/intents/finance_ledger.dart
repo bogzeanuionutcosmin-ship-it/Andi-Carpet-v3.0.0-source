@@ -43,9 +43,29 @@ class FinanceLedgerReader {
   final FinanceLedgerPort port;
   final bool Function() _owner;
   bool _open=true;
-  bool sessionIsCurrent()=>_open&&_owner();
-  void invalidate(){_scope=Object();}
-  void dispose(){_open=false;invalidate();}
+  final _listeners=<void Function()>{};
+  // A false/throwing ownership check permanently retires this reader. A new
+  // AuthGate epoch needs a new reader even if the UID later becomes equal.
+  bool sessionIsCurrent(){
+    if(!_open)return false;
+    try {if(_owner())return true;} catch(_) {}
+    dispose();return false;
+  }
+  void Function() onInvalidated(void Function() listener){
+    if(!_open){listener();return (){};}
+    _listeners.add(listener);
+    return ()=>_listeners.remove(listener);
+  }
+  void invalidate(){
+    _scope=Object();
+    for(final listener in List<void Function()>.of(_listeners)){
+      try {listener();} catch(_) {} // One consumer cannot prevent revocation.
+    }
+  }
+  void dispose(){
+    if(!_open)return;
+    _open=false;invalidate();_listeners.clear();
+  }
   final int pageSize;
   Object _scope=Object();
   FinanceLedgerReader({required this.port,required bool Function() sessionIsCurrent,this.pageSize=20}):_owner=sessionIsCurrent {
