@@ -32,10 +32,48 @@ class FinanceVisionObservedCoordinator {
   // The server still needs its own atomic operation marker and revision.
   final Map<String, _FinanceVisionFlight> _flights = {};
 
+  // Session authority is owned by the existing Finance coordinator and
+  // journal, not by diagnostics. One observed invalidation is irreversible,
+  // including A1 -> B -> A2 returning to the same UID.
+  bool _open = true;
+
+  void dispose() {
+    _open = false;
+    // Do not touch the durable journal or pretend an in-flight server write
+    // was cancelled; its own AuthGate session predicates control authority.
+  }
+
+  bool _ownsSession() {
+    if (!_open) return false;
+    try {
+      if (coordinator.repository.sessionIsCurrent() &&
+          coordinator.journal.sessionIsCurrent()) {
+        return true;
+      }
+    } catch (_) {
+      // A throwing AuthGate callback is a denial, never an authorization.
+    }
+    _open = false;
+    return false;
+  }
+
+  static const FinanceCoordinatedResult _expired =
+      FinanceCoordinatedResult(
+    FinanceIntentResult(
+      FinanceIntentStatus.uncertain, 'finance_session_expired',
+    ),
+    journalPending: true,
+  );
+
   Future<FinanceCoordinatedResult> _explicit(
     FinanceIntent intent, {
     required bool reconciliation,
   }) {
+    // Refuse stale wrappers BEFORE sharing any old in-flight Future, even when
+    // A2 signs in later with the same UID as A1.
+    if (!_ownsSession()) {
+      return Future<FinanceCoordinatedResult>.value(_expired);
+    }
     final path = intent.targetPath;
     final active = _flights[path];
     if (active != null) {
@@ -131,7 +169,9 @@ class FinanceVisionObservedCoordinator {
         return result;
       }
     }
+    if (!_ownsSession()) return _expired;
     final result = await coordinator.executeExplicitly(intent);
+    if (!_ownsSession()) return result;
     _observe(result);
     return result;
   }
@@ -144,7 +184,9 @@ class FinanceVisionObservedCoordinator {
   Future<FinanceCoordinatedResult> _reconcileOnce(
     FinanceIntent intent,
   ) async {
+    if (!_ownsSession()) return _expired;
     final result = await coordinator.reconcileExplicitly(intent);
+    if (!_ownsSession()) return result;
     _observe(result);
     return result;
   }
