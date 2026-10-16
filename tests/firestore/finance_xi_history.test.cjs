@@ -94,13 +94,13 @@ for(const actor of ['a','admin'])test(`XI rules ${actor} cannot orphan receipt/s
  const next=payload(2,{base:1,actor});
  await assertFails(setDoc(doc(db(actor),`${next.path}/receipts/${next.id}`),{...next.row,createdAt:serverTimestamp()}));
  await assertFails(setDoc(doc(db(actor),i.path),{receivedDeparture:400,revision:2,lastOperationId:next.id,updatedAt:serverTimestamp()},{merge:true}));
- const batch=writeBatch(db(actor));batch.delete(doc(db(actor),`${i.path}/receipts/${i.id}`));await assertFails(batch.commit());
+ const actorDb=db(actor),batch=writeBatch(actorDb);batch.delete(doc(actorDb,`${i.path}/receipts/${i.id}`));await assertFails(batch.commit());
  assert.equal((await getDocFromServer(doc(db('a'),i.path))).data().revision,1);
 });
 for(const actor of ['worker','director','b'])test(`XI rules ${actor} cannot mint a receipt through a batch`,async()=>{
- const i=payload(1,{actor});const batch=writeBatch(db(actor));
- batch.set(doc(db(actor),i.path),{protocol:2,teamId:i.team,sourceCollection:'settlements',sourceId:'trip',revision:1,lastOperationId:i.id,receivedDeparture:200,receivedDuring:0,updatedAt:serverTimestamp()});
- batch.set(doc(db(actor),`${i.path}/receipts/${i.id}`),{...i.row,createdAt:serverTimestamp()});await assertFails(batch.commit());
+ const i=payload(1,{actor}),actorDb=db(actor);const batch=writeBatch(actorDb);
+ batch.set(doc(actorDb,i.path),{protocol:2,teamId:i.team,sourceCollection:'settlements',sourceId:'trip',revision:1,lastOperationId:i.id,receivedDeparture:200,receivedDuring:0,updatedAt:serverTimestamp()});
+ batch.set(doc(actorDb,`${i.path}/receipts/${i.id}`),{...i.row,createdAt:serverTimestamp()});await assertFails(batch.commit());
 });
 test('XI SDK revocation after receipt commit denies later writes and preserves committed history',async()=>{
  await append(db('a'),payload(1));
@@ -125,4 +125,22 @@ for(const mode of ['main','candidate'])test(`XI legacy ${mode}: old payload cann
   await assertFails(setDoc(doc(admin,`${i.path}/receipts/${i.id}`),{amount:1},{merge:true}));
   assert.equal((await getDocFromServer(doc(manager,i.path))).data().receivedDeparture,200);
  }
+});
+
+test('XI SDK exact JSON bytes after Unicode snapshot and actual oversized document refusal',async()=>{
+ await strict.withSecurityRulesDisabled(async c=>{
+  const database=c.firestore(),path=doc(database,'measurements/unicode');
+  const sample={rows:Array.from({length:1000},(_,n)=>({id:n.toString(16).padStart(32,'0'),
+   payer:'ă'.repeat(64),date:stamp}))};
+  await setDoc(path,sample);const server=(await getDocFromServer(path)).data();
+  assert.equal(server.rows.length,1000);
+  const before=Buffer.byteLength(JSON.stringify(sample),'utf8'),after=Buffer.byteLength(JSON.stringify(server),'utf8');
+  assert.equal(after,before);
+  console.log(`XI_SDK_MEASUREMENT rows=1000 jsonUtf8Bytes=${after} timestampNanos=${server.rows[0].date.nanoseconds}`);
+  const oversized={payload:'ă'.repeat(600000)};
+  assert.ok(Buffer.byteLength(JSON.stringify(oversized),'utf8')>1048576);
+  await assert.rejects(setDoc(doc(database,'measurements/oversized'),oversized),error=>
+   typeof error.code==='string' && /size|large|maximum|1048576|exceed/i.test(error.message));
+  assert.equal((await getDocFromServer(doc(database,'measurements/oversized'))).exists(),false);
+ });
 });

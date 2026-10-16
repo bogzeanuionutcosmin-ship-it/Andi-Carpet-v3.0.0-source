@@ -158,3 +158,16 @@ nu emite succes, nu atinge storage/SDK. Returnează identic obiectul rezultatulu
 inclusiv dacă sinkul aruncă. Probe noi pe commit+ACK pierdut cer status uncertain,
 exact1apel/2writes, fără resubmit și fără conversie în confirmed. Mappingul către
 catalogul PR75 este doar propus în docs, nu conectat la singletonul Vision.
+
+### Măsurări concrete și corecția batch fixture
+
+Primul capacity test a măsurat exact UTF8 JSON ASCII/Unicode și formula storage:
+1000:213037/277037/261093 bytes; 7300:1554937/2022137/1905393;
+21900:4664737/6066337/5715993. Nu sunt wire bytes/index/billing.
+Probă SDK suplimentară: serializare JSON exactă a snapshotului Unicode1000,
+precizie timestamp observată și refuz server pentru document UTF8 >1MiB.
+
+306b89b emulator:71PASS/5FAIL; cele cinci batchuri negative foloseau referințe
+de document din instanțe Firestore diferite. Fixture corectat pentru aceeași
+instanță per batch. Asserțiile refuzului, integritatea și drepturile rămân
+neschimbate; aceste FAIL nu sunt prezentate ca vulnerabilități server remediate.
