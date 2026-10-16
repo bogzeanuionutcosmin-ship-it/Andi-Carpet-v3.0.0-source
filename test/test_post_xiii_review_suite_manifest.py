@@ -17,6 +17,9 @@ class ReviewSuiteManifestTest(unittest.TestCase):
             "test_post_xiii_native_path_policy.py",
             "test_post_xiii_no_implicit_restore.py",
             "test_post_xiii_cost_bounds.py",
+            "test_post_xiii_marker_integrity.py",
+            "test_post_xiii_retention_policy.py",
+            "test_post_xiii_key_custody.py",
         )
         self.assertTrue(all((root / name).is_file() for name in expected))
 
