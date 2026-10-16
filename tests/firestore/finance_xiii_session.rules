@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+ // XIII standalone emulator-only gate. No live deployment.
+ // XI_BEGIN
+ function h_user(){return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;}
+ function h_active(){return request.auth!=null && h_user().active==true;}
+ function h_actor(team){
+  return h_active() && (h_user().role=='admin' ||
+    (h_user().role!='director' && h_user().get('function','')!='director' && !('director' in h_user().get('functionIds',[])) && 'viewOwnDecont' in h_user().effectivePermissions &&
+      request.auth.uid in get(/databases/$(database)/documents/teams/$(team)).data.members &&
+      get(/databases/$(database)/documents/teams/$(team)).data.financialManagerId==request.auth.uid));
+ }
+ function h_read(team){
+  return h_active() && (h_user().role=='admin' ||
+    'viewOtherDecont' in h_user().effectivePermissions ||
+    request.auth.uid in get(/databases/$(database)/documents/teams/$(team)).data.members);
+ }
+ function h_money(x){return x is number && x>=0 && x-x==0;}
+ function h_summary(id){return /databases/$(database)/documents/financeHistoryXi/$(id);}
+ function h_before(id){return exists(h_summary(id))?get(h_summary(id)).data:{};}
+ function h_shape(id,d){
+  return d.keys().hasOnly(['protocol','teamId','sourceCollection','sourceId','revision','receivedDeparture','receivedDuring','lastOperationId','updatedAt'])
+   && d.keys().hasAll(['protocol','teamId','sourceCollection','sourceId','revision','receivedDeparture','receivedDuring','lastOperationId','updatedAt'])
+   && d.protocol==2 && d.teamId is string && d.teamId.size()>0
+   && d.sourceCollection in ['finance','settlements'] && d.sourceId is string
+   && id==(d.sourceCollection=='finance'?'f_':'s_')+d.sourceId
+   && (d.sourceCollection!='finance' || d.sourceId==d.teamId)
+   && d.revision is int && d.revision>0 && d.revision<=9007199254740991
+   && d.lastOperationId is string && d.lastOperationId.matches('^[a-f0-9]{32}$')
+   && h_money(d.receivedDeparture) && h_money(d.receivedDuring) && d.updatedAt==request.time;
+ }
+ function h_row(r,op,d,base){
+  return r.keys().hasOnly(['protocol','operationId','digest','actorUid','teamId','targetPath','baseRevision','revision','kind','amount','method','fromName','date','createdAt'])
+   && r.keys().hasAll(['protocol','operationId','digest','actorUid','teamId','targetPath','baseRevision','revision','kind','amount','method','fromName','date','createdAt'])
+   && r.protocol==2 && r.operationId==op && op.matches('^[a-f0-9]{32}$')
+   && r.digest is string && r.digest.matches('^[a-f0-9]{64}$')
+   && r.actorUid==request.auth.uid && r.teamId==d.teamId && r.targetPath==d.sourceCollection+'/'+d.sourceId
+   && r.baseRevision==base && r.revision==base+1 && r.kind in ['departure','during']
+   && h_money(r.amount) && r.amount>0 && r.method in ['Cash','Transfer']
+   && r.fromName is string && r.fromName.size()>0 && r.date is map
+   && r.date.keys().hasOnly(['seconds','nanoseconds']) && r.date.keys().hasAll(['seconds','nanoseconds'])
+   && r.date.seconds is int && r.date.seconds>=-62135596800 && r.date.seconds<=253402300799
+   && r.date.nanoseconds is int && r.date.nanoseconds>=0 && r.date.nanoseconds<=999999999
+   && r.createdAt==request.time;
+ }
+ function h_source_actor(d){
+  let source=get(/databases/$(database)/documents/$(d.sourceCollection)/$(d.sourceId)).data;
+  let manager=source.get('managerId',get(/databases/$(database)/documents/teams/$(d.teamId)).data.financialManagerId);
+  return source.teamId==d.teamId && source.get('closed',false)==false &&
+   (h_user().role=='admin' || manager==request.auth.uid);
+ }
+ function h_empty_source(d){
+  let source=get(/databases/$(database)/documents/$(d.sourceCollection)/$(d.sourceId)).data;
+  return source.teamId==d.teamId && source.get('closed',false)==false
+   && source.get('revision',0)==0 && source.get('receivedDeparture',0)==0 && source.get('receivedDuring',0)==0
+   && source.get('receivedOpeningDeparture',0)==0 && source.get('receivedOpeningDuring',0)==0
+   && source.get('receivedEntries',[])==[];
+ }
+ function h_transition(id,d,b,r){
+  let base=b.get('revision',0);
+  let departure=b.get('receivedDeparture',0);
+  let during=b.get('receivedDuring',0);
+  return x_gate(id,d,r) && h_shape(id,d) && h_actor(d.teamId) && h_source_actor(d) && base is int && base>=0 && base<9007199254740991
+   && d.revision==base+1 && h_row(r,d.lastOperationId,d,base)
+   && (!exists(h_summary(id))?h_empty_source(d):
+     (b.teamId==d.teamId && b.sourceCollection==d.sourceCollection && b.sourceId==d.sourceId && b.protocol==2))
+   && d.receivedDeparture==departure+(r.kind=='departure'?r.amount:0)
+   && d.receivedDuring==during+(r.kind=='during'?r.amount:0)
+   && (r.kind=='departure'?d.receivedDeparture>departure:d.receivedDuring>during);
+ }
+
+ function x_permit(id,op){return /databases/$(database)/documents/financeSessionXiii/$(id)/permits/$(op);}
+ function x_fence(uid){return get(/databases/$(database)/documents/financeSessionEpochXiii/$(uid)).data;}
+ function x_shape(p,id,op){
+  return p.keys().hasOnly(['version','ownerUid','teamId','epoch','operationId','historyDigest','summaryPath','rowPath'])
+   && p.keys().hasAll(['version','ownerUid','teamId','epoch','operationId','historyDigest','summaryPath','rowPath'])
+   && p.version==1 && p.ownerUid==request.auth.uid && p.teamId is string
+   && p.epoch is int && p.epoch>0 && p.epoch<=9007199254740991
+   && p.operationId==op && p.historyDigest is string && p.historyDigest.matches('^[a-f0-9]{64}$')
+   && p.summaryPath=='financeHistoryXi/'+id && p.rowPath==p.summaryPath+'/receipts/'+op;
+ }
+ function x_gate(id,d,r){
+  let p=getAfter(x_permit(id,d.lastOperationId)).data;
+  let f=x_fence(request.auth.uid);
+  return !exists(x_permit(id,d.lastOperationId)) && f.enabled==true && f.ownerUid==request.auth.uid && f.teamId==d.teamId
+   && f.epoch is int && f.epoch==p.epoch && p.teamId==d.teamId && p.historyDigest==r.digest;
+ }
+ match /financeSessionEpochXiii/{uid} {
+  allow get: if request.auth!=null && request.auth.uid==uid;
+  allow list,create,update,delete: if false;
+ }
+ match /financeSessionXiii/{id}/permits/{op} {
+  allow get: if h_active() && (!exists(x_permit(id,op)) ||
+   (resource.data.ownerUid==request.auth.uid && h_read(resource.data.teamId)));
+  allow list,update,delete: if false;
+  allow create: if x_shape(request.resource.data,id,op)
+   && getAfter(h_summary(id)).data.lastOperationId==op
+   && !exists(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(op))
+   && getAfter(h_summary(id)).data.revision==h_before(id).get('revision',0)+1
+   && request.resource.data.historyDigest==getAfter(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(op)).data.digest;
+ }
+
+ match /financeHistoryXi/{id} {
+  allow get: if (exists(h_summary(id))?h_read(resource.data.teamId):h_active());
+  allow list: if false;
+  allow create,update: if
+   !exists(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(request.resource.data.lastOperationId))
+   && h_transition(id,request.resource.data,h_before(id),getAfter(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(request.resource.data.lastOperationId)).data);
+  allow delete: if false;
+  match /receipts/{op} {
+   allow get: if exists(h_summary(id))?h_read(get(h_summary(id)).data.teamId):
+    (!exists(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(op)) && h_active());
+   allow list: if request.query.limit!=null && request.query.limit<=20 && h_read(get(h_summary(id)).data.teamId);
+   // Summary's full transition validates THIS row. Requiring a changed summary
+   // revision forces the summary write, avoiding repeated full validation and
+   // the 1000-expression limit without weakening either atomic direction.
+   allow create: if getAfter(h_summary(id)).data.revision==h_before(id).get('revision',0)+1
+    && getAfter(h_summary(id)).data.lastOperationId==op
+    && request.resource.data.digest==getAfter(x_permit(id,op)).data.historyDigest;
+   allow update,delete: if false;
+  }
+ }
+ // XI_END
+ match /users/{id} {allow read:if request.auth!=null && request.auth.uid==id;}
+ match /teams/{id} {allow read:if h_active();}
+ match /{collection}/{id} {
+  allow read:if collection in ['finance','settlements'] && h_read(resource.data.teamId);
+ }
+ }
+}
