@@ -21,9 +21,59 @@ class FinanceVisionObservedCoordinator {
   final VisionSignalPlatform platform;
 
   /// Explicit user action; the underlying coordinator persists-before-send.
+  ///
+  /// An intent already present in the durable journal must be reconciled, not
+  /// re-executed by a reopened button. In particular a lost server ACK is NOT
+  /// proof that the prior transaction failed. This gate is per invocation and
+  /// does not claim cross-process/tab compare-and-swap on secure storage.
   Future<FinanceCoordinatedResult> executeExplicitly(
     FinanceIntent intent,
   ) async {
+    late final List<FinanceIntent> pending;
+    try {
+      pending = await coordinator.journal.pending();
+    } catch (_) {
+      const result = FinanceCoordinatedResult(
+        FinanceIntentResult(
+          FinanceIntentStatus.uncertain,
+          'finance_pending_journal_unavailable',
+        ),
+        journalPending: true,
+      );
+      _observe(result);
+      return result;
+    }
+    for (final existing in pending) {
+      if (existing.operationId == intent.operationId) {
+        final identicalRequest = existing.digest == intent.digest;
+        final result = FinanceCoordinatedResult(
+          FinanceIntentResult(
+            identicalRequest
+                ? FinanceIntentStatus.uncertain
+                : FinanceIntentStatus.rejectedBeforeWrite,
+            identicalRequest
+                ? 'finance_existing_intent_requires_reconciliation'
+                : 'finance_intent_identity_reuse',
+          ),
+          journalPending: true,
+          blockedByPendingIntent: !identicalRequest,
+        );
+        _observe(result);
+        return result;
+      }
+      if (existing.targetPath == intent.targetPath) {
+        const result = FinanceCoordinatedResult(
+          FinanceIntentResult(
+            FinanceIntentStatus.rejectedBeforeWrite,
+            'finance_unresolved_target',
+          ),
+          journalPending: true,
+          blockedByPendingIntent: true,
+        );
+        _observe(result);
+        return result;
+      }
+    }
     final result = await coordinator.executeExplicitly(intent);
     _observe(result);
     return result;
