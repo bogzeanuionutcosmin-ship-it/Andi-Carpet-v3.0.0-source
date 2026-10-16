@@ -86,7 +86,10 @@ void main() {
   test('concurrent financial receipt between preflight and commit aborts without rebase',()async {
     final f=fixture(),p=plan(f);var once=true;
     f.db.beforeCommit=()async{if(once){once=false;f.db.seed(target,{...finance(),'revision':2,'receivedDeparture':400});}};
-    expect((await FinanceDemoRestore(port:f,sessionIsCurrent:()=>true).executeExplicitly(p)).status,FinanceIntentStatus.conflict);
+    // The earlier callback already scheduled a write: the public result must
+    // remain conservative even though this fixture proves no commit happened.
+    expect((await FinanceDemoRestore(port:f,sessionIsCurrent:()=>true).executeExplicitly(p)).status,FinanceIntentStatus.uncertain);
+    expect(f.db.calls,1);expect(f.db.callbacks,2);
     expect(f.db.writes,0);expect(f.db.documents[room],{'name':'Current'});expect(f.db.documents[target]!['receivedDeparture'],400);
   });
   test('changed operational document also rejects the global plan',()async {

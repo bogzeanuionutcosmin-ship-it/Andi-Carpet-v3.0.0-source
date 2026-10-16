@@ -227,3 +227,33 @@ callback: elimină observe manual dintre două încasări egale, cere exact dou�
 refreshuri, păstrează opening balance 1, totalul 401 și ID-uri distincte. Nu este
 un test duplicat și nu crește artificial numărul suitei. Sursa runtime nu se
 schimbă în acest follow-up; CI final trebuie confirmat pe SHA-ul lui propriu.
+
+
+## Restore țintit — certitudine după programarea scrierilor
+
+Bază validată: 20f0ab4, toate cele patru workflowuri SUCCESS. Continuarea nu
+schimbă mandatul sau limitele restaurării complete. Martorul RED 58aee8a,
+Mission VIII #38847219264/job116800367806: 183 PASS / 2 FAIL reale. Un port care
+comite apoi aruncă FinanceRefusal era raportat rejectedBeforeWrite; o reluare de
+callback care observă un document schimbat după programarea anterioară a unei
+scrieri era raportată conflict. Tipul excepției singur nu dovedește absența
+scrierilor. Portul SDK avea deja protecția; interfața generică Restore nu o avea.
+
+FinanceDemoRestore reține acum, peste toate callbackurile aceleiași apelări,
+dacă s-a programat vreo scriere. Flagul se setează înainte de tx.write, inclusiv
+pentru o metodă care aruncă. FinanceRefusal/FinanceRevisionConflict devin uncertain
+cu finance_restore_uncertain după acel prag. Refuzul/conflictul strict înainte
+de prima scriere rămâne distinct. Nu există retry financiar la nivelul aplicației,
+rollback, rebase, confirmare inventată sau scriere suplimentară.
+
+Cele două regresii noi acoperă excepții tipizate după commit (refuz și conflict)
+și refuzul la reluarea callbackului după o scriere programată. Proba existentă de
+receipt concurent este întărită cu exact o apelare și două callbackuri; rezultatul
+public devine conservator uncertain. Aserțiunile zero scrieri și încasarea
+concurentă păstrată rămân stricte. Schimbarea nu afirmă că fixture-ul a comis:
+separă ceea ce poate dovedi fixture-ul de certitudinea permisă interfeței publice.
+
+Ținte până la CI al SHA-ului corectat: 185 Dart, 14 SDK existente, 47 JS existente.
+197 Python locale PASS. Home implicit, Restore complet, hardware și Spark live
+rămân necertificate; production_ready=false. Nicio schimbare în rules, Home,
+AuthGate, workflowuri, hashuri protejate, bani sau date reale.

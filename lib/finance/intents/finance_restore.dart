@@ -123,6 +123,9 @@ class FinanceDemoRestore {
   final bool Function() sessionIsCurrent;
   FinanceDemoRestore({required this.port,required this.sessionIsCurrent});
   Future<FinanceIntentResult> executeExplicitly(FinanceRestorePlan plan) async {
+    // Retain this across every port callback, including SDK transaction retries.
+    // A domain exception is certain only before any write has been scheduled.
+    var anyWriteScheduled=false;
     void guard() {
       if (!sessionIsCurrent()) throw const FinanceRefusal('finance_session_expired');
     }
@@ -141,6 +144,7 @@ class FinanceDemoRestore {
         }
         guard();
         for (final entry in plan.replacements.entries) {
+          anyWriteScheduled=true;
           tx.write(entry.key,entry.value as Map<String,Object?>);
         }
       });
@@ -149,8 +153,12 @@ class FinanceDemoRestore {
       }
       return const FinanceIntentResult(FinanceIntentStatus.confirmed,'finance_restore_confirmed');
     } on FinanceRevisionConflict {
+      if(anyWriteScheduled)return const FinanceIntentResult(
+        FinanceIntentStatus.uncertain,'finance_restore_uncertain');
       return const FinanceIntentResult(FinanceIntentStatus.conflict,'finance_restore_stale');
     } on FinanceRefusal catch (error) {
+      if(anyWriteScheduled)return const FinanceIntentResult(
+        FinanceIntentStatus.uncertain,'finance_restore_uncertain');
       return FinanceIntentResult(FinanceIntentStatus.rejectedBeforeWrite,error.code);
     } catch (_) {
       // No rollback/retry/financial replay after an ambiguous SDK outcome.
