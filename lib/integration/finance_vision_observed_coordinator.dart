@@ -32,6 +32,13 @@ class FinanceVisionObservedCoordinator {
   // The server still needs its own atomic operation marker and revision.
   final Map<String, _FinanceVisionFlight> _flights = {};
 
+  // The checked journal serializes preparations within an isolate, but does
+  // not stop two distinct wrappers from overlapping BEFORE either prepare.
+  // This ephemeral guard covers ONLY this Dart isolate, across wrapper
+  // instances. A new login never receives the other epoch's Future/result.
+  // No storage, polling, Firebase calls or durable payloads are added.
+  static final Map<(String, String), Object> _isolateTargetOwners = {};
+
   // Session authority is owned by the existing Finance coordinator and
   // journal, not by diagnostics. One observed invalidation is irreversible,
   // including A1 -> B -> A2 returning to the same UID.
@@ -94,6 +101,23 @@ class FinanceVisionObservedCoordinator {
         ),
       );
     }
+    final ownerKey = (coordinator.repository.ownerUid, path);
+    if (_isolateTargetOwners.containsKey(ownerKey)) {
+      // Never share a financial Future across different wrapper instances:
+      // the other callback may belong to A1 while this belongs to A2.
+      return Future<FinanceCoordinatedResult>.value(
+        const FinanceCoordinatedResult(
+          FinanceIntentResult(
+            FinanceIntentStatus.uncertain,
+            'finance_operation_in_another_scope',
+          ),
+          journalPending: true,
+          blockedByPendingIntent: true,
+        ),
+      );
+    }
+    final lease = Object();
+    _isolateTargetOwners[ownerKey] = lease;
     final future = reconciliation
         ? _reconcileOnce(intent)
         : _executeOnce(intent);
@@ -103,6 +127,9 @@ class FinanceVisionObservedCoordinator {
     void clear() {
       if (identical(_flights[path]?.future, future)) {
         _flights.remove(path);
+      }
+      if (identical(_isolateTargetOwners[ownerKey], lease)) {
+        _isolateTargetOwners.remove(ownerKey);
       }
     }
     // Register both completion paths. A chained whenComplete() with no error
