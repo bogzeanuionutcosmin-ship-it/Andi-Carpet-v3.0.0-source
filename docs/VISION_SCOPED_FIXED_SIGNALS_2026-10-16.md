@@ -14,9 +14,13 @@ Modelul existent `VisionErrorLog` acceptă și normalizează coduri de forma `[a
 
 Acest port nu face automat toate produsele callerilor sigure: un producător poate încă utiliza API-ul legacy `lease.record` direct. La conectarea fiecărui modul operațional, codul său trebuie auditat și să treacă exclusiv prin noua interfață pentru evenimentele aprobate; nu conecta handlerii globali ai jurnalului de instalare. Această modificare **NU colectează încă erori de pe dispozitive reale** și **NU expune Vision în Home implicit**.
 
+## Semnificația financiară a rezultatului incert
+
+`VisionDiagnosticAdvisor` avea mesajul generic «Operațiune financiară nereușită» pentru orice `finance`, inclusiv `operation_uncertain`. Acesta nu este un rezultat dovedit: un timeout/ack pierdut poate ascunde un commit server reușit. În acest Draft, pentru **exact** `finance/operation_uncertain`, mesajul este «Rezultat financiar incert», cu instrucțiunea de verificare a aceleiași intenții și revizii înainte de orice acțiune nouă. Testul nou împiedică revenirea la falsa certitudine. Celelalte mesaje financiare și comportamentul backend nu se modifică.
+
 ## Probe, rezultate și limitări
 
-- `test/vision_scoped_signal_sink_test.dart`: verifică toate codurile și platformele, agregarea a 10.000 de semnale identice fără 10.000 intrări, maxEntries/maxBytes, A→B→A2, predicat care aruncă, revocare monotonă, retenție 7 zile fără timer, plus widget integrat cu bridge-ul AuthGate PR #71.
+- `test/vision_scoped_signal_sink_test.dart` (8 teste): verifică toate codurile și platformele, agregarea a 10.000 de semnale identice fără 10.000 intrări, maxEntries/maxBytes, A→B→A2, predicat care aruncă, revocare monotonă, retenție 7 zile fără timer, plus widget integrat cu bridge-ul AuthGate PR #71.
 - `test/vision_scoped_signal_sink_contract_test.py`: cinci controale statice, strict suplimentare testelor executabile, pentru lipsa transportului/storage, importuri permise, API de tip enum și proprietatea sesiunii.
 - Android compile-only este activat pe ramura nouă; workflowurile legacy condiționale SKIPPED nu sunt considerate PASS.
 - **Gates:** Standard CI 5/5, Identity, Flutter/widget, Android debug compile-only, manifest 21 pini / 116 fișiere protejate. Confirmați numai pe HEAD-ul publicat.
