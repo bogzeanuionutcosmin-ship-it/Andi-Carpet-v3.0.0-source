@@ -72,5 +72,50 @@ class ReleaseEvidenceGateTest(unittest.TestCase):
             self.assertEqual(gate.main([str(path) + ".missing"]), 2)
 
 
+    def test_malformed_json_and_wrong_root_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "evidence.json"
+            path.write_text("{", encoding="utf-8")
+            self.assertEqual(gate.main([str(path)]), 2)
+            path.write_text("[]", encoding="utf-8")
+            self.assertEqual(gate.main([str(path)]), 2)
+
+    def test_missing_field_and_wrong_reference_type_fail_closed(self):
+        items = evidence()
+        items["money_exactness"] = {"status": "blocked"}
+        with self.assertRaises(ValueError):
+            gate.evaluate(items)
+        items = evidence()
+        items["money_exactness"]["reference"] = ["private-payload"]
+        with self.assertRaises(ValueError):
+            gate.evaluate(items)
+
+    def test_status_values_cannot_be_truthy_objects(self):
+        for status in (1, True, ["pass"], {"status": "pass"}, None):
+            items = evidence()
+            items["hardware_ios"]["status"] = status
+            with self.subTest(status=status), self.assertRaises(ValueError):
+                gate.evaluate(items)
+
+    def test_every_required_gate_independently_blocks_release(self):
+        for key in gate.REQUIRED:
+            items = evidence("pass", "synthetic-only-not-release-proof")
+            items[key] = {"status": "fail", "reference": "synthetic"}
+            with self.subTest(key=key):
+                report = gate.evaluate(items)
+                self.assertFalse(report["production_ready"])
+                self.assertEqual(report["blockers"], [key])
+
+    def test_checked_in_baseline_is_never_approved(self):
+        baseline = SCRIPT.parents[1] / "docs" / "SHIVA_RELEASE_EVIDENCE_2026-10-16.json"
+        items = json.loads(baseline.read_text(encoding="utf-8"))
+        report = gate.evaluate(items)
+        self.assertEqual(report["total"], 20)
+        self.assertFalse(report["production_ready"])
+        self.assertIn("explicit_release_approval", report["blockers"])
+        self.assertIn("journal_cross_process_cas", report["blockers"])
+        self.assertIn("legacy_client_server_gate", report["blockers"])
+
+
 if __name__ == "__main__":
     unittest.main()
