@@ -1,0 +1,33 @@
+name: Home Console Privacy Sanitization (GREEN)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/home/home_page.dart'
+      - 'lib/home/home_live_location.dart'
+      - 'lib/home/home_push_notifications.dart'
+      - 'test/home_console_privacy_regression_test.py'
+      - 'test/home_console_privacy_baseline_test.py'
+      - 'test/vision_hardening_freeze_test.py'
+      - 'test/vision_operational_diagnostics_contract_test.py'
+      - '.github/workflows/home-console-privacy-characterization.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-console-sanitization:
+    if: github.head_ref == 'fix/home-console-privacy-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Former known RED assertions must now all pass
+        run: python3 test/home_console_privacy_regression_test.py -v
+      - name: Non-growth contract and Vision positive controls
+        run: python3 test/home_console_privacy_baseline_test.py -v
+      - name: Freeze and operational Vision contracts
+        run: python3 test/vision_hardening_freeze_test.py -v
+        python3 test/vision_operational_diagnostics_contract_test.py -v
+      # No Firebase live, secrets, billing, deployment, APK or logs upload.

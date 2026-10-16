@@ -1,14 +1,49 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
 
-class _StatMini extends StatelessWidget{
-  final String label;final String value;final IconData icon;const _StatMini({required this.label,required this.value,required this.icon});
-  @override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.symmetric(horizontal:12,vertical:9),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha:.7),borderRadius:BorderRadius.circular(12)),child:Row(mainAxisSize:MainAxisSize.min,children:[Icon(icon,size:18),const SizedBox(width:7),Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(label,style:Theme.of(context).textTheme.labelSmall),Text(value,style:const TextStyle(fontWeight:FontWeight.w800))])])) ;
+class StatMini extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const StatMini({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withValues(alpha: .7),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 7),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: Theme.of(context).textTheme.labelSmall),
+                Text(
+                  value,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
 }
 
-class _MapStatusLegend extends StatelessWidget {
+class MapStatusLegend extends StatelessWidget {
   final Color color;
   final String label;
-  const _MapStatusLegend({required this.color, required this.label});
+  const MapStatusLegend({required this.color, required this.label});
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
