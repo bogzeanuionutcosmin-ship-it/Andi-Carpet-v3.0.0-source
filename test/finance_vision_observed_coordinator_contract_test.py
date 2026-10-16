@@ -54,6 +54,17 @@ class FinanceVisionObservedCoordinatorContract(unittest.TestCase):
         self.assertIn('_flights.remove(path);', self.active)
         self.assertIn('onError: (Object _, StackTrace __) => clear()', self.active)
 
+    def test_isolate_guard_does_not_share_auth_scoped_futures(self):
+        self.assertIn('static final Map<(String, String), Object> '
+                      '_isolateTargetOwners', self.active)
+        self.assertIn('coordinator.repository.ownerUid, path', self.active)
+        self.assertIn('finance_operation_in_another_scope', self.active)
+        self.assertIn('identical(_isolateTargetOwners[ownerKey], lease)',
+                      self.active)
+        self.assertIn('_isolateTargetOwners.remove(ownerKey);', self.active)
+        self.assertNotIn('SharedPreferences', self.active)
+        self.assertNotIn('FlutterSecureStorage', self.active)
+
     def test_stale_wrapper_is_monotonically_denied(self):
         self.assertIn('bool _open = true;', self.active)
         self.assertIn('void dispose()', self.active)
