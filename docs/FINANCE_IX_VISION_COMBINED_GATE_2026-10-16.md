@@ -28,3 +28,14 @@
 `test/finance_vision_observed_coordinator_test.dart` urmărește: commit server cu ack pierdut → uncertain anonim → reconcilierea **aceleiași** intenții fără al doilea submit; plus operație începută înainte de logout care nu poate popula jurnalul Vision al noului utilizator. Aceste teste sunt fake/stub, nu substituie SDK și hardware.
 
 Criteriu: verifică toate joburile pe **noul HEAD**; verdele anterior de pe `fd355d6` nu validează această completare. Înghețarea surselor, datele live, APK publicat și producția rămân neatinse.
+
+## Protecție suplimentară la reluarea unei intenții
+
+Wrapperul `FinanceVisionObservedCoordinator.executeExplicitly` citește jurnalul înainte de orice comandă spre server:
+- aceeași identitate + același digest încă pending ⇒ `uncertain`, cod `finance_existing_intent_requires_reconciliation`, **zero apeluri atomic noi**; operatorul folosește doar `reconcileExplicitly`;
+- aceeași identitate, alt digest ⇒ refuz înainte de scriere (`finance_intent_identity_reuse`);
+- intenție diferită spre același target ⇒ refuz (`finance_unresolved_target`);
+- jurnal corupt, indisponibil sau autentificare revocată ⇒ `uncertain`, fără să trimită și fără să șteargă jurnalul.
+Testele verifică ACK pierdut după commit fără retransmitere, respingerea jurnalului corupt fără reset și revocarea proprietății la logout.
+
+**Limita nerezolvată:** read-before-send + jurnalul serializat în același isolate NU garantează unicitatea transacțiilor între procese, două taburi web sau dispozitive. Nu se activează în Home pe acest criteriu. Marcajul/revizia server-side și migrarea legacy rămân obligatorii; zero read/write Firebase noi pentru această observație client-side.
