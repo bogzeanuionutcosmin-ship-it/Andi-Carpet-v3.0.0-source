@@ -51,3 +51,9 @@ Testele verifică ACK pierdut după commit fără retransmitere, respingerea jur
 Teste noi deterministe: `test/finance_vision_observed_coordinator_test.dart` + `test/finance_vision_observed_coordinator_contract_test.py` (cinci condiții statice). Contracția pentru UID/epocă și protocolul financiar IX rămân în straturile existente.
 
 **Nu este lock multiproces, multi-tab, între dispozitive sau CAS la nivel secure storage.** Absența dublurilor când rulează 30 de apeluri în același obiect nu autorizează activarea implicită Home, modificarea regulilor live sau eliminarea markerilor Firestore. Fără schimbări în PR #73 sau `main`.
+
+## Lot de siguranță: revenire A1→B→A2 și eliminarea drepturilor observerului
+
+`FinanceVisionObservedCoordinator` verifică și predicatul autorizat al `FinanceRepository` și al `FinanceIntentJournal` (ambele sunt legate de AuthGate+generație în compoziția permisă), **înainte** să returneze un eventual Future comun, să înceapă o execuție sau o reconciliere. Prima negare/eroare marchează definitiv acel observer ca închis; UID-ul A2 redevenit egal cu A1 nu îi mai poate reda accesul. `dispose()` este idempotent și blochează operațiuni viitoare. Nu șterge journal financiar, nu pretinde că anulează o tranzacție server deja pornită. Un rezultat după logout rămâne al operației originale, dar nu se mai promovează într-un jurnal Vision al altei epoci.
+
+Teste: `test/finance_vision_observed_coordinator_test.dart` include A1→B→A2 cu callback vechi devenit fals și reactivat artificial, `dispose` repetat, fără scrieri server, fără reset de date, plus overlapul de 30 de apeluri, reconcilierea unică și cleanup. Contractul Python verifică monotonicitatea doar suplimentar probelor runtime. Nu înlocuiește drepturile Firebase/security rules și nu justifică activarea Home.
