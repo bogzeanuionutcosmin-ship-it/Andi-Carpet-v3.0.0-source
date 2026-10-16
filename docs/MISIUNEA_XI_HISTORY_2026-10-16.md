@@ -53,3 +53,13 @@ SDK și signout→same UID re-login fără reactivarea repo vechi. NU două tele
 Fixture-ul XI este inserat în memorie numai în rules ale emulatorului demo;
 catch-all Admin este exclus și pentru noul namespace. firestore.rules rămâne
 nemodificat. Controalele vechi nu sunt omise sau relaxate. CI urmează pe SHA nou.
+
+### Corecții ale fixture-urilor după primul CI
+19884cd: 219 Dart PASS/1 FAIL în proba concurentă. Așteptarea conflict era prea
+puternică după o încercare care programase deja write: protocolul păstrează
+uncertain conservator. Proba cere acum exact un confirmed și un uncertain,
+aceleași două writes și aceeași încasare200; conflictul cert înainte de write
+rămâne probat separat. Nu este relaxare a unei respingeri certe în runtime.
+Fixture-ul rules nu compila literalul exponențial; finiteMoney folosește acum
+aceeași identitate n-n==0 ca regulile VIII, fără plafon monetar nou.
+Rezultatele acestor corecții necesită CI nou; primul eșec nu este PASS.

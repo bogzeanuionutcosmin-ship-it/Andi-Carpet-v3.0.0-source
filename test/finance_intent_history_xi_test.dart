@@ -40,7 +40,8 @@ void main(){
   db.beforeCommit=()async{if(++entrants==2)both.complete();await both.future;};
   final results=await Future.wait([a.executeExplicitly(xi(1)),b.executeExplicitly(xi(2))]);
   expect(results.where((r)=>r.status==FinanceIntentStatus.confirmed),hasLength(1));
-  expect(results.where((r)=>r.status==FinanceIntentStatus.conflict),hasLength(1));
+  expect(results.where((r)=>r.status==FinanceIntentStatus.uncertain),hasLength(1),
+    reason:'The losing client scheduled writes in an earlier callback: public outcome cannot certify rejection');
   expect(db.writes,2);expect(db.documents[xi(1).summaryPath]!['receivedDeparture'],200);
  });
  test('XI lost ack and failed server read keep uncertainty without auto send; recreated same intent reconciles',()async{
