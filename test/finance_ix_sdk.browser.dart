@@ -14,6 +14,7 @@ import 'package:andi_carpeta/finance/intents/finance_journal.dart';
 import 'package:andi_carpeta/finance/intents/finance_repository.dart';
 import 'package:andi_carpeta/finance/intents/firestore_finance_port.dart';
 import 'finance_flutter_sdk_emulator.browser.dart' as viii;
+import 'support/finance_home_candidate_fixture.dart';
 
 void main(){
   // Retain all VIII SDK/raw timestamp controls without duplicating their code.
@@ -85,4 +86,52 @@ void main(){
       expect(await secure.read(key:key),'synthetic-torn-envelope');checked.dispose();
     }finally{await secure.write(key:key,value:before!);}
   });
+  testWidgets('X Home candidate callbacks genuine secure plugin and SDK recreate then reconcile only',(t)async{
+    final observed=viii.ObservedPort(FirestoreFinanceAtomicPort.emulator(firestore:db));
+    HomeCandidateFixture build()=>HomeCandidateFixture(uid:uid,teamId:'flutter-team',
+      port:observed,deviceStorage:const FinanceSecureJournalStorage(secure),
+      owner:()=>auth.currentUser?.uid==uid);
+    Future<void> wait(bool Function() ready)async{
+      await t.runAsync(()async{
+        final deadline=DateTime.now().add(const Duration(seconds:30));
+        while(!ready()){
+          if(DateTime.now().isAfter(deadline))throw TimeoutException('finance_home_sdk_timeout');
+          await Future<void>.delayed(const Duration(milliseconds:20));await t.pump();
+        }
+      });await t.pumpAndSettle();
+    }
+    final first=build();var closed=false;
+    await first.page.mount(t);expect(observed.atomicCalls,0);expect(observed.serverReads,0);
+    try{
+      await t.tap(find.text('Nouă'));await t.pumpAndSettle();
+      await first.page.enter(t,'Denumire','Home candidate genuine SDK');
+      await t.tap(find.widgetWithText(FilledButton,'Creează'));await t.pump();
+      await wait(()=>first.page.logs.length==1);expect(first.page.settlementOverride!.revision,1);
+      observed.loseAcknowledgement=true;
+      await t.ensureVisible(find.text('Primit la plecare'));await t.tap(find.text('Primit la plecare'));await t.pumpAndSettle();
+      await first.page.enter(t,'Valoare','200,00');await first.page.enter(t,'De la cine','Synthetic Home');
+      await t.tap(find.widgetWithText(FilledButton,'Adaugă'));await t.pump();
+      await wait(()=>first.candidate.pendingCodes.values.contains('finance_result_uncertain'));
+      final pendingStorage=storage(()=>auth.currentUser?.uid==uid);
+      final pendingJournal=FinanceIntentJournal(storage:pendingStorage,ownerUid:uid,sessionIsCurrent:()=>auth.currentUser?.uid==uid);
+      final original=(await t.runAsync(()=>pendingJournal.pending()))!.single;
+      expect(observed.atomicCalls,2);expect(observed.lostAcknowledgements,1);
+      expect(first.page.logs,hasLength(1));final reads=observed.serverReads;
+      await t.pumpWidget(const SizedBox());first.candidate.dispose();closed=true;
+      final second=build();await second.page.mount(t);
+      try{
+        expect(observed.atomicCalls,2);expect(observed.serverReads,reads);
+        await t.runAsync(()=>second.candidate.loadPendingForReviewExplicitly());
+        expect(second.candidate.pendingCodes.keys.single,original.targetPath);
+        expect((await t.runAsync(()=>pendingJournal.pending()))!.single.digest,original.digest);
+        await t.runAsync(()=>second.candidate.reconcileExplicitly(original.targetPath));await t.pumpAndSettle();
+        expect(observed.atomicCalls,2);expect(observed.serverReads,reads+2);
+        expect(second.page.logs,isEmpty);expect(second.page.settlementOverride!.receivedDeparture,200);
+        expect(second.page.settlementOverride!.receivedEntries,hasLength(1));
+        expect(second.page.settlementOverride!.revision,2);expect(second.candidate.pendingCodes,isEmpty);
+        expect(await t.runAsync(()=>pendingJournal.pending()),isEmpty);
+      }finally{await t.pumpWidget(const SizedBox());second.candidate.dispose();pendingStorage.dispose();}
+    }finally{if(!closed){await t.pumpWidget(const SizedBox());first.candidate.dispose();}}
+  },timeout:const Timeout(Duration(minutes:2)));
+
 }

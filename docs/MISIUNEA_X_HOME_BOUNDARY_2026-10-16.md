@@ -32,3 +32,25 @@ Patru workflowuri PR73 SUCCESS: Standard 38857937421, Identity 38857937361,
 Finance IX 38857937305, Platforms IX 38857937304. Acestea sunt baza, nu CI X.
 Fixture-uri refolosite: ExpenseDocumentFixture, FinanceAtomicFixture, probele SDK
 VIII/IX, checked journal IX. Nu numărăm din nou acceptanțele IX ca remedieri X.
+
+## X-02/03/04/09 — candidat nou, înainte de CI
+
+FinanceHomeCandidate reutilizează coordinatorul și adaptorul existent; storage
+este învelit obligatoriu în checked journal. Constructorul nu face I/O. Callbackul
+saveSettlement distinge țintele observate de CREATE atomic; o țintă existentă
+neobservată produce conflict, nu overwrite. UID+generation+team closure este
+monotonă inclusiv la excepții. Modelul altei echipe este refuzat înainte de I/O;
+jurnalul UID care conține altă echipă blochează recuperarea fără ștergere/adoptare.
+Nu există fallback la legacy, timer, retry sau activare Home implicită.
+
+Nouă probe Flutter candidate: 3 formate de sumă cu create/receipt/edit/close/open,
+anulare/rebuild/dublu click, commit întârziat și revocare, recuperare cu obiect
+nou, echipă străină și conflict pe țintă existentă neobservată. Fixture-ul este
+ExpensePage real; portul acestor probe este fake determinist. O probă SDK nouă
+folosește Auth/Firestore emulator + secure-storage web plugin real, create și
+receipt cu ack pierdut, apoi compoziție nouă și reconciliere explicită fără send.
+Controalele VIII/IX rămân în același entrypoint. Nu este restart browser/OS.
+
+CI IX este extins DOAR la predicatul ramurii X, păstrând toate comenzile și
+controalele. 199 teste Python locale PASS. Rezultatele Flutter/SDK/platforme
+rămân CANDIDATE până la CI pe SHA nou.
