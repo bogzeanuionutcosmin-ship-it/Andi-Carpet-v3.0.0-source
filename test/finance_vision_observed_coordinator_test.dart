@@ -63,7 +63,65 @@ FinanceVisionObservedCoordinator _observed(
   );
 }
 
+class _ThrowingFinanceRepository extends FinanceRepository {
+  _ThrowingFinanceRepository(FinanceAtomicFixture db)
+      : super(port: db, ownerUid: 'A', sessionIsCurrent: () => true);
+
+  @override
+  Future<FinanceIntentResult> execute(FinanceIntent intent) async {
+    throw StateError('RAW_SECRET_FINANCIAL_EXCEPTION_123');
+  }
+
+  @override
+  Future<FinanceIntentResult> reconcile(FinanceIntent intent) async {
+    throw StateError('RAW_SECRET_RECONCILE_EXCEPTION_123');
+  }
+}
+
 void main() {
+  test('unexpected coordinator exceptions remain uncertain, private and durable',
+      () async {
+    final db = _db(), device = _MemoryStorage();
+    final checked = FinanceCheckedJournalStorage.singleWriterCandidate(
+      storage: device, ownerUid: 'A', sessionIsCurrent: () => true,
+    );
+    final coordinator = FinanceIntentCoordinator(
+      repository: _ThrowingFinanceRepository(db),
+      journal: FinanceIntentJournal(
+        storage: checked, ownerUid: 'A', sessionIsCurrent: () => true,
+      ),
+    );
+    final lease = VisionSessionJournal().startSession(
+      isSessionCurrent: () => true,
+    );
+    final observed = FinanceVisionObservedCoordinator(
+      coordinator: coordinator,
+      sink: VisionScopedSignalSink(lease),
+      platform: VisionSignalPlatform.android,
+    );
+    final intent = _intent();
+
+    final first = await observed.executeExplicitly(intent);
+    expect(first.result.status, FinanceIntentStatus.uncertain);
+    expect(first.result.code, 'finance_unclassified_result');
+    expect(first.journalPending, isTrue);
+    expect((await coordinator.journal.pending()).single.digest, intent.digest);
+
+    final checkedAgain = await observed.reconcileExplicitly(intent);
+    expect(checkedAgain.result.status, FinanceIntentStatus.uncertain);
+    expect(checkedAgain.result.code, 'finance_unclassified_result');
+    expect(checkedAgain.journalPending, isTrue);
+    expect((await coordinator.journal.pending()).single.operationId,
+        intent.operationId);
+    expect(db.calls, 0);
+    expect(db.serverReads, 0);
+    expect(db.writes, 0);
+    expect(lease.entries.single.count, 2);
+    final report = lease.buildReport()!;
+    expect(report, isNot(contains('RAW_SECRET_')));
+    expect(report, isNot(contains(intent.operationId)));
+    expect(report, contains('finance/operation_uncertain'));
+  });
   test('explicit write reports uncertain once, recovery does not resubmit', () async {
     final db = _db()..commitThenThrow = true;
     final storage = _MemoryStorage();
