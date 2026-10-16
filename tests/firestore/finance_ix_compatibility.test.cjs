@@ -16,16 +16,19 @@ before(()=>{
  assert.equal(crypto.createHash('sha256').update(main).digest('hex'),'589fe5eadc06cae665eaa27e9c9df0aea54eea6dffc10994438b4d97c58367da');
 });
 after(async()=>{for(const env of environments)await env.cleanup();});
-for(const strict of [false,true])for(const collection of ['finance','settlements']){
- test(`${strict?'candidate blocks':'main exposes KNOWN UNSAFE'} old merge after new atomic ${collection}`,async()=>{
-  const env=await initializeTestEnvironment({projectId:`demo-ix-${strict?'strict':'legacy'}-${collection}`,firestore:{rules:strict?candidate:main}});environments.push(env);
+for(const strict of [false,true])for(const collection of ['finance','settlements'])for(const oldActor of ['admin','manager','member','director']){
+ test(`${strict?'candidate blocks':'main exposes KNOWN UNSAFE'} old ${oldActor} merge after new atomic ${collection}`,async()=>{
+  const env=await initializeTestEnvironment({projectId:`demo-ix-${strict?'strict':'legacy'}-${collection}-${oldActor}`,firestore:{rules:strict?candidate:main}});environments.push(env);
   const target=`${collection}/${collection==='finance'?'team':'trip'}`;
   const legacy={teamId:'team',managerId:'admin',name:'Synthetic compatibility',closed:false,
     startDate:stamp,endDate:null,createdAt:stamp,perDiemRate:50,receivedDeparture:25,
     receivedDuring:10,receivedEntries:[]};
   await env.withSecurityRulesDisabled(async c=>{
    await setDoc(doc(c.firestore(),'users/admin'),{active:true,role:'admin',function:'worker',effectivePermissions:[]});
-   await setDoc(doc(c.firestore(),'teams/team'),{members:['admin'],financialManagerId:'admin'});
+   for(const actor of ['manager','member','director'])
+    await setDoc(doc(c.firestore(),`users/${actor}`),{active:true,role:'member',
+      function:actor==='director'?'director':'worker',effectivePermissions:['viewOwnDecont','viewOtherDecont']});
+   await setDoc(doc(c.firestore(),'teams/team'),{members:['admin','manager','member','director'],financialManagerId:'manager'});
    await setDoc(doc(c.firestore(),target),legacy);
   });
   const db=env.authenticatedContext('admin').firestore();
@@ -37,7 +40,8 @@ for(const strict of [false,true])for(const collection of ['finance','settlements
   batch.set(doc(db,marker),{operationId:id,actorUid:'admin',teamId:'team',targetPath:target,
     baseRevision:0,revision:1,kind:'receipt',digest:'b'.repeat(64),createdAt:serverTimestamp()});
   await assertSucceeds(batch.commit());
-  const oldApk=setDoc(doc(db,target),legacy,{merge:true});
+  const oldDb=env.authenticatedContext(oldActor).firestore();
+  const oldApk=setDoc(doc(oldDb,target),legacy,{merge:true});
   if(strict)await assertFails(oldApk);else await assertSucceeds(oldApk);
   const data=(await getDoc(doc(db,target))).data();
   assert.equal(data.receivedDeparture,strict?225:25);
