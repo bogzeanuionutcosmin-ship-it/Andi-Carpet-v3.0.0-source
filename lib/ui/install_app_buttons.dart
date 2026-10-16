@@ -1,6 +1,16 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-Future<void> _showAndroidInstallFlow(BuildContext context, AppSettings settings) async {
+import '../models/app_data_models.dart';
+import 'section_visual_helpers.dart';
+
+typedef ExternalUrlLauncher = Future<bool> Function(Uri uri);
+
+Future<bool> _launchExternalUrl(Uri uri) =>
+    launchUrl(uri,mode:LaunchMode.externalApplication);
+
+Future<void> showAndroidInstallFlow(BuildContext context, AppSettings settings,
+    {ExternalUrlLauncher? launchExternal}) async {
   final proceed = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
     title: const Row(children:[Icon(Icons.android),SizedBox(width:10),Expanded(child:Text('Instalare Android'))]),
     content: const Text(
@@ -14,12 +24,12 @@ Future<void> _showAndroidInstallFlow(BuildContext context, AppSettings settings)
   final raw=settings.androidDownloadUrl.trim();
   if(raw.isEmpty){showErrorMessage(context,'Linkul APK nu este încă publicat. Adminul îl poate adăuga din Admin Panel → Setări sistem.');return;}
   final uri=Uri.tryParse(raw);
-  if(uri==null || !await launchUrl(uri,mode:LaunchMode.externalApplication)){
+  if(uri==null || !await (launchExternal ?? _launchExternalUrl)(uri)){
     if(context.mounted)showErrorMessage(context,'Linkul pentru APK nu a putut fi deschis.');
   }
 }
 
-Future<void> _showAppleInstallFlow(BuildContext context) async {
+Future<void> showAppleInstallFlow(BuildContext context) async {
   await showDialog<void>(context:context,builder:(c)=>AlertDialog(
     title:const Row(children:[Icon(Icons.apple),SizedBox(width:10),Expanded(child:Text('Instalare pe iPhone / iPad'))]),
     content:const Text(
@@ -30,17 +40,3 @@ Future<void> _showAppleInstallFlow(BuildContext context) async {
     actions:[FilledButton(onPressed:()=>Navigator.pop(c),child:const Text('Am înțeles'))],
   ));
 }
-
-class _InstallAppButtons extends StatelessWidget {
-  final AppSettings settings;
-  final bool compact;
-  const _InstallAppButtons({required this.settings,this.compact=false});
-  @override Widget build(BuildContext context)=>Wrap(
-    spacing:8,runSpacing:8,alignment:WrapAlignment.center,
-    children:[
-      FilledButton.tonalIcon(onPressed:()=>_showAndroidInstallFlow(context,settings),icon:const Icon(Icons.android),label:Text(compact?'Android':'Instalează aplicația · Android')),
-      OutlinedButton.icon(onPressed:()=>_showAppleInstallFlow(context),icon:const Icon(Icons.apple),label:Text(compact?'Apple':'Instalează aplicația · Apple')),
-    ],
-  );
-}
-

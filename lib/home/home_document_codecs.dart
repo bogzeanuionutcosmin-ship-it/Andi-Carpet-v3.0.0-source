@@ -447,6 +447,11 @@ mixin _HomeDocumentCodecs {
     'managerId': s.managerId,
     'receivedDeparture': s.departureTotal,
     'receivedDuring': s.duringTotal,
+    if (s.revision != null) ...{
+      'revision': s.revision, 'lastOperationId': s.lastOperationId,
+      'receivedOpeningDeparture': s.receivedOpeningDeparture,
+      'receivedOpeningDuring': s.receivedOpeningDuring,
+    },
     'receivedEntries': s.receivedEntries.map((e)=>{
       'id': e.id, 'kind': e.kind, 'amount': e.amount, 'method': e.method, 'fromName': e.fromName, 'date': Timestamp.fromDate(e.date),
     }).toList(),
@@ -482,6 +487,10 @@ mixin _HomeDocumentCodecs {
       managerId: d['managerId']?.toString(),
       receivedDeparture: _doubleFrom(d['receivedDeparture']),
       receivedDuring: _doubleFrom(d['receivedDuring']),
+      receivedOpeningDeparture: _doubleFrom(d['receivedOpeningDeparture']),
+      receivedOpeningDuring: _doubleFrom(d['receivedOpeningDuring']),
+      revision: d['revision'] is int ? d['revision'] as int : null,
+      lastOperationId: d['lastOperationId'] as String?,
       receivedEntries: receivedEntries,
       perDiemRate: _doubleFrom(d['perDiemRate'], settings.defaultPerDiem),
       closed: d['closed'] == true,
@@ -494,6 +503,11 @@ mixin _HomeDocumentCodecs {
     'managerId': f.managerId,
     'receivedDeparture': f.departureTotal,
     'receivedDuring': f.duringTotal,
+    if (f.revision != null) ...{
+      'revision': f.revision, 'lastOperationId': f.lastOperationId,
+      'receivedOpeningDeparture': f.receivedOpeningDeparture,
+      'receivedOpeningDuring': f.receivedOpeningDuring,
+    },
     'receivedEntries': f.receivedEntries.map((e)=>{
       'id': e.id, 'kind': e.kind, 'amount': e.amount, 'method': e.method, 'fromName': e.fromName, 'date': Timestamp.fromDate(e.date),
     }).toList(),
@@ -523,6 +537,10 @@ mixin _HomeDocumentCodecs {
       managerId: d['managerId']?.toString(),
       receivedDeparture: _doubleFrom(d['receivedDeparture']),
       receivedDuring: _doubleFrom(d['receivedDuring']),
+      receivedOpeningDeparture: _doubleFrom(d['receivedOpeningDeparture']),
+      receivedOpeningDuring: _doubleFrom(d['receivedOpeningDuring']),
+      revision: d['revision'] is int ? d['revision'] as int : null,
+      lastOperationId: d['lastOperationId'] as String?,
       receivedEntries: receivedEntries,
       perDiemRate: _doubleFrom(d['perDiemRate'], settings.defaultPerDiem),
     );
