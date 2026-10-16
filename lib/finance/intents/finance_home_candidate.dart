@@ -60,6 +60,8 @@ class FinanceHomeCandidate extends ChangeNotifier {
   Map<String, String> get pendingCodes => sessionIsCurrent()
     ? _adapter.pendingCodes : const {};
 
+  String? get recoveryCode => sessionIsCurrent() ? _adapter.recoveryCode : null;
+
   void observeSettlement(TravelSettlement model, FinanceServerObservation server) {
     _guard(model.teamId);
     _adapter.observeSettlement(model, server);
@@ -89,7 +91,7 @@ class FinanceHomeCandidate extends ChangeNotifier {
     if (pending.any((intent) => intent.teamId != teamId)) {
       throw FinanceSaveRejected('finance_foreign_team_pending');
     }
-    await _adapter.loadPendingForReviewExplicitly();
+    await _adapter.loadPendingForReviewExplicitly(teamId: teamId);
   }
   Future<void> reconcileExplicitly(String path) async {
     _guard(teamId);

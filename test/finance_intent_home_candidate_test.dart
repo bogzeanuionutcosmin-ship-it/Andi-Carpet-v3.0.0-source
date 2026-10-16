@@ -130,4 +130,56 @@ void main() {
     expect(h.candidate.pendingCodes.values.single, 'finance_revision_conflict');
     expect(await journal(storage).pending(), hasLength(1)); h.candidate.dispose();
   });
+  testWidgets('Home unsupported manager and rate changes fail before journal or server write',(t)async{
+    final db=FinanceAtomicFixture(),storage=DeviceFixture(),h=harness(db,storage);
+    await h.page.mount(t);await create(t,h);
+    final model=h.page.settlementOverride!,writes=storage.writes;
+    model.managerId='replacement';
+    expect(()=>h.candidate.saveSettlement(model),throwsA(isA<FinanceSaveRejected>()));
+    model.managerId='worker';model.perDiemRate=75;
+    expect(()=>h.candidate.saveSettlement(model),throwsA(isA<FinanceSaveRejected>()));
+    expect(storage.writes,writes);expect(db.calls,1);expect(db.writes,2);
+    expect(db.documents['settlements/${model.id}']!['perDiemRate'],50);
+    expect(h.page.logs,hasLength(1));
+    await t.pumpWidget(const SizedBox());h.candidate.dispose();
+  });
+  test('Home validates the exact recovery manifest again after its preflight await',()async{
+    final db=FinanceAtomicFixture(),storage=DeviceFixture(),h=harness(db,storage);
+    FinanceIntent intent(String team,int n)=>FinanceIntent(operationId:n.toRadixString(16).padLeft(32,'0'),
+      actorUid:'worker',teamId:team,collection:'settlements',documentId:'trip',baseRevision:0,
+      kind:FinanceIntentKind.receipt,changes:{'kind':'departure','amount':200,'method':'Cash',
+        'fromName':'Synthetic','date':DateTime.utc(2026)});
+    await journal(storage).prepare(intent('team',1));
+    final foreign=DeviceFixture();await journal(foreign).prepare(intent('other',2));
+    final foreignBytes=foreign.values.values.single;
+    storage.afterRead=(){storage.afterRead=null;storage.values['finance_intents_v1_worker']=foreignBytes;};
+    await h.candidate.loadPendingForReviewExplicitly();
+    expect(h.candidate.pendingCodes,isEmpty);
+    expect(h.candidate.recoveryCode,'finance_local_recovery_unavailable');
+    expect(storage.values.values.single,foreignBytes);expect(db.calls,0);expect(db.serverReads,0);
+    h.candidate.dispose();
+  });
+
+  testWidgets('Home candidates on independent device journals cannot overwrite a newer backend receipt',(t)async{
+    final db=FinanceAtomicFixture(),aStorage=DeviceFixture(),bStorage=DeviceFixture();
+    final a=harness(db,aStorage),b=harness(db,bStorage);
+    await a.page.mount(t);await create(t,a);
+    final first=a.page.settlementOverride!;
+    final stale=TravelSettlement(id:first.id,teamId:first.teamId,name:first.name,
+      startDate:first.startDate,createdAt:first.createdAt,managerId:first.managerId,
+      perDiemRate:first.perDiemRate,revision:first.revision,lastOperationId:first.lastOperationId);
+    b.page.settlementOverride=stale;
+    b.candidate.observeSettlement(stale,FinanceServerObservation(db.documents['settlements/${first.id}'],
+      fromCache:false,pendingWrites:false));
+    await receipt(t,a,'200');expect(a.page.logs,hasLength(2));
+    await b.page.mount(t);await receipt(t,b,'200.00');
+    expect(b.page.logs,isEmpty);expect(b.candidate.pendingCodes.values.single,'finance_revision_conflict');
+    final data=db.documents['settlements/${first.id}']!;
+    expect(data['revision'],2);expect(data['receivedDeparture'],200);
+    expect(data['receivedEntries'],hasLength(1));expect(db.calls,3);expect(db.writes,4);
+    expect(await journal(aStorage).pending(),isEmpty);
+    expect(await journal(bStorage).pending(),hasLength(1));
+    await t.pumpWidget(const SizedBox());a.candidate.dispose();b.candidate.dispose();
+  });
+
 }

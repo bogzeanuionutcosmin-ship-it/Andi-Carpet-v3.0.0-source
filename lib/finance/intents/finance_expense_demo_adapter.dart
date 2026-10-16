@@ -53,11 +53,13 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
   String? recoveryCode;
   // Local recovery is explicit and read-only: never execute an old request or
   // invent an ID while recreating a view/account scope.
-  Future<void> loadPendingForReviewExplicitly() async {
+  Future<void> loadPendingForReviewExplicitly({String? teamId}) async {
     _guard();if(recoveryBusy)return;
     recoveryBusy=true;_notify();
     try {
       final pending=await scope.coordinator.journal.pending();_guard();
+      if(teamId!=null&&pending.any((intent)=>intent.teamId!=teamId))
+        throw const FinanceRefusal('finance_foreign_team_pending');
       final paths={..._saves.keys,...pending.map((i)=>i.targetPath)};
       if(paths.length>FinanceIntentJournal.maxPending)throw const FinanceRefusal('finance_demo_scope_full');
       for(final intent in pending) {
