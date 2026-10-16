@@ -64,6 +64,8 @@ class FakeClient:
         return outcome
 
     def reconcile(self, operation_id):
+        if not self.epochs.owns(self.lease):
+            return 'authorization_required'
         key = (self.lease.uid, self.lease.team, operation_id)
         if key in self.server.markers:
             self.local_intents[operation_id] = "confirmed"
@@ -114,9 +116,17 @@ class SharedSessionContractTest(unittest.TestCase):
             "confirmed")
         self.assertEqual(self.a.local_intents["op-1"], "uncertain")
         before = self.server.sends
-        self.epochs.revoke("B", "team-2")
         self.assertEqual(self.a.reconcile("op-1"), "confirmed")
+        self.epochs.revoke("B", "team-2")
+        self.assertEqual(self.a.reconcile("op-1"), "authorization_required")
         self.assertEqual(self.server.sends, before)
+
+    def test_revoked_session_cannot_read_marker(self):
+        self.a.prepare("op-1")
+        self.a.send_after_await("op-1", enforce_server_epoch=True)
+        self.epochs.revoke("B", "team-2")
+        self.assertEqual(self.a.reconcile("op-1"), "authorization_required")
+        self.assertEqual(self.a.local_intents["op-1"], "uncertain")
 
     def test_team_transfer_never_adopts_old_intent(self):
         self.assertEqual(self.a.prepare("op-1"), "prepared")
