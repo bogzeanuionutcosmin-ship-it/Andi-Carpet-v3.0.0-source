@@ -30,6 +30,7 @@ class _Harness {
   late FinanceExpenseDemoAdapter adapter;
   bool current=true,failRefresh=false;
   int refreshes=0;
+  Object? Function(String)? readModelOverride;
   final created=DateTime.utc(2026,10,1);
   _Harness(){
     final model=TravelSettlement(id:'settlement',teamId:'team',name:'Synthetic Trip',
@@ -40,7 +41,9 @@ class _Harness {
       'closed':false,'endDate':null,'receivedDeparture':0,'receivedDuring':0,
       'receivedOpeningDeparture':0,'receivedOpeningDuring':0,'receivedEntries':<Object?>[]});
     scope=FinanceDemoScope(ownerUid:'worker',sessionIsCurrent:()=>current,port:db,storage:storage);
-    adapter=FinanceExpenseDemoAdapter(scope:scope,port:db,acceptServerSnapshot:(path,data)async{
+    adapter=FinanceExpenseDemoAdapter(scope:scope,port:db,
+      readAcceptedModel:(path)=>readModelOverride==null?fixture.settlementOverride:readModelOverride!(path),
+      acceptServerSnapshot:(path,data)async{
       if(failRefresh)throw StateError('synthetic_refresh_failure');
       refreshes++;
       fixture.settlementOverride=TravelSettlement(id:path.split('/').last,teamId:'team',name:data['name'] as String,
@@ -89,6 +92,51 @@ void main(){
     expect(model.revision,2);expect(model.receivedDeparture,400);expect(model.receivedEntries,hasLength(2));
     expect(model.receivedEntries.first.id,isNot(model.receivedEntries.last.id));
     await t.pumpWidget(const SizedBox());h.adapter.dispose();
+  });
+  for(final fault in ['null','wrong_type','stale_revision','wrong_value']) {
+    testWidgets('accepted model $fault cannot release a confirmed save or seed a new baseline',(t)async{
+      final h=_Harness();
+      final initial=h.fixture.settlementOverride!;
+      h.readModelOverride=(_){
+        if(fault=='null')return null;
+        if(fault=='wrong_type')return Object();
+        if(fault=='stale_revision')return initial;
+        final model=h.fixture.settlementOverride!;model.receivedDeparture=999;return model;
+      };
+      await h.fixture.mount(t);await h.receipt(t);
+      expect(h.fixture.logs,isEmpty);expect(h.db.calls,1);expect(h.db.writes,2);
+      expect(h.adapter.pendingCodes.values.single,'finance_authoritative_refresh_required');
+      expect(()=>h.adapter.forgetBaselineExplicitly('settlements/settlement'),throwsA(isA<FinanceSaveRejected>()));
+      h.readModelOverride=null;await h.adapter.reconcileExplicitly('settlements/settlement');await t.pumpAndSettle();
+      expect(h.fixture.logs,hasLength(1));expect(h.db.calls,1);expect(h.fixture.settlementOverride!.receivedDeparture,200);
+      await h.receipt(t);expect(h.fixture.logs,hasLength(2));expect(h.db.calls,2);
+      await t.pumpWidget(const SizedBox());h.adapter.dispose();
+    });
+  }
+  testWidgets('a later writer conflicts with the reused baseline instead of silently rebasing',(t)async{
+    final h=_Harness();await h.fixture.mount(t);await h.receipt(t);
+    h.db.seed('settlements/settlement',{
+      ...h.db.documents['settlements/settlement']!,'revision':2,'name':'Newer writer'});
+    await h.receipt(t);
+    expect(h.adapter.pendingCodes.values.single,'finance_revision_conflict');
+    expect(h.db.calls,2);expect(h.db.writes,2);expect(h.fixture.logs,hasLength(1));
+    expect(h.db.documents['settlements/settlement']!['name'],'Newer writer');
+    expect(h.db.documents['settlements/settlement']!['receivedDeparture'],200);
+    await t.pumpWidget(const SizedBox());h.adapter.dispose();
+  });
+  test('accepted baseline capacity is bounded and an explicit forget never deletes an intent',()async{
+    final h=_Harness(),original=h.fixture.settlementOverride!;
+    for(var n=0;n<31;n++){
+      final model=TravelSettlement(id:'seen$n',teamId:'team',name:original.name,startDate:h.created,
+        createdAt:h.created,managerId:'worker');
+      h.adapter.observeSettlement(model,FinanceServerObservation(h.db.documents['settlements/settlement'],fromCache:false,pendingWrites:false));
+    }
+    final newModel=TravelSettlement(id:'new',teamId:'team',name:'New',startDate:h.created,createdAt:h.created,managerId:'worker');
+    expect(()=>h.adapter.createSettlement(newModel),throwsA(isA<FinanceSaveRejected>()));
+    expect(h.db.calls,0);expect(h.db.writes,0);
+    expect(h.adapter.forgetBaselineExplicitly('settlements/seen0'),true);
+    expect(h.adapter.forgetBaselineExplicitly('settlements/seen0'),false);
+    expect(await h.scope.coordinator.journal.pending(),isEmpty);h.adapter.dispose();
   });
   for(final afterWrite in [false,true]) {
     testWidgets('confirmed SDK result with local cleanup failure stays recoverable afterWrite=$afterWrite',(t)async{

@@ -179,3 +179,41 @@ buton exact două tranzacții totale (create+receipt), un refresh și zero resub
 certificate storage fizic, Home implicit, Restore complet sau Spark live. Nu
 există retry automat financiar/local, polling, read/write Firestore suplimentar
 la rebuild, modificare rules, bani/rotunjiri ori servicii plătite noi.
+
+## Continuare nouă: operații succesive fără refresh extern ascuns
+
+Bază complet GREEN: 3ce0084. Nu se repetă loturile UI+SDK, AuthGate sau cleanup.
+Baseline d376cca, Mission VIII #38844858895/job116792961278: 176 PASS / 1 FAIL real;
+după prima încasare confirmată, al doilea dialog din aceeași pagină nu se salva
+fără observe extern. Acesta este un gol în compoziția demo, nu o reparație deja
+distribuită în Home.
+
+Candidatul adaugă readAcceptedModel, callback sincron opțional după handoff-ul
+snapshotului server către UI. Adaptorul verifică tipul TravelSettlement/TeamFinance,
+path, echipa, câmpurile reprezentate, revision și lastOperationId ale modelului
+instalat. Refolosește validarea existentă observe, fără o a doua implementare de
+codec și fără a deduce confirmare din model. Snapshotul complet este înghețat
+înaintea await-ului UI; baseline păstrează datele originale, inclusiv precizia
+Timestamp, separat de reprezentarea de afișare. Abia după validarea modelului
+se eliberează callbackul și se reține baza pentru următoarea intenție explicită.
+
+Fără callbackul opțional se păstrează API-ul anterior cu observe explicit.
+Model absent, tip greșit, revizie veche sau valoare greșită păstrează operația
+confirmată în recuperare, fără audit de succes sau reexecutare financiară. Un
+writer concurent ulterior produce conflict; nu se face rebase automat.
+
+Memoria rămâne bounded la 32 baseline-uri. forgetBaselineExplicitly elimină doar
+o observație regenerabilă și refuză orice țintă cu Save încă în așteptare; nu
+șterge jurnalul sau intențiile. Create la capacitate este refuzat înainte de
+tranzacție. Sunt adăugate șapte regresii Dart, incluzând proba RED păstrată.
+
+Proba SDK existentă create→receipt→edit→close este întărită prin eliminarea celor
+trei citiri manuale de baseline dintre acțiuni. Cere exact patru tranzacții și
+patru refreshuri server, deja necesare confirmării UI. Nu se adaugă citiri la
+rebuild, polling, listener sau scrieri de baseline în Firestore. Modelul de cost
+rămâne conservator; nu este o măsurare live.
+
+183 Dart și 14 SDK sunt ținte de validare până la CI real pe SHA publicat; 197
+Python locale PASS. Home implicit, Restore complet, clienții vechi, hardware și
+Spark live rămân distincte/necertificate. Nicio modificare rules/hashuri protejate,
+producție, billing, date reale, merge ori instalare/distribuție APK.

@@ -68,7 +68,7 @@ class SdkExpenseUi {
  SdkExpenseUi(String uid,this.port,bool Function() current,{FinanceJournalStorage? storage})
    :fixture=ExpenseDocumentFixture('',userId:uid,teamId:'flutter-team'){
   scope=FinanceDemoScope(ownerUid:uid,sessionIsCurrent:current,port:port,storage:storage??BrowserJournalStorage());
-  adapter=FinanceExpenseDemoAdapter(scope:scope,port:port,acceptServerSnapshot:(path,data)async{
+  adapter=FinanceExpenseDemoAdapter(scope:scope,port:port,readAcceptedModel:(_)=>fixture.settlementOverride,acceptServerSnapshot:(path,data)async{
    fixture.settlementOverride=TravelSettlement(id:path.split('/').last,teamId:data['teamId'] as String,
     name:data['name'] as String,startDate:data['startDate'] as DateTime,createdAt:data['createdAt'] as DateTime,
     endDate:data['endDate'] as DateTime?,managerId:data['managerId'] as String?,
@@ -176,20 +176,20 @@ void main(){
   await ui.fixture.mount(t);expect(ui.port.atomicCalls,0);expect(ui.port.serverReads,0);
   try {
    await ui.create(t);expect(ui.port.atomicCalls,1);expect(ui.fixture.settlementOverride!.revision,1);
-   await ui.baseline(t);await ui.receipt(t);await ui.wait(t,()=>ui.fixture.logs.length==2);
+   await ui.receipt(t);await ui.wait(t,()=>ui.fixture.logs.length==2);
    expect(ui.fixture.settlementOverride!.receivedDeparture,200);expect(ui.fixture.settlementOverride!.revision,2);
-   await ui.baseline(t);
+
    await t.ensureVisible(find.text('Editează deplasarea'));await t.tap(find.text('Editează deplasarea'));await t.pumpAndSettle();
    await ui.fixture.enter(t,'Denumire','SDK UI revised');await t.tap(find.widgetWithText(FilledButton,'Salvează'));await t.pump();
    await ui.wait(t,()=>ui.fixture.logs.length==3);expect(ui.fixture.settlementOverride!.revision,3);
-   await ui.baseline(t);
+
    await t.ensureVisible(find.text('Închide decontul'));await t.tap(find.text('Închide decontul'));await t.pumpAndSettle();
    await t.tap(find.widgetWithText(FilledButton,'Închide'));await t.pump();
    await ui.wait(t,()=>ui.fixture.logs.length==4);
    final data=await t.runAsync(()=>server(ui.fixture.settlementOverride!.id));
    expect(data!['closed'],true);expect(data['name'],'SDK UI revised');expect(data['revision'],4);
    expect(data['receivedDeparture'],200);expect(data['receivedEntries'],hasLength(1));
-   expect(ui.port.atomicCalls,4);expect(ui.adapter.pendingCodes,isEmpty);
+   expect(ui.port.atomicCalls,4);expect(ui.port.serverReads,4);expect(ui.adapter.pendingCodes,isEmpty);
    expect(await t.runAsync(()=>ui.scope.coordinator.journal.pending()),isEmpty);
   } finally {await ui.close(t);}
  },timeout:const Timeout(Duration(minutes:2)));

@@ -45,6 +45,9 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
   final FinanceDemoScope scope;
   final FinanceAtomicPort port;
   final Future<void> Function(String path,Map<String,Object?> data) acceptServerSnapshot;
+  // Optional synchronous read-back of the model actually installed by the UI.
+  // Returns TravelSettlement/TeamFinance; never performs a network read.
+  final Object? Function(String path)? readAcceptedModel;
   bool _open=true;
   bool recoveryBusy=false;
   String? recoveryCode;
@@ -75,7 +78,7 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
   @override void dispose(){_open=false;scope.dispose();super.dispose();}
   final _baselines=<String,_Baseline>{};
   final _saves=<String,_Save>{};
-  FinanceExpenseDemoAdapter({required this.scope,required this.port,required this.acceptServerSnapshot}) {
+  FinanceExpenseDemoAdapter({required this.scope,required this.port,required this.acceptServerSnapshot,this.readAcceptedModel}) {
     if(!identical(scope.coordinator.repository.port,port))throw ArgumentError('finance_scope_port_mismatch');
   }
   Map<String,String> get pendingCodes=>Map.unmodifiable(_saves.map((p,s)=>MapEntry(p,s.code)));
@@ -84,9 +87,9 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
     _observe('settlements/${model.id}',_settlement(model),server);
   void observeFinance(TeamFinance model,FinanceServerObservation server)=>
     _observe('finance/${model.teamId}',_finance(model),server);
-  void _observe(String path,Map<String,Object?> model,FinanceServerObservation server) {
+  void _observe(String path,Map<String,Object?> model,FinanceServerObservation server,{_Save? completedSave}) {
     _guard();
-    if(_saves.containsKey(path)||server.fromCache||server.pendingWrites||server.data==null)
+    if((_saves.containsKey(path)&&!identical(_saves[path],completedSave))||server.fromCache||server.pendingWrites||server.data==null)
       throw FinanceSaveRejected('finance_authoritative_refresh_required');
     final data=server.data!;
     // No evidence is inferred from a mutable UI object. Every represented field
@@ -104,12 +107,38 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
     if(!_baselines.containsKey(path)&&_baselines.length>=32)throw FinanceSaveRejected('finance_demo_scope_full');
     _baselines[path]=_Baseline(data,model);
   }
+  // Drops only a regenerable observation, never an unresolved intent/journal.
+  bool forgetBaselineExplicitly(String path){
+    _guard();
+    if(_saves.containsKey(path))throw FinanceSaveRejected('finance_unresolved_target');
+    return _baselines.remove(path)!=null;
+  }
+  void _captureAcceptedBaseline(String path,FinanceServerObservation server,_Save save){
+    final read=readAcceptedModel;
+    if(read==null){_baselines.remove(path);return;} // Existing explicit-observe API.
+    final model=read(path);
+    late final String modelPath;
+    late final int? revision;
+    late final String? operation;
+    late final Map<String,Object?> represented;
+    if(model is TravelSettlement){
+      modelPath='settlements/${model.id}';revision=model.revision;operation=model.lastOperationId;represented=_settlement(model);
+    } else if(model is TeamFinance){
+      modelPath='finance/${model.teamId}';revision=model.revision;operation=model.lastOperationId;represented=_finance(model);
+    } else {throw FinanceSaveRejected('finance_accepted_model_required');}
+    if(modelPath!=path||revision!=server.data!['revision']||operation!=server.data!['lastOperationId'])
+      throw FinanceSaveRejected('finance_accepted_model_mismatch');
+    // _observe reuses the existing full model/value/metadata validation. The
+    // exact completed request alone may replace its baseline before release.
+    _observe(path,represented,server,completedSave:save);
+  }
   // Wire this separately for the existing create dialog. Absence is checked
   // inside the same transaction; an existing target can never be overwritten.
   Future<void> createSettlement(TravelSettlement model) {
     _guard();final path='settlements/${model.id}';
     if(_saves.containsKey(path))throw FinanceSaveRejected('finance_unresolved_target');
-    if(_saves.length>=32)throw FinanceSaveRejected('finance_demo_scope_full');
+    if(_saves.length>=32||(readAcceptedModel!=null&&!_baselines.containsKey(path)&&_baselines.length>=32))
+      throw FinanceSaveRejected('finance_demo_scope_full');
     final intent=FinanceIntent(operationId:FinanceIntent.newOperationId(),actorUid:scope.ownerUid,
       teamId:model.teamId,collection:'settlements',documentId:model.id,baseRevision:0,
       kind:FinanceIntentKind.create,changes:{'name':model.name,'startDate':model.startDate,
@@ -212,9 +241,12 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
           data['revision'] is! int||(data['revision'] as int)<save.intent.baseRevision+1) {
         save.code='finance_authoritative_refresh_required';return;
       }
-      await acceptServerSnapshot(path,freezeFinanceValue(data) as Map<String,Object?>);
+      final acceptedData=freezeFinanceValue(data) as Map<String,Object?>;
+      await acceptServerSnapshot(path,acceptedData);
       if(!scope.sessionIsCurrent())return;
-      _baselines.remove(path);_saves.remove(path);save.done.complete();
+      _captureAcceptedBaseline(path,FinanceServerObservation(acceptedData,
+        fromCache:server.fromCache,pendingWrites:server.pendingWrites),save);
+      _saves.remove(path);save.done.complete();
     } catch(_) {
       // Never send a generic error into the old close-dialog rollback path.
       save.code=save.confirmed?
