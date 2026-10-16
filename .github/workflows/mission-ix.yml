@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   emulator:
-    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'integration/finance-ix-vision-scoped-20261016'
+    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'integration/finance-ix-vision-scoped-20261016' || github.head_ref == 'integration/finance-vision-expense-observation-20261016'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -26,7 +26,7 @@ jobs:
       - name: Strict ACL and atomic financial protocol acceptance
         run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test --test-concurrency=1 tests/firestore/finance_viii_acl.red.cjs tests/firestore/finance_viii_atomic.test.cjs tests/firestore/finance_ix_compatibility.test.cjs'
   dart:
-    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'integration/finance-ix-vision-scoped-20261016'
+    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'integration/finance-ix-vision-scoped-20261016' || github.head_ref == 'integration/finance-vision-expense-observation-20261016'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -40,7 +40,7 @@ jobs:
       - run: flutter pub get
       - run: flutter test test/finance_intent*_test.dart --reporter expanded
   flutter-sdk-emulator:
-    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'integration/finance-ix-vision-scoped-20261016'
+    if: github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'integration/finance-ix-vision-scoped-20261016' || github.head_ref == 'integration/finance-vision-expense-observation-20261016'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
