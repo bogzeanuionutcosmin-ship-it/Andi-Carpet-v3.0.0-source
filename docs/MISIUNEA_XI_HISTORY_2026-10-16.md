@@ -18,3 +18,22 @@ JSON distincte, dar au aceeași dimensiune de stocare Firestore (8 bytes/valoare
 Scenariul X 20 receipts/zi × 1KiB +4KiB reproduce 25 zile complete în rezerva
 512KiB; ipoteza 1KiB nu înlocuiește măsurarea payloadurilor concrete.
 Nu se trunchiază istoric și nu se modifică bani, Home sau vreun pin.
+
+## XI-02 — contract V2 candidat, independent
+
+Namespace demo financeHistoryXi/s_<settlementId> sau f_<teamId>. Summary mic:
+protocol2/team/source/revision/totals/lastOperationId. receipts/<operationId>
+este simultan rând append-only ȘI markerul imuabil de idempotency (digest V2,
+actor, team, target, base/revision, payload). Două writes atomice, fără array,
+fără colecție marker duplicată. Nu conectăm Home sau jurnalul V1 la V2.
+Envelope protocol2 are digest separat de FinanceIntent V1; nu se importă pending
+vechi. Factory SDK este exclusiv demo/loopback. Inițializarea refuză surse legacy
+cu bani/istoric/revizie nenulă; bootstrap sintetic zero nu este migrare.
+
+Model/port independente și probe fake: replay, intenții egale distincte,
+concurență CAS, ack pierdut și reconcilere explicită, lipsă/conflict marker,
+revocare monotonă și consistență completă pe pagini pinned. Sumarul nu este
+certificat printr-o pagină parțială. Reordonarea sau diferențele de aritmetică
+floating la suma inversă refuză dovada; nu rotunjim bani pentru un PASS.
+Rules noi sunt exclusiv fixture emulator separată. Nicio regulă live sau
+firestore.rules existent nu este modificat. Validarea CI urmează pe SHA nou.
