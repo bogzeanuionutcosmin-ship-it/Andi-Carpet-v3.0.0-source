@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'vision_diagnostic_advisor.dart';
-import 'vision_error_log.dart';
 import 'vision_session_journal.dart';
 
 /// Opt-in authenticated diagnostics view. Mount ONLY below the current
@@ -138,11 +137,25 @@ class _VisionSessionDiagnosticsPanelState
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: OutlinedButton.icon(
-            key: const ValueKey('vision-session-copy'),
-            icon: const Icon(Icons.copy_outlined),
-            onPressed: _copyReport,
-            label: const Text('Copiază raportul anonim'),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: const ValueKey('vision-session-copy'),
+                  icon: const Icon(Icons.copy_outlined),
+                  onPressed: _copyReport,
+                  label: const Text('Copiază raportul anonim'),
+                ),
+              ),
+              IconButton(
+                key: const ValueKey('vision-session-refresh'),
+                tooltip: 'Actualizează diagnostic',
+                onPressed: () {
+                  if (lease.isCurrent && mounted) setState(() {});
+                },
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
           ),
         ),
         Expanded(
