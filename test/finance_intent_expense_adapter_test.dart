@@ -79,6 +79,17 @@ void main(){
     expect(model.receivedDeparture,200);expect(h.adapter.pendingCodes,isEmpty);
     await t.pumpWidget(const SizedBox());
   });
+  testWidgets('successive real receipt dialogs reuse the accepted server baseline without external observation',(t)async{
+    final h=_Harness();await h.fixture.mount(t);await h.receipt(t);
+    expect(h.fixture.logs,hasLength(1));expect(h.db.calls,1);
+    await h.receipt(t);
+    expect(h.fixture.logs,hasLength(2));expect(h.db.calls,2);expect(h.db.writes,4);
+    expect(h.db.serverReads,2,reason:'Only the existing authoritative refresh after each operation');
+    final model=h.fixture.settlementOverride!;
+    expect(model.revision,2);expect(model.receivedDeparture,400);expect(model.receivedEntries,hasLength(2));
+    expect(model.receivedEntries.first.id,isNot(model.receivedEntries.last.id));
+    await t.pumpWidget(const SizedBox());h.adapter.dispose();
+  });
   for(final afterWrite in [false,true]) {
     testWidgets('confirmed SDK result with local cleanup failure stays recoverable afterWrite=$afterWrite',(t)async{
       final h=_Harness();h.storage.cleanupFailure=afterWrite?2:1;
