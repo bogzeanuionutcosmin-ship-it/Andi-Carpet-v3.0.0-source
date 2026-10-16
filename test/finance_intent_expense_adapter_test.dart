@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:andi_carpeta/main.dart';
 import 'package:andi_carpeta/finance/intents/finance_demo_panel.dart';
 import 'package:andi_carpeta/finance/intents/finance_expense_demo_adapter.dart';
@@ -12,8 +13,15 @@ import 'support/finance_atomic_fixture.dart';
 
 class _Storage implements FinanceJournalStorage {
   final values=<String,String>{};
+  int cleanupFailure=0;
   @override Future<String?> read(String key)async=>values[key];
-  @override Future<void> write(String key,String value)async{values[key]=value;}
+  @override Future<void> write(String key,String value)async{
+    if(cleanupFailure!=0&&((jsonDecode(value) as Map)['intents'] as List).isEmpty){
+      if(cleanupFailure==2)values[key]=value;
+      throw StateError('synthetic_local_cleanup_failure');
+    }
+    values[key]=value;
+  }
 }
 class _Harness {
   final db=FinanceAtomicFixture(),storage=_Storage();
@@ -71,6 +79,34 @@ void main(){
     expect(model.receivedDeparture,200);expect(h.adapter.pendingCodes,isEmpty);
     await t.pumpWidget(const SizedBox());
   });
+  for(final afterWrite in [false,true]) {
+    testWidgets('confirmed SDK result with local cleanup failure stays recoverable afterWrite=$afterWrite',(t)async{
+      final h=_Harness();h.storage.cleanupFailure=afterWrite?2:1;
+      h.fixture.wrapPage=(page)=>FinanceExpenseDemoRecovery(adapter:h.adapter,child:page);
+      await h.fixture.mount(t);await h.receipt(t);
+      expect(h.db.calls,1);expect(h.db.writes,2);expect(h.fixture.logs,isEmpty);
+      expect(h.adapter.pendingCodes.values.single,'finance_confirmed_local_cleanup_required');
+      expect(find.text('Salvarea este confirmată. Jurnalul local necesită verificare.'),findsOneWidget);
+      expect(h.db.serverReads,0);expect(h.refreshes,0);
+      expect(await h.scope.coordinator.journal.pending(),hasLength(afterWrite?0:1));
+      await t.tap(find.text('Primit la plecare'));await t.pumpAndSettle();
+      expect(find.text('Adaugă sumă primită la plecare'),findsNothing);expect(h.db.calls,1);
+      if(!afterWrite){
+        await t.tap(find.text('Verifică salvarea'));await t.pumpAndSettle();
+        expect(h.adapter.pendingCodes.values.single,'finance_confirmed_local_cleanup_required');
+        expect(h.db.serverReads,0);expect(h.fixture.logs,isEmpty);expect(h.db.calls,1);
+      }
+      h.storage.cleanupFailure=0;
+      await t.tap(find.text('Verifică salvarea'));await t.pumpAndSettle();
+      expect(h.adapter.pendingCodes,isEmpty);expect(h.fixture.logs,hasLength(1));
+      expect(h.refreshes,1);expect(h.db.calls,1);expect(h.db.writes,2);
+      expect(h.db.serverReads,1,reason:'Known confirmation needs only target refresh, no new marker query or transaction');
+      expect(await h.scope.coordinator.journal.pending(),isEmpty);
+      expect(h.fixture.settlementOverride!.receivedDeparture,200);
+      expect(h.fixture.settlementOverride!.receivedEntries,hasLength(1));
+      await t.pumpWidget(const SizedBox());h.adapter.dispose();
+    });
+  }
   testWidgets('real close dialog lost ack stays locked until explicit marker reconciliation',(t)async{
     final h=_Harness();h.db.commitThenThrow=true;await h.fixture.mount(t);await h.close(t);
     expect(h.db.documents['settlements/settlement']!['closed'],true);
