@@ -103,3 +103,58 @@ legacy, Android/iOS/Windows sau fsync. Fără steal sau timeout care ar autoriza
 continuarea fără lock. API absent/revocat → fail-closed. Alternativă: store local
 tranzacțional cu CAS pe revizie și rollback atomic al envelope-ului. Niciuna nu
 este implementată/activată în aplicație; nu introducem dependențe noi. BLOCKED.
+
+## XI-07 — snapshot/restore, fără scrieri financiare
+
+HistoryXiSnapshotReview produce numai o dovadă locală pentru prefixul imuabil
+1..N al UNEI surse: header autoritativ pinned, pagini descendente≤20, exact N
+rânduri, digesturi/binding/totaluri verificate și checksum ordonat al exportului.
+Memoria rămâne bounded; nu reține toate rândurile. Checksumul nu este semnătură
+sau autorizare de restore. Rândul receipt este markerul: lipsa lui lasă gap;
+orphan cu revizie/digest diferit otrăvește review-ul. Nu este inventar global.
+
+Probe noi: export în pagini în timpul commituluiN+1 (prefixulN rămâne valid,
+restore pe summary curent este refuzat), snapshot parțial/crash, orphan și
+cache/pending. Zero writes din review. O eventuală restaurare operațională
+ar trebui să compare headerul în aceeași tranzacție cu toate scrierile sale;
+un matchesCurrent citit separat nu este lock. Nicio API de restore financiar
+nu este livrată și nu se șterge jurnalul local pending. Import global pentru
+surse multiple și alte subcolecții rămâne BLOCKED fără inventar/strategie aprobată.
+
+## XI-08 — interfețe neacoperite, contract separat obligatoriu
+
+| Writer | Interfață propusă, NEIMPLEMENTATĂ | Autoritate / blocaj |
+| --- | --- | --- |
+| manager | proposeManagerChange(target, expectedRevision, nextManager, scope) | actor administrativ desemnare; sursa canonică, membership și precondiție de echipă trebuie revizuite; nu este receipt |
+| rate | proposePerDiemRateChange(target, expectedRevision, rate, scope) | regula existentă de editare trebuie transpusă server; zero recalcul istoric implicit |
+| bootstrap finance | createEmptyFinance(team, serverAbsenceProof, scope) | numai document absent, actor permis, fără sold inventat; V2 demo cere sursă zero existentă |
+| OCR/manual | proposeExpenseDraft(expenseId, expectedRevision, author, scope) | confirmed=false, autor/team reale, confirmare gestionar separată; amount confirmat nu devine overwrite |
+| confirm expense | confirmExpense(expenseId, expectedRevision, scope) | gestionar/admin server, audit și conflict; nu același drept ca viewOwnDecont |
+| perDiems distribution | proposeDistribution(stableId, beneficiary, declaredAmount, scope) | avans permis, create-if-absent și identitate durabilă, fără plafon nou |
+| perDiems receipt/refusal | acknowledgeDistribution(id, expectedRevision, actual, scope) | numai beneficiar; păstrează declaratul și auditul existent |
+| per_diem_settlements_v2 | API existent cu revizie/audit | schemă separată; niciun adaptor automat către historyXi |
+
+Aceste semnături sunt propuneri de review, nu porturi care oferă drepturi noi.
+HistoryXiIntent acceptă exclusiv receipt; celelalte acțiuni nu pot fi convertite
+prin schimbarea kind-ului sau prin amestecarea câmpurilor. Home congelat mută
+manager/rate înainte de callback și nu are rollback complet pentru acestea;
+refuzul noului receipt port NU certifică acel UI. Martorii X existenți nu sunt
+numărați din nou. Patchul Home X rămâne neaplicat; activarea necesită contractul
+fiecărui writer și mandat pentru sursele freeze. BLOCKED integrarea implicită.
+
+## XI-09 — audit read-only Vision
+
+HEAD PR75 citit 48235b14fa7345c454882960aecb0ba66ba1b596, fără checkout/
+cherry-pick/merge. Public: VisionScopedSignalSink.emit(VisionDiagnosticSignal,
+platform:VisionSignalPlatform); catalogue financeOperationUncertain și
+financeRevisionConflict, fără argument pentru UID/sume/digest/payload. Scope:
+VisionAuthenticatedSessionScope(sessionEpochKey, sessionIsCurrent, builder),
+VisionSessionLifecycleCoordinator.replaceSession/clear/dispose; UID-only nu este
+suficient. Aceste simboluri suplimentare NU sunt în baza X și NU sunt importate.
+
+Port local independent observeHistoryXiResult: numai enum anonim uncertain/
+conflict; nu transmite result.code arbitrar, nu inventează permissionRejected,
+nu emite succes, nu atinge storage/SDK. Returnează identic obiectul rezultatului
+inclusiv dacă sinkul aruncă. Probe noi pe commit+ACK pierdut cer status uncertain,
+exact1apel/2writes, fără resubmit și fără conversie în confirmed. Mappingul către
+catalogul PR75 este doar propus în docs, nu conectat la singletonul Vision.
