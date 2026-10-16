@@ -103,7 +103,10 @@ void main() {
     expect(advice.title, 'Rezultat financiar incert');
     expect(advice.explanation, contains('Nu retrimite automat'));
     expect(leaseA.buildReport(), isNot(contains('Synthetic')));
-    expect(leaseA.buildReport(), isNot(contains('200')));
+    // Timestamps contain unconstrained digits (including "200"). The event
+    // must contain only a fixed fingerprint, never a raw amount field.
+    expect(leaseA.buildReport(), isNot(contains('amount=200')));
+    expect(leaseA.buildReport(), isNot(contains(intent.operationId)));
 
     // Account switch discards the old Vision report immediately. Finance
     // evidence remains intentionally durable for that owner, not user B.
