@@ -1,7 +1,7 @@
 {
   "exact_sha_ci": {
     "status": "unknown",
-    "reference": "XI final Android/Chrome run 38890474113 still in progress at last observation; recheck exact SHA"
+    "reference": "PR #83 SHA 7f3bbba: four active workflows completed SUCCESS (historical isolated candidate); integrated release tree CI remains UNKNOWN."
   },
   "protected_hashes": {
     "status": "unknown",
@@ -21,15 +21,15 @@
   },
   "journal_cross_process_cas": {
     "status": "blocked",
-    "reference": "XI readback-not-CAS interleaving witness"
+    "reference": "PR #83 SHA 7f3bbba: browser V2 IndexedDB STRICT transaction + Web Locks passed two real Chromium renderer processes; native and cross-profile/process-wide universal guarantee BLOCKED."
   },
   "journal_crash_durability": {
     "status": "unknown",
-    "reference": "No real OS restart and storage durability proof"
+    "reference": "PR #83 SHA 7f3bbba: Chromium SIGKILL/restart same profile passed; power loss, eviction, profile deletion, native storage remain UNKNOWN."
   },
   "uncertain_manual_reconciliation": {
     "status": "unknown",
-    "reference": "IX/X/XI candidate tests, no integrated Home acceptance"
+    "reference": "PR #83 explicit server-evidence reconciliation candidate; Home integration and all writer routes not verified."
   },
   "finance_writer_inventory": {
     "status": "blocked",
@@ -41,7 +41,7 @@
   },
   "auth_epoch_revocation": {
     "status": "unknown",
-    "reference": "Mission IV historically green, integration not verified"
+    "reference": "PR #83 remote-tab atomic session generation not implemented; historical AuthGate local epoch tests do not prove shared-tab revocation."
   },
   "money_exactness": {
     "status": "blocked",
