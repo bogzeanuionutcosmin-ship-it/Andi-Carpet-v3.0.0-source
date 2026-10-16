@@ -3045,3 +3045,11 @@ planul/baseline/indexurile/egress live. production_ready=false; Issue #54 deschi
 Următoarea acțiune: verificarea celor patru workflowuri pe HEAD-ul acestui lot;
 apoi compoziție scope+jurnal durabil+snapshot server pentru writerii impliciți,
 fără activarea regulilor candidate peste clienții legacy sau ocolirea pinilor.
+
+
+## Misiunea IX — preflight nou, Issue72
+Ramură izolată din PR55 0b20afd/tree3b644ca; 116 surse/21 pini păstrați.
+Inventarul writerilor, matricea legacy/rules și contractul storage sunt în
+docs/MISIUNEA_IX_DURABLE_INTEGRATION_2026-10-16.md. VIII nu este închisă integral.
+Persist-before-send refolosește portul/jurnalul existent; readback nu certifică
+fsync, restart OS sau concurență multi-process. Fără Home implicit/producție.
