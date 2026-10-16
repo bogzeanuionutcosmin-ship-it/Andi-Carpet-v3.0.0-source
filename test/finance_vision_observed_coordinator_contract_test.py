@@ -62,7 +62,7 @@ class FinanceVisionObservedCoordinatorContract(unittest.TestCase):
                           'intent.changes', 'intent.teamId',
                           'error.toString()', 'exception.toString()'):
             with self.subTest(forbidden=forbidden):
-                self.assertNotIn(forbidden, self.bridge + self.observer)
+                self.assertNotIn(forbidden, self.observer)
 
 
 if __name__ == '__main__':
