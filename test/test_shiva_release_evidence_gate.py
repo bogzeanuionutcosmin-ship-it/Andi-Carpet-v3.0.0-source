@@ -19,6 +19,7 @@ class ReleaseEvidenceGateTest(unittest.TestCase):
     def test_default_blocked(self):
         report = gate.evaluate(evidence())
         self.assertFalse(report["production_ready"])
+        self.assertFalse(report["formal_evidence_complete"])
         self.assertEqual(report["blockers"], list(gate.REQUIRED))
 
     def test_one_missing_hardware_check_blocks_all_green(self):
@@ -30,8 +31,16 @@ class ReleaseEvidenceGateTest(unittest.TestCase):
 
     def test_all_pass_is_only_formal_green(self):
         report = gate.evaluate(evidence("pass", "synthetic-test-proof"))
-        self.assertTrue(report["production_ready"])
+        self.assertFalse(report["production_ready"])
+        self.assertTrue(report["formal_evidence_complete"])
         self.assertEqual(report["passed"], len(gate.REQUIRED))
+
+    def test_synthetic_all_pass_never_authorizes_production(self):
+        items = evidence("pass", "arbitrary self-assertion")
+        report = gate.evaluate(items)
+        self.assertEqual(report["blockers"], [])
+        self.assertTrue(report["formal_evidence_complete"])
+        self.assertIs(report["production_ready"], False)
 
     def test_missing_or_extra_keys_rejected(self):
         items = evidence()
