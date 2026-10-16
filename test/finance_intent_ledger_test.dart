@@ -111,4 +111,45 @@ void main(){
     expect(()=>page.rows.clear(),throwsUnsupportedError);expect(()=>page.rows.first.data.clear(),throwsUnsupportedError);
     expect(page.rows.first.toString(),'FinanceLedgerRow');
   });
+  test('an observed expired ledger owner cannot regain access after A B A2',()async{
+    var current=true;final p=_Port();
+    final reader=FinanceLedgerReader(port:p,sessionIsCurrent:()=>current,pageSize:2);
+    final first=await reader.firstExplicitly('settlements/trip');
+    current=false;expect(reader.sessionIsCurrent(),false);
+    current=true;expect(reader.sessionIsCurrent(),false);
+    await expectLater(reader.nextExplicitly(first.next!),throwsA(isA<FinanceRefusal>()));
+    expect(p.queries,1);
+  });
+  test('throwing ledger ownership is denied without leaking the exception',()async{
+    final p=_Port(),reader=FinanceLedgerReader(port:_Port(),sessionIsCurrent:()=>throw StateError('private owner detail'));
+    expect(reader.sessionIsCurrent(),false);
+    final actual=FinanceLedgerReader(port:p,sessionIsCurrent:()=>throw StateError('private owner detail'));
+    await expectLater(actual.firstExplicitly('settlements/trip'),throwsA(isA<FinanceRefusal>()));
+    expect(p.reads,0);expect(p.queries,0);
+  });
+  testWidgets('a revoked owner cannot retain an already displayed ledger on rebuild',(t)async{
+    var current=true;final p=_Port();
+    final reader=FinanceLedgerReader(port:p,sessionIsCurrent:()=>current);
+    Widget view()=>MaterialApp(home:Scaffold(body:FinanceLedgerDemoPanel(reader:reader,targetPath:'settlements/trip')));
+    await t.pumpWidget(view());await t.tap(find.text('Deschide registrul operațiilor'));await t.pumpAndSettle();
+    expect(find.text('Revizie analizată: 5'),findsOneWidget);
+    current=false;await t.pumpWidget(view());await t.pumpAndSettle();
+    expect(find.text('Revizie analizată: 5'),findsNothing);
+    expect(find.text('Încasare · revizia 5'),findsNothing);
+    expect(find.text('Deschide registrul operațiilor'),findsNothing);
+    expect(p.reads,1);expect(p.queries,1);expect(t.takeException(),isNull);
+  });
+  testWidgets('explicit reader disposal removes mounted ledger data without user interaction',(t)async{
+    final p=_Port(),reader=FinanceLedgerReader(port:_Port(),sessionIsCurrent:()=>true);
+    final actual=FinanceLedgerReader(port:p,sessionIsCurrent:()=>true);
+    await t.pumpWidget(MaterialApp(home:Scaffold(body:FinanceLedgerDemoPanel(reader:actual,targetPath:'settlements/trip'))));
+    await t.tap(find.text('Deschide registrul operațiilor'));await t.pumpAndSettle();
+    expect(find.text('Revizie analizată: 5'),findsOneWidget);
+    actual.dispose();await t.pumpAndSettle();
+    expect(find.text('Revizie analizată: 5'),findsNothing);
+    expect(find.text('Încasare · revizia 5'),findsNothing);
+    expect(p.reads,1);expect(p.queries,1);expect(reader.sessionIsCurrent(),true);
+    await t.pumpWidget(const SizedBox());expect(t.takeException(),isNull);
+  });
+
 }
