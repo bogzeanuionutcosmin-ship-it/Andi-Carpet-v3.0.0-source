@@ -30,9 +30,16 @@ class Scenario:
     ledger_page_size: int = 20
 
     def estimate(self):
-        if min(self.operations_per_day, self.reconciliations_per_day, self.days,
-               self.marker_bytes_with_indexes, self.target_entry_bytes_with_indexes,
-               self.receipt_document_bytes) < 0 or not 1 <= self.attempts <= 3:
+        # Reject Python bools, fractions, NaN/infinity and absent inputs before
+        # arithmetic. Type annotations do not validate a caller's scenario.
+        counts = [self.operations_per_day, self.reconciliations_per_day]
+        sizes_and_horizon = [self.days, self.marker_bytes_with_indexes,
+                             self.target_entry_bytes_with_indexes,
+                             self.receipt_document_bytes]
+        if any(type(v) is not int or v < 0 for v in counts) or any(
+                type(v) is not int or v <= 0 for v in sizes_and_horizon):
+            raise ValueError('Invalid workload, retention horizon or storage assumption')
+        if type(self.attempts) is not int or not 1 <= self.attempts <= 3:
             raise ValueError('Invalid scenario or unbounded transaction attempts')
         optional = [self.existing_daily_reads, self.existing_daily_writes,
                     self.existing_storage_bytes, self.busiest_target_receipts_per_day,

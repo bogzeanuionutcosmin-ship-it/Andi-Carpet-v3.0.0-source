@@ -291,3 +291,27 @@ PASS. Storage-ul harnessului este RAM; nu certifică restart OS sau hardware.
 Zero auto-replay, polling, citiri la rebuild sau servicii noi. Home implicit,
 Restore complet/inventar consistent, schema receivedEntries, compatibilitatea
 clienților, hardware și Spark live rămân restanțe distincte; production_ready=false.
+
+
+## Continuare focalizată — validarea intrărilor modelului Spark
+
+Pe baza a95062a s-a reprodus un defect nou în modelul executabil de cost:
+valorile bool/fractionare/NaN și ipotezele zero pentru retenție ori dimensiuni
+puteau ajunge în aritmetică; zero zile sau zero bytes ascundeau creșterea
+istoricului și a markerilor. Type annotations Python nu reprezintă validare.
+Cele două regresii noi au eșuat pe baseline (35 subcazuri FAIL, 14 ERROR de tip),
+apoi au trecut cu validarea strictă înainte de calcul. Se cer contoare întregi
+nenegative, dimensiuni și orizont strict pozitive, attempts întreg 1–3.
+Workloadul zero rămâne valid. Scenariile numerice existente nu sunt schimbate.
+
+Validare locală: toate cele 199 teste Python PASS. Nu există Flutter/Android
+SDK instalat în acest checkout; verificarea completă se cere CI pe noul HEAD,
+nu se reutilizează verdele a95062a. Nu este o acceptanță nouă de hardware sau
+emulator. Nicio sursă runtime, regulă, hash protejat sau workflow modificat.
+
+KNOWN UNSAFE rămâne: Home implicit/toți writerii, Restore global și inventarul
+subcolecțiilor, receivedEntries nelimitat, clienți vechi, persistența fizică,
+planul/baseline/indexurile/egress live. production_ready=false; Issue #54 deschis.
+Următoarea acțiune: verificarea celor patru workflowuri pe HEAD-ul acestui lot;
+apoi compoziție scope+jurnal durabil+snapshot server pentru writerii impliciți,
+fără activarea regulilor candidate peste clienții legacy sau ocolirea pinilor.

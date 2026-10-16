@@ -135,3 +135,26 @@ class SparkBudgetTest(unittest.TestCase):
         self.assertFalse(report['within_internal_reserve'])
         self.assertEqual(report['additional_writes_per_day'], 0)
         self.assertFalse(report['production_ready'])
+
+    def test_malformed_primary_counts_cannot_produce_a_budget_certificate(self):
+        fields = ['operations_per_day', 'reconciliations_per_day', 'attempts', 'days',
+                  'marker_bytes_with_indexes', 'target_entry_bytes_with_indexes',
+                  'receipt_document_bytes']
+        for field in fields:
+            for value in [True, False, 0.5, float('nan'), float('inf'), '1', None]:
+                with self.subTest(field=field, value=value):
+                    kwargs = {'operations_per_day': 1, field: value}
+                    with self.assertRaises(ValueError):
+                        budget.Scenario(**kwargs).estimate()
+
+    def test_zero_retention_or_storage_assumptions_cannot_hide_active_growth(self):
+        for field in ['days', 'marker_bytes_with_indexes',
+                      'target_entry_bytes_with_indexes', 'receipt_document_bytes']:
+            with self.subTest(field=field):
+                with self.assertRaises(ValueError):
+                    budget.Scenario(40, **{field: 0}, existing_daily_reads=0,
+                                    existing_daily_writes=0, existing_storage_bytes=0).estimate()
+        # An idle workload remains valid and does not invent financial writes.
+        idle = budget.Scenario(0, reconciliations_per_day=0).estimate()
+        self.assertEqual(idle['additional_writes_per_day'], 0)
+        self.assertEqual(idle['total_additional_storage_estimate_bytes'], 0)
