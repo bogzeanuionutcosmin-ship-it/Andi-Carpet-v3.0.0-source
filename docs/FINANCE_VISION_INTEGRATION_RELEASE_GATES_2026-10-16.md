@@ -51,3 +51,7 @@ The two observer surfaces overlap semantically but are **not** a reason to insta
 **Exact CI observation:** XI SHA `81e81f2`: Standard, Identity and IX Finance were SUCCESS; IX Android/Chrome workflow `38890474113` remained IN PROGRESS at this checkpoint. SKIPPED conditional workflows are not passes. This checkpoint is not final XI CI clearance; query exact SHA again before acceptance. Vision PR #75 SHA `48235b14` has all four active workflows SUCCESS. Neither proves real-device durability.
 
 **Change-scope check:** this PR #82 only modifies this documentation file relative to PR #78. XI #80, Vision #75 and their protected sources are untouched; no CI or live integration is claimed for this review.
+
+## Release-evidence semantics hardening (2026-10-17)
+
+The standalone offline evaluator now separates `formal_evidence_complete` from `production_ready`. A fabricated JSON fixture containing twenty `pass` statuses and arbitrary nonempty references can demonstrate schema completeness but **cannot authenticate the claims or authorize a release**. Therefore `production_ready` remains `false` for every input; an all-pass fixture may return CLI success only for the formal checklist check. Actual release authority requires independent verification, provenance, protected-source and hardware/staging evidence, and separate explicit approval outside this review-only tool. No branch workflow grants deployment permission.
