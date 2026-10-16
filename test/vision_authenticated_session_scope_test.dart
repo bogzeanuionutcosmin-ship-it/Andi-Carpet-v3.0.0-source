@@ -7,12 +7,12 @@ import 'package:andi_carpeta/vision/vision_session_journal.dart';
 void main() {
   Widget screen({
     required bool Function() owner,
+    required Object epochToken,
     required void Function(VisionSessionJournalLease?) observe,
-    Key? key,
   }) {
     return MaterialApp(
       home: VisionAuthenticatedSessionScope(
-        key: key,
+        sessionEpochKey: epochToken,
         sessionIsCurrent: owner,
         builder: (context, lease) {
           observe(lease);
@@ -26,8 +26,10 @@ void main() {
 
   testWidgets('authorized callback exposes only its new local lease',
       (tester) async {
+    final epoch = Object();
     VisionSessionJournalLease? captured;
     await tester.pumpWidget(screen(
+      epochToken: epoch,
       owner: () => true,
       observe: (lease) => captured = lease,
     ));
@@ -37,6 +39,7 @@ void main() {
       area: 'ocr', code: 'synthetic', platform: 'android',
     ), isTrue);
     await tester.pumpWidget(screen(
+      epochToken: epoch,
       owner: () => true,
       observe: (lease) => captured = lease,
     ));
@@ -45,12 +48,14 @@ void main() {
 
   testWidgets('A to B to returning A2 discards both prior epochs',
       (tester) async {
+    final epochs = [Object(), Object(), Object()];
     var uid = 'A';
     var generation = 1;
     VisionSessionJournalLease? a1;
     VisionSessionJournalLease? b;
     VisionSessionJournalLease? a2;
     await tester.pumpWidget(screen(
+      epochToken: epochs[0],
       owner: () => uid == 'A' && generation == 1,
       observe: (lease) => a1 = lease,
     ));
@@ -60,6 +65,7 @@ void main() {
     uid = 'B';
     generation = 2;
     await tester.pumpWidget(screen(
+      epochToken: epochs[1],
       owner: () => uid == 'B' && generation == 2,
       observe: (lease) => b = lease,
     ));
@@ -73,6 +79,7 @@ void main() {
     uid = 'A';
     generation = 3;
     await tester.pumpWidget(screen(
+      epochToken: epochs[2],
       owner: () => uid == 'A' && generation == 3,
       observe: (lease) => a2 = lease,
     ));
@@ -86,16 +93,19 @@ void main() {
 
   testWidgets('same UID new generation never reopens its old lease',
       (tester) async {
+    final epochs = [Object(), Object()];
     var generation = 5;
     VisionSessionJournalLease? original;
     VisionSessionJournalLease? renewed;
     await tester.pumpWidget(screen(
+      epochToken: epochs[0],
       owner: () => generation == 5,
       observe: (lease) => original = lease,
     ));
     original!.record(area: 'fcm', code: 'previous', platform: 'web');
     generation = 6;
     await tester.pumpWidget(screen(
+      epochToken: epochs[1],
       owner: () => generation == 6,
       observe: (lease) => renewed = lease,
     ));
@@ -107,15 +117,18 @@ void main() {
 
   testWidgets('harmless widget rebuild preserves active epoch journal',
       (tester) async {
+    final epoch = Object();
     var generation = 1;
     VisionSessionJournalLease? original;
     VisionSessionJournalLease? after;
     await tester.pumpWidget(screen(
+      epochToken: epoch,
       owner: () => generation == 1,
       observe: (lease) => original = lease,
     ));
     original!.record(area: 'ocr', code: 'kept', platform: 'web');
     await tester.pumpWidget(screen(
+      epochToken: epoch,
       owner: () => generation == 1,
       observe: (lease) => after = lease,
     ));
@@ -125,15 +138,18 @@ void main() {
 
   testWidgets('revoked owner yields only blocked page, never global history',
       (tester) async {
+    final epoch = Object();
     var authorized = true;
     VisionSessionJournalLease? stale;
     await tester.pumpWidget(screen(
+      epochToken: epoch,
       owner: () => authorized,
       observe: (lease) => stale = lease,
     ));
     stale!.record(area: 'gps', code: 'private', platform: 'android');
     authorized = false;
     await tester.pumpWidget(screen(
+      epochToken: epoch,
       owner: () => authorized,
       observe: (_) {},
     ));
@@ -142,6 +158,7 @@ void main() {
     expect(stale!.buildReport(), isNull);
     authorized = true;
     await tester.pumpWidget(screen(
+      epochToken: epoch,
       owner: () => authorized,
       observe: (lease) => stale = lease,
     ));
@@ -150,8 +167,10 @@ void main() {
 
   testWidgets('disposal revokes lease and delayed callback cannot write',
       (tester) async {
+    final epoch = Object();
     VisionSessionJournalLease? original;
     await tester.pumpWidget(screen(
+      epochToken: epoch,
       owner: () => true,
       observe: (lease) => original = lease,
     ));
@@ -169,8 +188,10 @@ void main() {
 
   testWidgets('ownership callback throwing fails closed',
       (tester) async {
+    final epoch = Object();
     VisionSessionJournalLease? observed;
     await tester.pumpWidget(screen(
+      epochToken: epoch,
       owner: () => throw StateError('AuthGate disposed'),
       observe: (lease) => observed = lease,
     ));
