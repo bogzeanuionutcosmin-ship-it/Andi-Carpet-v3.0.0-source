@@ -32,8 +32,11 @@ def evaluate(evidence):
         if item["status"] == "pass" and not item["reference"].strip():
             raise ValueError("pass requires a verifiable reference: " + key)
     blockers = [key for key in REQUIRED if evidence[key]["status"] != "pass"]
-    return {"production_ready": not blockers, "blockers": blockers,
-            "passed": len(REQUIRED) - len(blockers), "total": len(REQUIRED)}
+    # Self-declared references are not authenticated release authorization.
+    # A formally complete checklist must never imply a production go decision.
+    return {"production_ready": False, "formal_evidence_complete": not blockers,
+            "blockers": blockers, "passed": len(REQUIRED) - len(blockers),
+            "total": len(REQUIRED)}
 
 
 def main(argv=None):
@@ -47,7 +50,7 @@ def main(argv=None):
         print("INVALID EVIDENCE: " + str(error), file=sys.stderr)
         return 2
     print(json.dumps(report, sort_keys=True, indent=2))
-    return 0 if report["production_ready"] else 1
+    return 0 if report["formal_evidence_complete"] else 1
 
 
 if __name__ == "__main__":
