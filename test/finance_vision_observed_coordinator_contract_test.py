@@ -54,6 +54,16 @@ class FinanceVisionObservedCoordinatorContract(unittest.TestCase):
         self.assertIn('_flights.remove(path);', self.active)
         self.assertIn('onError: (Object _, StackTrace __) => clear()', self.active)
 
+    def test_stale_wrapper_is_monotonically_denied(self):
+        self.assertIn('bool _open = true;', self.active)
+        self.assertIn('void dispose()', self.active)
+        self.assertIn('_open = false;', self.active)
+        self.assertIn('coordinator.repository.sessionIsCurrent()', self.active)
+        self.assertIn('coordinator.journal.sessionIsCurrent()', self.active)
+        self.assertIn('if (!_ownsSession())', self.active)
+        self.assertIn("FinanceIntentStatus.uncertain, 'finance_session_expired'",
+                      self.active)
+
     def test_signals_remain_only_anonymous_status(self):
         self.assertIn('result: result.result,', self.bridge)
         self.assertIn('VisionDiagnosticSignal.financeOperationUncertain', self.observer)
