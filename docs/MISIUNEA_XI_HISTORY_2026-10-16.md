@@ -63,3 +63,43 @@ rămâne probat separat. Nu este relaxare a unei respingeri certe în runtime.
 Fixture-ul rules nu compila literalul exponențial; finiteMoney folosește acum
 aceeași identitate n-n==0 ca regulile VIII, fără plafon monetar nou.
 Rezultatele acestor corecții necesită CI nou; primul eșec nu este PASS.
+
+## XI-05 — compatibilitate și poarta de versiune
+
+Matricea nouă separă schema append-only de rooturile legacy. Cu rules main,
+membrul nu poate citi namespace V2, dar APK vechi poate scrie în continuare
+settlements; Admin catch-all poate altera markerul V2. Cu fixture XI standalone,
+legacy writes și marker overwrite sunt refuzate chiar Adminului. Totalul V2
+poate fi200 în timp ce cititorul vechi vede0 sau scrie25 în alt document: simpla
+păstrare a schemei vechi NU este compatibilitate financiară transparentă.
+
+Imposibilitate fără gate: vechiul set(merge:true) nu transmite operationId,
+digest, baseRevision sau protocol. Nu putem distinge două intenții egale de
+retransmiterea aceleiași tentative după ACK pierdut. A permite write fără acestea
+elimină invarianta; a cere dovezile respinge vechiul client. Nu activăm niciun gate.
+Propunere staged: inventar clienți și intenții pending → update/reconciliere
+explicită → gate server pentru writeri vechi și contract source→protocol unic →
+seed/migrare aprobată și validată separat → activare controlată. Un prompt UI
+singur nu obligă un APK vechi să se oprească. Rollback păstrează dovezi și poate
+opri operații noi; nu redeschide legacy writes peste ledger și nu șterge bani.
+Fixture-ul Chrome combinat este numai test; V1 și V2 coexistente acolo NU sunt
+un rollout sigur. Alegerea exclusivă a protocolului per source rămâne BLOCKED.
+
+## XI-06 — readback nu este CAS
+
+Witness nou pe FinanceCheckedJournalStorage real și două RMW independente:
+A.read=null, B.read=null; A.write envelopeA + readback PASS; A commit server +
+ACK pierdut; B.write envelopeB bazat pe snapshotul său vechi + readback PASS.
+Jurnalul recuperat conține numaiB, deși markerulA este comis. Două write-uri,
+zero delete. Testul modelează procese independente fără _queues comun; NU este
+probă de plugin în două taburi, restart OS sau securitate fizică.
+
+Web Locks analizat conceptual din specificația primară:
+https://w3c.github.io/web-locks/ (consultată 2026-10-16).
+Contract posibil: navigator.locks.request cu același nume de resursă pentru
+întreaga operație read→validate→modify→write→readback, nu doar pentru setItem.
+Coordonare cooperantă în același storage bucket; nu toate profilele, clienții
+legacy, Android/iOS/Windows sau fsync. Fără steal sau timeout care ar autoriza
+continuarea fără lock. API absent/revocat → fail-closed. Alternativă: store local
+tranzacțional cu CAS pe revizie și rollback atomic al envelope-ului. Niciuna nu
+este implementată/activată în aplicație; nu introducem dependențe noi. BLOCKED.
