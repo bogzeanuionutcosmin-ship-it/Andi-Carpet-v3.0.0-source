@@ -37,7 +37,11 @@ service cloud.firestore {
    && r.actorUid==request.auth.uid && r.teamId==d.teamId && r.targetPath==d.sourceCollection+'/'+d.sourceId
    && r.baseRevision==base && r.revision==base+1 && r.kind in ['departure','during']
    && h_money(r.amount) && r.amount>0 && r.method in ['Cash','Transfer']
-   && r.fromName is string && r.fromName.size()>0 && r.date is timestamp && r.createdAt==request.time;
+   && r.fromName is string && r.fromName.size()>0 && r.date is map
+   && r.date.keys().hasOnly(['seconds','nanoseconds']) && r.date.keys().hasAll(['seconds','nanoseconds'])
+   && r.date.seconds is int && r.date.seconds>=-62135596800 && r.date.seconds<=253402300799
+   && r.date.nanoseconds is int && r.date.nanoseconds>=0 && r.date.nanoseconds<=999999999
+   && r.createdAt==request.time;
  }
  function h_source_actor(d){
   let source=get(/databases/$(database)/documents/$(d.sourceCollection)/$(d.sourceId)).data;

@@ -180,3 +180,18 @@ ca substituție a sufixului și multiplicând codul sursă. Inserția folosește
 callback de replacement, păstrând fragmentul literal exact o singură dată.
 Verificare locală de lungime compoziție; rules de pe disc/producție nemodificate.
 Nu eliminăm controale pentru a masca acest eșec de infrastructură de test.
+
+### Divergență timestamp reală observată și reprezentare V2 exactă
+
+05a49f7: SDK a măsurat268010bytes JSON pentru1000rânduri Unicode; timestampul
+nativ123456789ns s-a citit123456000ns. Numărul bytes nu dovedește egalitatea
+valorilor. Firestore a refuzat documentul supradimensionat cu invalid-argument,
+mesajul exact «property payload is longer than1048487bytes»; predicatele probei
+sunt corectate pe codul/mesajul real, fără acceptarea unei scrieri mari.
+
+Candidatul V2 normalizează DateTime în secunde+nanosecunde și stochează data
+receipt ca hartă de DOI întregi, nu Timestamp nativ. Rules verifică intervalele;
+digestul/replay/reconcile și auditul folosesc exact această reprezentare. Nicio
+schimbare în codec-ul V1 sau istoricul existent. Noua probă Dart SDK cere
+123456789 exact în hartă și confirmare după ACK pierdut, nu acceptă uncertain
+în locul controlului pozitiv. Nu se pretinde că SDK păstrează Timestamp nativ.

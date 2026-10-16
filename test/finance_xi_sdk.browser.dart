@@ -56,7 +56,7 @@ void main(){
   expect(summary.data!['receivedDeparture'],400);expect(summary.data!['revision'],2);
   expect(summary.data!.containsKey('receivedEntries'),false);
   final row=await port.readServer(next.rowPath);
-  final date=row.data!['date'] as FinanceTimestamp;expect(date.nanoseconds,123456789);
+  final date=row.data!['date'] as Map;expect(date['nanoseconds'],123456789);expect(date['seconds'],1790812800);
   expect(row.data!['digest'],saved.digest);
   final query=await db.collection('${first.summaryPath}/receipts').where('revision',isLessThanOrEqualTo:2)
    .orderBy('revision',descending:true).limit(20).get(const GetOptions(source:Source.server));

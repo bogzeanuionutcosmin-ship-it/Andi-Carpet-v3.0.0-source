@@ -10,7 +10,7 @@ const stamp=new Timestamp(1790812800,123456789);
 const payload=(n,{base=0,team='team',target='trip',actor='a'}={})=>{
  const id=n.toString(16).padStart(32,'0');
  const fields={protocol:2,operationId:id,actorUid:actor,teamId:team,targetPath:`settlements/${target}`,
- baseRevision:base,revision:base+1,kind:'departure',amount:200,method:'Cash',fromName:'Synthetic',date:stamp};
+ baseRevision:base,revision:base+1,kind:'departure',amount:200,method:'Cash',fromName:'Synthetic',date:{seconds:stamp.seconds,nanoseconds:stamp.nanoseconds}};
  return {id,target,team,path:`financeHistoryXi/s_${target}`,row:{...fields,digest:crypto.createHash('sha256').update(JSON.stringify(fields)).digest('hex')}};
 };
 async function seed(env){await env.withSecurityRulesDisabled(async c=>{
@@ -140,7 +140,7 @@ test('XI SDK exact JSON bytes after Unicode snapshot and actual oversized docume
   const oversized={payload:'ă'.repeat(600000)};
   assert.ok(Buffer.byteLength(JSON.stringify(oversized),'utf8')>1048576);
   await assert.rejects(setDoc(doc(database,'measurements/oversized'),oversized),error=>
-   typeof error.code==='string' && /size|large|maximum|1048576|exceed/i.test(error.message));
+   error.code==='invalid-argument' && /property \"payload\" is longer than [0-9]+ bytes/i.test(error.message));
   assert.equal((await getDocFromServer(doc(database,'measurements/oversized'))).exists(),false);
  });
 });

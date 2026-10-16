@@ -97,4 +97,16 @@ void main(){
    expect(a.complete,false);
   }
  });
+ test('XI receipt payload retains nanoseconds and canonicalizes equivalent date representations',(){
+  FinanceIntent base(Object date)=>FinanceIntent(operationId:'f'*32,actorUid:'a',teamId:'team',
+   collection:'settlements',documentId:'trip',baseRevision:0,kind:FinanceIntentKind.receipt,
+   changes:{'kind':'departure','amount':200,'method':'Cash','fromName':'Synthetic','date':date});
+  final exact=HistoryXiIntent(base(FinanceTimestamp(1790812800,123456789)));
+  expect((exact.row()['date'] as Map)['nanoseconds'],123456789);
+  expect(HistoryXiIntent.decode(exact.encode()).digest,exact.digest);
+  final date=DateTime.fromMicrosecondsSinceEpoch(-1,isUtc:true);
+  final a=HistoryXiIntent(base(date)),b=HistoryXiIntent(base(FinanceTimestamp(-1,999999000)));
+  expect(a.digest,b.digest);expect(a.row()['date'],{'seconds':-1,'nanoseconds':999999000});
+ });
+
 }

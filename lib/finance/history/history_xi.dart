@@ -9,7 +9,7 @@ import '../intents/finance_repository.dart';
 // explicit versioned envelope, not merely an equal amount/operation ID.
 class HistoryXiIntent {
   final FinanceIntent receipt;
-  HistoryXiIntent(this.receipt) {
+  HistoryXiIntent(FinanceIntent input) : receipt=_normalize(input) {
     if (receipt.kind != FinanceIntentKind.receipt) throw const FormatException('history_receipt_only');
     final c=receipt.changes;
     if(c.length!=5 || !c.keys.toSet().containsAll({'kind','amount','method','fromName','date'}) ||
@@ -19,6 +19,20 @@ class HistoryXiIntent {
       (c['date'] is! DateTime && c['date'] is! FinanceTimestamp)) {
       throw const FormatException('history_invalid_receipt');
     }
+  }
+  static FinanceIntent _normalize(FinanceIntent input){
+    final value=input.changes['date'];
+    FinanceTimestamp exact;
+    if(value is FinanceTimestamp){exact=value;}
+    else if(value is DateTime){
+      final micros=value.toUtc().microsecondsSinceEpoch;
+      var seconds=micros~/1000000;
+      if(micros<0 && micros%1000000!=0)seconds--;
+      exact=FinanceTimestamp(seconds,(micros-seconds*1000000)*1000);
+    }else{throw const FormatException('history_exact_date_required');}
+    return FinanceIntent(operationId:input.operationId,actorUid:input.actorUid,
+      teamId:input.teamId,collection:input.collection,documentId:input.documentId,
+      baseRevision:input.baseRevision,kind:input.kind,changes:{...input.changes,'date':exact});
   }
   String get summaryPath=>'financeHistoryXi/${receipt.collection=='finance'?'f':'s'}_${receipt.documentId}';
   String get rowPath=>'$summaryPath/receipts/${receipt.operationId}';
@@ -34,10 +48,20 @@ class HistoryXiIntent {
   Map<String,Object?> row()=>{'protocol':2,'operationId':receipt.operationId,
     'digest':digest,'actorUid':receipt.actorUid,'teamId':receipt.teamId,
     'targetPath':receipt.targetPath,'baseRevision':receipt.baseRevision,
-    'revision':receipt.baseRevision+1,...receipt.changes};
+    'revision':receipt.baseRevision+1,...receipt.changes,
+    // Native SDK timestamps may be canonicalized to microseconds. Preserve the
+    // exact integer representation in this NEW protocol's immutable payload.
+    'date':{'seconds':(receipt.changes['date'] as FinanceTimestamp).seconds,
+      'nanoseconds':(receipt.changes['date'] as FinanceTimestamp).nanoseconds}};
   @override String toString()=>'HistoryXiIntent';
 }
 
+FinanceTimestamp _exactRowDate(Object? value){
+  if(value is! Map || value.length!=2 || value['seconds'] is! int || value['nanoseconds'] is! int) {
+    throw const FinanceRefusal('history_invalid_date');
+  }
+  return FinanceTimestamp(value['seconds'] as int,value['nanoseconds'] as int);
+}
 const _summaryKeys={'protocol','teamId','sourceCollection','sourceId','revision',
   'receivedDeparture','receivedDuring','lastOperationId','updatedAt'};
 bool _money(Object? v)=>v is num && v.isFinite && v>=0;
@@ -171,7 +195,8 @@ class HistoryXiConsistency {
         final i=HistoryXiIntent(FinanceIntent(operationId:row['operationId'] as String,
           actorUid:row['actorUid'] as String,teamId:row['teamId'] as String,collection:target[0],
           documentId:target[1],baseRevision:row['baseRevision'] as int,kind:FinanceIntentKind.receipt,
-          changes:{for(final k in ['kind','amount','method','fromName','date'])k:row[k]}));
+          changes:{for(final k in ['kind','amount','method','fromName'])k:row[k],
+            'date':_exactRowDate(row['date'])}));
         if(row['revision']!=_next || i.receipt.baseRevision!=_next-1 ||
           i.summaryPath!=binding.summaryPath || i.receipt.teamId!=binding.receipt.teamId ||
           !sameFinanceValue({for(final e in row.entries)if(e.key!='createdAt')e.key:e.value},i.row()) ||
