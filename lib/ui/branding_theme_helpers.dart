@@ -1,6 +1,9 @@
-part of '../main.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 
-String _normalizeFontChoice(String? raw) {
+import '../models/app_data_models.dart';
+
+String normalizeFontChoice(String? raw) {
   final value = (raw ?? 'System').trim();
   if (value == 'Georgia' || value == 'Serif') return 'Serif';
   if (value == 'Monospace') return 'Monospace';
@@ -9,7 +12,7 @@ String _normalizeFontChoice(String? raw) {
   return 'System';
 }
 
-String? _resolvedFontFamily(String choice) => switch (_normalizeFontChoice(choice)) {
+String? resolvedFontFamily(String choice) => switch (normalizeFontChoice(choice)) {
   // Pe Web folosim familii Windows/browser reale; numele generice CSS nu sunt
   // interpretate mereu ca fontFamily de motorul Flutter Web.
   'Sans' => kIsWeb ? 'Arial' : 'sans-serif',
@@ -19,7 +22,7 @@ String? _resolvedFontFamily(String choice) => switch (_normalizeFontChoice(choic
   _ => null,
 };
 
-const Map<String, String> _bundledBackgroundAssets = <String, String>{
+const Map<String, String> bundledBackgroundAssets = <String, String>{
   'default': 'assets/themes/fundal_1.jpg',
   'salarii_intarziate': 'assets/themes/salarii_intarziate.jpg',
   'zi_de_salariu': 'assets/themes/zi_de_salariu.jpg',
@@ -29,7 +32,7 @@ const Map<String, String> _bundledBackgroundAssets = <String, String>{
   'easter_garden': 'assets/themes/easter_garden.jpg',
 };
 
-const Map<String, String> _bundledBackgroundLabels = <String, String>{
+const Map<String, String> bundledBackgroundLabels = <String, String>{
   'default': 'Default',
   'salarii_intarziate': 'Salarii întârziate',
   'zi_de_salariu': 'Zi de salariu',
@@ -39,7 +42,7 @@ const Map<String, String> _bundledBackgroundLabels = <String, String>{
   'easter_garden': 'Easter Garden',
 };
 
-const Map<String, String> _bundledLogoAssets = <String, String>{
+const Map<String, String> bundledLogoAssets = <String, String>{
   'standard': 'assets/logos/standard.jpg',
   'rain': 'assets/logos/rain.jpg',
   'winter': 'assets/logos/winter.jpg',
@@ -47,7 +50,7 @@ const Map<String, String> _bundledLogoAssets = <String, String>{
   'christmas': 'assets/logos/christmas.jpg',
 };
 
-const Map<String, String> _bundledLogoLabels = <String, String>{
+const Map<String, String> bundledLogoLabels = <String, String>{
   'standard': 'Standard',
   'rain': 'Rain / Sad',
   'winter': 'Winter',
@@ -55,9 +58,9 @@ const Map<String, String> _bundledLogoLabels = <String, String>{
   'christmas': 'Christmas',
 };
 
-String _activeLogoAsset(AppSettings settings) =>
-    _bundledLogoAssets[settings.brandingLogoId] ?? _bundledLogoAssets['standard']!;
+String activeLogoAsset(AppSettings settings) =>
+    bundledLogoAssets[settings.brandingLogoId] ?? bundledLogoAssets['standard']!;
 
 Widget appBrandLogo(AppSettings settings, {double width = 520, double height = 130}) =>
-    Image.asset(_activeLogoAsset(settings), width: width, height: height, fit: BoxFit.contain);
+    Image.asset(activeLogoAsset(settings), width: width, height: height, fit: BoxFit.contain);
 

@@ -1,0 +1,22 @@
+# Test integrat Finance IX + Vision session-scoped — 16 octombrie 2026
+
+**Shiva / DO NOT MERGE / test-only composition.** Bază exactă: Luna PR #73 la `4cd6ee522534b6e5edd45d6112ddadf23c418bac`, deja Standard 5/5, Identity, Mission IX 3/3, Platforms GREEN pe ramura proprie. Vision PR #74 la `5cd131ea148ac32cfacd40a375aa4609222c0555`, Standard 5/5, Identity și Android compile-only GREEN. **Aceste rezultate SEPARATE nu demonstrează arborele combinat; rezultatele acestei ramuri trebuie citite pe HEAD-ul ei.**
+
+## Mod de compunere și izolare
+- Ramură nouă `integration/finance-ix-vision-scoped-20261016`, pornită din HEAD PR #73 fără modificarea ramurii ori a PR-ului Lunei.
+- Au fost preluate prin **bloburi SHA exacte, auditabile**, doar porturile independente Vision: journal RAM, lifecycle coordinator, widget scope, bridge pentru AuthGate, catalog de semnale și advice-ul financiar `operation_uncertain`, plus teste relevante. Nu am importat Home/AuthGate/main/rules/source-pins din ramura Shiva.
+- `lib/integration/finance_vision_outcome_observer.dart`: adaptor **nou, opțional, cu flux unic spre Vision**, care primește doar `FinanceIntentResult.status`. Confirmed și rejectedBeforeWrite nu generează incidente false. Uncertain generează doar codul fix `finance/operation_uncertain`; conflict produce `finance/revision_conflict`. Nu transmite identificatori de intenție, UID, bani, nume, excepții sau OCR, nu execută tranzacții, refresh, retry ori writes.
+- `test/finance_vision_epoch_compatibility_test.dart`: probă deterministă cu `FinanceAtomicFixture` + `FinanceCheckedJournalStorage` din IX, simulează timeout după commit, un singur receipt, semnal anonim pentru A, revocarea jurnalului Vision la A→B, jurnalul financiar B gol, A2 fără diagnostic vechi, reconcilierea **intenției identice** prin marker fără re-execuția tranzacției. Încă două teste: statusurile confirmate/refuzate nu inventează incidente și ownerul revocat nu poate emite.
+- Workflowurile `mission-ix.yml` și `mission-ix-platforms.yml` includ doar noua ramură ca a doua opțiune de execuție a testelor; nicio modificare a pașilor, serviciilor sau drepturilor CI. Standard, Identity, finance emulator, Chrome, Android compile-only vor valida **același tree**.
+
+## Limite esențiale
+- Probe cu fake atomic și storage în RAM pentru cazul încrucișat, **nu dovadă hardware sau certitudine de persistență a web/secure storage după restart**; acceptanțele SDK IX existente în aceeași ramură sunt teste distincte.
+- Nu am conectat producătorii reali GPS/FCM/OCR/Finance la aplicația Home. Portul nu este activ implicit. Jurnalul global de instalare Vision rămâne neafișabil între conturi.
+- Nicio schimbare în Home, AuthGate, fișiere protejate, runtime financiar IX al Lunei, Firestore rules, Functions sau billing. Niciun merge/cherry-pick în ramurile originale, merge în main, deploy, migrare, date Firebase live ori APK publicat.
+- **production_ready=false**. Issues #54/#63/#72 rămân deschise. Urmează închiderea incompatibilității clienților legacy, contracte Home writer, Restore, hardware și audit Spark înainte de orice release.
+
+## Criterii verificabile
+1. Tree exact și manifest de 116 SHA/pini intact, fără fișierele înghețate modificate.
+2. Standard 5/5, Identity, Mission IX 3/3, Mission IX Platforms + Android pe HEAD exact.
+3. `finance_vision_epoch_compatibility_test.dart` trece fără retry dublu și fără păstrarea raportului A la B.
+4. Orice FAIL rămâne în PR și se repară în aceeași ramură înainte de verdict. Niciun SKIPPED nu este considerat PASS.
