@@ -3072,3 +3072,25 @@ Homeimplicit/compatibilitateAPKvechi/Restorecomplet/cross-process/hardware și
 Sparkreal rămân blocante; production_ready=false. Nu închidem financiarul ori
 pretindem telefon testat prin compileAndroid. Fărămerge/deploy/live/migrare/
 billing/distribuțieAPK; PR73/74/75 rămânread-only.
+
+## Misiunea XI — Issue79 / PR Draft80, 2026-10-16
+Bază exclusivă PR78 291b10a/tree d7cbee9, inițialcurat/4workflowuriSUCCESS.
+Branch nou fix/finance-history-legacy-safety-mission-xi-20261016; PR75/78/73/74/
+main read-only,116hashuri/21pini nemodificați. Moduli noi lib/finance/history:
+receipt V2 append-only, receiptul este marker,2writesatomice cu summarybounded,
+zeroarray, bootstrapdoarsursăzeroexistentă,fărăjurnalV1→V2/migrare/Homeimplicit.
+Envelope/digestprotocol2explicit, datecanonicesecunde+nanosecundeîntregi după
+măsurareSDK nativ123456789→123456000. FărărescriereistoricV1.
+Snapshotreviewread-onlypentruprefixpinnedN, boundedpages20, gap/orphan/cache/
+partial/crashrefuzate; concurentN+1nuretroactiveazăprefixulNdarblocheazărestore
+stale. Doubleadditioninversăpoaterefuzalegitim0.1+0.2+0.3:BLOCKERdocumentat,
+fărărotunjire/schemămonetarănouătacit. Replaycuownerevocatdupăawait=uncertain.
+Witnesscheckedstorage:2RMWindependente/2readbacksPASSpotpierdeintentcomisACKpierdut;
+nuesteprobătab/OS;WebLocksnumaiconceptual,exclusivitatefizicăBLOCKED.
+PR75auditatread-onlype48235b1;enumobserverlocalnuprimeșteUID/sume/payload,nuretry,
+nuconverteșteuncertainînconfirmed. WriteriimanagerratebootstrapOCRperDiemsseparați.
+RaportXIșirolloutproposalîn docs; fărăaplicarepatchprotejat. 199PythonlocalePASS,
+CIfinalexact,tree,commiturișiPASS/FAILrealeseconsemneazăînPR80peultimulHEAD.
+production_ready=false;gatelegacy,migrare,Home,toțiwriterii,jurnalV2fizic,CAS/
+procese,Restorecomplet,aritmeticăexactă,hardwareșiSparklive rămânrestanțe.
+Fărămerge/deploy/Firebaseproducție/migrare/backfill/billingnou/APKdistribuit.

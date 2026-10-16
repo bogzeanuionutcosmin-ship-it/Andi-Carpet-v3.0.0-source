@@ -208,3 +208,73 @@ asociativă. Probă strictă: refuz proof, zero rotunjire, zero modificare a tot
 server. Acesta este un BLOCKER pentru certificarea universală a snapshotului;
 o reprezentare monetară exactă/ordine de audit necesită contract revizuit înainte
 de activare. Nu impunem tacit două zecimale sau bani întregi peste datele existente.
+
+## XI-10 — handoff și status pe fiecare lot
+
+PR Draft80. production_ready=false. Propunerea de integrare/rollout este în
+MISIUNEA_XI_ROLLOUT_PROPOSAL_2026-10-16.md, NEAPLICATĂ. PR75/78/73/74/main
+și toate116surse/21pini se verifică distinct; nu schimbăm pini pentru CI.
+
+| Lot | Progres real | Limită rămasă |
+| --- | --- | --- |
+| XI-01 | JSON UTF8 exact ASCII/Unicode1000/7300/21900; măsurare snapshot SDK și refuz document mare; sumar V2 constant după formula storage | formula storage nu este wire/index/billing |
+| XI-02 | model/port receipt V2 independent, sumar mic + receipt/marker imuabil | neactivat; fără migrare sau jurnal V2 de producție |
+| XI-03 | fixture rules + SDK JS și Dart autentice, replay/CAS/ack/roles/timestamps | rezultatele exacte se citesc din CI pe HEAD final în PR80 |
+| XI-04 | consistență pinned paginată și completitudine fail-closed | audit reverse double poate refuza legitim; contract exact necesar |
+| XI-05 | matrice namespaceV2 vs client vechi/main/fixture strict, dovadă incompatibilitate și gate propus | fără gate server sau upgrade live |
+| XI-06 | intercalare deterministă pe checked storage real, pierdere intent după două readbacks reușite | MODEL procese independente; Web Locks conceptual; BLOCKED cross-tab/OS |
+| XI-07 | prefix snapshot review bounded, checksum, partial/crash/orphan/concurrent N+1 | nu este inventar global sau API financiar restore |
+| XI-08 | contracte writeri separate + porți de autorizare | manager/rate/bootstrap/OCR/perDiems nu sunt convertite |
+| XI-09 | audit PR75 read-only și observer anonim local fără I/O/retry/conversie rezultat | fără integrare între ramuri |
+| XI-10 | filtre XI păstrând toate controalele, documente/ChatGpt și raport PR | final CI exact obligatoriu; hardware/live UNKNOWN |
+
+### Costul candidatului, separat de V1
+
+Receiptul servește și ca marker:2writes/append,0writes/replay/reconcile. Clientul
+citește receipt+summary (2reads) și sursa legacy numai la bootstrap (încă1read).
+SDK max3attempts: upper model normal66document+rules reads, bootstrap69, fără
+cache presupus în Security Rules. Reconciliere explicită:2serverreads + pânăla20
+rules accesses. Nu sunt factură măsurată sau cota live. Prefix audit citeșteN
+receipts în pagini≤20 și headerul; nu devine gratuit doar fiind paginat.
+
+La20receipts/zi:600/3600/7300rânduri la30/180/365zile, fără ștergere/TTL; summary
+nu conține array și dimensiunea sa după formula Firestore rămâne constantă pentru
+aceleași bindings. Cost bytes/receipt depinde de payload/indexuri; măsurarea SDK
+JSON a unui array de1000nu este estimare de indexuri V2. Planul, baseline existent,
+indexuri, acces rules efectiv și egress live rămân UNKNOWN. Nu există polling,
+listener sau serviciu nou în candidat. Constructorii/observerul nu produc I/O.
+
+### Matrice de dovezi și blocaje pentru lansare
+
+- SDK real emulator: autorizare JS, atomic summary+receipt, readback, bounded queries;
+  Dart Chrome port autentificat și exact date integers. Rezultatele finale în PR80.
+- Fake/model: snapshot proof, intercalare cross-process, metadata stale/cached,
+  owner callbacks, crash recreare obiecte. Nu sunt certificate de două telefoane.
+- KNOWN UNSAFE/BLOCKED: Home implicit și writerii neacoperiți, gate V1/V2, migrare
+  sumelor/istoricului vechi, jurnal V2 fizic cu CAS/lock cross-process, restaurare
+  financiară completă multi-source, audit exact pentru double neasociativ.
+- UNKNOWN: Android/iOS/Windows storage/restart OS/power loss, taburi reale și
+  hardware, plan/billing/quota/index/egress live. Android build este compile-only.
+- Vision PR75 nu este integrat, ci auditat pe SHA explicit. Datele financiare nu
+  devin telemetrie; un eveniment uncertain nu este confirmare de bani.
+
+Nu închidem issues32/53/54/72/77/79. Fărămerge/deploy/ruleslive/config/date,
+migrare/backfill,restorelive,billingnou,Functionsnoi,APKinstalat/publicat.
+
+Lista completă de commituri, SHA/tree final, cele4workflowuri active și numerele
+PASS reale sunt consemnate în descrierea PR80 după verificarea ultimului HEAD;
+nu se reutilizează verdele bazei sau al unui commit anterior drept rezultat final.
+
+### Checkpoint executat pe codul final candidat 880b9e6
+
+Finance IX38889899336 SUCCESS3/3:230Dart,77JSemulator,21FlutterSDKreale și raw
+TimestampcontrolV1 PASS. Cele3probe noi SDKXI au trecut inclusiv payload date
+exact și ACKpierdut→same-intent reconcile; douăSDKinstances=un singur receipt.
+Model V2 măsurat prin formula storage: summary277bytes atât la început cât și
+la21900receipts, receipt sinteticUnicode608bytes (fără indexuri/billing).
+600/3600/7300receipts la30/180/365zile în acest exemplu reprezintă364800/
+2188800/4438400bytes receipts +277summary înainte de indexuri/metadata/egress.
+Nu extrapolăm 608bytes ca maxim universal al tuturor payloadurilor.
+
+Acest checkpoint nu substituie CI al commitului final de documentație. Final
+HEAD/tree/workflowuri și concluzii sunt în PR80 după verificare, fără auto-merge.
