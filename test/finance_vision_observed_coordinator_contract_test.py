@@ -75,6 +75,14 @@ class FinanceVisionObservedCoordinatorContract(unittest.TestCase):
         self.assertIn("FinanceIntentStatus.uncertain, 'finance_session_expired'",
                       self.active)
 
+    def test_unexpected_coordinator_errors_fail_closed_without_raw_logging(self):
+        self.assertIn('finance_unclassified_result', self.active)
+        self.assertIn('journalPending: true,', self.active)
+        self.assertIn('_observe(_unclassified);', self.active)
+        self.assertNotIn('catch (error)', self.active)
+        self.assertNotIn('catch (exception)', self.active)
+        self.assertNotIn('toString()', self.active)
+
     def test_signals_remain_only_anonymous_status(self):
         self.assertIn('result: result.result,', self.bridge)
         self.assertIn('VisionDiagnosticSignal.financeOperationUncertain', self.observer)
