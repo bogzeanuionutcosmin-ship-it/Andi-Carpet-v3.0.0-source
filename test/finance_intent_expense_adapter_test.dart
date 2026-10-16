@@ -307,6 +307,41 @@ void main(){
     expect(await h.scope.coordinator.journal.pending(),isEmpty);
     await t.pumpWidget(const SizedBox());h.adapter.dispose();
   });
+  for(final committed in [false,true]) {
+    testWidgets('new dialog before local review cannot strand an older intent committed=$committed',(t)async{
+      final h=_Harness();
+      final old=FinanceIntent(operationId:'7'*32,actorUid:'worker',teamId:'team',
+        collection:'settlements',documentId:'settlement',baseRevision:0,
+        kind:FinanceIntentKind.receipt,changes:{'kind':'departure','amount':150,
+          'method':'Cash','fromName':'Earlier','date':h.created});
+      if(committed) {
+        h.db.commitThenThrow=true;
+        expect((await h.scope.coordinator.executeExplicitly(old)).result.status,FinanceIntentStatus.uncertain);
+      } else {await h.scope.coordinator.journal.prepare(old);}
+      final calls=h.db.calls,writes=h.db.writes;
+      h.fixture.wrapPage=(page)=>FinanceExpenseDemoRecovery(adapter:h.adapter,child:page);
+      await h.fixture.mount(t);await h.receipt(t);
+      expect(h.db.calls,calls);expect(h.db.writes,writes);expect(h.db.serverReads,0);
+      expect(h.fixture.logs,isEmpty);
+      expect(h.adapter.pendingCodes,isEmpty,reason:'The refused new ID must not occupy the old target');
+      expect((await h.scope.coordinator.journal.pending()).single.encode(),old.encode());
+      // Explicit review must remain usable in the same adapter and owner scope.
+      await h.adapter.loadPendingForReviewExplicitly();await t.pumpAndSettle();
+      expect(h.adapter.recoveryCode,isNull);expect(h.adapter.pendingCodes,hasLength(1));
+      await h.adapter.reconcileExplicitly(old.targetPath);await t.pumpAndSettle();
+      expect(h.db.calls,calls);expect(h.db.writes,writes);expect(h.fixture.logs,isEmpty);
+      if(committed) {
+        expect(h.fixture.settlementOverride!.receivedDeparture,150);
+        expect(h.fixture.settlementOverride!.lastOperationId,old.operationId);
+        expect(await h.scope.coordinator.journal.pending(),isEmpty);
+        expect(h.adapter.pendingCodes,isEmpty);expect(h.db.serverReads,2);
+      } else {
+        expect((await h.scope.coordinator.journal.pending()).single.encode(),old.encode());
+        expect(h.adapter.pendingCodes,hasLength(1));expect(h.db.serverReads,1);
+      }
+      await t.pumpWidget(const SizedBox());h.adapter.dispose();
+    });
+  }
   test('loading an uncommitted persisted request never executes it',()async{
     final h=_Harness();
     final intent=FinanceIntent(operationId:'8'*32,actorUid:'worker',teamId:'team',
