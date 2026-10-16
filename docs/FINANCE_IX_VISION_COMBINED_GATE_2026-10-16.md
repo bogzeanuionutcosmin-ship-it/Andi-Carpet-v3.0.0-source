@@ -57,3 +57,14 @@ Teste noi deterministe: `test/finance_vision_observed_coordinator_test.dart` + `
 `FinanceVisionObservedCoordinator` verifică și predicatul autorizat al `FinanceRepository` și al `FinanceIntentJournal` (ambele sunt legate de AuthGate+generație în compoziția permisă), **înainte** să returneze un eventual Future comun, să înceapă o execuție sau o reconciliere. Prima negare/eroare marchează definitiv acel observer ca închis; UID-ul A2 redevenit egal cu A1 nu îi mai poate reda accesul. `dispose()` este idempotent și blochează operațiuni viitoare. Nu șterge journal financiar, nu pretinde că anulează o tranzacție server deja pornită. Un rezultat după logout rămâne al operației originale, dar nu se mai promovează într-un jurnal Vision al altei epoci.
 
 Teste: `test/finance_vision_observed_coordinator_test.dart` include A1→B→A2 cu callback vechi devenit fals și reactivat artificial, `dispose` repetat, fără scrieri server, fără reset de date, plus overlapul de 30 de apeluri, reconcilierea unică și cleanup. Contractul Python verifică monotonicitatea doar suplimentar probelor runtime. Nu înlocuiește drepturile Firebase/security rules și nu justifică activarea Home.
+
+
+## Lot independent: două instanțe de UI în același isolate
+
+După lotul single-flight per obiect, rămânea cursa între două `FinanceVisionObservedCoordinator` distincte pentru același UID/target, când ambele citeau jurnalul **înainte** ca primul să execute `prepare`. `FinanceIntentJournal` serializează `prepare`, dar vechiul coordinator poate ajunge în read-back/replay al aceleiași intenții.
+
+Adaptorul opțional impune acum un **lease efemer static per (ownerUid, targetPath), exclusiv în același Dart isolate**: un al doilea wrapper răspunde `uncertain/finance_operation_in_another_scope`, cu `blockedByPendingIntent=true`, fără a primi `Future` sau date din prima sesiune și fără apel la Firestore. Leaseul se eliberează pe succes/eșec prin identitate strictă de token. Prima intenție, dacă rămâne în jurnal cu ACK incert, necesită în continuare `reconcileExplicitly` după eliberarea leaseului; deblocarea leaseului nu înseamnă autorizare de retrimitere.
+
+`test/finance_vision_observed_coordinator_test.dart` simulează două instanțe pentru A cu același target, commit cu răspuns pierdut, 0 citiri/0 tranzacții la a doua instanță în timpul primei, diagnostic nepartajat, apoi recuperare explicită fără a doua tranzacție; testul structural Python verifică absența transportului/stocării în această protecție.
+
+**Limită:** nu este CAS între procese sau taburi, nu previne writerii legacy/Home și nu poate oferi consistență inter-device fără marker/revizie și rules server. Nu activează implicit Home și nu modifică PR #73, rules, Firebase live sau publicarea APK.
