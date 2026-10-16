@@ -12,7 +12,8 @@ service cloud.firestore {
       get(/databases/$(database)/documents/teams/$(team)).data.financialManagerId==request.auth.uid));
  }
  function h_read(team){
-  return h_active() && (h_user().role=='admin' ||
+  return h_active() && x_current() && x_fence(request.auth.uid).teamId==team
+   && (h_user().role=='admin' ||
     'viewOtherDecont' in h_user().effectivePermissions ||
     request.auth.uid in get(/databases/$(database)/documents/teams/$(team)).data.members);
  }
@@ -72,6 +73,13 @@ service cloud.firestore {
 
  function x_permit(id,op){return /databases/$(database)/documents/financeSessionXiii/$(id)/permits/$(op);}
  function x_fence(uid){return get(/databases/$(database)/documents/financeSessionEpochXiii/$(uid)).data;}
+ function x_current(){
+  let f=x_fence(request.auth.uid);
+  return request.auth!=null && f.ownerUid==request.auth.uid && f.enabled==true
+   && f.epoch is int && f.epoch>0 && f.epoch<=9007199254740991
+   && request.auth.token.get('financeEpoch',0) is int
+   && request.auth.token.get('financeEpoch',0)==f.epoch;
+ }
  function x_shape(p,id,op){
   return p.keys().hasOnly(['version','ownerUid','teamId','epoch','operationId','historyDigest','summaryPath','rowPath'])
    && p.keys().hasAll(['version','ownerUid','teamId','epoch','operationId','historyDigest','summaryPath','rowPath'])
@@ -84,6 +92,8 @@ service cloud.firestore {
   let p=getAfter(x_permit(id,d.lastOperationId)).data;
   let f=x_fence(request.auth.uid);
   return !exists(x_permit(id,d.lastOperationId)) && f.enabled==true && f.ownerUid==request.auth.uid && f.teamId==d.teamId
+   && request.auth.token.get('financeEpoch',0) is int
+   && request.auth.token.get('financeEpoch',0)==p.epoch
    && f.epoch is int && f.epoch==p.epoch && p.teamId==d.teamId && p.historyDigest==r.digest;
  }
  match /financeSessionEpochXiii/{uid} {
@@ -91,7 +101,7 @@ service cloud.firestore {
   allow list,create,update,delete: if false;
  }
  match /financeSessionXiii/{id}/permits/{op} {
-  allow get: if h_active() && (!exists(x_permit(id,op)) ||
+  allow get: if h_active() && x_current() && (!exists(x_permit(id,op)) ||
    (resource.data.ownerUid==request.auth.uid && h_read(resource.data.teamId)));
   allow list,update,delete: if false;
   allow create: if x_shape(request.resource.data,id,op)
@@ -102,7 +112,7 @@ service cloud.firestore {
  }
 
  match /financeHistoryXi/{id} {
-  allow get: if (exists(h_summary(id))?h_read(resource.data.teamId):h_active());
+  allow get: if (exists(h_summary(id))?h_read(resource.data.teamId):(h_active() && x_current()));
   allow list: if false;
   allow create,update: if
    !exists(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(request.resource.data.lastOperationId))
@@ -110,7 +120,7 @@ service cloud.firestore {
   allow delete: if false;
   match /receipts/{op} {
    allow get: if exists(h_summary(id))?h_read(get(h_summary(id)).data.teamId):
-    (!exists(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(op)) && h_active());
+    (!exists(/databases/$(database)/documents/financeHistoryXi/$(id)/receipts/$(op)) && h_active() && x_current());
    allow list: if request.query.limit!=null && request.query.limit<=20 && h_read(get(h_summary(id)).data.teamId);
    // Summary's full transition validates THIS row. Requiring a changed summary
    // revision forces the summary write, avoiding repeated full validation and

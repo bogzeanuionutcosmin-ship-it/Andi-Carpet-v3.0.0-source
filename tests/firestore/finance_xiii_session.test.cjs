@@ -8,7 +8,9 @@ const {initializeTestEnvironment,assertFails}=require('@firebase/rules-unit-test
 const {doc,setDoc,getDocFromServer,runTransaction,writeBatch,serverTimestamp}=require('firebase/firestore');
 let env;
 const fence=(epoch=1,teamId='team',enabled=true)=>({ownerUid:'a',epoch,teamId,enabled});
-const context=uid=>env.authenticatedContext(uid).firestore();
+// Mock SIGNED claim fixture: a client may select it here only because this is
+// rules-unit-testing. Production issuance/refresh is deliberately BLOCKED.
+const context=(uid,epoch=1)=>env.authenticatedContext(uid,{financeEpoch:epoch}).firestore();
 const intent=(n,{epoch=1,base=0,team='team',actor='a',target='trip'}={})=>{
  const id=n.toString(16).padStart(32,'0'),path=`financeHistoryXi/s_${target}`;
  const row={protocol:2,operationId:id,actorUid:actor,teamId:team,targetPath:`settlements/${target}`,
@@ -42,6 +44,15 @@ async function append(db,i,{pause,loseAck=false,bypassClient=false,counters}={})
  if(loseAck)throw Error('lost_ack_after_server_commit');
  return result;
 }
+async function blindBatch(db,i){
+ // Malicious client bypasses all local checks and ALL transaction reads.
+ const b=writeBatch(db);
+ b.set(doc(db,i.path),{protocol:2,teamId:i.row.teamId,sourceCollection:'settlements',
+  sourceId:i.row.targetPath.split('/')[1],revision:i.row.revision,lastOperationId:i.id,
+  receivedDeparture:i.row.amount,receivedDuring:0,updatedAt:serverTimestamp()});
+ b.set(doc(db,`${i.path}/receipts/${i.id}`),{...i.row,createdAt:serverTimestamp()});
+ b.set(doc(db,i.permitPath),i.permit);return b.commit();
+}
 async function reconcile(db,i){
  // Evidence-only: do not require the old epoch to remain current.
  const p=await getDocFromServer(doc(db,i.permitPath));
@@ -74,26 +85,27 @@ test('XIII two independent device SDK instances: one same-revision commit; immut
 test('XIII stale device rejected after authoritative logout-all even when local check is bypassed',async()=>{
  await advance(fence(2,'team',false));
  await assert.rejects(append(context('a'),intent(1),{bypassClient:true}));
- const s=await getDocFromServer(doc(context('a'),'financeHistoryXi/s_trip'));assert.equal(s.exists(),false);
+ await authority(async db=>assert.equal((await getDocFromServer(doc(db,'financeHistoryXi/s_trip'))).exists(),false));
 });
 test('XIII revocation during in-flight transaction rejects retry and commits no partial pair',async()=>{
  let entered,release;const ready=new Promise(r=>entered=r),gate=new Promise(r=>release=r);
  let paused=false;
  const p=append(context('a'),intent(1),{pause:async()=>{if(!paused){paused=true;entered();await gate;}}});
  await ready;await advance(fence(2,'team',false));release();await assert.rejects(p);
- const db=context('a');assert.equal((await getDocFromServer(doc(db,intent(1).permitPath))).exists(),false);
- assert.equal((await getDocFromServer(doc(db,intent(1).path))).exists(),false);
+ await authority(async db=>{assert.equal((await getDocFromServer(doc(db,intent(1).permitPath))).exists(),false);
+ assert.equal((await getDocFromServer(doc(db,intent(1).path))).exists(),false);});
 });
 test('XIII A→B→A2 never revives epoch1; explicit new epoch2 intent accepted',async()=>{
  await advance(fence(2));await assert.rejects(append(context('a'),intent(1),{bypassClient:true}));
  await assert.rejects(append(context('b'),intent(2,{epoch:2}),{bypassClient:true}));
- assert.equal(await append(context('a'),intent(3,{epoch:2})),'applied');
+ assert.equal(await append(context('a',2),intent(3,{epoch:2})),'applied');
 });
 test('XIII commit before logout is not retroactively cancelled; lost ACK reconciles old epoch with same ID',async()=>{
  const i=intent(1),db=context('a');await assert.rejects(append(db,i,{loseAck:true}),/lost_ack/);
- await advance(fence(2));assert.equal(await reconcile(context('a'),i),'confirmed');
+ await advance(fence(2));await assert.rejects(reconcile(context('a'),i));
+ assert.equal(await reconcile(context('a',2),i),'confirmed');
  await assert.rejects(append(context('a'),i));
- assert.equal((await getDocFromServer(doc(db,i.path))).data().revision,1);
+ assert.equal((await getDocFromServer(doc(context('a',2),i.path))).data().revision,1);
 });
 test('XIII team transfer keeps historic commit but denies former-team reconciliation',async()=>{
  const i=intent(1);await append(context('a'),i);
@@ -102,7 +114,7 @@ test('XIII team transfer keeps historic commit but denies former-team reconcilia
  await setDoc(doc(db,'teams/team'),{members:[],financialManagerId:'b'});
  await setDoc(doc(db,'teams/other'),{members:['a'],financialManagerId:'a'});
  });
- await assert.rejects(reconcile(context('a'),i));await assert.rejects(append(context('a'),intent(2,{base:1}),{bypassClient:true}));
+ await assert.rejects(reconcile(context('a',2),i));await assert.rejects(append(context('a',2),intent(2,{base:1}),{bypassClient:true}));
  await authority(async db=>assert.equal((await getDocFromServer(doc(db,i.path))).data().revision,1));
 });
 test('XIII revoked permissions block latest epoch too; role admin cannot bypass missing own fence',async()=>{
@@ -124,7 +136,7 @@ test('XIII forged permit, orphan permit and historical permit rewrite are reject
  await append(db,i);await assertFails(setDoc(doc(db,i.permitPath),{...i.permit,historyDigest:'f'.repeat(64)}));
 });
 for(const invalid of [0,1.5,9007199254740992])test(`XIII invalid epoch ${invalid} fails closed server-side`,async()=>{
- await advance(fence(invalid));await assert.rejects(append(context('a'),intent(1,{epoch:invalid}),{bypassClient:true}));
+ await advance(fence(invalid));await assert.rejects(append(context('a',invalid),intent(1,{epoch:invalid}),{bypassClient:true}));
 });
 test('XIII other UID including admin cannot read or substitute another owner permit',async()=>{
  const i=intent(1);await append(context('a'),i);
@@ -138,8 +150,8 @@ test('XIII exact replay has zero new writes; changed epoch never retags accepted
  assert.equal(await append(context('a'),i),'replay');
  await advance(fence(2));
  await assert.rejects(append(context('a'),intent(1,{epoch:2})));
- assert.deepEqual((await getDocFromServer(doc(db,i.permitPath))).data(),i.permit);
- assert.equal((await getDocFromServer(doc(db,i.path))).data().revision,1);
+ assert.deepEqual((await getDocFromServer(doc(context('a',2),i.permitPath))).data(),i.permit);
+ assert.equal((await getDocFromServer(doc(context('a',2),i.path))).data().revision,1);
 });
 test('XIII all incomplete pairs and malformed receipt reject after bounded-rules optimization',async()=>{
  const db=context('a'),i=intent(1);
@@ -223,3 +235,42 @@ test('XIII combined real SQLite process restart + genuine server commit with inj
   assert.deepEqual(counters,{calls:1,writes:3});
  }finally{fs.rmSync(directory,{recursive:true,force:true});}
  });
+
+
+test('XIII old signed A1 token cannot adopt readable epoch2; only newly authorized A2 claim may append',async()=>{
+ const old=context('a',1);await advance(fence(2));
+ assert.equal((await getDocFromServer(doc(old,'financeSessionEpochXiii/a'))).data().epoch,2);
+ const forged=intent(991,{epoch:2});
+ await assert.rejects(append(old,forged,{bypassClient:true}));
+ await assertFails(blindBatch(old,forged));
+ await assertFails(getDocFromServer(doc(old,forged.path)));
+ await authority(async db=>assert.equal((await getDocFromServer(doc(db,forged.path))).exists(),false));
+ assert.equal(await append(context('a',2),forged),'applied');
+ await assertFails(getDocFromServer(doc(old,forged.path)));
+ assert.equal((await getDocFromServer(doc(context('a',2),forged.path))).data().revision,1);
+});
+test('XIII admin old signed epoch cannot forge current epoch; missing signed capability also denied',async()=>{
+ await authority(db=>setDoc(doc(db,'financeSessionEpochXiii/admin'),{...fence(2),ownerUid:'admin'}));
+ const adminForged=intent(992,{actor:'admin',epoch:2});
+ await assert.rejects(append(context('admin',1),adminForged,{bypassClient:true}));
+ await assertFails(blindBatch(context('admin',1),adminForged));
+ const noCapability=env.authenticatedContext('a').firestore();
+ await assert.rejects(append(noCapability,intent(993),{bypassClient:true}));
+ await assertFails(blindBatch(noCapability,intent(993)));
+ assert.equal((await getDocFromServer(doc(context('a'),'financeHistoryXi/s_trip'))).exists(),false);
+});
+
+
+test('XIII read fencing rejects old A1 and disabled current capability, while A2 reviews historic epoch1 evidence',async()=>{
+ const old=context('a',1),i=intent(994);await append(old,i);
+ await advance(fence(2));
+ for(const p of [i.permitPath,i.path,`${i.path}/receipts/${i.id}`])await assertFails(getDocFromServer(doc(old,p)));
+ await assert.rejects(reconcile(old,i));
+ const fresh=context('a',2);assert.equal(await reconcile(fresh,i),'confirmed');
+ assert.equal((await getDocFromServer(doc(fresh,i.permitPath))).data().epoch,1);
+ await advance(fence(2,'team',false));
+ for(const p of [i.permitPath,i.path,`${i.path}/receipts/${i.id}`])await assertFails(getDocFromServer(doc(fresh,p)));
+ await assert.rejects(reconcile(fresh,i));
+ // Accepted money remains. Authority inspection is evidence of no retro-cancel.
+ await authority(async db=>assert.equal((await getDocFromServer(doc(db,i.path))).data().receivedDeparture,200));
+});

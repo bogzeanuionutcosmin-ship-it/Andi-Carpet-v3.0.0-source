@@ -54,7 +54,7 @@ class FinanceSessionXiiiIntent {
     }
     final b = d['binding'] as Map;
     if (b.length != 3 || b['ownerUid'] is! String || b['teamId'] is! String ||
-        b['epoch'] is! int) throw const FormatException('session_xiii_bad_binding');
+        b['epoch'] is! int) {throw const FormatException('session_xiii_bad_binding');}
     final result = FinanceSessionXiiiIntent(history: HistoryXiIntent.decode(d['history'] as String),
       binding: FinanceSessionXiiiBinding(ownerUid: b['ownerUid'] as String,
         teamId: b['teamId'] as String, epoch: b['epoch'] as int));

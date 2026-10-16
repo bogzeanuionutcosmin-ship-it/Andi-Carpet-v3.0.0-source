@@ -130,3 +130,66 @@ batch with malformed money, then verifies legitimate append still succeeds.
 Positive permission tests must remain in CI: a permanently rejecting ruleset is
 not a successful financial safety gate. Final SHA-specific CI is separate from
 this local result.
+
+## Critical capability audit: epoch is not a bearer capability
+
+A readable current epoch plus a client-declared binding is insufficient: an old
+A1 token could copy epoch2 into a fresh payload. The fixture now REQUIRES a signed
+request identity claim `request.auth.token.financeEpoch` (integer) equal to BOTH
+the permit epoch and current server fence epoch. This requirement applies to
+admin too. Missing claim, old claim with newly forged payload, and changed UID
+cannot acquire write authorization. Reading the current fence is intentionally
+allowed and does not grant the required signed capability.
+
+Rules-unit-testing constructs immutable mock signed claims with
+`authenticatedContext(uid,{financeEpoch:epoch})`. This is emulator authority,
+not a client-facing way to set production tokens. The positive A2 test explicitly
+uses a separate epoch2 signed context; old A1 copies the readable current epoch
+and is denied. An additional admin/missing-capability test makes the attack
+executable. The initial15/16-test suites did NOT contain this critical capability
+check and must not be interpreted as proving session-token authorization.
+
+**Trusted per-login capability issuance, reauthentication and refresh policy are
+BLOCKED.** Setting a globally mutable Firebase custom claim per UID is NOT by
+itself sufficient: an old refresh credential could obtain the latest claim and
+silently adopt epoch2. A production issuer must bind epoch to a fresh authorized
+session identity and require reauthentication (for example an authoritative
+`auth_time` cutoff plus issuance/refresh enforcement) before giving a new epoch.
+Refresh from an invalidated session must fail or remain fenced; it cannot upgrade
+its capability merely because the global user custom claim changed. This PR does
+not implement, deploy or claim that Firebase currently provides that issuer.
+The standalone signed-claim gate proves the write-time predicate only. Real token
+issuance/refresh revocation tests remain mandatory before production readiness.
+
+After the signed-capability correction, local genuine Firestore emulator run
+with `XIII_NATIVE_PROBE=/tmp/xiii-native-probe`: **18/18 PASS,0FAIL,0SKIP**,5537ms.
+The combined SQLite+server probe passed190ms; both signed-claim attack tests
+passed. This supersedes the earlier local counts; final SHA CI remains required.
+
+## Authoritative read revocation and historic review
+
+The final fixture also gates FINANCIAL READS (summary, receipt, permit and legacy
+finance/settlement source) on a CURRENT signed reader capability: reader's own
+fence must be enabled, ownerUID must match, epoch must be a positive safe integer,
+and signed `financeEpoch` must equal that CURRENT fence epoch. Current fence team,
+existing role/membership authorization, and permit owner checks are separate and
+remain mandatory. Admin has no epoch/enablement bypass. Missing financial docs
+also require the current capability; absence is not disclosed to stale sessions.
+The epoch document itself remains readable by its UID: it contains no bearer
+capability and knowing its newest value does not authorize financial access.
+
+Historic permit epoch is deliberately NOT compared to current reader epoch.
+After an epoch1 commit followed by epoch2 revocation, A1's signed epoch1 cannot
+read/reconcile. A newly authorized A2 signed epoch2 may read the SAME immutable
+epoch1 permit/receipt and confirm accepted money, assuming current UID/team rights
+still allow it. If current fence is disabled, even A2 cannot read financial data.
+Team transfer prevents former-team review even with the new valid capability;
+an authorized handoff/review workflow remains required. No transaction or epoch
+rebinding occurs during historic reconciliation.
+
+Latest local genuine run after BOTH write and read capability fencing:
+**19/19 PASS,0FAIL,0SKIP**,6250ms, including the native SQLite/server combined
+probe (218ms), stale-token read denial, current-A2 historic review and disabled
+current-capability denial. The accepted summary remains unchanged after revoke.
+Log `/tmp/session-xiii-read-fence-test.log`. This supersedes earlier local counts;
+final SHA-specific CI and real issuer/refresh validation remain mandatory.
