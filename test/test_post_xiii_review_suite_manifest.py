@@ -20,6 +20,10 @@ class ReviewSuiteManifestTest(unittest.TestCase):
             "test_post_xiii_marker_integrity.py",
             "test_post_xiii_retention_policy.py",
             "test_post_xiii_key_custody.py",
+            "test_post_xiii_epoch_bounds.py",
+            "test_post_xiii_batch_atomicity.py",
+            "test_post_xiii_crash_phase.py",
+            "test_post_xiii_authority_read_gate.py",
         )
         self.assertTrue(all((root / name).is_file() for name in expected))
 
