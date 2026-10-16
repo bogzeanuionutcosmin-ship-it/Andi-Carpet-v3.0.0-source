@@ -33,7 +33,7 @@ class _Baseline {
 class _Save {
   final FinanceIntent intent;
   final done=Completer<void>();
-  bool busy=false,confirmed=false;
+  bool busy=false,confirmed=false,cleanupPending=false;
   String code='finance_pending';
   _Save(this.intent);
 }
@@ -177,6 +177,19 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
     if(save.busy||!scope.sessionIsCurrent())return;
     save.busy=true;_notify();
     try {
+      // A confirmed operation is never retransmitted to repair local storage.
+      // Only an explicit recovery action may retry the local journal cleanup.
+      if(save.confirmed&&save.cleanupPending){
+        if(!reconcile)return;
+        try {
+          await scope.coordinator.journal.recordResult(save.intent,
+            const FinanceIntentResult(FinanceIntentStatus.confirmed,'finance_confirmed'));
+        } catch(_) {
+          save.code='finance_confirmed_local_cleanup_required';return;
+        }
+        if(!scope.sessionIsCurrent())return;
+        save.cleanupPending=false;
+      }
       final outcome=save.confirmed?null:(reconcile?await scope.coordinator.reconcileExplicitly(save.intent):
         await scope.coordinator.executeExplicitly(save.intent));
       if(!scope.sessionIsCurrent())return;
@@ -187,6 +200,10 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
       }
       if(outcome!=null&&outcome.result.status!=FinanceIntentStatus.confirmed)return;
       save.confirmed=true;
+      if(outcome?.journalPending==true){
+        save.cleanupPending=true;
+        save.code='finance_confirmed_local_cleanup_required';return;
+      }
       // A marker confirms the operation, not the latest display snapshot.
       final server=await port.readServer(path);
       if(!scope.sessionIsCurrent())return;
@@ -200,7 +217,9 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
       _baselines.remove(path);_saves.remove(path);save.done.complete();
     } catch(_) {
       // Never send a generic error into the old close-dialog rollback path.
-      save.code='finance_result_uncertain';
+      save.code=save.confirmed?
+        (save.cleanupPending?'finance_confirmed_local_cleanup_required':'finance_authoritative_refresh_required'):
+        'finance_result_uncertain';
     } finally {save.busy=false;_notify();}
   }
 }

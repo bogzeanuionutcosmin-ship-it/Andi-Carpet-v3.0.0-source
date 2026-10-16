@@ -1,5 +1,6 @@
 // Explicit CI invocation only; not part of offline unit-test discovery.
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'support/expense_document_fixture.dart';
 import 'package:andi_carpeta/finance/intents/finance_expense_demo_recovery.dart';
@@ -50,8 +51,12 @@ class ObservedPort implements FinanceAtomicPort {
 // storage durability. Reconstructing it does not model an OS process restart.
 class BrowserJournalStorage implements FinanceJournalStorage {
  final values=<String,String>{};
+ bool failCleanup=false;
  @override Future<String?> read(String key)async=>values[key];
- @override Future<void> write(String key,String value)async{values[key]=value;}
+ @override Future<void> write(String key,String value)async{
+  if(failCleanup&&((jsonDecode(value) as Map)['intents'] as List).isEmpty)throw StateError('synthetic_local_cleanup_failure');
+  values[key]=value;
+ }
 }
 // Original dialogs + genuine SDK, with only journal storage held in memory.
 // This closes the UI/SDK test boundary; it is not a production Home factory.
@@ -208,6 +213,27 @@ void main(){
    final marker=await t.runAsync(()=>ui.port.readServer('settlements/${ui.fixture.settlementOverride!.id}/financialIntents/${before.single.operationId}'));
    expect(marker!.data!['digest'],digest);
    expect(await t.runAsync(()=>ui.scope.coordinator.journal.pending()),isEmpty);
+  } finally {await ui.close(t);}
+ },timeout:const Timeout(Duration(minutes:2)));
+ testWidgets('genuine SDK confirmation survives journal cleanup failure and explicit UI recovery',(t)async{
+  final storage=BrowserJournalStorage();
+  final ui=SdkExpenseUi(uid,ObservedPort(port.inner),()=>auth.currentUser?.uid==uid,storage:storage);
+  await ui.fixture.mount(t);
+  try {
+   await ui.create(t);await ui.baseline(t);storage.failCleanup=true;
+   final reads=ui.port.serverReads;
+   await ui.receipt(t);await ui.wait(t,()=>ui.adapter.pendingCodes.values.contains('finance_confirmed_local_cleanup_required'));
+   expect(ui.fixture.logs,hasLength(1));expect(ui.port.atomicCalls,2);expect(ui.port.serverReads,reads);
+   expect(find.text('Salvarea este confirmată. Jurnalul local necesită verificare.'),findsOneWidget);
+   final pending=(await t.runAsync(()=>ui.scope.coordinator.journal.pending()))!.single;
+   final data=await t.runAsync(()=>server(pending.documentId));
+   expect(data!['revision'],2);expect(data['receivedDeparture'],200);expect(data['receivedEntries'],hasLength(1));
+   storage.failCleanup=false;
+   await t.ensureVisible(find.text('Verifică salvarea'));await t.tap(find.text('Verifică salvarea'));await t.pump();
+   await ui.wait(t,()=>ui.fixture.logs.length==2);
+   expect(ui.port.atomicCalls,2);expect(ui.port.serverReads,reads+1);
+   expect(ui.adapter.pendingCodes,isEmpty);expect(await t.runAsync(()=>ui.scope.coordinator.journal.pending()),isEmpty);
+   expect(ui.fixture.settlementOverride!.lastOperationId,pending.operationId);
   } finally {await ui.close(t);}
  },timeout:const Timeout(Duration(minutes:2)));
  testWidgets('real AuthGate SDK A B A2 isolates original dialogs and recovers the same pending intent',(t)async{

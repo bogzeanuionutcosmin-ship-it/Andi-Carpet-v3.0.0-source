@@ -147,3 +147,35 @@ Fixture-ul expune același buildPage pentru montarea sub rădăcina AuthGate, cu
 aceleași callbackuri și dialoguri. Nu se modifică Home implicit, AuthGate,
 permisunile sau rules. A treisprezecea probă SDK este candidată până la CI real,
 nu este declarată PASS prin reutilizarea rezultatului aac5484.
+
+## Defect remediat în candidat: confirmare server și cleanup local eșuat
+
+Checkpointul a3f3acc are toate cele patru workflowuri SUCCESS și 13 probe SDK
+reale trecute, inclusiv AuthGate A→B→A2. În auditul continuării s-a găsit pierderea
+flagului journalPending în FinanceExpenseDemoAdapter: coordonatorul păstra
+confirmarea serverului și semnala eșecul curățării locale, dar adaptorul elibera
+Future-ul și ținta. O nouă intenție pe aceeași țintă putea rămâne blocată de
+intenția veche din jurnal, fără recuperarea ei în pagina curentă.
+
+Baseline d8e89c8, Mission VIII #38842430891/job116785337750: 174 PASS / 2 FAIL.
+Martorul întărit 94f7769, #38842594098/job116785936485: aceleași 174 PASS / 2 FAIL;
+proba apasă efectiv «Primit la plecare» și găsește dialogul unei intenții noi,
+deși cleanup-ul local era nerezolvat. Sunt verificate separat eroarea înaintea
+scrierii locale și scrierea locală aplicată urmată de eroare. Confirmarea
+financiară server era reală; remedierea privește finalizarea și recuperarea locală.
+
+Candidatul reține separat confirmed și cleanupPending, blochează eliberarea
+țintei și afișează explicit confirmarea cunoscută. Butonul de recuperare repetă
+numai recordResult local pentru aceeași intenție; nu reexecută tranzacția sau
+citirea markerului deja confirmat. După cleanup este cerut un singur refresh
+server înainte de înlocuirea modelului și finalizarea callbackului UI. Un jurnal
+care era deja gol după o eroare locală nu devine un blocaj permanent. Eșecul
+refreshului păstrează statutul de salvare confirmată cu actualizare necesară.
+
+Aceleași două regresii stricte rămân. O probă suplimentară rulează dialogul real
+cu SDK Firestore real și o eroare injectată în jurnalul RAM, apoi verifică prin
+buton exact două tranzacții totale (create+receipt), un refresh și zero resubmit.
+176 Dart și 14 SDK sunt ținte de validare până la CI real al noului SHA. Nu sunt
+certificate storage fizic, Home implicit, Restore complet sau Spark live. Nu
+există retry automat financiar/local, polling, read/write Firestore suplimentar
+la rebuild, modificare rules, bani/rotunjiri ori servicii plătite noi.

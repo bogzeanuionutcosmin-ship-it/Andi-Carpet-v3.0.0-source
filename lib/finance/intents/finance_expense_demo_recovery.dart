@@ -19,6 +19,8 @@ class FinanceExpenseDemoRecovery extends StatelessWidget {
         MaterialBanner(key:ValueKey(('finance-pending',pending.key)),content:Text(switch(pending.value){
           'finance_revision_conflict'||'finance_evidence_mismatch'=>'Datele au fost modificate. Salvarea necesită verificare.',
           'finance_pending'=>'Salvare în curs.',
+          'finance_confirmed_local_cleanup_required'=>'Salvarea este confirmată. Jurnalul local necesită verificare.',
+          'finance_authoritative_refresh_required'=>'Salvarea este confirmată. Datele afișate necesită actualizare.',
           _=>'Rezultatul salvării nu este încă confirmat.',
         }),actions:[TextButton(
           onPressed:adapter.isBusy(pending.key)||!adapter.scope.sessionIsCurrent()?null:
