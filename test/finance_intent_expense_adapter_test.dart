@@ -6,6 +6,9 @@ import 'package:andi_carpeta/finance/intents/finance_expense_demo_recovery.dart'
 import 'package:andi_carpeta/finance/intents/finance_journal.dart';
 import 'package:andi_carpeta/finance/intents/finance_intent.dart';
 import 'package:andi_carpeta/finance/intents/finance_repository.dart';
+import 'package:andi_carpeta/integration/finance_vision_outcome_observer.dart';
+import 'package:andi_carpeta/vision/vision_scoped_signal_sink.dart';
+import 'package:andi_carpeta/vision/vision_session_journal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/expense_document_fixture.dart';
@@ -32,7 +35,8 @@ class _Harness {
   int refreshes=0;
   Object? Function(String)? readModelOverride;
   final created=DateTime.utc(2026,10,1);
-  _Harness(){
+  final void Function(FinanceIntentStatus)? observeStatus;
+  _Harness({this.observeStatus}){
     final model=TravelSettlement(id:'settlement',teamId:'team',name:'Synthetic Trip',
       startDate:created,createdAt:created,managerId:'worker');
     fixture.settlementOverride=model;
@@ -41,7 +45,7 @@ class _Harness {
       'closed':false,'endDate':null,'receivedDeparture':0,'receivedDuring':0,
       'receivedOpeningDeparture':0,'receivedOpeningDuring':0,'receivedEntries':<Object?>[]});
     scope=FinanceDemoScope(ownerUid:'worker',sessionIsCurrent:()=>current,port:db,storage:storage);
-    adapter=FinanceExpenseDemoAdapter(scope:scope,port:db,
+    adapter=FinanceExpenseDemoAdapter(scope:scope,port:db,observeStatus:observeStatus,
       readAcceptedModel:(path)=>readModelOverride==null?fixture.settlementOverride:readModelOverride!(path),
       acceptServerSnapshot:(path,data)async{
       if(failRefresh)throw StateError('synthetic_refresh_failure');
@@ -73,6 +77,67 @@ class _Harness {
   }
 }
 void main(){
+  testWidgets('original receipt dialog publishes only anonymous uncertain signal '
+      'and reconciliation never replays the receipt', (t) async {
+    var authorized = true;
+    final journal = VisionSessionJournal();
+    final a = journal.startSession(isSessionCurrent: () => authorized);
+    final sink = VisionScopedSignalSink(a);
+    final observed = <FinanceIntentStatus>[];
+    final h = _Harness(observeStatus: (status) {
+      observed.add(status);
+      FinanceVisionOutcomeObserver.observeStatus(
+        status: status,
+        sink: sink,
+        platform: VisionSignalPlatform.android,
+      );
+    });
+    h.db.commitThenThrow = true;
+    await h.fixture.mount(t);
+    await h.receipt(t);
+    expect(observed, [FinanceIntentStatus.uncertain]);
+    expect(a.entries, hasLength(1));
+    expect(a.entries.single.fingerprint, 'finance/operation_uncertain/android');
+    expect(a.buildReport(), isNot(contains('Synthetic')));
+    expect(a.buildReport(), isNot(contains('200')));
+    expect(h.db.calls, 1);
+    expect(h.db.documents['settlements/settlement']!['receivedEntries'],
+        hasLength(1));
+
+    await h.adapter.reconcileExplicitly('settlements/settlement');
+    await t.pumpAndSettle();
+    expect(observed, [FinanceIntentStatus.uncertain, FinanceIntentStatus.confirmed]);
+    expect(a.entries, hasLength(1));
+    expect(a.entries.single.count, 1);
+    expect(h.db.calls, 1);
+    expect(h.fixture.logs, hasLength(1));
+
+    authorized = false;
+    h.current = false;
+    journal.revoke();
+    expect(a.entries, isEmpty);
+    expect(sink.emit(VisionDiagnosticSignal.financeOperationUncertain,
+        platform: VisionSignalPlatform.android), isFalse);
+    await t.pumpWidget(const SizedBox());
+    h.adapter.dispose();
+  });
+
+  testWidgets('broken optional Vision observer cannot alter a confirmed receipt',
+      (t) async {
+    final h = _Harness(observeStatus: (_) {
+      throw StateError('synthetic telemetry sink failure');
+    });
+    await h.fixture.mount(t);
+    await h.receipt(t);
+    expect(h.db.calls, 1);
+    expect(h.db.writes, 2);
+    expect(h.fixture.logs, hasLength(1));
+    expect(h.adapter.pendingCodes, isEmpty);
+    expect(h.fixture.settlementOverride!.receivedEntries, hasLength(1));
+    await t.pumpWidget(const SizedBox());
+    h.adapter.dispose();
+  });
+
   testWidgets('real receipt dialog confirms only after authoritative model replacement',(t)async{
     final h=_Harness();await h.fixture.mount(t);await h.receipt(t);
     expect(h.db.calls,1);expect(h.db.writes,2);expect(h.refreshes,1);
