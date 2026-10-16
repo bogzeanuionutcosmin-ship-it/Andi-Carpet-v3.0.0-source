@@ -120,6 +120,17 @@ class VisionDiagnosticAdvisor {
             'Nu presupune că un mesaj a fost livrat.',
       );
     }
+    // Uncertain acknowledgment is NOT evidence of failure or rejection.
+    // Never tell an operator to repeat an intent that may already be committed.
+    if (area == 'finance' && code == 'operation_uncertain') {
+      return (
+        'Rezultat financiar incert',
+        'Operațiunea ar putea fi deja aplicată pe server. '
+            'Verifică dovada pentru aceeași intenție și revizie înainte '
+            'de o nouă acțiune. Nu retrimite automat și nu presupune '
+            'că salvarea a eșuat.',
+      );
+    }
     if (area == 'finance' || area == 'per_diem') {
       return (
         'Operațiune financiară nereușită',
