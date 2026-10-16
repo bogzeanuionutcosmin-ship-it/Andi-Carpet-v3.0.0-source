@@ -223,7 +223,8 @@ class FinanceExpenseDemoAdapter extends ChangeNotifier {
         await scope.coordinator.executeExplicitly(save.intent));
       if(!scope.sessionIsCurrent())return;
       if(outcome!=null)save.code=outcome.result.code;
-      if(outcome!=null&&outcome.result.status==FinanceIntentStatus.rejectedBeforeWrite&&!outcome.journalPending) {
+      if(outcome!=null&&outcome.result.status==FinanceIntentStatus.rejectedBeforeWrite&&
+          (!outcome.journalPending||outcome.blockedByPendingIntent)) {
         _saves.remove(path);
         save.done.completeError(FinanceSaveRejected(save.code));return;
       }

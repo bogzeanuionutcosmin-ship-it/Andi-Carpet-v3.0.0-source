@@ -236,6 +236,32 @@ void main(){
    expect(ui.fixture.settlementOverride!.lastOperationId,pending.operationId);
   } finally {await ui.close(t);}
  },timeout:const Timeout(Duration(minutes:2)));
+ testWidgets('new original dialog before review cannot hide a genuine committed pending intent',(t)async{
+  final ui=SdkExpenseUi(uid,ObservedPort(port.inner),()=>auth.currentUser?.uid==uid);
+  await ui.fixture.mount(t);
+  try {
+   await ui.create(t);final target=ui.fixture.settlementOverride!.id;
+   final original=receipt(target,0x777,uid,revision:1);
+   ui.port.loseAcknowledgement=true;
+   final lost=await t.runAsync(()=>ui.scope.coordinator.executeExplicitly(original));
+   expect(lost!.result.status,FinanceIntentStatus.uncertain);
+   expect(ui.port.atomicCalls,2);expect(ui.port.serverReads,1);
+   await ui.receipt(t);await ui.wait(t,()=>!ui.adapter.isBusy(original.targetPath));
+   expect(ui.adapter.pendingCodes,isEmpty);expect(ui.fixture.logs,hasLength(1));
+   expect(ui.port.atomicCalls,2);expect(ui.port.serverReads,1);
+   expect((await t.runAsync(()=>ui.scope.coordinator.journal.pending()))!.single.encode(),original.encode());
+   await t.tap(find.text('Verifică operațiile în așteptare'));await t.pump();
+   await ui.wait(t,()=>!ui.adapter.recoveryBusy);
+   expect(ui.adapter.recoveryCode,isNull);expect(ui.adapter.pendingCodes,hasLength(1));
+   await t.ensureVisible(find.text('Verifică salvarea'));await t.tap(find.text('Verifică salvarea'));await t.pump();
+   await ui.wait(t,()=>ui.adapter.pendingCodes.isEmpty);
+   expect(ui.port.atomicCalls,2);expect(ui.port.serverReads,3);expect(ui.fixture.logs,hasLength(1));
+   expect(ui.fixture.settlementOverride!.lastOperationId,original.operationId);
+   final data=await t.runAsync(()=>server(target));
+   expect(data!['revision'],2);expect(data['receivedEntries'],hasLength(1));expect(data['receivedDeparture'],200);
+   expect(await t.runAsync(()=>ui.scope.coordinator.journal.pending()),isEmpty);
+  } finally {await ui.close(t);}
+ },timeout:const Timeout(Duration(minutes:2)));
  testWidgets('real AuthGate SDK A B A2 isolates original dialogs and recovers the same pending intent',(t)async{
   final storage=BrowserJournalStorage(),created=<SdkExpenseUi>[];
   final sources=AuthGateSources(currentUser:()=>auth.currentUser,authStateChanges:auth.authStateChanges,

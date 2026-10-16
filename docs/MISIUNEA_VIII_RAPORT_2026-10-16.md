@@ -257,3 +257,37 @@ separă ceea ce poate dovedi fixture-ul de certitudinea permisă interfeței pub
 197 Python locale PASS. Home implicit, Restore complet, hardware și Spark live
 rămân necertificate; production_ready=false. Nicio schimbare în rules, Home,
 AuthGate, workflowuri, hashuri protejate, bani sau date reale.
+
+
+## Recuperare locală înainte de o tentativă nouă pe aceeași țintă
+
+Bază complet GREEN: 86e6a31. Defect nou, distinct de recuperarea deja testată:
+într-o pagină care nu încărcase încă jurnalul, un dialog nou genera alt ID.
+Prepare refuza corect ținta ocupată, fără apelare server, dar adaptorul păstra
+Save-ul nou deoarece journalPending era true pentru intenția veche. Încărcarea
+explicită ulterioară vedea digesturi diferite și nu putea atașa intenția originală.
+Martor RED 1ad1226, Mission VIII #38848457561/job116804157228:
+185 PASS / 2 FAIL reale, pentru intenție veche necomisă și comisă cu ack pierdut.
+
+FinanceCoordinatedResult expune acum blockedByPendingIntent exclusiv pentru
+refuzul prepare finance_unresolved_target. Acesta certifică numai că ID-ul nou
+nu a fost stocat sau trimis; nu infirmă commitul intenției vechi și nu îi șterge
+jurnalul. journalPending rămâne true. Adaptorul poate finaliza cu refuz cert
+callbackul nou, eliberând numai Save-ul său pentru încărcarea explicită a celui
+original. Erorile de storage/prepare, aceeași intenție incertă și cleanup-ul
+confirmat nu primesc acest indicator și își păstrează protecțiile anterioare.
+
+Cele două probe folosesc dialogul original, verifică zero tranzacții/citiri noi
+la tentativa refuzată, rollbackul exclusiv al modelului tentativei noi, lipsa
+auditului de succes și identitatea exactă a intenției vechi. Recuperarea explicită
+nu execută intenția necomisă; cea comisă se confirmă prin marker+refresh și nu se
+retrimite. Controlul coordinator existent este întărit pentru flag și jurnal;
+controlul reluării aceleiași intenții cere flag false. O acceptanță nouă SDK reală
+folosește butoanele originale pentru refuz, încărcare și reconciliere: exact două
+tranzacții totale create+receipt vechi, un singur receipt/revizie 2 în server.
+
+Ținte până la CI real: 187 Dart, 15 Flutter SDK, 47 JS emulator. 197 Python locale
+PASS. Storage-ul harnessului este RAM; nu certifică restart OS sau hardware.
+Zero auto-replay, polling, citiri la rebuild sau servicii noi. Home implicit,
+Restore complet/inventar consistent, schema receivedEntries, compatibilitatea
+clienților, hardware și Spark live rămân restanțe distincte; production_ready=false.

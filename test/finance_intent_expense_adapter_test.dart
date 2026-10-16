@@ -322,7 +322,7 @@ void main(){
       h.fixture.wrapPage=(page)=>FinanceExpenseDemoRecovery(adapter:h.adapter,child:page);
       await h.fixture.mount(t);await h.receipt(t);
       expect(h.db.calls,calls);expect(h.db.writes,writes);expect(h.db.serverReads,0);
-      expect(h.fixture.logs,isEmpty);
+      expect(h.fixture.logs,isEmpty);expect(h.fixture.settlementOverride!.receivedDeparture,0);
       expect(h.adapter.pendingCodes,isEmpty,reason:'The refused new ID must not occupy the old target');
       expect((await h.scope.coordinator.journal.pending()).single.encode(),old.encode());
       // Explicit review must remain usable in the same adapter and owner scope.

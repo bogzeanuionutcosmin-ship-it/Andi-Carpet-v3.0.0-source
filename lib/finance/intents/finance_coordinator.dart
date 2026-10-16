@@ -5,7 +5,11 @@ import 'finance_repository.dart';
 class FinanceCoordinatedResult {
   final FinanceIntentResult result;
   final bool journalPending;
-  const FinanceCoordinatedResult(this.result,{this.journalPending=false});
+  // This newly requested ID was never stored or sent: another durable intent
+  // already owns its target. This does not dismiss or resolve that old intent.
+  final bool blockedByPendingIntent;
+  const FinanceCoordinatedResult(this.result,{this.journalPending=false,
+    this.blockedByPendingIntent=false});
 }
 // Every invocation is explicit. Loading a journal or recreating an account
 // scope never executes a pending operation. No timers or completion callbacks.
@@ -18,7 +22,8 @@ class FinanceIntentCoordinator {
   Future<FinanceCoordinatedResult> executeExplicitly(FinanceIntent intent) async {
     late final bool fresh;
     try {fresh=await journal.prepare(intent);}
-    on FinanceRefusal catch(e){return FinanceCoordinatedResult(FinanceIntentResult(FinanceIntentStatus.rejectedBeforeWrite,e.code),journalPending:true);}
+    on FinanceRefusal catch(e){return FinanceCoordinatedResult(FinanceIntentResult(FinanceIntentStatus.rejectedBeforeWrite,e.code),journalPending:true,
+      blockedByPendingIntent:e.code=='finance_unresolved_target');}
     catch(_){return const FinanceCoordinatedResult(FinanceIntentResult(FinanceIntentStatus.rejectedBeforeWrite,'finance_storage_unavailable'),journalPending:true);}
     final result=await repository.execute(intent);
     if(!fresh && result.status==FinanceIntentStatus.rejectedBeforeWrite){
