@@ -1,4 +1,7 @@
-part of '../main.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../models/app_enums.dart';
 
 class FirebaseUserProfile {
   final String uid;
@@ -23,7 +26,7 @@ class FirebaseUserProfile {
 
   bool get isAdmin => role == 'admin';
 
-  static UserFunction _functionFrom(String? value, String role) {
+  static UserFunction functionFrom(String? value, String role) {
     if (role == 'admin') return UserFunction.director;
     return switch (value) {
       'driver' => UserFunction.driver,
@@ -49,7 +52,7 @@ class FirebaseUserProfile {
       role: role,
       active: data['active'] == true,
       status: (data['status'] ?? (data['active'] == true ? 'approved' : 'pending')).toString(),
-      function: _functionFrom(data['function']?.toString(), role),
+      function: functionFrom(data['function']?.toString(), role),
       functionIds: data['functionIds'] is List
           ? (data['functionIds'] as List).map((e) => e.toString()).where((e) => e.isNotEmpty).toList()
           : <String>[(role == 'admin' ? 'admin' : '').trim()].where((e) => e.isNotEmpty).toList(),
