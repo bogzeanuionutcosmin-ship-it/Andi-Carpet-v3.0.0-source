@@ -202,6 +202,58 @@ void main() {
     expect(lease.entries.single.count, 1);
   });
 
+  test('A1 to B to A2 cannot reopen an observer after identity denial', () async {
+    final db = _db();
+    final storage = _MemoryStorage();
+    var a1Current = true;
+    final journal = VisionSessionJournal();
+    final a1 = journal.startSession(isSessionCurrent: () => a1Current);
+    final observed = _observed(
+      db, storage, VisionScopedSignalSink(a1), () => a1Current,
+    );
+    a1Current = false;
+    journal.revoke(); // B owns a distinct AuthGate generation.
+    final b = journal.startSession(isSessionCurrent: () => true);
+    final first = await observed.executeExplicitly(_intent());
+    expect(first.result.status, FinanceIntentStatus.uncertain);
+    expect(first.result.code, 'finance_session_expired');
+    expect(db.calls, 0);
+    expect(storage.values, isEmpty);
+    expect(a1.entries, isEmpty);
+    expect(b.entries, isEmpty);
+
+    a1Current = true; // Same UID returns under a NEW generation (A2).
+    journal.revoke();
+    final a2 = journal.startSession(isSessionCurrent: () => true);
+    final returned = await observed.executeExplicitly(_intent());
+    expect(returned.result.code, 'finance_session_expired');
+    final recover = await observed.reconcileExplicitly(_intent());
+    expect(recover.result.code, 'finance_session_expired');
+    expect(db.calls, 0);
+    expect(storage.values, isEmpty);
+    expect(a2.entries, isEmpty);
+  });
+
+  test('disposed observer blocks all later financial entrypoints', () async {
+    final db = _db();
+    final storage = _MemoryStorage();
+    final lease = VisionSessionJournal().startSession(
+      isSessionCurrent: () => true,
+    );
+    final observed = _observed(
+      db, storage, VisionScopedSignalSink(lease), () => true,
+    );
+    observed.dispose();
+    observed.dispose(); // idempotent
+    final x = await observed.executeExplicitly(_intent());
+    final y = await observed.reconcileExplicitly(_intent());
+    expect(x.result.code, 'finance_session_expired');
+    expect(y.result.code, 'finance_session_expired');
+    expect(db.calls, 0);
+    expect(storage.values, isEmpty);
+    expect(lease.entries, isEmpty);
+  });
+
   test('late completion after logout cannot write to the old Vision lease', () async {
     final db = _db();
     final storage = _MemoryStorage();
