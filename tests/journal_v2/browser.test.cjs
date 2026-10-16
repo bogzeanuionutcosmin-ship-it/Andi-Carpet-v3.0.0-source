@@ -93,6 +93,8 @@ test('tab termination after strict commit before lock release preserves intent a
   await a.evaluate(raw=>{void j.prepare(raw);},raw(1));
   await a.waitForFunction(()=>globalThis.committed===true);
   await a.close(); // Actual context termination, not claimed as OS/renderer crash.
+  // Target close completion need not synchronously release browser lock state.
+  await b.waitForFunction(async name=>!(await navigator.locks.query()).held.some(l=>l.name===name),lockName);
   assert.deepEqual((await invoke(b,'pending')).value,[raw(1)]);
   assert.deepEqual(await invoke(b,'prepare',raw(1)),{ok:true,value:false});
   assert.equal((await invoke(b,'prepare',raw(2))).value,true);
@@ -212,26 +214,41 @@ test('32-intent and UTF8 envelope bounds refuse growth without altering accepted
   assert.ok(accepted>0 && accepted<32);console.log('Measured UTF8 bound accepted',accepted,'large synthetic receipts before refusal');
 });
 
-test('two actual renderer PIDs share the journal lock and cannot overwrite pending',
- {skip:process.env.XII_RENDERER_PID_PROBE!=='1' ? 'BLOCKED: trace frame-to-PID binding unavailable; opt-in diagnostic only' : false},async()=>{
+test('two actual renderer PIDs share the journal lock and cannot overwrite pending',async()=>{
   await reset();const a=await page(),b=await page();
-  const fa=(await (await context.newCDPSession(a)).send('Page.getFrameTree')).frameTree.frame.id;
-  const fb=(await (await context.newCDPSession(b)).send('Page.getFrameTree')).frameTree.frame.id;
-  const trace=await browser.newBrowserCDPSession(),events=[];
-  trace.on('Tracing.dataCollected',data=>events.push(...data.value));
-  const complete=new Promise(resolve=>trace.once('Tracing.tracingComplete',resolve));
-  await trace.send('Tracing.start',{traceConfig:{includedCategories:['*','disabled-by-default-devtools.timeline','disabled-by-default-devtools.timeline.frame'],enableArgumentFilter:false},transferMode:'ReportEvents'});
-  await a.evaluate(()=>performance.mark('journal-process-a'));await b.evaluate(()=>performance.mark('journal-process-b'));
-  await new Promise(resolve=>setTimeout(resolve,200));await trace.send('Tracing.end');await complete;
-  const frames=events.flatMap(e=>e.name==='TracingStartedInBrowser'?(e.args?.data?.frames||[]):[]);
-  const pa=frames.find(f=>f.frame===fa)?.processId,pb=frames.find(f=>f.frame===fb)?.processId;
-  assert.ok(Number.isInteger(pa) && Number.isInteger(pb),'actual trace must identify both renderer PIDs');
+  async function rendererPid(page){
+    // Tracing is target-scoped: browser-target metadata has no frame binding.
+    // Capture each live page's frame->PID from its own CDP tracing session.
+    const trace=await context.newCDPSession(page),events=[];
+    const frame=(await trace.send('Page.getFrameTree')).frameTree.frame.id;
+    trace.on('Tracing.dataCollected',data=>events.push(...data.value));
+    const complete=new Promise(resolve=>trace.once('Tracing.tracingComplete',resolve));
+    await trace.send('Tracing.start',{categories:'devtools.timeline,disabled-by-default-devtools.timeline',transferMode:'ReportEvents'});
+    await page.evaluate(()=>performance.mark('journal-process-probe'));
+    await new Promise(resolve=>setTimeout(resolve,200));
+    await trace.send('Tracing.end');await complete;
+    const frames=events.flatMap(e=>e.name==='TracingStartedInBrowser'?(e.args?.data?.frames||[]):[]);
+    const pid=frames.find(f=>f.frame===frame)?.processId;await trace.detach();
+    assert.ok(Number.isInteger(pid),'actual target trace must identify renderer PID');return pid;
+  }
+  const pa=await rendererPid(a),pb=await rendererPid(b);
   assert.notEqual(pa,pb,'same renderer cannot certify cross-process exclusion');
   console.log('Verified independent renderer PIDs:',pa,pb);
-  const r=await Promise.all([invoke(a,'prepare',raw(1)),invoke(b,'prepare',raw(2))]);
-  for(let k=0;k<2;k++)if(!r[k].ok){assert.equal(r[k].code,'journal_v2_busy');assert.equal((await invoke(b,'prepare',raw(k+1))).value,true);}
+  await a.evaluate(raw=>{
+    const digest=crypto.subtle.digest.bind(crypto.subtle);let first=true;
+    crypto.subtle.digest=async(...args)=>{
+      if(first){first=false;globalThis.readBeforeWrite=true;await new Promise(r=>globalThis.continueWrite=r);}
+      return digest(...args);
+    };
+    globalThis.firstWrite=j.prepare(raw);
+  },raw(1));
+  await a.waitForFunction(()=>globalThis.readBeforeWrite===true);
+  // A has read the old envelope and is validating under its REAL lock.
+  // B runs in another measured renderer PID and must not read/overwrite it.
+  assert.deepEqual(await invoke(b,'prepare',raw(2)),{ok:false,code:'journal_v2_busy'});
+  await a.evaluate(()=>continueWrite());assert.equal(await a.evaluate(()=>firstWrite),true);
+  assert.equal((await invoke(b,'prepare',raw(2))).value,true);
   assert.deepEqual(new Set((await invoke(a,'pending')).value),new Set([raw(1),raw(2)]));
-  await trace.detach();
 });
 
 test('logout during awaited validation retains prior bytes and cannot authorize a write',async()=>{

@@ -130,12 +130,14 @@ cleanup concurent cu prepare;32 slots/UTF8; browser proces SIGKILL+restart acela
 profil. Pentru procesul nou folosește Chromium executabil real, nu recreare de
 obiecte sau `browser.close()` elegant. PID-ul copilului este deținut de test.
 
-Proba opt-in `XII_RENDERER_PID_PROBE=1` este BLOCKED: tracingul Chromium local
-returnează TracingStartedInBrowser fără frame-to-PID bindings. Ea a EȘUAT când
-a fost invocată explicit și este SKIPPED cu motiv în suita implicită, nu PASS.
-Nu deducem PID-uri diferite numai din două taburi. Exclusivitatea este probată
-între agenți JS reali tab/worker; certificarea a doi writeri în PIDs simultane
-identificate rămâne BLOCKED, separat de SIGKILL al unui browser proces real.
+Proba PID este acum obligatorie, fără skip: atașează separat CDP fiecărui tab,
+identifică frame-ul lui prin Page.getFrameTree și PID-ul lui real din evenimentul
+TracingStartedInBrowser al ACELUI target. Cere două PID-uri întregi DISTINCTE,
+cu ambele taburi încă active. A este oprit adversarial în checksum după citirea
+stării vechi, sub lockul real; B, în celălalt PID, primește busy. După continuarea
+lui A, B persistă din snapshot nou, iar union-ul exact al celor două intenții
+rămâne recuperabil. Local: PID464/PID463, proba PASS, fără deducerea proceselor
+din simpla existență a două taburi. CI trebuie să repete acest control strict.
 Repetarea manuală storage în test după `busy` se face numai după refuzul explicit,
 nu reprezintă o strategie de retry financiar de produs.
 
@@ -157,7 +159,8 @@ cu SIGKILL. Nu relaxăm o invariantă de jurnal pentru a ascunde controlul CDP.
 Proba locală cu Chromium complet nu a putut porni în sandbox: socket Unix pentru
 process singleton refuzat. Headless shell executabil real, selectat explicit prin
 `XII_CHROMIUM_EXECUTABLE`, a trecut SIGKILL/restart. CI Linux folosește Chromium
-complet implicit; rezultatul său trebuie confirmat separat. Nu escaladăm sandbox.
+complet pentru subprocess: pe3a05d0e proba SIGKILL/restart a trecut deja distinct.
+Nu escaladăm sandbox; rezultatul final trebuie totuși repetat pe ultimul HEAD.
 
 ## Strategii native separate — BLOCKED, fail-closed implementat
 
@@ -235,3 +238,19 @@ lock ocupat,24 operații tab/worker,32/UTF8 bound,logout în timpul await și
 separare team/V1. 199Python și3Node existente PASS; audit_repository exit0 cu
 avertismente de conținut duplicat existente. Nu confundați acest rezultat local
 cu rezultatul obligatoriu CI pentru ultimul SHA.
+
+### Corecții de fixture și dovadă cross-process obținută
+
+3a05d0e: browser12PASS/1FAIL/1SKIP; SIGKILL real a trecut în CI, dar imediat după
+page.close(), pending în alt tab a fost refuzat busy. Finalizarea închiderii
+targetului nu implică eliberarea sincronă a lockului browser. Proba așteaptă acum
+navigator.locks.query să observe release, apoi citește; NU execută fără lock și
+NU schimbă runtime-ul. Busy-ul observat este fail-closed, nu intenție pierdută.
+
+Investigația PID a găsit cauza lipsei bindingurilor: Tracing.start pe browser
+target produce metadata fără frames; sesiunea unui tab produce metadata pentru
+propriul frame. Proba strictă capturează fiecare target separat și verifică
+PID-uri distincte. Nu mai este opt-in sau SKIPPED. Rezultat local final după
+aceste corecții:14/14PASS,0FAIL,0SKIP, Chromium141.0.7390.37; PID464/463,
+SIGKILL+restart și toate probele de integritate incluse. Blocajul inițial a fost
+rezolvat prin dovadă, fără a substitui PIDs simulate. CI final rămâne obligatoriu.
