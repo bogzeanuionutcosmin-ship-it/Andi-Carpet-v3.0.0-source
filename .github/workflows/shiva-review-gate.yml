@@ -26,6 +26,8 @@ jobs:
         run: python3 -m unittest discover -s test -p 'test_shiva_shared_session_contract.py' -v
       - name: Exhaustive session ordering model
         run: python3 -m unittest discover -s test -p 'test_shiva_session_interleavings.py' -v
+      - name: UID team protocol epoch isolation model
+        run: python3 -m unittest discover -s test -p 'test_shiva_scope_isolation_contract.py' -v
       - name: Evidence baseline must block production
         shell: bash
         run: |
