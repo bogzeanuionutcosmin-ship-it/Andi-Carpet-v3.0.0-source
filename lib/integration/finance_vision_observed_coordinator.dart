@@ -72,6 +72,17 @@ class FinanceVisionObservedCoordinator {
     journalPending: true,
   );
 
+  // An unexpected coordinator exception has UNKNOWN commit status. It is
+  // categorically not a confirmed pre-write rejection or a retry instruction.
+  // Never forward raw exception text, operation IDs or amounts to Vision.
+  static const FinanceCoordinatedResult _unclassified =
+      FinanceCoordinatedResult(
+    FinanceIntentResult(
+      FinanceIntentStatus.uncertain, 'finance_unclassified_result',
+    ),
+    journalPending: true,
+  );
+
   Future<FinanceCoordinatedResult> _explicit(
     FinanceIntent intent, {
     required bool reconciliation,
@@ -197,7 +208,16 @@ class FinanceVisionObservedCoordinator {
       }
     }
     if (!_ownsSession()) return _expired;
-    final result = await coordinator.executeExplicitly(intent);
+    late final FinanceCoordinatedResult result;
+    try {
+      result = await coordinator.executeExplicitly(intent);
+    } catch (_) {
+      // The durable journal MAY contain a submitted intent. Fail closed and
+      // require explicit recovery, without claiming that the write failed.
+      if (!_ownsSession()) return _expired;
+      _observe(_unclassified);
+      return _unclassified;
+    }
     if (!_ownsSession()) return result;
     _observe(result);
     return result;
@@ -212,7 +232,14 @@ class FinanceVisionObservedCoordinator {
     FinanceIntent intent,
   ) async {
     if (!_ownsSession()) return _expired;
-    final result = await coordinator.reconcileExplicitly(intent);
+    late final FinanceCoordinatedResult result;
+    try {
+      result = await coordinator.reconcileExplicitly(intent);
+    } catch (_) {
+      if (!_ownsSession()) return _expired;
+      _observe(_unclassified);
+      return _unclassified;
+    }
     if (!_ownsSession()) return result;
     _observe(result);
     return result;
