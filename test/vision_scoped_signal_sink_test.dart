@@ -14,7 +14,9 @@ void main() {
       expect(VisionErrorLog.safeCode(signal.code), signal.code);
       expect(combinations.add('${signal.area}/${signal.code}'), isTrue);
       expect(signal.area, isNot(contains('uid')));
-      expect(signal.code, isNot(contains('token')));
+      // "token_unavailable" is a static safe label, not a token value.
+      expect(signal.code, isNot(contains('=')));
+      expect(signal.code, isNot(contains(' ')));
     }
     for (final platform in VisionSignalPlatform.values) {
       expect(VisionErrorLog.safeCode(platform.name), platform.name);
