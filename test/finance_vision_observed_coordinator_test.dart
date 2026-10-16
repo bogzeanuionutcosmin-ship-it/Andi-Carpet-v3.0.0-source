@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:andi_carpeta/finance/intents/finance_checked_journal.dart';
 import 'package:andi_carpeta/finance/intents/finance_coordinator.dart';
 import 'package:andi_carpeta/finance/intents/finance_intent.dart';
@@ -117,6 +118,88 @@ void main() {
     expect(storage.values['finance_intents_v1_A'], '{malformed');
     expect(lease.entries.single.fingerprint,
         'finance/operation_uncertain/android');
+  });
+
+  test('simultaneous taps coalesce to one journal and server call', () async {
+    final entered = Completer<void>(), release = Completer<void>();
+    final db = _db()..commitThenThrow = true;
+    db.beforeCommit = () async {
+      if (!entered.isCompleted) entered.complete();
+      await release.future;
+    };
+    final storage = _MemoryStorage();
+    final lease = VisionSessionJournal().startSession(
+      isSessionCurrent: () => true,
+    );
+    final observed = _observed(
+      db, storage, VisionScopedSignalSink(lease), () => true,
+    );
+    final intent = _intent();
+    final calls = List.generate(30, (_) => observed.executeExplicitly(intent));
+    for (final call in calls.skip(1)) {
+      expect(identical(call, calls.first), isTrue);
+    }
+    final competing = FinanceIntent(
+      operationId: '33333333333333333333333333333333',
+      actorUid: intent.actorUid,
+      teamId: intent.teamId,
+      collection: intent.collection,
+      documentId: intent.documentId,
+      baseRevision: intent.baseRevision,
+      kind: intent.kind,
+      changes: intent.changes,
+    );
+    final blocked = await observed.executeExplicitly(competing);
+    expect(blocked.result.status, FinanceIntentStatus.uncertain);
+    expect(blocked.result.code, 'finance_operation_still_in_flight');
+    expect(blocked.blockedByPendingIntent, isTrue);
+    await entered.future;
+    expect(db.calls, 1);
+    release.complete();
+    final results = await Future.wait(calls);
+    expect(results.every(
+      (r) => r.result.status == FinanceIntentStatus.uncertain,
+    ), isTrue);
+    expect(db.calls, 1);
+    expect(db.documents['settlements/trip']!['receivedEntries'], hasLength(1));
+    expect(lease.entries.single.count, 1);
+    expect((await observed.coordinator.journal.pending()).single.operationId,
+        intent.operationId);
+  });
+
+  test('overlapping explicit reconciliation reads server only once', () async {
+    final db = _db()..commitThenThrow = true;
+    final storage = _MemoryStorage();
+    final lease = VisionSessionJournal().startSession(
+      isSessionCurrent: () => true,
+    );
+    final observed = _observed(
+      db, storage, VisionScopedSignalSink(lease), () => true,
+    );
+    final intent = _intent();
+    final first = await observed.executeExplicitly(intent);
+    expect(first.result.status, FinanceIntentStatus.uncertain);
+    db.commitThenThrow = false;
+    final entered = Completer<void>(), release = Completer<void>();
+    db.beforeServerReturn = () async {
+      if (!entered.isCompleted) entered.complete();
+      await release.future;
+    };
+    final a = observed.reconcileExplicitly(intent);
+    final b = observed.reconcileExplicitly(intent);
+    expect(identical(a, b), isTrue);
+    final cannotResend = await observed.executeExplicitly(intent);
+    expect(cannotResend.result.code, 'finance_operation_still_in_flight');
+    await entered.future;
+    expect(db.serverReads, 1);
+    release.complete();
+    final result = await a;
+    expect((await b).result.status, FinanceIntentStatus.confirmed);
+    expect(result.result.status, FinanceIntentStatus.confirmed);
+    expect(db.serverReads, 2); // Marker and authoritative refresh, not four.
+    expect(db.calls, 1);
+    expect(await observed.coordinator.journal.pending(), isEmpty);
+    expect(lease.entries.single.count, 1);
   });
 
   test('late completion after logout cannot write to the old Vision lease', () async {
