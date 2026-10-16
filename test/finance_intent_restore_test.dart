@@ -15,6 +15,33 @@ class _RestoreTx implements FinanceRestoreTransaction {
   @override Future<Map<String,Object?>?> read(String path)=>tx.read(path);
   @override void write(String path,Map<String,Object?> data)=>tx.write(path,data);
 }
+// A port may lose its acknowledgement using a domain exception. The caller
+// must not infer that no write happened from the exception type alone.
+class _PostCommitFailure implements FinanceRestorePort {
+  final RestoreFixture delegate;
+  final Object error;
+  _PostCommitFailure(this.delegate,this.error);
+  @override Future<void> atomic(Future<void> Function(FinanceRestoreTransaction) action) async {
+    await delegate.atomic(action);
+    throw error;
+  }
+}
+class _RetryRefusal implements FinanceRestorePort {
+  final RestoreFixture delegate;
+  _RetryRefusal(this.delegate);
+  @override Future<void> atomic(Future<void> Function(FinanceRestoreTransaction) action) async {
+    // First callback schedules a write but contention prevents commit. A later
+    // callback refuses during preflight. No successful commit is asserted.
+    var first=true;
+    delegate.db.beforeCommit=()async {
+      if(first) {
+        first=false;
+        delegate.db.seed('locations/room',{'name':'Concurrent'});
+      }
+    };
+    await delegate.atomic(action);
+  }
+}
 void main() {
   const target='settlements/trip', room='locations/room';
   final marker='$target/financialIntents/${'a'*32}';
@@ -73,6 +100,27 @@ void main() {
       expect((await FinanceDemoRestore(port:f,sessionIsCurrent:()=>true).executeExplicitly(p)).status,FinanceIntentStatus.uncertain);
       expect(f.db.calls,1);expect(f.db.documents[room],{'name':committed?'Restored':'Current'});
     }
+  });
+  test('typed exceptions after commit cannot certify rejection or conflict',()async {
+    for(final error in <Object>[
+      const FinanceRefusal('synthetic_lost_ack'),const FinanceRevisionConflict(),
+    ]) {
+      final f=fixture(),p=plan(f);
+      final result=await FinanceDemoRestore(port:_PostCommitFailure(f,error),
+        sessionIsCurrent:()=>true).executeExplicitly(p);
+      expect(result.status,FinanceIntentStatus.uncertain);
+      expect(result.code,'finance_restore_uncertain');
+      expect(f.db.calls,1);expect(f.db.writes,1);
+      expect(f.db.documents[room],{'name':'Restored'});
+    }
+  });
+  test('scheduled writes remain ambiguous across callback retry refusal',()async {
+    final f=fixture(),p=plan(f);
+    final result=await FinanceDemoRestore(port:_RetryRefusal(f),
+      sessionIsCurrent:()=>true).executeExplicitly(p);
+    expect(result.status,FinanceIntentStatus.uncertain);
+    expect(f.db.calls,1);expect(f.db.callbacks,2);expect(f.db.writes,0);
+    expect(f.db.documents[room],{'name':'Concurrent'});
   });
   test('revoked session after a read schedules no write',()async {
     final f=fixture(),p=plan(f);var current=true;
