@@ -28,7 +28,7 @@ class Child:
   self.p.stdin.close();self.p.stdout.close();self.p.stderr.close()
 
 class Native(unittest.TestCase):
- def setUp(self):self.temp=tempfile.TemporaryDirectory();self.root=self.temp.name;self.call('init')
+ def setUp(self):self.temp=tempfile.TemporaryDirectory();self.root=self.temp.name;self.assertTrue(self.call('init')['ok'],'synthetic native storage initialization must succeed')
  def tearDown(self):self.temp.cleanup()
  def start(self,action,**kw):return Child(dict(action=action,directory=self.root,**kw))
  def call(self,action,**kw):return self.start(action,**kw).finish()
