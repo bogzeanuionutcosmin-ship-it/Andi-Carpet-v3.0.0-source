@@ -12,6 +12,7 @@ import 'package:andi_carpeta/finance/intents/finance_intent.dart';
 import 'package:andi_carpeta/finance/intents/finance_repository.dart';
 
 Future<void> main()async{
+ stdout.encoding=utf8;
  final input=StreamIterator<String>(stdin.transform(utf8.decoder).transform(const LineSplitter()));
  try{
   if(!await input.moveNext())throw const FormatException();

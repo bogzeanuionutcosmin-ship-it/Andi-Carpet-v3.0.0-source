@@ -228,3 +228,7 @@ corectate în surse, nu eliminate din criterii. Linux/macOS24probe au trecut pe
 checkpoint; Windows a fost cancelat în vechiul pubget, fără pretenție de PASS.
 Finalul rulează28probe/OS și19fixtureSDK; toate rezultatele exacte se citesc din
 CI pe HEAD final în PR85. APK main rămâne numai compile-only.
+
+IPC-ul executabilului și al orchestratorului cere explicit UTF8, inclusiv pe
+Windows, pentru ca proba de capacitate cu payer Han să nu depindă de pagina
+de cod a consolei. Bytes/digesturile storage folosesc deja UTF8 explicit.

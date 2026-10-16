@@ -5,7 +5,7 @@ if not EXE: raise RuntimeError('XIII_NATIVE_PROBE required')
 
 class Child:
  def __init__(self,request):
-  self.p=subprocess.Popen([EXE],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,bufsize=1)
+  self.p=subprocess.Popen([EXE],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8',bufsize=1)
   self.lines=queue.Queue()
   def reader():
    for line in self.p.stdout:
