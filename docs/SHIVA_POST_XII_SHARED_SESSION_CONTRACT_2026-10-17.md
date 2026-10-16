@@ -41,3 +41,7 @@ A BroadcastChannel notification can improve UI responsiveness, **but is not an a
 ## Next isolated deliverable
 
 Implement a pure contract fixture or standalone staging harness that injects session lease reads, delayed revocation and already-sent uncertain responses. Keep it outside protected runtime; use explicit assertions for zero second-send and no cross-UID exposure. No implicit activation or production Firebase writes.
+
+## Reconciliation authorization rule (Shiva model hardening)
+
+The server-marker lookup is a privileged read, not an exception to revocation. After logout or team transfer, a stale client must preserve its local `uncertain` state but receive `authorization_required` rather than reading an old-team marker. An authorized recovery flow may reconcile later under an independently verified identity/team entitlement. A lack of read permission is **not** evidence that the write failed and must never trigger a second financial send. This rule is now exercised by the isolated model test; it is not wired into production Firestore rules.
