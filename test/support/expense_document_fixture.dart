@@ -61,8 +61,7 @@ class ExpenseDocumentFixture {
     expenses.add(expense);
     rebuild(() {});
   }
-  Future<void> mount(WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: StatefulBuilder(
+  Widget buildPage()=>Scaffold(body: StatefulBuilder(
       builder: (context, setState) {
         rebuild = setState;
         final page = ExpensePage(
@@ -82,7 +81,9 @@ class ExpenseDocumentFixture {
         );
         return wrapPage?.call(page) ?? page;
       },
-    ))));
+    ));
+  Future<void> mount(WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(home:buildPage()));
     await tester.pumpAndSettle();
   }
   Future<void> scan(WidgetTester tester) async {

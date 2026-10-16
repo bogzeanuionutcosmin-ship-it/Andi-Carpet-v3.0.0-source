@@ -123,3 +123,27 @@ nu certifică secure storage fizic, restart OS sau fabrica implicită Home.
 Așteptarea bounded a evenimentelor SDK este exclusiv în test, nu polling nou în
 aplicație. Rezultatele sunt candidate până la CI real pe noul SHA; 197 teste
 Python locale PASS. Probele vechi și verificatorul raw Timestamp rămân obligatorii.
+
+## Validare UI+SDK și candidat AuthGate real
+
+Pe aac5484 toate cele patru workflowuri sunt SUCCESS: Standard #38840646418,
+Identity #38840646422, Mission VIII #38840646423 și Platforms #38840646436.
+Cele două probe integrate au trecut: suita SDK are 12 PASS, alături de 174 Dart,
+47 JS emulator și verificarea raw Timestamp. Platformele au 161 Auth/Vision,
+356 finance VM, 342 finance Chrome și Android main compile + pachet SUCCESS.
+
+Următorul candidat conectează **AndiCarpetaApp/AuthGate real**, fluxul Auth real
+și snapshoturile reale users din emulator la ExpensePage original. O încasare
+este comisă, ack-ul este ținut în așteptare, apoi conturile trec A→B→A2. Ecranul
+lui B nu trebuie să păstreze numele decontului lui A, nici să încarce jurnalul lui.
+Scope-ul vechi este închis la disposal și nu poate refresh-ui sau audita după
+eliberarea ack-ului. În A2 se încarcă explicit exact intenția durabilă și butonul
+reconciliază numai prin marker+refresh, cu zero tranzacții noi și zero audit
+inventat al dialogului dispărut. Stocarea RAM este comună fixture-urilor, cu chei
+separate per UID; nu este storage fizic sau restart de proces. Streamul de
+settings este inert; autentificarea și profilurile nu sunt înlocuite cu fake.
+
+Fixture-ul expune același buildPage pentru montarea sub rădăcina AuthGate, cu
+aceleași callbackuri și dialoguri. Nu se modifică Home implicit, AuthGate,
+permisunile sau rules. A treisprezecea probă SDK este candidată până la CI real,
+nu este declarată PASS prin reutilizarea rezultatului aac5484.

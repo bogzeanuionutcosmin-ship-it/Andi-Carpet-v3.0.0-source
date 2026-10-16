@@ -5,7 +5,7 @@ import 'support/expense_document_fixture.dart';
 import 'package:andi_carpeta/finance/intents/finance_expense_demo_recovery.dart';
 import 'package:andi_carpeta/finance/intents/finance_ledger.dart';
 import 'package:andi_carpeta/finance/intents/firestore_ledger_port.dart';
-import 'package:andi_carpeta/main.dart' show TravelSettlement, ReceivedMoneyEntry;
+import 'package:andi_carpeta/main.dart' show TravelSettlement, ReceivedMoneyEntry, AndiCarpetaApp, AuthGateSources, AppSettings;
 import 'package:andi_carpeta/finance/intents/finance_demo_panel.dart';
 import 'package:andi_carpeta/finance/intents/finance_expense_demo_adapter.dart';
 import 'dart:html' as html;
@@ -60,9 +60,9 @@ class SdkExpenseUi {
  final ExpenseDocumentFixture fixture;
  late final FinanceDemoScope scope;
  late final FinanceExpenseDemoAdapter adapter;
- SdkExpenseUi(String uid,this.port,bool Function() current)
+ SdkExpenseUi(String uid,this.port,bool Function() current,{FinanceJournalStorage? storage})
    :fixture=ExpenseDocumentFixture('',userId:uid,teamId:'flutter-team'){
-  scope=FinanceDemoScope(ownerUid:uid,sessionIsCurrent:current,port:port,storage:BrowserJournalStorage());
+  scope=FinanceDemoScope(ownerUid:uid,sessionIsCurrent:current,port:port,storage:storage??BrowserJournalStorage());
   adapter=FinanceExpenseDemoAdapter(scope:scope,port:port,acceptServerSnapshot:(path,data)async{
    fixture.settlementOverride=TravelSettlement(id:path.split('/').last,teamId:data['teamId'] as String,
     name:data['name'] as String,startDate:data['startDate'] as DateTime,createdAt:data['createdAt'] as DateTime,
@@ -115,6 +115,18 @@ class SdkExpenseUi {
  Future<void> close(WidgetTester t)async{
   await t.pumpWidget(const SizedBox());adapter.dispose();
  }
+}
+// Ownership is tied to the actual AuthGate widget lifetime, not UID equality.
+class SdkExpenseOwnedView extends StatefulWidget {
+ final SdkExpenseUi Function() create;
+ const SdkExpenseOwnedView({super.key,required this.create});
+ @override State<SdkExpenseOwnedView> createState()=>_SdkExpenseOwnedViewState();
+}
+class _SdkExpenseOwnedViewState extends State<SdkExpenseOwnedView> {
+ late final SdkExpenseUi ui;
+ @override void initState(){super.initState();ui=widget.create();}
+ @override Widget build(BuildContext context)=>ui.fixture.buildPage();
+ @override void dispose(){ui.adapter.dispose();super.dispose();}
 }
 FinanceIntent receipt(String target,int id,String uid,{int revision=0})=>FinanceIntent(operationId:id.toRadixString(16).padLeft(32,'0'),actorUid:uid,teamId:'flutter-team',collection:'settlements',documentId:target,baseRevision:revision,kind:FinanceIntentKind.receipt,changes:{'kind':'departure','amount':200.0,'method':'Cash','fromName':'Synthetic payer','date':DateTime.utc(2026,10,15)});
 void main(){
@@ -197,6 +209,64 @@ void main(){
    expect(marker!.data!['digest'],digest);
    expect(await t.runAsync(()=>ui.scope.coordinator.journal.pending()),isEmpty);
   } finally {await ui.close(t);}
+ },timeout:const Timeout(Duration(minutes:2)));
+ testWidgets('real AuthGate SDK A B A2 isolates original dialogs and recovers the same pending intent',(t)async{
+  final storage=BrowserJournalStorage(),created=<SdkExpenseUi>[];
+  final sources=AuthGateSources(currentUser:()=>auth.currentUser,authStateChanges:auth.authStateChanges,
+   uiSettingsSnapshots:()=>const Stream<DocumentSnapshot<Map<String,dynamic>>>.empty(),
+   profileSnapshots:(owner)=>db.doc('users/$owner').snapshots());
+  await t.pumpWidget(AndiCarpetaApp(settings:AppSettings()..brandingBackgroundId='none',authSources:sources,
+   homeBuilder:(key,profile,current)=>SdkExpenseOwnedView(key:key,create:(){
+    final ui=SdkExpenseUi(profile.uid,ObservedPort(port.inner),current,storage:storage);created.add(ui);return ui;
+   })));
+  // Wait for the real Firestore profile stream without inventing a profile.
+  await t.runAsync(()async{
+   final deadline=DateTime.now().add(const Duration(seconds:30));
+   while(created.isEmpty){
+    if(DateTime.now().isAfter(deadline))throw TimeoutException('finance_authgate_profile_timeout');
+    await Future<void>.delayed(const Duration(milliseconds:20));await t.pump();
+   }
+  });
+  await t.pumpAndSettle();final old=created.last;
+  final release=Completer<void>(),ackReleased=Completer<void>();
+  try {
+   expect(old.scope.ownerUid,uid);await old.create(t);await old.baseline(t);
+   expect(find.textContaining('Synthetic real SDK UI'),findsWidgets);
+   old.port.loseAcknowledgement=true;
+   old.port.afterLostAck=()async{await release.future;ackReleased.complete();};
+   await old.receipt(t);await old.wait(t,()=>old.port.lostAcknowledgements==1);
+   final original=(await t.runAsync(()=>old.scope.coordinator.journal.pending()))!.single;
+   final oldReads=old.port.serverReads;
+   await t.runAsync(()=>signIn(auth,'b'));
+   await old.wait(t,()=>created.last.scope.ownerUid!=uid&&created.last.scope.sessionIsCurrent());
+   final b=created.last;
+   expect(old.scope.sessionIsCurrent(),false);expect(find.textContaining('Synthetic real SDK UI'),findsNothing);
+   await t.tap(find.text('Verifică operațiile în așteptare'));await t.pumpAndSettle();
+   await b.wait(t,()=>!b.adapter.recoveryBusy);
+   expect(b.adapter.pendingCodes,isEmpty);expect(b.port.atomicCalls,0);expect(b.port.serverReads,0);
+   await t.runAsync(()=>signIn(auth,'a'));
+   await old.wait(t,()=>!identical(created.last,old)&&created.last.scope.ownerUid==uid&&created.last.scope.sessionIsCurrent());
+   final a2=created.last;expect(b.scope.sessionIsCurrent(),false);expect(old.scope.sessionIsCurrent(),false);
+   release.complete();await old.wait(t,()=>ackReleased.isCompleted);await t.pumpAndSettle();
+   expect(old.fixture.logs,hasLength(1));expect(old.port.serverReads,oldReads);
+   expect(a2.port.atomicCalls,0);expect(a2.fixture.logs,isEmpty);
+   await t.tap(find.text('Verifică operațiile în așteptare'));await t.pumpAndSettle();
+   await a2.wait(t,()=>!a2.adapter.recoveryBusy);
+   expect(a2.adapter.pendingCodes,hasLength(1));expect(a2.port.serverReads,0);
+   final recovered=(await t.runAsync(()=>a2.scope.coordinator.journal.pending()))!.single;
+   expect(recovered.encode(),original.encode());
+   await t.ensureVisible(find.text('Verifică salvarea'));await t.tap(find.text('Verifică salvarea'));await t.pump();
+   await a2.wait(t,()=>a2.adapter.pendingCodes.isEmpty);
+   expect(a2.port.atomicCalls,0);expect(a2.port.serverReads,2);expect(a2.fixture.logs,isEmpty);
+   expect(a2.fixture.settlementOverride!.lastOperationId,original.operationId);
+   expect(a2.fixture.settlementOverride!.receivedDeparture,200);
+   final data=await t.runAsync(()=>server(original.documentId));
+   expect(data!['revision'],2);expect(data['receivedEntries'],hasLength(1));
+  } finally {
+   if(!release.isCompleted)release.complete();
+   await t.pumpWidget(const SizedBox());await t.pumpAndSettle();
+   await t.runAsync(()=>signIn(auth,'a'));
+  }
  },timeout:const Timeout(Duration(minutes:2)));
  test('actual Flutter SDK receipt replay, editing and closure preserve history',()async{
   final repo=FinanceRepository(port:port,ownerUid:uid,sessionIsCurrent:()=>auth.currentUser?.uid==uid);
