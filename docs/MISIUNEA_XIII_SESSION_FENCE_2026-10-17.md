@@ -193,3 +193,8 @@ probe (218ms), stale-token read denial, current-A2 historic review and disabled
 current-capability denial. The accepted summary remains unchanged after revoke.
 Log `/tmp/session-xiii-read-fence-test.log`. This supersedes earlier local counts;
 final SHA-specific CI and real issuer/refresh validation remain mandatory.
+
+The claim-attack controls additionally issue blind three-document write batches
+without any local validation or transaction reads. Old A1, old admin and missing
+claim batches are denied on the write predicate itself, independently of read
+revocation. Final local repeat with these assertions:19/19PASS,0FAIL,0SKIP,5875ms.
