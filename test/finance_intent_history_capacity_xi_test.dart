@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:andi_carpeta/finance/intents/finance_intent.dart';
 import 'package:andi_carpeta/finance/intents/finance_capacity.dart';
+import 'package:andi_carpeta/finance/history/history_xi.dart';
 
 void main() {
   test('XI exact UTF8 canonical JSON measurement is separate from Firestore formula', () {
@@ -33,4 +34,19 @@ void main() {
     expect(initial+26*perDay,greaterThan(reserve));
     expect(initial+365*perDay,greaterThan(financeDocumentLimitBytes));
   });
+  test('XI V2 summary storage formula remains constant after years of separate immutable receipts',(){
+    HistoryXiIntent request(int n,int base)=>HistoryXiIntent(FinanceIntent(
+      operationId:n.toRadixString(16).padLeft(32,'0'),actorUid:'a',teamId:'team',
+      collection:'settlements',documentId:'trip',baseRevision:base,kind:FinanceIntentKind.receipt,
+      changes:{'kind':'departure','amount':200,'method':'Cash','fromName':'ă'*64,'date':DateTime.utc(2026)}));
+    final first=request(1,0),header=historyXiNext(first,null);
+    final large=historyXiNext(request(21900,21899),{...header,'revision':21899,'receivedDeparture':21899*200});
+    final smallBytes=estimateFinanceDocumentBytes(first.summaryPath,header,includesServerUpdate:true);
+    final largeBytes=estimateFinanceDocumentBytes(first.summaryPath,large,includesServerUpdate:true);
+    expect(smallBytes,largeBytes);expect(large.containsKey('receivedEntries'),false);
+    final rowBytes=estimateFinanceDocumentBytes(first.rowPath,first.row(),includesServerUpdate:true);
+    expect(rowBytes,lessThan(financeDocumentLimitBytes));
+    print('XI_V2_CAPACITY summaryFormulaBytes=$largeBytes receiptFormulaBytes=$rowBytes separateReceipts=21900');
+  });
+
 }
