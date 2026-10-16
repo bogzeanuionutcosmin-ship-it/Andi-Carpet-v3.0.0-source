@@ -86,3 +86,8 @@ UI disponibil numai pentru sesiunea demonstrată: explicații determinate prin `
 `test/vision_session_diagnostics_panel_test.dart`: panou închis pentru `null`, eveniment inexistent până la refresh, emitere fixă și raport copiat manual, A→B fără raportul A, revocare în timp real, clipboard lent în logout și A1→B→A2 cu același UID diferit ca epocă. Nu există pretenție de restart real, UI Home sau acces la alte conturi.
 
 Aceasta este **doar piesă opt-in** și nu instalează nicio rută Vision în aplicația principală. Condiție obligatorie înainte de folosire în Home: `VisionAuthGateEpochBridge` sub AuthGate autentic, callback UID+generație verificat, generarea sesiunilor la fiecare login, teste de integrare protejate și aprobarea de modificare a Home. `production_ready=false`.
+
+
+## Witness: AuthGate epoch bridge + Vision panou, aceeași compoziție de widgeturi
+
+`test/vision_session_panel_authgate_composition_test.dart` montează **împreună** `VisionAuthGateEpochBridge` și `VisionSessionDiagnosticsPanel`, fără Home, Firestore sau rețea. Un rebuild simplu al callbackului păstrează același lease și observațiile curente. Tranziția A1→B și întoarcerea A2 în altă generație rotesc tokenul autoritativ, curăță ecranele și resping raportul vechi, fără să acceseze logul global. Aceasta extinde testele de UI session-scoped, dar **nu** înseamnă că AuthGate Home de producție montează deja acest widget; modificările protected Home/AuthGate rămân BLOCKED.
