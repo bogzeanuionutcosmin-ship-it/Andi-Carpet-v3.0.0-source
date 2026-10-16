@@ -36,6 +36,9 @@ void main(){
   expect((await c.executeExplicitly(i)).result.status,FinanceIntentStatus.uncertain);
   expect((await c.executeExplicitly(i)).result.status,FinanceIntentStatus.uncertain);
   expect(db.calls,1);expect(db.writes,2);expect(await j.pending(),hasLength(1));
+  j.failPrepare=true;
+  expect((await c.executeExplicitly(i)).result.status,FinanceIntentStatus.uncertain);
+  expect(db.calls,1);j.failPrepare=false;
   final again=HistoryV2Coordinator(repository:repo(db),journal:j);
   expect((await again.reconcileExplicitly(HistoryXiIntent.decode(i.encode()))).result.status,FinanceIntentStatus.confirmed);
   expect(await j.pending(),isEmpty);expect(db.calls,1);expect(db.serverReads,2);

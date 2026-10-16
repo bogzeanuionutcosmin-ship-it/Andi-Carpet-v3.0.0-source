@@ -78,7 +78,7 @@ jobs:
           node-version: '22'
       - run: npm install --prefix "$RUNNER_TEMP/journal-browser" --no-save --no-package-lock playwright@1.56.1
       - run: '"$RUNNER_TEMP/journal-browser/node_modules/.bin/playwright" install --with-deps chromium'
-      - name: Real tabs, dedicated worker, renderer crash and strict IndexedDB
+      - name: Real tabs, worker termination, browser SIGKILL and strict IndexedDB
         env:
           NODE_PATH: ${{ runner.temp }}/journal-browser/node_modules
         run: node --test --test-concurrency=1 tests/journal_v2/browser.test.cjs
