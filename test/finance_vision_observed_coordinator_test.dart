@@ -196,7 +196,7 @@ void main() {
     final result = await a;
     expect((await b).result.status, FinanceIntentStatus.confirmed);
     expect(result.result.status, FinanceIntentStatus.confirmed);
-    expect(db.serverReads, 2); // Marker and authoritative refresh, not four.
+    expect(db.serverReads, 1); // Coordinator reads marker only; UI refresh is separate.
     expect(db.calls, 1);
     expect(await observed.coordinator.journal.pending(), isEmpty);
     expect(lease.entries.single.count, 1);
