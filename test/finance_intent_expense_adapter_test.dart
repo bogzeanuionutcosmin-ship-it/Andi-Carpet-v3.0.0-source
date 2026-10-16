@@ -84,7 +84,11 @@ void main(){
       final h=_Harness();h.storage.cleanupFailure=afterWrite?2:1;
       h.fixture.wrapPage=(page)=>FinanceExpenseDemoRecovery(adapter:h.adapter,child:page);
       await h.fixture.mount(t);await h.receipt(t);
-      expect(h.db.calls,1);expect(h.db.writes,2);expect(h.fixture.logs,isEmpty);
+      expect(h.db.calls,1);expect(h.db.writes,2);
+      await t.tap(find.text('Primit la plecare'));await t.pumpAndSettle();
+      expect(find.text('Adaugă sumă primită la plecare'),findsNothing,
+        reason:'An unresolved local cleanup must not release this target for a fresh operation ID');
+      expect(h.fixture.logs,isEmpty);
       expect(h.adapter.pendingCodes.values.single,'finance_confirmed_local_cleanup_required');
       expect(find.text('Salvarea este confirmată. Jurnalul local necesită verificare.'),findsOneWidget);
       expect(h.db.serverReads,0);expect(h.refreshes,0);
