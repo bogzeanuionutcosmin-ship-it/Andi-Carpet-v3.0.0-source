@@ -14,8 +14,27 @@ class FinanceVisionOutcomeObserver {
     required FinanceIntentResult result,
     required VisionScopedSignalSink sink,
     required VisionSignalPlatform platform,
+  }) => observeStatus(
+    status: result.status,
+    sink: sink,
+    platform: platform,
+  );
+
+  /// Minimal callback surface for a future Home/ExpensePage boundary.
+  ///
+  /// FinanceHomeCandidate (Mission X, separate PR #78) accepts callback
+  /// signatures for the ORIGINAL ExpensePage dialogs, not this repository's
+  /// Vision types. Once explicitly authorized, the owner can pass only the
+  /// *enum* status to this observer without exposing coordinator results,
+  /// operation IDs, amounts, raw server text or durable journal data.
+  ///
+  /// This method neither installs that integration nor observes Home today.
+  static bool observeStatus({
+    required FinanceIntentStatus status,
+    required VisionScopedSignalSink sink,
+    required VisionSignalPlatform platform,
   }) {
-    switch (result.status) {
+    switch (status) {
       case FinanceIntentStatus.uncertain:
         return sink.emit(
           VisionDiagnosticSignal.financeOperationUncertain,
