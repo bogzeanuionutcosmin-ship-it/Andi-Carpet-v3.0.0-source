@@ -20,3 +20,11 @@
 2. Standard 5/5, Identity, Mission IX 3/3, Mission IX Platforms + Android pe HEAD exact.
 3. `finance_vision_epoch_compatibility_test.dart` trece fără retry dublu și fără păstrarea raportului A la B.
 4. Orice FAIL rămâne în PR și se repară în aceeași ramură înainte de verdict. Niciun SKIPPED nu este considerat PASS.
+
+## Continuare: adaptorul operațional opt-in
+
+`lib/integration/finance_vision_observed_coordinator.dart` este un wrapper peste `FinanceIntentCoordinator`: apelează **doar la comandă explicită** `executeExplicitly` sau `reconcileExplicitly`, apoi trimite statusul către sink-ul anonim deja revocabil. Nu deschide intenții la startup/logout/rebuild, nu inițiază citiri server și nu face retries. Chiar dacă Vision e expirat sau aruncă eroare, rezultatul financiar original rămâne nemodificat. Nu este conectat implicit în Home.
+
+`test/finance_vision_observed_coordinator_test.dart` urmărește: commit server cu ack pierdut → uncertain anonim → reconcilierea **aceleiași** intenții fără al doilea submit; plus operație începută înainte de logout care nu poate popula jurnalul Vision al noului utilizator. Aceste teste sunt fake/stub, nu substituie SDK și hardware.
+
+Criteriu: verifică toate joburile pe **noul HEAD**; verdele anterior de pe `fd355d6` nu validează această completare. Înghețarea surselor, datele live, APK publicat și producția rămân neatinse.
