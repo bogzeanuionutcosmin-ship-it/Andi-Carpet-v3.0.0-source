@@ -107,15 +107,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - uses: subosito/flutter-action@v2
+      - uses: dart-lang/setup-dart@v1
         with:
-          flutter-version: '3.47.5'
-          channel: stable
-          cache: true
-      - run: flutter pub get
+          sdk: '3.13.5'
+      - run: dart pub get
+        working-directory: tool/native_xiii/runner
+      - run: python tool/native_xiii/package_config.py
       - name: Compile standalone native executable, no Flutter/plugin runtime
         shell: bash
-        run: dart compile exe tool/native_xiii/probe.dart -o "$RUNNER_TEMP/xiii-native-probe${{ runner.os == 'Windows' && '.exe' || '' }}"
+        working-directory: tool/native_xiii/runner
+        run: dart compile exe --packages=.dart_tool/package_config.json bin/probe.dart -o "$RUNNER_TEMP/xiii-native-probe${{ runner.os == 'Windows' && '.exe' || '' }}"
       - name: Independent real processes, crash boundaries, rollback and persistent recovery
         env:
           XIII_NATIVE_PROBE: ${{ runner.temp }}/xiii-native-probe${{ runner.os == 'Windows' && '.exe' || '' }}

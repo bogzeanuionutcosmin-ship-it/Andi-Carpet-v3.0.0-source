@@ -1,0 +1,7 @@
+# Test-only standalone AOT probe; never replaces the protected app pubspec.
+name: andi_native_xiii_probe_runner
+publish_to: none
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+dependencies:
+  crypto: 3.0.7

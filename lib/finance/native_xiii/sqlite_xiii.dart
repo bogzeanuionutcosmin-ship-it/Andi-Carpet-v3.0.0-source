@@ -37,8 +37,10 @@ class SqliteXiii {
     if (!File(path).isAbsolute || path.contains('\u0000')) throw const FinanceRefusal('native_v2_invalid_path');
     try {
       // No arbitrary library path injection. Android private system sqlite is
-      // deliberately NOT assumed to be a supported public NDK API.
-      if (Platform.isLinux) { _lib=DynamicLibrary.open('libsqlite3.so.0'); }
+      // deliberately NOT assumed to be a supported public NDK API. Android
+      // needs this separately packaged engine; absent symbols/library fail closed.
+      if (Platform.isAndroid) { _lib=DynamicLibrary.open('libandi_finance_sqlite3.so'); }
+      else if (Platform.isLinux) { _lib=DynamicLibrary.open('libsqlite3.so.0'); }
       else if (Platform.isWindows) { _lib=DynamicLibrary.open('winsqlite3.dll'); }
       else if (Platform.isMacOS || Platform.isIOS) { _lib=DynamicLibrary.open('/usr/lib/libsqlite3.dylib'); }
       else { throw const FinanceRefusal('native_v2_sqlite_platform_blocked'); }

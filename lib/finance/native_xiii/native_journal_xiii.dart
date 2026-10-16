@@ -25,15 +25,15 @@ class NativeSqliteHistoryXiiiJournal implements HistoryV2Journal {
   @override final String teamId;
   final FinanceSessionXiiiBinding binding;
   final bool Function() _owner;
-  final Future<void> Function(NativeXiiiStage)? _probeStage;
+  final Future<void> Function(NativeXiiiStage)? probeStage;
   final String path;
   final int? probePageLimit;
   bool _alive=true,_busy=false;
   NativeSqliteHistoryXiiiJournal.syntheticHostProbe({required Directory directory,
     required this.binding,required bool Function() sessionIsCurrent,
-    Future<void> Function(NativeXiiiStage)? probeStage,this.probePageLimit})
+    this.probeStage,this.probePageLimit})
     :ownerUid=binding.ownerUid,teamId=binding.teamId,_owner=sessionIsCurrent,
-     _probeStage=probeStage,path=_path(directory,binding);
+     path=_path(directory,binding);
   static String _hash(String s)=>sha256.convert(utf8.encode(s)).toString();
   static String _path(Directory root,FinanceSessionXiiiBinding binding){
     if(!root.isAbsolute || !root.existsSync() || FileSystemEntity.typeSync(root.path,followLinks:false)!=FileSystemEntityType.directory){
@@ -47,7 +47,7 @@ class NativeSqliteHistoryXiiiJournal implements HistoryV2Journal {
     try{if(!_owner())_alive=false;}catch(_){_alive=false;}
     if(!_alive)throw const FinanceRefusal('native_v2_session_expired');
   }
-  Future<void> _stage(NativeXiiiStage s)async{await _probeStage?.call(s);_guard();}
+  Future<void> _stage(NativeXiiiStage s)async{await probeStage?.call(s);_guard();}
   void _fileGuard({bool initializing=false}){
     final type=FileSystemEntity.typeSync(path,followLinks:false);
     if(type==FileSystemEntityType.link || (type!=FileSystemEntityType.file && !(initializing&&type==FileSystemEntityType.notFound))){
@@ -67,11 +67,11 @@ class NativeSqliteHistoryXiiiJournal implements HistoryV2Journal {
       final d=jsonDecode(value) as Map<String,dynamic>;
       if(d.length!=7 || d['format']!=_format || d['protocol']!=2 || d['ownerUid']!=ownerUid || d['teamId']!=teamId ||
         d['revision'] is! int || d['revision']<0 || d['revision']>9007199254740991 || d['intents'] is! List ||
-        d['checksum']!=_hash(canonicalFinanceJson({for(final e in d.entries)if(e.key!='checksum')e.key:e.value})))throw const FormatException();
+        d['checksum']!=_hash(canonicalFinanceJson({for(final e in d.entries)if(e.key!='checksum')e.key:e.value}))){throw const FormatException();}
       final items=(d['intents'] as List).map((s)=>FinanceSessionXiiiIntent.decode(s as String)).toList();
-      if(items.length>maxPending || items.any((i)=>i.binding.ownerUid!=ownerUid || i.binding.teamId!=teamId) ||
+      if(items.length>maxPending || items.any((i)=>i.binding.ownerUid!=ownerUid || i.binding.teamId!=teamId || utf8.encode(i.history.encode()).length>16384) ||
         items.map((i)=>i.history.receipt.operationId).toSet().length!=items.length ||
-        items.map((i)=>i.history.receipt.targetPath).toSet().length!=items.length || _encode(d['revision'] as int,items)!=value)throw const FormatException();
+        items.map((i)=>i.history.receipt.targetPath).toSet().length!=items.length || _encode(d['revision'] as int,items)!=value){throw const FormatException();}
       return (revision:d['revision'] as int,items:items);
     }catch(_){throw const FinanceRefusal('native_v2_corrupt');}
   }

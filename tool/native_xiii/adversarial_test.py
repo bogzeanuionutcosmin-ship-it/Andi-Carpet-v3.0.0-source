@@ -89,6 +89,10 @@ class Native(unittest.TestCase):
   self.assertEqual(self.call('inspect')['result']['envelope'],before)
  def test_incompatible_version_retained(self):
   self.call('prepare',id=1);self.call('inject',fault='version');self.assertFalse(self.call('pending')['ok']);self.assertFalse(self.call('init')['ok']);self.assertEqual(self.call('inspect')['result']['userVersion'],999)
+ def test_wal_database_is_rejected_without_reset(self):
+  self.call('prepare',id=1);before=self.call('inspect')['result']['envelope'];self.call('inject',fault='wal')
+  self.assertFalse(self.call('pending')['ok']);self.assertFalse(self.call('init')['ok'])
+  info=self.call('inspect')['result'];self.assertEqual(info['journalMode'],'wal');self.assertEqual(info['envelope'],before)
  def test_missing_storage_fails_closed(self):
   for p in pathlib.Path(self.root).iterdir():p.unlink()
   self.assertEqual(self.call('pending')['code'],'native_v2_storage_unavailable');self.assertEqual(list(pathlib.Path(self.root).iterdir()),[])
@@ -101,6 +105,24 @@ class Native(unittest.TestCase):
   self.assertTrue(self.call('prepare',id=2)['result'])
  def test_transaction_exception_rolls_back(self):
   self.call('prepare',id=1);self.assertFalse(self.call('prepare',id=2,failStage='afterWrite')['ok']);self.assertEqual(len(self.ids()),1)
+ def test_unicode_utf8_capacity_preserves_previous_envelope(self):
+  accepted=0;previous=self.call('inspect')['result']['envelope']
+  for n in range(1,33):
+   r=self.call('prepare',id=n,payer='漢'*4000)
+   if not r['ok']:
+    self.assertEqual(r['code'],'native_v2_full');self.assertEqual(self.call('inspect')['result']['envelope'],previous);break
+   accepted+=1;previous=self.call('inspect')['result']['envelope']
+  self.assertGreater(accepted,0);self.assertLess(accepted,32);self.assertEqual(len(self.records()),accepted)
+  print('UTF8 native bound accepted',accepted,'large synthetic records',flush=True)
+ def test_malformed_sqlite_file_retained(self):
+  db=next(pathlib.Path(self.root).glob('*.sqlite3'));db.write_bytes(b'not-a-sqlite-database-retained')
+  before=db.read_bytes();self.assertFalse(self.call('pending')['ok']);self.assertFalse(self.call('init')['ok']);self.assertEqual(db.read_bytes(),before)
+ def test_foreign_scope_database_copy_cannot_be_adopted(self):
+  import shutil
+  self.call('prepare',id=1);source=next(pathlib.Path(self.root).glob('*.sqlite3'))
+  self.call('init',uid='B');other=next(p for p in pathlib.Path(self.root).glob('*.sqlite3') if p!=source)
+  shutil.copyfile(source,other)
+  self.assertEqual(self.call('pending',uid='B')['code'],'native_v2_corrupt');self.assertFalse(self.call('init',uid='B')['ok']);self.assertEqual(len(self.records()),1)
  def test_native_persistence_with_model_server_ack_loss(self):
   r=self.call('model-flow');self.assertTrue(r['ok'],r)
   self.assertEqual(r['result'],dict(first='uncertain',repeat='uncertain',reconciled='confirmed',storedEpoch=1,transactions=1,writes=3,serverReads=4,pending=0))

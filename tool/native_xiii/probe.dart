@@ -67,6 +67,7 @@ Future<void> main()async{
     final db=SqliteXiii(j.path);
     try{
      if(c['fault']=='corrupt'){db.query('UPDATE journal SET envelope=? WHERE singleton=1',['corrupt retained evidence']);}
+     else if(c['fault']=='wal'){db.query('PRAGMA journal_mode=WAL');}
      else if(c['fault']=='version'){db.query('PRAGMA user_version=999');}
      else{throw const FinanceRefusal('synthetic_fault_invalid');}
      result=true;
