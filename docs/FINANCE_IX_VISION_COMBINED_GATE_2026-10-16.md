@@ -68,3 +68,10 @@ Adaptorul opțional impune acum un **lease efemer static per (ownerUid, targetPa
 `test/finance_vision_observed_coordinator_test.dart` simulează două instanțe pentru A cu același target, commit cu răspuns pierdut, 0 citiri/0 tranzacții la a doua instanță în timpul primei, diagnostic nepartajat, apoi recuperare explicită fără a doua tranzacție; testul structural Python verifică absența transportului/stocării în această protecție.
 
 **Limită:** nu este CAS între procese sau taburi, nu previne writerii legacy/Home și nu poate oferi consistență inter-device fără marker/revizie și rules server. Nu activează implicit Home și nu modifică PR #73, rules, Firebase live sau publicarea APK.
+
+
+## Lot: excepții neclasificate după un eventual prepare durabil
+
+La granița dintre controller și coordinator, o excepție neașteptată poate surveni *după* persistarea intenției și nu dovedește că serverul a refuzat operația. Wrapperul opțional captează excepțiile din `coordinator.executeExplicitly` și `coordinator.reconcileExplicitly`, întoarce invariabil `uncertain/finance_unclassified_result` cu `journalPending=true` și păstrează dovezile din jurnal. Nu inventează un succes, nu șterge jurnalul și nu execută retry. Întoarce `finance_session_expired` fără telemetrie dacă sesiunea este revocată.
+
+Testul `test/finance_vision_observed_coordinator_test.dart` injectează un `FinanceRepository` a cărui execuție și reconciliere aruncă mesaje brute cu text sensibil; dovedește 0 tranzacții, 0 citiri server, journal recuperabil, două incidente agregate doar sub cod anonim, fără text brut/operationId. Contractul Python interzice interpolarea excepțiilor în raport. Acesta este un fail-closed defensive seam, nu o confirmare a durabilității hardware sau a protecției între taburi.
