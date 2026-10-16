@@ -3053,3 +3053,22 @@ Inventarul writerilor, matricea legacy/rules și contractul storage sunt în
 docs/MISIUNEA_IX_DURABLE_INTEGRATION_2026-10-16.md. VIII nu este închisă integral.
 Persist-before-send refolosește portul/jurnalul existent; readback nu certifică
 fsync, restart OS sau concurență multi-process. Fără Home implicit/producție.
+
+## Misiunea X — Issue77 / PR Draft78, 2026-10-16
+Bază PR73 reală 4cd6ee5, izolată de PR74/75/main. FinanceHomeCandidate extern
+surselor înghețate reutilizează coordinator/adaptor și impune checked journal,
+owner UID+generation+team, revocare monotonă, fără I/O ori auto-replay la mount.
+Callbackuri ExpensePage originale; ținte neobservate numai CREATE atomic, fără
+overwrite. Recuperarea validează întreg manifestul inclusiv la adoptare; altă
+echipă păstrată fără display/send. Manager/rate/bootstrap rămân neacoperite.
+Checkpoint33ac5df: FinanceIX38877619264 SUCCESS(204Dart/51JS/18SDK+raw),
+Identity38877619366 SUCCESS; nu reutilizăm acestea pentru HEAD ulterior.
+Continuare ebaf3cd: test manifest schimbat după preflight, refuz manager/rate,
+două jurnale independente vs revizie server; e932e7c: matrice legacy16cazuri.
+199Python+3Node locale PASS. CI final exact se consemnează în PR78.
+Raport:docs/MISIUNEA_X_HOME_BOUNDARY_2026-10-16.md; scenarii30/180/365 și diff
+textual Home cu flagFALSE în docs, NEAPLICAT. 116surse/21pini nemodificați.
+Homeimplicit/compatibilitateAPKvechi/Restorecomplet/cross-process/hardware și
+Sparkreal rămân blocante; production_ready=false. Nu închidem financiarul ori
+pretindem telefon testat prin compileAndroid. Fărămerge/deploy/live/migrare/
+billing/distribuțieAPK; PR73/74/75 rămânread-only.
