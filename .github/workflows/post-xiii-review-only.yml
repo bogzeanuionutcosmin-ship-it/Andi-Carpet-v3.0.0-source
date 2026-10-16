@@ -1,0 +1,23 @@
+name: Post-XIII review-only threat models
+
+on:
+  push:
+    branches:
+      - audit/post-xiii-takeover-security-review-20261017
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-threat-models:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run independent offline threat-model tests
+        run: python3 -m unittest discover -s test -p 'test_post_xiii_*.py' -v
+      - name: Keep release status explicitly blocked
+        run: |
+          echo 'Review models do not authorize a production rollout.'
+          echo 'production_ready=false'
