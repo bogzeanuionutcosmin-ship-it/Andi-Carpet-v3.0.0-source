@@ -27,7 +27,7 @@ class MemoryV2 implements HistoryV2Journal {
 void main(){
  test('V2 failed prepare never starts financial transaction',()async{
   final db=xiDb(),j=MemoryV2()..failPrepare=true,c=HistoryV2Coordinator(repository:repo(db),journal:j);
-  expect((await c.executeExplicitly(xi(1))).result.status,FinanceIntentStatus.rejectedBeforeWrite);
+  expect((await c.executeExplicitly(xi(1))).result.status,FinanceIntentStatus.uncertain);
   expect(db.calls,0);
  });
  test('V2 lost ACK survives recreation and requires read-only same-intent reconcile',()async{
@@ -56,8 +56,8 @@ void main(){
  });
  test('V2 logout never revives old journal and a foreign team cannot send',()async{
   final db=xiDb(),j=MemoryV2(),c=HistoryV2Coordinator(repository:repo(db),journal:j);
-  expect((await c.executeExplicitly(xi(1,team:'foreign'))).result.status,FinanceIntentStatus.rejectedBeforeWrite);
-  j.dispose();expect((await c.executeExplicitly(xi(1))).result.status,FinanceIntentStatus.rejectedBeforeWrite);
+  expect((await c.executeExplicitly(xi(1,team:'foreign'))).result.status,FinanceIntentStatus.uncertain);
+  j.dispose();expect((await c.executeExplicitly(xi(1))).result.status,FinanceIntentStatus.uncertain);
   expect(db.calls,0);
  });
  test('V2 certain refusal retains evidence; no implicit dismissal or retry',()async{

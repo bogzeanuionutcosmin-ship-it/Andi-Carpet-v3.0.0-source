@@ -31,7 +31,9 @@ class HistoryV2Coordinator {
           'journal_v2_reconcile_required'), journalPending: true);
       }
     } catch (_) {
-      return const HistoryV2Outcome(FinanceIntentResult(FinanceIntentStatus.rejectedBeforeWrite,
+      // This invocation sent nothing, but the same ID may already be pending
+      // or committed in another context. Storage failure is not a global refusal.
+      return const HistoryV2Outcome(FinanceIntentResult(FinanceIntentStatus.uncertain,
         'journal_v2_prepare_failed'), journalPending: true);
     }
     return _finish(i, await repository.executeExplicitly(i));
