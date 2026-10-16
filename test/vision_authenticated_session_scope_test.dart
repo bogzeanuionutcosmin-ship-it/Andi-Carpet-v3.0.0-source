@@ -163,6 +163,15 @@ void main() {
       observe: (lease) => stale = lease,
     ));
     expect(find.text('Acces blocat'), findsOneWidget);
+    // Only a truly new epoch marker may create another journal.
+    final nextEpoch = Object();
+    await tester.pumpWidget(screen(
+      epochToken: nextEpoch,
+      owner: () => authorized,
+      observe: (lease) => stale = lease,
+    ));
+    expect(stale, isNotNull);
+    expect(stale!.entries, isEmpty);
   });
 
   testWidgets('disposal revokes lease and delayed callback cannot write',
