@@ -3053,3 +3053,12 @@ Inventarul writerilor, matricea legacy/rules și contractul storage sunt în
 docs/MISIUNEA_IX_DURABLE_INTEGRATION_2026-10-16.md. VIII nu este închisă integral.
 Persist-before-send refolosește portul/jurnalul existent; readback nu certifică
 fsync, restart OS sau concurență multi-process. Fără Home implicit/producție.
+
+
+## Shiva — Finance IX + Vision single-flight și revocare observer (2026-10-16)
+
+- Bază separată Luna [PR #73](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/73) HEAD `4cd6ee522534b6e5edd45d6112ddadf23c418bac`; integrare [PR #75](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/75), Draft/DO NOT MERGE; Vision derivă din PR #74. PR #73, #74 și `main` nu au fost editate de acest lot.
+- Noua compoziție opțională `lib/integration/finance_vision_observed_coordinator.dart` nu retrimite intențiile existente în journal, izolează apăsările concurente prin Future comun per target/instanță, blochează execuția concomitentă cu reconcilierea și refuză jurnalul corupt fără să-l șteargă. Codurile Vision sunt fixe, anonime, fără UID, sumă, OCR, GPS, payload sau apeluri plătite.
+- Protecție monotonică a sesiunii financiare: predicatele `FinanceRepository` + `FinanceIntentJournal` verificate înainte de orice operație/future reutilizat; prima revocare/eroare nu se reactivează nici pentru A1→B→A2; `dispose` închide observerul fără ștergerea jurnalului financiar. Async deja pornit nu se consideră revocat retroactiv la server.
+- Teste în `test/finance_vision_observed_coordinator_test.dart`: 30 de double-tapuri, ack pierdut și reconciliere fără nouă tranzacție, două reconcilieri simultane, target concurent, jurnal corupt, logout cu callback întârziat, A1→B→A2, dispose; contract Python separat. Document: `docs/FINANCE_IX_VISION_COMBINED_GATE_2026-10-16.md`.
+- **Nu este Home/producție**: multi-tab/multiproces, legacy APK, Restore și activarea rules strict rămân BLOCKED; real-device storage necunoscut. CI complet trebuie confirmat pe ultimul SHA înainte de a afirma GREEN. Fără merge, deploy, Firebase live, schimbări ale celor 116 surse protejate, billing sau publicare APK. `production_ready=false`.
