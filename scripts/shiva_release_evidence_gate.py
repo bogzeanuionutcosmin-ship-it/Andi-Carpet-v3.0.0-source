@@ -25,7 +25,7 @@ def evaluate(evidence):
     for key, item in evidence.items():
         if not isinstance(item, dict) or set(item) != {"status", "reference"}:
             raise ValueError("invalid evidence object: " + key)
-        if item["status"] not in ALLOWED:
+        if not isinstance(item["status"], str) or item["status"] not in ALLOWED:
             raise ValueError("invalid evidence status: " + key)
         if not isinstance(item["reference"], str):
             raise ValueError("invalid reference: " + key)
