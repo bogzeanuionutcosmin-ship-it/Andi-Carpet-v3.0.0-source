@@ -1433,7 +1433,16 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       throw StateError('Corecția intervenției nu este autorizată.');
     }
     final ref = FirebaseFirestore.instance.collection('records').doc(original.id);
-    final expected = _recordMap(original)..remove('updatedAt');
+    final expected = <String, Object?>{
+      'teamId': original.teamId,
+      'locationId': original.locationId,
+      'type': original.type.name,
+      'startedAt': original.startedAt,
+      'finishedAt': original.finishedAt,
+      'status': original.status.name,
+      'facadeDone': original.facadeDone,
+      'facadePlanned': original.facadePlanned,
+    };
     final changes = <String, dynamic>{
       'startedAt': corrected.startedAt == null ? null : Timestamp.fromDate(corrected.startedAt!),
       'finishedAt': corrected.finishedAt == null ? null : Timestamp.fromDate(corrected.finishedAt!),
@@ -1447,10 +1456,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
       }
       final current = snapshot.data()!;
-      for (final entry in expected.entries) {
-        if (current[entry.key] != entry.value) {
-          throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de corectare.');
-        }
+      if (!centralizerCorrectionSnapshotMatches(current, expected)) {
+        throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de corectare.');
       }
       tx.update(ref, changes);
     });
