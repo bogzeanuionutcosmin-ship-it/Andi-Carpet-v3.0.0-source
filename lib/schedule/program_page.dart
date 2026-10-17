@@ -9,6 +9,9 @@ int preferredProgramTeamIndex({
   required bool Function(String teamId) canEditTeam,
 }) {
   if (teams.isEmpty) return -1;
+  if (currentIndex < 0 || currentIndex >= teams.length) {
+    return currentIndex.clamp(0, teams.length - 1).toInt();
+  }
   final selectedIsEditable = currentIndex >= 0 &&
       currentIndex < teams.length &&
       canEditTeam(teams[currentIndex].id);
