@@ -41,6 +41,8 @@ jobs:
         run: flutter test test/centralizer_correction_snapshot_test.dart
       - name: Test Centralizator operational-day behavior
         run: flutter test test/centralizer_operational_day_test.dart
+      - name: Test Centralizator PDF projection
+        run: flutter test test/centralizer_pdf_projection_test.dart
       - name: Build debug APK
         run: flutter build apk --debug
       - name: Verify APK package metadata
