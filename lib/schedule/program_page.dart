@@ -782,7 +782,7 @@ class _ProgramPageState extends State<ProgramPage> {
 
   Future<void> _addLocations(WorkSchedule s) async {
     final picked=await _locationDialog(s.items.map((i)=>i.locationId).toList());
-    if(picked==null)return;
+    if(picked==null||!mounted)return;
     final additions=picked.where((l)=>!s.items.any((i)=>i.locationId==l.id)).toList();
     if(additions.isEmpty)return;
     final facadeIds=<String>{};
@@ -799,7 +799,7 @@ class _ProgramPageState extends State<ProgramPage> {
         FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Adaugă')),
       ],
     )));
-    if(accepted!=true)return;
+    if(accepted!=true||!mounted)return;
     final updated=_cloneSchedule(s);var order=updated.items.length+1;
     for(final l in additions){updated.items.add(ScheduleItem(locationId:l.id,locationNameSnapshot:l.name,addressSnapshot:l.address,typeSnapshot:l.type,categoryIdSnapshot:l.categoryId,order:order++,facadePlanned:facadeIds.contains(l.id)));}
     await _saveWithFeedback(updated,success:'Locațiile au fost adăugate în ziua selectată.',auditAction:'Locații adăugate în Grafic');
