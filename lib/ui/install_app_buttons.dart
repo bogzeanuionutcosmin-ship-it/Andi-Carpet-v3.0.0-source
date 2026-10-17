@@ -3,7 +3,18 @@ part of '../main.dart';
 Uri? validatedAndroidApkUrl(String raw) {
   final uri = Uri.tryParse(raw.trim());
   if (uri == null || uri.scheme != 'https' || uri.host.isEmpty || uri.userInfo.isNotEmpty) return null;
-  if (uri.host == 'localhost' || uri.host.endsWith('.localhost')) return null;
+  final host = uri.host.toLowerCase();
+  // The download target is opened by the user's browser, so never accept
+  // obvious local network endpoints or IP literals as a claimed public link.
+  // DNS names can still resolve privately; the administrator must publish
+  // links from the approved distribution host.
+  if (host.startsWith('[') || host.contains(':') ||
+      RegExp(r'^\d{1,3}(?:\.\d{1,3}){3}$').hasMatch(host)) return null;
+  if (!host.contains('.') || host.endsWith('.')) return null;
+  const localSuffixes = <String>[
+    '.localhost', '.local', '.internal', '.lan', '.home', '.test', '.invalid', '.example',
+  ];
+  if (localSuffixes.any(host.endsWith)) return null;
   return uri;
 }
 
