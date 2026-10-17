@@ -14,6 +14,10 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertNotIn("r.startedAt=newStart;", CENTRALIZER)
         self.assertNotIn("r.finishedAt=newFinish;", CENTRALIZER)
 
+    def test_correction_does_not_turn_running_work_into_completed_work(self):
+        self.assertIn('startedAt:newStart,finishedAt:newFinish,status:r.status', CENTRALIZER)
+        self.assertIn('initialDate:initial,firstDate:first,lastDate:last', CENTRALIZER)
+
     def test_date_and_facade_can_be_corrected_with_hours(self):
         self.assertIn("title:const Text('Data intervenției')", CENTRALIZER)
         self.assertIn("title:const Text('Fațadă realizată')", CENTRALIZER)
