@@ -9,7 +9,7 @@ IMPORT = re.compile(r"^\s*(?:import|export)\s+['\"]([^'\"]+)['\"]", re.MULTILINE
 DOMAINS = ("schedule", "centralizer", "reports", "models", "home", "admin", "dashboard", "map")
 
 
-def analyze(sources):
+def analyze(sources, package_name=None):
     """sources: map of lib-relative Dart path to source text."""
     if not isinstance(sources, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in sources.items()):
         raise ValueError("Expected filename-to-source dictionary")
@@ -22,6 +22,9 @@ def analyze(sources):
         for uri in IMPORT.findall(content):
             if uri.startswith("package:"):
                 match = re.match(r"package:[^/]+/(.+)", uri)
+                package = uri.split("/", 1)[0].removeprefix("package:")
+                if package_name is not None and package != package_name:
+                    continue
                 target = match.group(1) if match else ""
             elif uri.startswith("dart:") or "://" in uri:
                 continue
@@ -51,7 +54,11 @@ def main():
             raise ValueError("lib directory not found")
         sources = {str(p.relative_to(args.lib)).replace("\\", "/"): p.read_text(encoding="utf-8")
                    for p in args.lib.rglob("*.dart") if p.is_file()}
-        result = analyze(sources)
+        pubspec = args.lib.parent / "pubspec.yaml"
+        match = re.search(r"^name:\\s*([\\w-]+)\\s*$", pubspec.read_text(encoding="utf-8"), re.MULTILINE)
+        if match is None:
+            raise ValueError("pubspec.yaml missing package name")
+        result = analyze(sources, package_name=match.group(1))
     except (OSError, ValueError) as exc:
         print(json.dumps({"error": str(exc), "modularization_complete": False}))
         return 2
