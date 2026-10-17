@@ -40,6 +40,13 @@ class VerifyApkManifestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify(self.apk, self.manifest)
 
+    def test_modified_apk_is_detected(self):
+        self.write_manifest(self.expected)
+        self.apk.write_bytes(self.apk.read_bytes() + b"tampered")
+        result = verify(self.apk, self.manifest)
+        self.assertFalse(result["hash_matches"])
+        self.assertFalse(result["release_approved"])
+
     def test_missing_apk(self):
         self.write_manifest(self.expected)
         self.apk.unlink()
