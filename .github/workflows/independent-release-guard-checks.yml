@@ -41,6 +41,13 @@ jobs:
       - name: Modularization inventory unit tests
         run: python3 -m unittest discover -s tools/independent_release -p 'test_modularization_inventory.py' -v
       - name: Inventory actual Flutter module imports
-        run: python3 tools/independent_release/modularization_inventory.py lib > /tmp/independent-module-inventory.json
+        run: python3 tools/independent_release/modularization_inventory.py lib > independent-module-inventory.json
+      - name: Publish read-only module inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-module-inventory
+          path: independent-module-inventory.json
+          retention-days: 14
+          if-no-files-found: error
       - name: Syntax check
         run: python3 -m py_compile tools/independent_release/release_guard.py tools/independent_release/pr_collision_guard.py tools/independent_release/verify_ci_suite_union.py tools/independent_release/integration_gate.py tools/independent_release/source_contract_guard.py tools/independent_release/modularization_inventory.py
