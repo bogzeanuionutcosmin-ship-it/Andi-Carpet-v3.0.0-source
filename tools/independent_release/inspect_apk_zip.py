@@ -38,7 +38,9 @@ def inspect(apk: Path):
                 findings.append("missing_android_manifest")
             if "classes.dex" not in names:
                 findings.append("missing_primary_dex")
-            if archive.testzip() is not None:
+            if not any(item in findings for item in (
+                "too_many_entries", "uncompressed_size_limit", "compression_ratio_limit"
+            )) and archive.testzip() is not None:
                 findings.append("corrupt_zip_entry")
     except (zipfile.BadZipFile, EOFError) as exc:
         raise ValueError("Invalid APK ZIP archive") from exc
