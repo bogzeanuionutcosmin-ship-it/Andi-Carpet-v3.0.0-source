@@ -1,6 +1,6 @@
 # Release gates — independent acceptance contract
 
-Status as of 2026-10-18: NOT RELEASE-READY. This is a checklist, not a claim that tests ran.
+Status as of 2026-10-18: NOT RELEASE-READY. **Critical: main currently contains an automatic production deployment/backfill workflow triggered by changes to firestore.rules; see PRODUCTION_DEPLOY_HAZARD.md before any merge.** This is a checklist, not a claim that tests ran.
 
 | Gate | Required proof | Present evidence / gap |
 |---|---|---|
