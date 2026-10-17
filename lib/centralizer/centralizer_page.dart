@@ -202,6 +202,29 @@ class _CentralizerPageState extends State<CentralizerPage> {
     if(fn.isBefore(st))fn=fn.add(const Duration(days:1));
     final note=reason.text.trim();reason.dispose();
     final l=selectedLocation!;
+    // A correction to an existing execution must use Edit, not create a second record.
+    final existing=widget.records.where((record)=>
+      record.locationId==l.id &&
+      record.teamId==selectedTeamId &&
+      record.status==WorkAttemptStatus.completed &&
+      record.startedAt!=null &&
+      sameDay(record.startedAt!,st!)
+    ).toList();
+    if(existing.isNotEmpty){
+      if(!mounted)return;
+      final confirmed=await showDialog<bool>(
+        context:context,
+        builder:(c)=>AlertDialog(
+          title:const Text('Execuție deja înregistrată'),
+          content:Text('Există deja ${existing.length} execuție/execuții finalizate pentru această sală, echipă și dată. Dacă vrei să corectezi data sau orele, folosește butonul de editare al intervenției existente. Adaugi totuși o execuție distinctă?'),
+          actions:[
+            TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),
+            FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Execuție distinctă')),
+          ],
+        ),
+      )??false;
+      if(!confirmed)return;
+    }
     final r=CentralizerRecord(id:idNow(),teamId:selectedTeamId,locationId:l.id,type:l.type,locationNameSnapshot:l.name,addressSnapshot:l.address,startedAt:st,finishedAt:fn,status:WorkAttemptStatus.completed,refusalReason:note.isEmpty?null:note,keptForLearning:true,facadePlanned:facadeDone,facadeDone:facadeDone);
     try{await widget.saveRecord(r);widget.log('Execuție manuală adăugată',l.name);if(mounted)showSuccessMessage(context,'Execuția a fost adăugată în Centralizator.');}
     catch(e){if(mounted)showErrorMessage(context,'Nu s-a putut salva execuția: $e');}
