@@ -34,6 +34,17 @@ class DirectoryReconciliationTests(unittest.TestCase):
         self.assertFalse(result["matches"])
 
 
+    def test_inactive_member_not_silently_deleted(self):
+        users = {"inactive-1": {"name": "Synthetic", "active": False}}
+        directory = {"inactive-1": {"name": "Synthetic", "active": False, "role": "member"}}
+        self.assertTrue(reconcile(users, directory)["matches"])
+        self.assertEqual(reconcile(users, {})["missing"], ["inactive-1"])
+
+    def test_hidden_member_must_not_remain_visible(self):
+        users = {"hidden-1": {"name": "Synthetic", "hiddenFromMembers": True}}
+        directory = {"hidden-1": {"name": "Synthetic", "active": True, "role": "member"}}
+        self.assertEqual(reconcile(users, directory)["extra"], ["hidden-1"])
+
     def test_duplicate_fixture_keys_rejected(self):
         import json
         from reconcile_directory import _unique_keys
