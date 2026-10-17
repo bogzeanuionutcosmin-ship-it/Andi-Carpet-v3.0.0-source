@@ -53,9 +53,11 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertIn('if(!confirmed)return;', CENTRALIZER)
 
     def test_report_uses_actual_record_dates_and_facade(self):
-        self.assertIn("'date':recordEventTime(r)", REPORT)
+        self.assertIn("final eventDate = recordEventTime(record);", REPORT)
+        self.assertIn("date: recordEventTime(record)", REPORT)
+        self.assertIn("final executionRows = centralizerPdfExecutionRows(", REPORT)
+        self.assertIn("'date': row.date", REPORT)
         self.assertIn("record?.facadeDone==true", REPORT)
-        self.assertIn("final when = recordEventTime(r);", REPORT)
         self.assertIn("r.finishedAt ?? r.startedAt", DATES)
 
     def test_scheduled_work_does_not_replace_execution_history(self):
