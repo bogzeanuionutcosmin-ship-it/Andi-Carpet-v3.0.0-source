@@ -57,7 +57,7 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertIn("date: recordEventTime(record)", REPORT)
         self.assertIn("final executionRows = centralizerPdfExecutionRows(", REPORT)
         self.assertIn("'date': row.date", REPORT)
-        self.assertIn("record?.facadeDone==true", REPORT)
+        self.assertRegex(REPORT, r"record\?\.facadeDone\s*==\s*true")
         self.assertIn("r.finishedAt ?? r.startedAt", DATES)
 
     def test_scheduled_work_does_not_replace_execution_history(self):

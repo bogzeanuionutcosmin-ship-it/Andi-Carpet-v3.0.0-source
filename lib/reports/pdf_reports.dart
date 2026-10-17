@@ -241,61 +241,60 @@ Future<Uint8List> buildCentralizerPdf({
     child: pw.Text(text, style: const pw.TextStyle(fontSize: 8)),
   );
 
-  pw.Widget interventionTable(List<Map<String,dynamic>> sourceRows, Location? location) {
-    final rows=[...sourceRows]..sort((a,b)=>(a['date'] as DateTime).compareTo(b['date'] as DateTime));
-    return pw.Table(
-      border: pw.TableBorder(
-        horizontalInside: const pw.BorderSide(color: PdfColors.grey300, width: .45),
-        verticalInside: const pw.BorderSide(color: PdfColors.grey300, width: .45),
-      ),
-      columnWidths: const {
-        0: pw.FixedColumnWidth(78),
-        1: pw.FixedColumnWidth(50),
-        2: pw.FixedColumnWidth(50),
-        3: pw.FixedColumnWidth(72),
-        4: pw.FixedColumnWidth(48),
-      },
-      children: rows.map((row) {
-        final record=row['record'] is CentralizerRecord ? row['record'] as CentralizerRecord : null;
-        final date=row['date'] as DateTime;
-        final surface=location!=null && location.surfaceM2>0
-            ? '${location.surfaceM2.toStringAsFixed(location.surfaceM2%1==0?0:1)} m²'
-            : '—';
-        return pw.TableRow(children:[
-          valueCell(record==null ? '${_pdfDate(date)}\n${row['statusText'] ?? 'Neexecutată'}' : _pdfDate(date)),
-          valueCell(record==null?'—':timeText(record.startedAt),alignment:pw.Alignment.center),
-          valueCell(record==null?'—':timeText(record.finishedAt),alignment:pw.Alignment.center),
-          valueCell(surface,alignment:pw.Alignment.centerRight),
-          pw.Container(padding:const pw.EdgeInsets.symmetric(vertical:4),alignment:pw.Alignment.center,child:facadeBox(planned:record?.facadePlanned==true,done:record?.facadeDone==true)),
-        ]);
-      }).toList(),
-    );
-  }
-
-  final tableHeader=pw.Table(
-    border: pw.TableBorder.all(color: PdfColors.grey500,width:.6),
-    columnWidths: const {0: pw.FixedColumnWidth(190),1: pw.FlexColumnWidth()},
-    children:[pw.TableRow(children:[
+  // A flat table can span pages row by row. A nested per-location table
+  // was indivisible and failed with PdfTooBigPageException on long histories.
+  const columns = <int, pw.TableColumnWidth>{
+    0: pw.FixedColumnWidth(190),
+    1: pw.FlexColumnWidth(78),
+    2: pw.FlexColumnWidth(50),
+    3: pw.FlexColumnWidth(50),
+    4: pw.FlexColumnWidth(72),
+    5: pw.FlexColumnWidth(48),
+  };
+  final tableHeader = pw.Table(
+    border: pw.TableBorder.all(color: PdfColors.grey500, width: .6),
+    columnWidths: columns,
+    children: [pw.TableRow(children: [
       headerCell('LOCAȚIE / ADRESĂ'),
-      pw.Table(
-        border: const pw.TableBorder(verticalInside: pw.BorderSide(color: PdfColors.grey500,width:.6)),
-        columnWidths: const {
-          0: pw.FixedColumnWidth(78),
-          1: pw.FixedColumnWidth(50),
-          2: pw.FixedColumnWidth(50),
-          3: pw.FixedColumnWidth(72),
-          4: pw.FixedColumnWidth(48),
-        },
-        children:[pw.TableRow(children:[
-          headerCell('DATA'),
-          headerCell('START',alignment:pw.Alignment.center),
-          headerCell('FINAL',alignment:pw.Alignment.center),
-          headerCell('SUPRAFAȚĂ',alignment:pw.Alignment.centerRight),
-          headerCell('FAȚADĂ',alignment:pw.Alignment.center),
-        ])],
-      ),
+      headerCell('DATA'),
+      headerCell('START', alignment: pw.Alignment.center),
+      headerCell('FINAL', alignment: pw.Alignment.center),
+      headerCell('SUPRAFAȚĂ', alignment: pw.Alignment.centerRight),
+      headerCell('FAȚADĂ', alignment: pw.Alignment.center),
     ])],
   );
+  final tableRows = <pw.TableRow>[];
+  for (final id in orderedIds) {
+    final location = locationById[id];
+    final rows = [...rowsByLocation[id]!]
+      ..sort((a,b)=>(a['date'] as DateTime).compareTo(b['date'] as DateTime));
+    for (final row in rows) {
+      final record = row['record'] as CentralizerRecord?;
+      final date = row['date'] as DateTime;
+      final surface = location != null && location.surfaceM2 > 0
+          ? '${location.surfaceM2.toStringAsFixed(location.surfaceM2 % 1 == 0 ? 0 : 1)} m²'
+          : '—';
+      tableRows.add(pw.TableRow(children: [
+        pw.Container(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Text(location?.name ?? row['name']?.toString() ?? id,
+                style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 2),
+            pw.Text(location?.address ?? row['address']?.toString() ?? '',
+                style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+          ]),
+        ),
+        valueCell(record == null ? '${_pdfDate(date)}\n${row['statusText'] ?? 'Neexecutată'}' : _pdfDate(date)),
+        valueCell(record == null ? '—' : timeText(record.startedAt), alignment: pw.Alignment.center),
+        valueCell(record == null ? '—' : timeText(record.finishedAt), alignment: pw.Alignment.center),
+        valueCell(surface, alignment: pw.Alignment.centerRight),
+        pw.Container(padding: const pw.EdgeInsets.symmetric(vertical: 4),
+            alignment: pw.Alignment.center,
+            child: facadeBox(planned: record?.facadePlanned == true, done: record?.facadeDone == true)),
+      ]));
+    }
+  }
 
   doc.addPage(pw.MultiPage(
     pageFormat: PdfPageFormat.a4.landscape,
@@ -314,24 +313,11 @@ Future<Uint8List> buildCentralizerPdf({
     ]),
     build: (_) => [
       if (orderedIds.isEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 20), child: pw.Text('Nu există săli pentru filtrele selectate.')),
-      for(final id in orderedIds) ...[
-        pw.Table(
-          border: pw.TableBorder.all(color:PdfColors.grey500,width:.55),
-          columnWidths: const {0: pw.FixedColumnWidth(190),1: pw.FlexColumnWidth()},
-          children:[pw.TableRow(children:[
-            pw.Container(
-              padding:const pw.EdgeInsets.all(6),
-              child:pw.Column(crossAxisAlignment:pw.CrossAxisAlignment.start,children:[
-                pw.Text(locationById[id]?.name ?? rowsByLocation[id]!.first['name']?.toString() ?? id,style:pw.TextStyle(fontSize:9,fontWeight:pw.FontWeight.bold)),
-                pw.SizedBox(height:2),
-                pw.Text(locationById[id]?.address ?? rowsByLocation[id]!.first['address']?.toString() ?? '',style:const pw.TextStyle(fontSize:7.5,color:PdfColors.grey700)),
-              ]),
-            ),
-            interventionTable(rowsByLocation[id]!,locationById[id]),
-          ])],
-        ),
-        pw.SizedBox(height:3),
-      ],
+      if (tableRows.isNotEmpty) pw.Table(
+        border: pw.TableBorder.all(color: PdfColors.grey500, width: .55),
+        columnWidths: columns,
+        children: tableRows,
+      ),
     ],
   ));
   return doc.save();

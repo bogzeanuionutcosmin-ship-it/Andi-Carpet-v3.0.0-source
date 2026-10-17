@@ -19,3 +19,18 @@ Base: PR #99 f5e3ebd078e02e14ee1e13114660f65a4cf10cd1; source branches untouched
 - Android command-line SDK bootstrap initially failed to download the new Android CLI using its own networking. Command line tools v19 are downloaded as an alternative; no physical device or /dev/kvm is available.
 
 No production Firebase access, deployment, merge, APK distribution or destructive data actions.
+
+## Executed RED → remediation cycles
+
+- First SHA 42cfbe2 / Validate run 39072529665: 55 Flutter tests passed, one failed. Actual widget layout reproduced filter dropdown overflows (34/50px). Added expanded dropdown layouts; the next run confirms the widget test passes.
+- First real PDFs were generated and downloaded from artifact 12115667914. Poppler validation failed because a missing location registry entry caused raw room IDs rather than saved snapshot labels. Snapshot name/address fallback fixed.
+- Second SHA 456d950 / Validate run 39072694666: long-history generator test reproduced PdfTooBigPageException with 80 interventions for one location. The nested table could not split one location block. Replaced it with flat spanning rows and a repeated page header; verification pending on next SHA.
+- Added a separately packaged, no-INTERNET Android synthetic UI harness. It does not test authentication, real synchronization or production configuration.
+
+## Independent recovery/finance evidence
+
+- Simulated main + new candidate + #95: merges clean; 120 Python tests and 3 Node tests pass. Nothing merged into main.
+- #88 exact source 73f7075: Python 199/199. Standalone Dart AOT probe compiled and 28 real OS/SQLite adversarial tests passed (locks/crash/rollback/session revocation/capacity/corruption).
+- #88 synthetic session Firestore suite: 18 passed, 1 explicitly skipped, 0 failed; signed claims and authority fixtures are test-only, not proof of trusted production issuance or hardware anti-rollback.
+- #15 exact source 876f72d: 19/19 per-diem authorization emulator cases pass. merge-tree confirms conflicts with current main in workflow/main/payment-plan areas; do not merge the old branch or replace newer finance code indiscriminately.
+- #91/#93 conflicts and #94 legacy correction are already addressed by #99 ancestry; no duplicate PR is opened for those fixes.
