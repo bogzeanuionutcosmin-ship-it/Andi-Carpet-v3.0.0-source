@@ -436,8 +436,17 @@ service cloud.firestore {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(teamId);
-      allow create, update: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(teamId));
+      // Only Admin may assign/reassign financial authority. Preserve missing
+      // legacy identity fields without allowing a member to populate them.
+      allow create: if isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(teamId)
+          && request.resource.data.get('teamId', teamId) == teamId
+          && request.resource.data.get('managerId', null) in [null, '']);
+      allow update: if isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(teamId)
+          && request.resource.data.get('teamId', teamId) == teamId
+          && request.resource.data.get('teamId', teamId) == resource.data.get('teamId', teamId)
+          && request.resource.data.get('managerId', null) == resource.data.get('managerId', null));
       allow delete: if isAdmin();
     }
 
