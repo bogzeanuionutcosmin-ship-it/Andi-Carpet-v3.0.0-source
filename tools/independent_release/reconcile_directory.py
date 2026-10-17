@@ -34,12 +34,21 @@ def reconcile(users, directory):
             "matches": not (source_ids ^ actual_ids) and not changed}
 
 
+def _unique_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON key in directory fixture")
+        result[key] = value
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("fixture", type=Path, help="Synthetic JSON with users and memberDirectory objects")
     args = parser.parse_args()
     try:
-        data = json.loads(args.fixture.read_text(encoding="utf-8"))
+        data = json.loads(args.fixture.read_text(encoding="utf-8"), object_pairs_hook=_unique_keys)
         result = reconcile(data["users"], data["memberDirectory"])
     except (OSError, ValueError, KeyError, TypeError, AttributeError, json.JSONDecodeError) as exc:
         print(json.dumps({"error": str(exc), "matches": False}))
