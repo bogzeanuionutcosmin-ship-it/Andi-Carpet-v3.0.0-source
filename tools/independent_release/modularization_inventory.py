@@ -6,8 +6,8 @@ import re
 from pathlib import Path
 
 IMPORT = re.compile(r"^\s*(?:import|export)\s+['\"]([^'\"]+)['\"]", re.MULTILINE)
-PART = re.compile(r"^\\s*part\\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
-PART_OF = re.compile(r"^\\s*part\\s+of\\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
+PART = re.compile(r"^\s*part\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
+PART_OF = re.compile(r"^\s*part\s+of\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
 DOMAINS = ("schedule", "centralizer", "reports", "models", "home", "admin", "dashboard", "map")
 
 
