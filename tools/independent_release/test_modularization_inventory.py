@@ -82,6 +82,19 @@ class ModularizationInventoryTests(unittest.TestCase):
                           "reports/helper.dart": "part of '../main.dart';"})
         self.assertEqual(result["invalid_part_owners"], [])
 
+    def test_main_part_requires_manual_dependency_review(self):
+        result = analyze({"main.dart": "part 'reports/helper.dart';",
+                          "reports/helper.dart": "part of '../main.dart';"})
+        self.assertEqual(result["migration_candidates"], [{
+            "file": "reports/helper.dart",
+            "classification": "main_part_requires_dependency_review",
+            "safe_to_extract_automatically": False
+        }])
+
+    def test_standalone_library_not_marked_as_part_candidate(self):
+        result = analyze({"main.dart": "", "models/standalone.dart": "class Standalone {}"})
+        self.assertEqual(result["migration_candidates"], [])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
