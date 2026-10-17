@@ -37,6 +37,24 @@ void main(){
   expect(db.documents[i.rowPath]!['digest'],i.digest);
   expect(db.documents['settlements/trip']!['receivedDeparture'],0);
  });
+ test('XI replay refuses a latest summary bound to another operation',()async{
+  final db=xiDb(),r=repo(db),i=xi(1);
+  expect((await r.executeExplicitly(i)).status,FinanceIntentStatus.confirmed);
+  db.documents[i.summaryPath]!['lastOperationId']=xi(2).receipt.operationId;
+  final replay=await r.executeExplicitly(i);
+  expect(replay.status,FinanceIntentStatus.conflict);
+  expect(replay.replayed,false);
+  expect(db.writes,2,reason:'A forged latest summary cannot cause a second write');
+ });
+ test('XI historical receipt remains replayable after a newer legitimate summary',()async{
+  final db=xiDb(),r=repo(db),old=xi(1);
+  expect((await r.executeExplicitly(old)).status,FinanceIntentStatus.confirmed);
+  expect((await r.executeExplicitly(xi(2,revision:1))).status,FinanceIntentStatus.confirmed);
+  final replay=await r.executeExplicitly(old);
+  expect(replay.status,FinanceIntentStatus.confirmed);
+  expect(replay.replayed,true);
+  expect(db.writes,4);
+ });
  test('XI distinct equal receipts add twice and old marker remains reconcilable',()async{
   final db=xiDb(),r=repo(db),first=xi(1);
   await r.executeExplicitly(first);await r.executeExplicitly(xi(2,revision:1));
