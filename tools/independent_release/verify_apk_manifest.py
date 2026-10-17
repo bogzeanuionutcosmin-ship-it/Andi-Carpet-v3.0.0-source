@@ -6,8 +6,17 @@ import json
 from pathlib import Path
 
 
+def _unique_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate manifest JSON key")
+        result[key] = value
+    return result
+
+
 def verify(apk: Path, manifest: Path):
-    data = json.loads(manifest.read_text(encoding="utf-8"))
+    data = json.loads(manifest.read_text(encoding="utf-8"), object_pairs_hook=_unique_keys)
     if not isinstance(data, dict):
         raise ValueError("Manifest must be a JSON object")
     expected = data.get("sha256")
