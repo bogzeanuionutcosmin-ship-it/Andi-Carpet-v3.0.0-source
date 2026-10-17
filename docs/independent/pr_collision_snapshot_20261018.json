@@ -1,0 +1,171 @@
+{
+  "prs": [
+    {
+      "number": 95,
+      "head_sha": "3c372cc839614125b9f375e5ff20b818aa1e18ed",
+      "files": [
+        "lib/ui/install_app_buttons.dart",
+        "test/android_install_link_test.dart",
+        "test/repository_hygiene_test.py"
+      ]
+    },
+    {
+      "number": 99,
+      "head_sha": "f5e3ebd078e02e14ee1e13114660f65a4cf10cd1",
+      "files": [
+        ".github/workflows/build-test-apk.yml",
+        ".github/workflows/validate.yml",
+        "firestore.rules",
+        "lib/admin/admin_backup_actions.dart",
+        "lib/admin/admin_backup_panel_actions.dart",
+        "lib/centralizer/centralizer_page.dart",
+        "lib/centralizer/correction_snapshot.dart",
+        "lib/dashboard/dashboard_page.dart",
+        "lib/home/home_document_codecs.dart",
+        "lib/home/home_page.dart",
+        "lib/main.dart",
+        "lib/map/map_page.dart",
+        "lib/models/app_data_models.dart",
+        "lib/reports/pdf_reports.dart",
+        "lib/schedule/program_page.dart",
+        "lib/schedule/schedule_card_full.dart",
+        "test/centralizer_correction_snapshot_test.dart",
+        "test/centralizer_operational_day_test.dart",
+        "test/centralizer_pdf_projection_test.dart",
+        "test/craiova_intervention_correction_contract_test.py",
+        "test/program_team_selection_test.dart",
+        "test/repository_hygiene_test.py",
+        "test/schedule_transactional_writer_contract_test.py",
+        "tests/firestore/centralizer_correction.test.cjs",
+        "tests/firestore/program_schedule.test.cjs"
+      ]
+    },
+    {
+      "number": 100,
+      "head_sha": "cfb00b9fea24e7e026019d81bac6ecfe3a294dd2",
+      "files": [
+        ".github/workflows/build-test-apk.yml",
+        ".github/workflows/centralizer-offline-smoke.yml",
+        ".github/workflows/validate.yml",
+        "ChatGpt",
+        "assets/fonts/DejaVuSans-Bold.ttf",
+        "assets/fonts/DejaVuSans-Oblique.ttf",
+        "assets/fonts/DejaVuSans.ttf",
+        "assets/fonts/LICENSE-DejaVu.txt",
+        "docs/MISIUNEA_XVIII_ENGINEERING.md",
+        "firestore.rules",
+        "lib/admin/admin_backup_actions.dart",
+        "lib/admin/admin_backup_panel_actions.dart",
+        "lib/centralizer/centralizer_page.dart",
+        "lib/centralizer/correction_snapshot.dart",
+        "lib/dashboard/dashboard_page.dart",
+        "lib/home/home_document_codecs.dart",
+        "lib/home/home_page.dart",
+        "lib/main.dart",
+        "lib/map/map_page.dart",
+        "lib/models/app_data_models.dart",
+        "lib/reports/pdf_format_helpers.dart",
+        "lib/reports/pdf_reports.dart",
+        "lib/schedule/program_page.dart",
+        "lib/schedule/schedule_card_full.dart",
+        "lib/testing/centralizer_offline_smoke.dart",
+        "pubspec.yaml",
+        "scripts/verify_centralizer_pdfs.py",
+        "test/centralizer_correction_snapshot_test.dart",
+        "test/centralizer_operational_day_test.dart",
+        "test/centralizer_pdf_projection_test.dart",
+        "test/centralizer_pdf_render_test.dart",
+        "test/centralizer_submission_test.dart",
+        "test/craiova_intervention_correction_contract_test.py",
+        "test/program_team_selection_test.dart",
+        "test/repository_hygiene_test.py",
+        "test/schedule_legacy_presence_contract_test.py",
+        "test/schedule_transactional_writer_contract_test.py",
+        "tests/firestore/centralizer_correction.test.cjs",
+        "tests/firestore/program_schedule.test.cjs"
+      ]
+    },
+    {
+      "number": 101,
+      "head_sha": "98c40ae394941ddfc185f028fc04ad6809d6de3b",
+      "files": [
+        ".github/workflows/restore-member-directory.yml",
+        ".github/workflows/validate.yml",
+        ".github/workflows/xviii-android-runtime.yml",
+        ".github/workflows/xviii-integration.yml",
+        "docs/MISIUNEA_XVIII_FINANCE_IDENTITY.md",
+        "firestore.rules",
+        "scripts/test_centralizer_android_ui.py",
+        "test/manual_member_directory_deploy_gate_test.py",
+        "tests/firestore/finance_identity.test.cjs"
+      ]
+    },
+    {
+      "number": 103,
+      "head_sha": "72206a1eb36d82b799b075933641600b24becb4c",
+      "files": [
+        ".github/workflows/independent-release-guard-checks.yml",
+        "docs/independent/ANDROID_DISTRIBUTION_CONTRACT.md",
+        "docs/independent/DEPENDENCY_MAP.md",
+        "docs/independent/EVIDENCE_REGISTER.md",
+        "docs/independent/FAIL_CLOSED_RELEASE_CRITERIA.md",
+        "docs/independent/INTEGRATION_EVIDENCE_PROVENANCE.md",
+        "docs/independent/MAIN_VS_CANDIDATE_DEPLOY_MATRIX.md",
+        "docs/independent/MEMBER_DIRECTORY_PRIVACY_AND_BACKFILL.md",
+        "docs/independent/PRODUCTION_DEPLOY_HAZARD.md",
+        "docs/independent/PR_COLLISION_GUARD.md",
+        "docs/independent/PR_COORDINATION.md",
+        "docs/independent/PR_REVIEW_CHECKLIST.md",
+        "docs/independent/README.md",
+        "docs/independent/READ_ONLY_RELEASE_GUARD.md",
+        "docs/independent/READ_ONLY_VALIDATION_PLAN.md",
+        "docs/independent/RELEASE_BLOCKER_TRIAGE.md",
+        "docs/independent/RELEASE_DECISION_RECORD.md",
+        "docs/independent/RELEASE_GATES.md",
+        "docs/independent/REVIEW_QUEUE.md",
+        "docs/independent/STAGING_ISOLATION_CONTRACT.md",
+        "docs/independent/STATIC_GUARD_TEST_CASES.md",
+        "tools/independent_release/pr_collision_guard.py",
+        "tools/independent_release/release_guard.py",
+        "tools/independent_release/test_pr_collision_guard.py",
+        "tools/independent_release/test_release_guard.py"
+      ]
+    },
+    {
+      "number": 104,
+      "head_sha": "cf7aa26b3596a79b826c9e7b0d07e5d0c29b5241",
+      "files": [
+        ".github/workflows/independent-apk-offline-checks.yml",
+        "docs/release/ANDROID_APK_PUBLICATION_CHECKLIST.md",
+        "docs/release/ANDROID_ARTIFACT_THREAT_MODEL.md",
+        "docs/release/ANDROID_BUILD_REPRODUCIBILITY.md",
+        "docs/release/ANDROID_DEVICE_TEST_MATRIX.md",
+        "docs/release/ANDROID_PERMISSION_ACCEPTANCE.md",
+        "docs/release/ANDROID_PROVENANCE_ACCEPTANCE.md",
+        "docs/release/ANDROID_RELEASE_EVIDENCE_TEMPLATE.md",
+        "docs/release/ANDROID_UPGRADE_ROLLBACK_RUNBOOK.md",
+        "docs/release/OFFLINE_APK_HASH_VERIFIER.md",
+        "tools/independent_release/test_verify_apk_manifest.py",
+        "tools/independent_release/verify_apk_manifest.py"
+      ]
+    },
+    {
+      "number": 105,
+      "head_sha": "bbabe6c7b09eb3e49b27afc6a4da49b4745b4b31",
+      "files": [
+        ".github/workflows/independent-directory-offline-checks.yml",
+        "docs/release/DIRECTORY_RECONCILIATION_SPEC.md",
+        "docs/release/FIREBASE_RECOVERY_DRILL.md",
+        "docs/release/OFFLINE_DIRECTORY_RECONCILIATION.md",
+        "docs/release/PRIVACY_DECISION_REGISTER.md",
+        "docs/release/PRODUCTION_CHANGE_FREEZE_PROCEDURE.md",
+        "docs/release/STAGING_EVIDENCE_LEDGER.md",
+        "docs/release/STAGING_FINANCIAL_AUTHORIZATION_MATRIX.md",
+        "docs/release/STAGING_PRIVACY_ACCEPTANCE.md",
+        "docs/release/STAGING_TEST_DATA_LIFECYCLE.md",
+        "tools/independent_release/reconcile_directory.py",
+        "tools/independent_release/test_reconcile_directory.py"
+      ]
+    }
+  ]
+}
