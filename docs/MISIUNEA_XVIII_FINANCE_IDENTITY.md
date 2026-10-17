@@ -18,3 +18,7 @@ This recovers the narrow identity-protection intent from blocked #15 without imp
 - Patched GREEN: existing diurna suite + 8 new identity cases = 18/18, real SDK + Firestore Emulator, synthetic demo project only.
 - Python source suite 107/107; diff-check clean.
 - CI must run on final SHA. No deploy, live rules change, production data, merge or APK distribution.
+
+## Release hardening
+
+The historical restore-member-directory workflow automatically deployed rules/functions and backfilled production on relevant main pushes. This would couple a future rules merge to a production action. Its operations are retained but the trigger becomes manual-only, restricted to main, with DEPLOY_MEMBER_DIRECTORY confirmation and the exact approved SHA matching github.sha. No dispatch is performed. A source regression protects the trigger and gates. Other release workflows remain unchanged; no live settings or environment permissions are modified.
