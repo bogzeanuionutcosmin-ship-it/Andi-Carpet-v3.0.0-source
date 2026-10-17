@@ -13,7 +13,8 @@ class CentralizerPage extends StatefulWidget {
   final VoidCallback onChanged;
   final void Function(String,String) log;
   final Future<void> Function(CentralizerRecord) saveRecord;
-  const CentralizerPage({super.key,required this.currentUser,required this.teams,required this.locations,required this.categories,required this.schedules,required this.records,required this.isAdmin,required this.canEditTeam,required this.canEditCentralizer,required this.onChanged,required this.log,required this.saveRecord});
+  final Future<void> Function(CentralizerRecord, CentralizerRecord) correctRecord;
+  const CentralizerPage({super.key,required this.currentUser,required this.teams,required this.locations,required this.categories,required this.schedules,required this.records,required this.isAdmin,required this.canEditTeam,required this.canEditCentralizer,required this.onChanged,required this.log,required this.saveRecord,required this.correctRecord});
   @override State<CentralizerPage> createState()=>_CentralizerPageState();
 }
 
@@ -290,7 +291,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
       facadePlanned:r.facadePlanned||facadeDone,facadeDone:facadeDone,
     );
     try {
-      await widget.saveRecord(updated);
+      await widget.correctRecord(r, updated);
       widget.log('Intervenție corectată (dată, ore, fațadă)',r.locationNameSnapshot);
       widget.onChanged();
       if(mounted)showSuccessMessage(context,'Data, orele și fațada au fost salvate.');
