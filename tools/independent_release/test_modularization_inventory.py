@@ -46,6 +46,22 @@ class ModularizationInventoryTests(unittest.TestCase):
         result = analyze({"schedule/a.dart": "import '../../outside.dart';"})
         self.assertEqual(result["unresolved_imports"], [{"file": "schedule/a.dart", "uri": "../../outside.dart"}])
 
+    def test_part_of_main_is_matched_regardless_of_order(self):
+        sources = {"reports/helper.dart": "part of '../main.dart';",
+                   "main.dart": "part 'reports/helper.dart';"}
+        result = analyze(sources)
+        self.assertEqual(result["part_links"], [{"owner": "main.dart", "part": "reports/helper.dart"}])
+        self.assertEqual(result["orphan_parts"], [])
+
+    def test_orphan_part_of_is_detected(self):
+        result = analyze({"reports/helper.dart": "part of '../main.dart';",
+                          "main.dart": ""})
+        self.assertEqual(result["orphan_parts"], [{"part": "reports/helper.dart", "owner": "main.dart"}])
+
+    def test_missing_part_file_is_unresolved(self):
+        result = analyze({"main.dart": "part 'reports/missing.dart';"})
+        self.assertEqual(result["unresolved_imports"], [{"file": "main.dart", "uri": "reports/missing.dart"}])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
