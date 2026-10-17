@@ -19,6 +19,11 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertNotIn("r.startedAt=newStart;", CENTRALIZER)
         self.assertNotIn("r.finishedAt=newFinish;", CENTRALIZER)
 
+    def test_running_interventions_cannot_be_edited_as_completed(self):
+        self.assertIn('r.status == WorkAttemptStatus.completed', CENTRALIZER)
+        self.assertIn('if(r.status != WorkAttemptStatus.completed || r.startedAt == null || r.finishedAt == null)', CENTRALIZER)
+        self.assertIn('Pot fi corectate doar intervențiile finalizate', CENTRALIZER)
+
     def test_correction_does_not_turn_running_work_into_completed_work(self):
         self.assertIn('startedAt:newStart,finishedAt:newFinish,status:r.status', CENTRALIZER)
         self.assertIn('initialDate:initial,firstDate:first,lastDate:last', CENTRALIZER)
