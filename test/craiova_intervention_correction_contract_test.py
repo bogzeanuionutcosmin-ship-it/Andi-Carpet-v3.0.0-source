@@ -25,6 +25,13 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertIn("facadeDone:facadeDone", CENTRALIZER)
         self.assertIn("if(newStart==null||newFinish==null)", CENTRALIZER)
 
+    def test_manual_entry_warns_about_same_team_room_and_day(self):
+        self.assertIn('record.locationId==l.id', CENTRALIZER)
+        self.assertIn('record.teamId==selectedTeamId', CENTRALIZER)
+        self.assertIn('sameDay(record.startedAt!,st!)', CENTRALIZER)
+        self.assertIn('Execuție deja înregistrată', CENTRALIZER)
+        self.assertIn('if(!confirmed)return;', CENTRALIZER)
+
     def test_report_uses_actual_record_dates_and_facade(self):
         self.assertIn("'date':recordEventTime(r)", REPORT)
         self.assertIn("record?.facadeDone==true", REPORT)
