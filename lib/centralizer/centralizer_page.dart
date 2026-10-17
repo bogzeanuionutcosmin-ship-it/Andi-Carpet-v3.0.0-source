@@ -152,7 +152,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
             leading:Icon(Icons.circle,size:10,color:color),
             title:Text('${formatDate(when)} · ${r.status == WorkAttemptStatus.waitingAccess ? timeText(r.waitingStartedAt) : '${timeText(r.startedAt)}–${timeText(r.finishedAt)}'}'),
             subtitle:Text('${teamName(r.teamId)} · $statusText'),
-            trailing:(widget.isAdmin || (widget.canEditCentralizer && widget.canEditTeam(r.teamId))) && (r.status == WorkAttemptStatus.completed || r.status == WorkAttemptStatus.running)
+            trailing:(widget.isAdmin || (widget.canEditCentralizer && widget.canEditTeam(r.teamId))) && r.status == WorkAttemptStatus.completed
               ? IconButton(tooltip:'Corectează data, orele și fațada',onPressed:()=>_editRecord(r),icon:const Icon(Icons.edit))
               : null,
           );
@@ -232,6 +232,10 @@ class _CentralizerPageState extends State<CentralizerPage> {
   }
 
   Future<void> _editRecord(CentralizerRecord r) async {
+    if(r.status != WorkAttemptStatus.completed || r.startedAt == null || r.finishedAt == null){
+      if(mounted)showErrorMessage(context,'Pot fi corectate doar intervențiile finalizate, cu ore START și FINAL.');
+      return;
+    }
     final s = TextEditingController(text: timeText(r.startedAt));
     final f = TextEditingController(text: timeText(r.finishedAt));
     var date = r.startedAt ?? r.finishedAt ?? DateTime.now();
