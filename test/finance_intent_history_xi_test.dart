@@ -26,6 +26,9 @@ void main(){
   expect(()=>HistoryXiIntent.decode(spaced),throwsFormatException);
   final trailing=' $canonical';
   expect(()=>HistoryXiIntent.decode(trailing),throwsFormatException);
+  final reordered=canonical.replaceFirst('{"protocol":2,"receipt":','{"receipt":').replaceFirst('}}','},"protocol":2}');
+  expect(reordered,isNot(canonical));
+  expect(()=>HistoryXiIntent.decode(reordered),throwsFormatException);
  });
  test('XI summary and immutable receipt marker have one atomic effect and replay no extra writes',()async{
   final db=xiDb(),r=repo(db),i=xi(1);
