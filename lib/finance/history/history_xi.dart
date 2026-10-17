@@ -126,7 +126,9 @@ class FinanceHistoryXiRepository {
         final summary=await tx.read(i.summaryPath);_guard(i);
         if(summary!=null)validateHistoryXiSummary(summary,i);
         if(row!=null){
-          if(!_matches(i,row) || summary==null || (summary['revision'] as int)<i.receipt.baseRevision+1) {
+          if(!_matches(i,row) || summary==null || (summary['revision'] as int)<i.receipt.baseRevision+1 ||
+            ((summary['revision'] as int)==i.receipt.baseRevision+1 &&
+              summary['lastOperationId']!=i.receipt.operationId)) {
             throw const FinanceRevisionConflict();
           }
           return true;
