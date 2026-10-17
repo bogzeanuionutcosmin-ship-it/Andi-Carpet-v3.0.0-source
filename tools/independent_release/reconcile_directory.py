@@ -20,6 +20,10 @@ def project_member(profile):
 def reconcile(users, directory):
     if not isinstance(users, dict) or not isinstance(directory, dict):
         raise ValueError("users and directory must be JSON objects keyed by synthetic IDs")
+    if any(not isinstance(uid, str) or not isinstance(profile, dict) for uid, profile in users.items()):
+        raise ValueError("Every user must have a string ID and an object profile")
+    if any(not isinstance(uid, str) or not isinstance(profile, dict) for uid, profile in directory.items()):
+        raise ValueError("Every directory entry must have a string ID and an object value")
     expected = {uid: value for uid, profile in users.items()
                 if (value := project_member(profile)) is not None}
     source_ids, actual_ids = set(expected), set(directory)
