@@ -4,6 +4,8 @@ on:
     paths:
       - 'tools/independent_release/verify_apk_manifest.py'
       - 'tools/independent_release/test_verify_apk_manifest.py'
+      - 'tools/independent_release/inspect_apk_zip.py'
+      - 'tools/independent_release/test_inspect_apk_zip.py'
       - '.github/workflows/independent-apk-offline-checks.yml'
   workflow_dispatch:
 permissions:
@@ -19,5 +21,7 @@ jobs:
           python-version: '3.12'
       - name: Offline hash verifier tests
         run: python3 -m unittest discover -s tools/independent_release -p 'test_verify_apk_manifest.py' -v
+      - name: Offline APK ZIP structure tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_inspect_apk_zip.py' -v
       - name: Syntax check
-        run: python3 -m py_compile tools/independent_release/verify_apk_manifest.py
+        run: python3 -m py_compile tools/independent_release/verify_apk_manifest.py tools/independent_release/inspect_apk_zip.py
