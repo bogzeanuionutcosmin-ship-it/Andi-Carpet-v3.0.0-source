@@ -1,0 +1,23 @@
+name: Independent APK offline checks
+on:
+  pull_request:
+    paths:
+      - 'tools/independent_release/verify_apk_manifest.py'
+      - 'tools/independent_release/test_verify_apk_manifest.py'
+      - '.github/workflows/independent-apk-offline-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-apk-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline hash verifier tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_verify_apk_manifest.py' -v
+      - name: Syntax check
+        run: python3 -m py_compile tools/independent_release/verify_apk_manifest.py
