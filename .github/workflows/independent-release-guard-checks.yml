@@ -42,6 +42,26 @@ jobs:
         run: python3 -m unittest discover -s tools/independent_release -p 'test_modularization_inventory.py' -v
       - name: Inventory actual Flutter module imports
         run: python3 tools/independent_release/modularization_inventory.py lib > independent-module-inventory.json
+      - name: Summarize dependency inventory
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("independent-module-inventory.json").read_text())
+          fields = ("files", "part_links", "orphan_parts", "invalid_part_owners",
+                    "cross_domain_edges", "inbound_dependencies", "migration_candidates",
+                    "unresolved_imports")
+          summary = ["## Read-only Dart dependency inventory",
+                     "This inventory does not certify modularization or release.",
+                     ""]
+          for key in fields:
+              value = report[key]
+              count = value if isinstance(value, int) else len(value)
+              summary.append(f"- {key}: {count}")
+          Path(__import__("os").environ["GITHUB_STEP_SUMMARY"]).open("a").write(
+              "\\n".join(summary) + "\\n"
+          )
+          PY
       - name: Publish read-only module inventory
         uses: actions/upload-artifact@v4
         with:
