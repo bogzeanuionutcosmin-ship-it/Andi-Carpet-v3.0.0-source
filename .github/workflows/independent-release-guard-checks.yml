@@ -59,7 +59,7 @@ jobs:
               count = value if isinstance(value, int) else len(value)
               summary.append(f"- {key}: {count}")
           Path(__import__("os").environ["GITHUB_STEP_SUMMARY"]).open("a").write(
-              "\\n".join(summary) + "\\n"
+              "\n".join(summary) + "\n"
           )
           PY
       - name: Publish read-only module inventory
