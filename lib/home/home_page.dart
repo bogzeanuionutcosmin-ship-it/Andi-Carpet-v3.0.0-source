@@ -1418,6 +1418,49 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     });
   }
 
+  // Centralizer corrections are compare-and-swap updates, never upserts.
+  // A stale editor cannot resurrect a deleted record or overwrite a newer correction.
+  Future<void> _correctCentralizerRecord(
+    CentralizerRecord original,
+    CentralizerRecord corrected,
+  ) async {
+    if (!hasPermission(FunctionPermission.editCentralizer) ||
+        !canEditTeam(original.teamId) ||
+        original.id != corrected.id ||
+        original.teamId != corrected.teamId ||
+        original.locationId != corrected.locationId ||
+        original.type != corrected.type) {
+      throw StateError('Corecția intervenției nu este autorizată.');
+    }
+    final ref = FirebaseFirestore.instance.collection('records').doc(original.id);
+    final expected = _recordMap(original)..remove('updatedAt');
+    final changes = <String, dynamic>{
+      'startedAt': corrected.startedAt == null ? null : Timestamp.fromDate(corrected.startedAt!),
+      'finishedAt': corrected.finishedAt == null ? null : Timestamp.fromDate(corrected.finishedAt!),
+      'facadeDone': corrected.facadeDone,
+      'facadePlanned': corrected.facadePlanned,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snapshot = await tx.get(ref);
+      if (!snapshot.exists) {
+        throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
+      }
+      final current = snapshot.data()!;
+      for (final entry in expected.entries) {
+        if (current[entry.key] != entry.value) {
+          throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de corectare.');
+        }
+      }
+      tx.update(ref, changes);
+    });
+    if (!mounted) return;
+    setState(() {
+      final index = records.indexWhere((item) => item.id == corrected.id);
+      if (index >= 0) records[index] = corrected;
+    });
+  }
+
   Future<void> _saveExpenseDirect(Expense expense) async {
     if (!canEditTeam(expense.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici Decontul acestei echipe.');
