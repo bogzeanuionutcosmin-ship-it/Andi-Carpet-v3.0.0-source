@@ -58,7 +58,7 @@ def main():
         sources = {str(p.relative_to(args.lib)).replace("\\", "/"): p.read_text(encoding="utf-8")
                    for p in args.lib.rglob("*.dart") if p.is_file()}
         pubspec = args.lib.parent / "pubspec.yaml"
-        match = re.search(r"^name:\\s*([\\w-]+)\\s*$", pubspec.read_text(encoding="utf-8"), re.MULTILINE)
+        match = re.search(r"^name:\s*([\w-]+)\s*$", pubspec.read_text(encoding="utf-8"), re.MULTILINE)
         if match is None:
             raise ValueError("pubspec.yaml missing package name")
         result = analyze(sources, package_name=match.group(1))
