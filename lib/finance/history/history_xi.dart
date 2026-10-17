@@ -172,7 +172,9 @@ class FinanceHistoryXiRepository {
         return const FinanceIntentResult(FinanceIntentStatus.uncertain,'history_uncertain');
       }
       validateHistoryXiSummary(summary.data!,i);
-      if((summary.data!['revision'] as int)<i.receipt.baseRevision+1) {
+      if((summary.data!['revision'] as int)<i.receipt.baseRevision+1 ||
+          ((summary.data!['revision'] as int)==i.receipt.baseRevision+1 &&
+            summary.data!['lastOperationId']!=i.receipt.operationId)) {
         return const FinanceIntentResult(FinanceIntentStatus.conflict,'history_evidence_mismatch');
       }
       return FinanceIntentResult(FinanceIntentStatus.confirmed,'history_confirmed',revision:i.receipt.baseRevision+1,replayed:true);
