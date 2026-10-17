@@ -47,5 +47,10 @@ class VerifyApkManifestTests(unittest.TestCase):
             verify(self.apk, self.manifest)
 
 
+    def test_duplicate_manifest_keys_rejected(self):
+        self.manifest.write_text('{"sha256":"' + self.expected + '","sha256":"' + self.expected + '"}', encoding="utf-8")
+        with self.assertRaises(ValueError):
+            verify(self.apk, self.manifest)
+
 if __name__ == "__main__":
     unittest.main()
