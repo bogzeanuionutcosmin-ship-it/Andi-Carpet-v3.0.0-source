@@ -52,5 +52,16 @@ class VerifyApkManifestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify(self.apk, self.manifest)
 
+    def test_uppercase_digest_is_accepted(self):
+        self.write_manifest(self.expected.upper())
+        result = verify(self.apk, self.manifest)
+        self.assertTrue(result["hash_matches"])
+        self.assertEqual(result["expected_sha256"], self.expected)
+
+    def test_manifest_without_sha256_is_rejected(self):
+        self.manifest.write_text("{}", encoding="utf-8")
+        with self.assertRaises(ValueError):
+            verify(self.apk, self.manifest)
+
 if __name__ == "__main__":
     unittest.main()
