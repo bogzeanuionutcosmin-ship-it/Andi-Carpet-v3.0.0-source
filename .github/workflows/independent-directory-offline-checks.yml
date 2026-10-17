@@ -1,0 +1,23 @@
+name: Independent directory offline checks
+on:
+  pull_request:
+    paths:
+      - 'tools/independent_release/reconcile_directory.py'
+      - 'tools/independent_release/test_reconcile_directory.py'
+      - '.github/workflows/independent-directory-offline-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-directory-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline reconciliation tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_reconcile_directory.py' -v
+      - name: Syntax check
+        run: python3 -m py_compile tools/independent_release/reconcile_directory.py
