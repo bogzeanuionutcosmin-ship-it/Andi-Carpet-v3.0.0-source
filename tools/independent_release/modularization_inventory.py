@@ -20,6 +20,7 @@ def analyze(sources, package_name=None):
     part_links = set()
     orphan_parts = set()
     invalid_part_owners = set()
+    migration_candidates = []
     for path, content in sources.items():
         if not path.endswith(".dart"):
             continue
@@ -69,7 +70,19 @@ def analyze(sources, package_name=None):
         }
         if owner not in declared:
             invalid_part_owners.add((owner, part))
-    return {"invalid_part_owners": [{"owner": a, "part": b} for a, b in sorted(invalid_part_owners)],
+    for path, content in sorted(sources.items()):
+        if not path.endswith(".dart") or path == "main.dart":
+            continue
+        owned_by_main = ("main.dart", path) in part_links
+        has_part_of = bool(PART_OF.search(content))
+        if owned_by_main or has_part_of:
+            migration_candidates.append({
+                "file": path,
+                "classification": "main_part_requires_dependency_review",
+                "safe_to_extract_automatically": False
+            })
+    return {"migration_candidates": migration_candidates,
+            "invalid_part_owners": [{"owner": a, "part": b} for a, b in sorted(invalid_part_owners)],
             "part_links": [{"owner": a, "part": b} for a, b in sorted(part_links)],
             "orphan_parts": [{"part": a, "owner": b} for a, b in sorted(orphan_parts)],
             "files": sum(k.endswith(".dart") for k in sources),
