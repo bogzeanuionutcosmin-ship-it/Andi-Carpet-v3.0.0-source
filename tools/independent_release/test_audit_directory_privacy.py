@@ -20,6 +20,14 @@ class DirectoryPrivacyAuditTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             audit("const FIELDS = getFields();")
 
+    def test_dynamic_field_expression_rejected(self):
+        with self.assertRaises(ValueError):
+            audit("const FIELDS = Object.freeze(['name', ...extraFields]);")
+
+    def test_computed_field_rejected(self):
+        with self.assertRaises(ValueError):
+            audit("const FIELDS = Object.freeze(['name', getSensitiveField()]);")
+
     def test_duplicate_fields_rejected(self):
         with self.assertRaises(ValueError):
             audit("const FIELDS = Object.freeze(['name', 'name']);")
