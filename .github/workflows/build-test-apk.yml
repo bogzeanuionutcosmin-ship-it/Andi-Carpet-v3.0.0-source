@@ -1,6 +1,8 @@
 name: Build testable Android APK
 
 on:
+  push:
+    branches: [fix/grafic-end-to-end-xiv-20261017]
   pull_request:
     branches: [main, fix/grafic-edit-controls-20261017]
   workflow_dispatch:
