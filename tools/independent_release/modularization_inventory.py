@@ -19,6 +19,7 @@ def analyze(sources, package_name=None):
     unresolved = set()
     part_links = set()
     orphan_parts = set()
+    invalid_part_owners = set()
     for path, content in sources.items():
         if not path.endswith(".dart"):
             continue
@@ -59,7 +60,17 @@ def analyze(sources, package_name=None):
             owner = posixpath.normpath(posixpath.join(posixpath.dirname(path), uri))
             if (owner, path) not in part_links:
                 orphan_parts.add((path, owner))
-    return {"part_links": [{"owner": a, "part": b} for a, b in sorted(part_links)],
+    for owner, part in part_links:
+        if part not in sources:
+            continue
+        declared = {
+            posixpath.normpath(posixpath.join(posixpath.dirname(part), uri))
+            for uri in PART_OF.findall(sources[part])
+        }
+        if owner not in declared:
+            invalid_part_owners.add((owner, part))
+    return {"invalid_part_owners": [{"owner": a, "part": b} for a, b in sorted(invalid_part_owners)],
+            "part_links": [{"owner": a, "part": b} for a, b in sorted(part_links)],
             "orphan_parts": [{"part": a, "owner": b} for a, b in sorted(orphan_parts)],
             "files": sum(k.endswith(".dart") for k in sources),
             "cross_domain_edges": [{"from": a, "to": b} for a, b in sorted(edges)],
