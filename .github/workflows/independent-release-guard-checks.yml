@@ -12,6 +12,8 @@ on:
       - 'tools/independent_release/test_integration_gate.py'
       - 'tools/independent_release/source_contract_guard.py'
       - 'tools/independent_release/test_source_contract_guard.py'
+      - 'tools/independent_release/modularization_inventory.py'
+      - 'tools/independent_release/test_modularization_inventory.py'
       - '.github/workflows/independent-release-guard-checks.yml'
   workflow_dispatch:
 permissions:
@@ -35,5 +37,7 @@ jobs:
         run: python3 -m unittest discover -s tools/independent_release -p 'test_integration_gate.py' -v
       - name: Source contract guard unit tests
         run: python3 -m unittest discover -s tools/independent_release -p 'test_source_contract_guard.py' -v
+      - name: Modularization inventory unit tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_modularization_inventory.py' -v
       - name: Syntax check
-        run: python3 -m py_compile tools/independent_release/release_guard.py tools/independent_release/pr_collision_guard.py tools/independent_release/verify_ci_suite_union.py tools/independent_release/integration_gate.py tools/independent_release/source_contract_guard.py
+        run: python3 -m py_compile tools/independent_release/release_guard.py tools/independent_release/pr_collision_guard.py tools/independent_release/verify_ci_suite_union.py tools/independent_release/integration_gate.py tools/independent_release/source_contract_guard.py tools/independent_release/modularization_inventory.py
