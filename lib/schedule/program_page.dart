@@ -597,14 +597,17 @@ class _ProgramPageState extends State<ProgramPage> {
           if(can&&!head.closed)...[
             const SizedBox(height:12),
             ExpansionTile(
+              initiallyExpanded:true,
               title:const Text('Editare zile',style:TextStyle(fontWeight:FontWeight.bold)),
-              subtitle:const Text('Adaugă, scoate sau schimbă ordinea locațiilor după finalizarea graficului.'),
+              subtitle:const Text('Adaugă sau elimină locații; trage de mânerul din dreapta pentru a schimba ordinea.'),
               children:graphSchedules.map((s)=>Padding(padding:const EdgeInsets.only(bottom:10),child:_ScheduleCardFull(
                 schedule:s,locations:widget.locations,categories:widget.categories,records:widget.records,canEdit:can,
                 onAdd:()=>_addLocations(s),onRemove:(item)=>unawaited(_removeItem(s,item)),onReorder:(a,b)=>unawaited(_reorder(s,a,b)),
               ))).toList(),
             ),
           ],
+          if(!can) Padding(padding:const EdgeInsets.symmetric(vertical:8),child:_InfoCard(icon:Icons.lock_outline,title:'Editarea graficului nu este disponibilă',text:'Ai nevoie de permisiunea de editare a programului și a echipei selectate. Solicită administratorului accesul corespunzător.')),
+          if(can&&head.closed) const Padding(padding:EdgeInsets.symmetric(vertical:8),child:_InfoCard(icon:Icons.lock_clock_outlined,title:'Grafic închis',text:'Editarea locațiilor este blocată după închiderea graficului.')),
           const SizedBox(height:8),
           if (!routeData.complete) Card(child: ListTile(leading: const Icon(Icons.warning_amber_rounded), title: const Text('Traseu GPS incomplet'), subtitle: Text('Completează coordonatele pentru: ${[if(routeData.missingDeparture) 'plecare', ...routeData.missingLocations, if(routeData.missingDestination) 'destinație'].join(', ')}. Km și consumul nu pot fi estimate corect.'))),
           if (routeData.complete && routeData.points.length >= 2)
