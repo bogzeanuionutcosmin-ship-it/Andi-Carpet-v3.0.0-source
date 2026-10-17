@@ -44,6 +44,8 @@ void main(){
   final replay=await r.executeExplicitly(i);
   expect(replay.status,FinanceIntentStatus.conflict);
   expect(replay.replayed,false);
+  final review=await r.reconcileExplicitly(i);
+  expect(review.status,FinanceIntentStatus.conflict);
   expect(db.writes,2,reason:'A forged latest summary cannot cause a second write');
  });
  test('XI historical receipt remains replayable after a newer legitimate summary',()async{
