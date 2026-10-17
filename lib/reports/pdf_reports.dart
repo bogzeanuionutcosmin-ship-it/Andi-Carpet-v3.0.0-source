@@ -80,7 +80,7 @@ List<CentralizerPdfExecutionRow> centralizerPdfExecutionRows({
   final start = from == null ? null : DateTime(from.year, from.month, from.day);
   final finish = to == null
       ? null
-      : DateTime(to.year, to.month, to.day, 23, 59, 59, 999);
+      : DateTime(to.year, to.month, to.day + 1);
 
   final rows = records.where((record) {
     if (record.type != type) return false;
@@ -90,7 +90,7 @@ List<CentralizerPdfExecutionRow> centralizerPdfExecutionRows({
     if (statusFilter != null && record.status != statusFilter) return false;
     final eventDate = recordEventTime(record);
     if (start != null && eventDate.isBefore(start)) return false;
-    if (finish != null && eventDate.isAfter(finish)) return false;
+    if (finish != null && !eventDate.isBefore(finish)) return false;
     if (q.isNotEmpty &&
         !record.locationNameSnapshot.toLowerCase().contains(q) &&
         !record.addressSnapshot.toLowerCase().contains(q)) {
@@ -147,8 +147,8 @@ Future<Uint8List> buildCentralizerPdf({
   final doc = pw.Document();
   final q = search.trim().toLowerCase();
   final start = from == null ? null : DateTime(from.year, from.month, from.day);
-  final finish = to == null ? null : DateTime(to.year, to.month, to.day, 23, 59, 59, 999);
-  bool dateAllowed(DateTime d) => (start == null || !d.isBefore(start)) && (finish == null || !d.isAfter(finish));
+  final finish = to == null ? null : DateTime(to.year, to.month, to.day + 1);
+  bool dateAllowed(DateTime d) => (start == null || !d.isBefore(start)) && (finish == null || d.isBefore(finish));
   bool textAllowed(String name, String address) => q.isEmpty || name.toLowerCase().contains(q) || address.toLowerCase().contains(q);
 
   final executionRows = centralizerPdfExecutionRows(

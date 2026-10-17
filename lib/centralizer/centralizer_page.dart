@@ -33,14 +33,14 @@ class _CentralizerPageState extends State<CentralizerPage> {
   List<CentralizerRecord> _filteredRecords(){
     final q=searchController.text.trim().toLowerCase();
     final start=fromDate==null?null:DateTime(fromDate!.year,fromDate!.month,fromDate!.day);
-    final finish=toDate==null?null:DateTime(toDate!.year,toDate!.month,toDate!.day,23,59,59,999);
+    final finish=toDate==null?null:DateTime(toDate!.year,toDate!.month,toDate!.day+1);
     return widget.records.where((r){
       if(r.type!=type)return false;
       if(teamFilter!=null&&r.teamId!=teamFilter)return false;
       if(statusFilter!=null&&r.status!=statusFilter)return false;
       final when=recordEventTime(r);
       if(start!=null&&when.isBefore(start))return false;
-      if(finish!=null&&when.isAfter(finish))return false;
+      if(finish!=null&&!when.isBefore(finish))return false;
       if(q.isNotEmpty&&!r.locationNameSnapshot.toLowerCase().contains(q)&&!r.addressSnapshot.toLowerCase().contains(q))return false;
       return true;
     }).toList();
@@ -50,12 +50,12 @@ class _CentralizerPageState extends State<CentralizerPage> {
     if(statusFilter!=null)return <WorkSchedule>[];
     final q=searchController.text.trim().toLowerCase();
     final start=fromDate==null?null:DateTime(fromDate!.year,fromDate!.month,fromDate!.day);
-    final finish=toDate==null?null:DateTime(toDate!.year,toDate!.month,toDate!.day,23,59,59,999);
+    final finish=toDate==null?null:DateTime(toDate!.year,toDate!.month,toDate!.day+1);
     final out=<WorkSchedule>[];
     for(final schedule in widget.schedules){
       if(teamFilter!=null&&schedule.teamId!=teamFilter)continue;
       if(start!=null&&schedule.date.isBefore(start))continue;
-      if(finish!=null&&schedule.date.isAfter(finish))continue;
+      if(finish!=null&&!schedule.date.isBefore(finish))continue;
       final item=schedule.items.where((i)=>i.locationId==locationId&&i.typeSnapshot==type).toList();
       if(item.isEmpty)continue;
       if(q.isNotEmpty&&!item.first.locationNameSnapshot.toLowerCase().contains(q)&&!item.first.addressSnapshot.toLowerCase().contains(q))continue;
@@ -86,7 +86,16 @@ class _CentralizerPageState extends State<CentralizerPage> {
     final filtered=_filteredRecords();
     final scheduledOnlyIds=_scheduledOnlyLocationIds();
     final ids=<String>{...filtered.map((r)=>r.locationId),...scheduledOnlyIds};
-    final locs=widget.locations.where((l)=>l.type==type&&ids.contains(l.id)).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final locationsById=<String,Location>{for(final location in widget.locations)location.id:location};
+    // Execution snapshots remain visible after a registry location is removed.
+    // These inactive display-only locations never re-create registry documents.
+    for(final record in filtered){
+      locationsById.putIfAbsent(record.locationId,()=>Location(
+        id:record.locationId,name:record.locationNameSnapshot,address:record.addressSnapshot,
+        type:record.type,active:false,
+      ));
+    }
+    final locs=locationsById.values.where((l)=>l.type==type&&ids.contains(l.id)).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     final scheduledOnlyCount=locs.fold<int>(0,(sum,l)=>sum+_scheduledWithoutExecutionForLocation(l.id).length);
     return _Page(
       title:'Centralizator',subtitle:'Comun tuturor echipelor · MAGIC / Million',
@@ -122,7 +131,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
       leading: categoryBrandWidget(l.categoryId, size: 38, fallbackColor: categoryColor(widget.categories,l.categoryId,fallbackType:l.type)),
       title:Text(l.name),
       subtitle:Text('${l.address}${l.surfaceM2>0?' · mochetă ${l.surfaceM2.toStringAsFixed(l.surfaceM2%1==0?0:1)} m²':''}${l.facadeM2>0?' · fațadă ${l.facadeM2.toStringAsFixed(l.facadeM2%1==0?0:1)} m²':''}'),
-      trailing:(widget.isAdmin || widget.canEditCentralizer)?IconButton(tooltip:'Adaugă încă o execuție',onPressed:()=>_addManualExecution(location:l),icon:const Icon(Icons.add_circle_outline)):null,
+      trailing:l.active&&(widget.isAdmin || widget.canEditCentralizer)?IconButton(tooltip:'Adaugă încă o execuție',onPressed:()=>_addManualExecution(location:l),icon:const Icon(Icons.add_circle_outline)):null,
       children:[
         ...scheduledOnly.map((schedule){
           final future=schedule.date.isAfter(DateTime.now());

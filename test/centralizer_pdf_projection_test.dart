@@ -70,4 +70,14 @@ void main() {
     expect(rows.single.record.finishedAt, DateTime(2026, 10, 16, 0, 20));
     expect(rows.single.record.facadeDone, isTrue);
   });
+  test('end-date filter includes the final microsecond and excludes next midnight', () {
+    final late=_record(id:'late',startedAt:DateTime(2026,10,16,23,0),
+      finishedAt:DateTime(2026,10,16,23,59,59,999,999));
+    final next=_record(id:'next',startedAt:DateTime(2026,10,16,23,30),
+      finishedAt:DateTime(2026,10,17));
+    final rows=centralizerPdfExecutionRows(records:[late,next],type:LocationType.magic,
+      from:DateTime(2026,10,16),to:DateTime(2026,10,16));
+    expect(rows.map((r)=>r.record.id),['late']);
+  });
+
 }

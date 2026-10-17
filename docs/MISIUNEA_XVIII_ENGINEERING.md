@@ -34,3 +34,10 @@ No production Firebase access, deployment, merge, APK distribution or destructiv
 - #88 synthetic session Firestore suite: 18 passed, 1 explicitly skipped, 0 failed; signed claims and authority fixtures are test-only, not proof of trusted production issuance or hardware anti-rollback.
 - #15 exact source 876f72d: 19/19 per-diem authorization emulator cases pass. merge-tree confirms conflicts with current main in workflow/main/payment-plan areas; do not merge the old branch or replace newer finance code indiscriminately.
 - #91/#93 conflicts and #94 legacy correction are already addressed by #99 ancestry; no duplicate PR is opened for those fixes.
+
+## Further validation
+
+- Third SHA dc886000 / Validate 39072875409: Flutter tests and real-PDF Poppler checks passed before web compilation. Downloaded artifact 12116101317 confirms the 80-row history is six pages with 80 START and 80 FINAL times; first page rendered and visually inspected without clipping.
+- The full native+Firestore session test was rerun with XIII_NATIVE_PROBE: 19/19, no skipped cases. Local Chromium journal test is unavailable because the Playwright browser archive download is invalid/truncated; not counted as a pass.
+- Android SDK platform 36, build tools 36.0.0, platform-tools, emulator 37.2.12 and API36 x86_64 system image are installed in /tmp. KVM is unavailable; software-emulation boot is attempted separately. No physical Android validation.
+- Further fixes: use exclusive next-day upper bounds so 23:59:59.999999 remains in the selected date; retain display-only execution snapshots when a registry location is deleted. Added projection and widget regressions.

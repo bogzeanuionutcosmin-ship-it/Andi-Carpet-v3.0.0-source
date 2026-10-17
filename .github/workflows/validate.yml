@@ -39,6 +39,7 @@ jobs:
           python3 scripts/verify_centralizer_pdfs.py
           pdftoppm -scale-to 1600 -png build/pdf-verification/craiova.pdf build/pdf-verification/craiova
           pdftoppm -scale-to 1600 -png build/pdf-verification/overnight.pdf build/pdf-verification/overnight
+          pdftoppm -scale-to 1600 -png build/pdf-verification/history.pdf build/pdf-verification/history
       - name: Upload synthetic PDF evidence
         if: always()
         uses: actions/upload-artifact@v4
