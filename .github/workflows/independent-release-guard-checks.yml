@@ -4,7 +4,7 @@ on:
     paths:
       - 'tools/independent_release/release_guard.py'
       - 'tools/independent_release/test_release_guard.py'
-      - 'tools/independent_release/pr_collision_guard.py tools/independent_release/verify_ci_suite_union.py'
+      - 'tools/independent_release/pr_collision_guard.py'
       - 'tools/independent_release/test_pr_collision_guard.py'
       - 'tools/independent_release/verify_ci_suite_union.py'
       - 'tools/independent_release/test_verify_ci_suite_union.py'
@@ -28,4 +28,4 @@ jobs:
       - name: Firestore CI suite union unit tests
         run: python3 -m unittest discover -s tools/independent_release -p 'test_verify_ci_suite_union.py' -v
       - name: Syntax check
-        run: python3 -m py_compile tools/independent_release/release_guard.py tools/independent_release/pr_collision_guard.py
+        run: python3 -m py_compile tools/independent_release/release_guard.py tools/independent_release/pr_collision_guard.py tools/independent_release/verify_ci_suite_union.py
