@@ -118,7 +118,9 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("launchUrl(uri,mode:LaunchMode.externalApplication)", module)
-        self.assertIn("Auto Blocker", module)
+        self.assertIn("validatedAndroidApkUrl(raw)", module)
+        self.assertIn("nu dezactiva protecțiile de securitate", module)
+        self.assertNotIn("dezactivarea temporară", module)
         self.assertIn("Adaugă pe ecranul principal", module)
 
     def test_firebase_bootstrap_is_extracted_and_entrypoint_stays_in_main(self):
