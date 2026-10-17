@@ -14,6 +14,16 @@ class ModularizationInventoryTests(unittest.TestCase):
                           "models/a.dart": ""})
         self.assertEqual(result["cross_domain_edges"], [{"from": "reports", "to": "models"}])
 
+    def test_external_package_not_marked_unresolved(self):
+        result = analyze({"schedule/a.dart": "import 'package:flutter/widgets.dart';"},
+                         package_name="andi_carpet")
+        self.assertEqual(result["unresolved_imports"], [])
+
+    def test_local_package_missing_import_detected(self):
+        result = analyze({"schedule/a.dart": "import 'package:andi_carpet/models/missing.dart';"},
+                         package_name="andi_carpet")
+        self.assertEqual(len(result["unresolved_imports"]), 1)
+
     def test_external_import_ignored(self):
         result = analyze({"schedule/a.dart": "import 'dart:async';\nimport 'package:flutter/widgets.dart';"})
         self.assertEqual(result["cross_domain_edges"], [])
