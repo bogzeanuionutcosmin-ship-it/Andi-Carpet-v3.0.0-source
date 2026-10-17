@@ -213,7 +213,8 @@ mixin _HomeDocumentCodecs {
       'transferred': i.transferred,
       'facadePlanned': i.facadePlanned,
     }).toList(),
-    'updatedAt': FieldValue.serverTimestamp(),
+    'updatedAt': s.updatedAt == null ? FieldValue.serverTimestamp() : Timestamp.fromDate(s.updatedAt!),
+    'writeToken': s.writeToken,
   };
 
   WorkSchedule _scheduleFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
@@ -271,6 +272,8 @@ mixin _HomeDocumentCodecs {
       returnName: (d['returnName'] ?? '').toString(),
       returnLatitude: d['returnLatitude'] is num ? (d['returnLatitude'] as num).toDouble() : null,
       returnLongitude: d['returnLongitude'] is num ? (d['returnLongitude'] as num).toDouble() : null,
+      updatedAt: _dateFrom(d['updatedAt']),
+      writeToken: d['writeToken']?.toString(),
     );
   }
 
