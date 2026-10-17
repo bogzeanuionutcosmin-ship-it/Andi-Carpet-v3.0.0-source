@@ -32,6 +32,21 @@ jobs:
         run: python3 -m unittest discover -s test -p 'repository_hygiene_test.py'
       - name: Run Flutter unit and widget tests
         run: flutter test test/
+      - name: Verify real Centralizator PDFs
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          python3 scripts/verify_centralizer_pdfs.py
+          pdftoppm -scale-to 1600 -png build/pdf-verification/craiova.pdf build/pdf-verification/craiova
+          pdftoppm -scale-to 1600 -png build/pdf-verification/overnight.pdf build/pdf-verification/overnight
+      - name: Upload synthetic PDF evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: centralizer-pdf-evidence
+          path: build/pdf-verification/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Build web
         run: flutter build web --release
       - name: Upload web build

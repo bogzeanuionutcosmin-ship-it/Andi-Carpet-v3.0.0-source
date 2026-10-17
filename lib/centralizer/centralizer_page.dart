@@ -160,7 +160,19 @@ class _CentralizerPageState extends State<CentralizerPage> {
       ],
     ));
   }
+  bool _addingManualExecution = false;
+
   Future<void> _addManualExecution({Location? location}) async {
+    if (_addingManualExecution || !mounted) return;
+    _addingManualExecution = true;
+    try {
+      await _showManualExecution(location: location);
+    } finally {
+      _addingManualExecution = false;
+    }
+  }
+
+  Future<void> _showManualExecution({Location? location}) async {
     final allowedTeams = widget.isAdmin ? widget.teams : widget.teams.where((t)=>widget.canEditTeam(t.id)).toList();
     if (allowedTeams.isEmpty) { if(mounted)showErrorMessage(context,'Nu ai o echipă în care poți adăuga execuții.'); return; }
     var selectedLocation = location;
@@ -179,7 +191,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
           const SizedBox(height:10),
           DropdownButtonFormField<String>(initialValue:selectedTeamId,decoration:const InputDecoration(labelText:'Echipă'),items:allowedTeams.map((t)=>DropdownMenuItem(value:t.id,child:Text(t.name))).toList(),onChanged:(v){if(v!=null)setD(()=>selectedTeamId=v);}),
           const SizedBox(height:10),
-          ListTile(contentPadding:EdgeInsets.zero,title:const Text('Data execuției'),subtitle:Text(formatDate(date)),trailing:const Icon(Icons.calendar_month),onTap:()async{final d=await showDatePicker(context:c,firstDate:DateTime(2020),lastDate:DateTime.now().add(const Duration(days:1)),initialDate:date);if(d!=null)setD(()=>date=d);}),
+          ListTile(contentPadding:EdgeInsets.zero,title:const Text('Data execuției'),subtitle:Text(formatDate(date)),trailing:const Icon(Icons.calendar_month),onTap:()async{final d=await showDatePicker(context:c,firstDate:DateTime(2020),lastDate:DateTime.now().add(const Duration(days:1)),initialDate:date);if(d!=null&&c.mounted)setD(()=>date=d);}),
           Row(children:[Expanded(child:TextField(controller:start,decoration:const InputDecoration(labelText:'START HH:MM'))),const SizedBox(width:10),Expanded(child:TextField(controller:finish,decoration:const InputDecoration(labelText:'FINAL HH:MM')))]),
           const SizedBox(height:10),
           TextField(controller:reason,maxLines:2,decoration:const InputDecoration(labelText:'Observație (opțional)',hintText:'Ex.: a doua spălare / sală preluată de la altă echipă')),

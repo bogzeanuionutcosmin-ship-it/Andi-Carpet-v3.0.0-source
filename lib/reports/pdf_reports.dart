@@ -119,7 +119,31 @@ Future<void> downloadCentralizerPdf({
   WorkAttemptStatus? statusFilter,
   String? teamLabel,
 }) async {
-  final theme = await _buildPdfTheme();
+  final bytes = await buildCentralizerPdf(
+    type: type, locations: locations, teams: teams, schedules: schedules,
+    records: records, teamId: teamId, from: from, to: to, search: search,
+    statusFilter: statusFilter, teamLabel: teamLabel,
+  );
+  final now = DateTime.now();
+  final filename='centralizator_${_safeFilePart(type.label)}_${now.year}${two(now.month)}${two(now.day)}.pdf';
+  await downloadFile(bytes,filename,mimeType:'application/pdf');
+}
+
+Future<Uint8List> buildCentralizerPdf({
+  required LocationType type,
+  required List<Location> locations,
+  required List<Team> teams,
+  required List<WorkSchedule> schedules,
+  required List<CentralizerRecord> records,
+  String? teamId,
+  DateTime? from,
+  DateTime? to,
+  String search = '',
+  WorkAttemptStatus? statusFilter,
+  String? teamLabel,
+  pw.ThemeData? pdfTheme,
+}) async {
+  final theme = pdfTheme ?? await _buildPdfTheme();
   final doc = pw.Document();
   final q = search.trim().toLowerCase();
   final start = from == null ? null : DateTime(from.year, from.month, from.day);
@@ -308,9 +332,7 @@ Future<void> downloadCentralizerPdf({
       ],
     ],
   ));
-  final bytes=await doc.save();
-  final filename='centralizator_${_safeFilePart(type.label)}_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf';
-  await downloadFile(bytes,filename,mimeType:'application/pdf');
+  return doc.save();
 }
 
 Future<void> downloadDecontPdf({

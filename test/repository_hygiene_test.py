@@ -603,9 +603,10 @@ class RepositoryHygieneTests(unittest.TestCase):
                        "String _safeFilePart(", "String _pdfDate("):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("PdfGoogleFonts.openSansRegular()", module)
-        self.assertIn("PdfGoogleFonts.openSansBold()", module)
-        self.assertIn("PdfGoogleFonts.openSansItalic()", module)
+        self.assertNotIn("PdfGoogleFonts.", module)
+        for font in ("DejaVuSans.ttf", "DejaVuSans-Bold.ttf", "DejaVuSans-Oblique.ttf"):
+            self.assertIn(f"rootBundle.load('assets/fonts/{font}')", module)
+            self.assertTrue((ROOT / "assets/fonts" / font).is_file())
 
     def test_app_root_theme_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

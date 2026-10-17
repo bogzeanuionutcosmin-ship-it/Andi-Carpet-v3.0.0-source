@@ -1,9 +1,10 @@
 part of '../main.dart';
 
 Future<pw.ThemeData> _buildPdfTheme() async {
-  final regular = await PdfGoogleFonts.openSansRegular();
-  final bold = await PdfGoogleFonts.openSansBold();
-  final italic = await PdfGoogleFonts.openSansItalic();
+  // Reports must render offline and must not transmit export activity to a font CDN.
+  final regular = pw.Font.ttf(await rootBundle.load('assets/fonts/DejaVuSans.ttf'));
+  final bold = pw.Font.ttf(await rootBundle.load('assets/fonts/DejaVuSans-Bold.ttf'));
+  final italic = pw.Font.ttf(await rootBundle.load('assets/fonts/DejaVuSans-Oblique.ttf'));
   return pw.ThemeData.withFont(base: regular, bold: bold, italic: italic);
 }
 

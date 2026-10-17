@@ -154,3 +154,31 @@ test('closed schedule rejects member writes but Admin can reopen it', async () =
   await assertFails(updateDoc(doc(db('editor'), schedulePath('closed')), { closed: false }));
   await assertSucceeds(updateDoc(doc(db('admin'), schedulePath('closed')), { closed: false }));
 });
+
+// Existence provenance is independent of updatedAt/writeToken on legacy data.
+// The app marks decoded schedules persisted and carries it through both editors.
+test('legacy schedule deletion and new-ID collisions are rejected without partial writes', async () => {
+  const database = db('editor');
+  const legacy = doc(database, schedulePath('legacy-presence'));
+  const other = doc(database, schedulePath('legacy-other'));
+  const payload = { teamId:'team-a', graphId:'legacy', closed:false, items:[] };
+  await setDoc(legacy, payload);
+  await setDoc(other, payload);
+  const loaded = await getDoc(legacy);
+  assert.equal(loaded.data().updatedAt, undefined);
+  assert.equal(loaded.data().writeToken, undefined);
+  const { deleteDoc } = require('firebase/firestore');
+  await deleteDoc(legacy);
+  const save = (expectedExists) => runTransaction(database, async tx => {
+    const snapshots = await Promise.all([tx.get(legacy), tx.get(other)]);
+    if (snapshots[0].exists() !== expectedExists) throw new Error('presence changed');
+    tx.set(legacy, payload);
+    tx.update(other, { paused:true });
+  });
+  await assert.rejects(save(true), /presence changed/);
+  assert.equal((await getDoc(legacy)).exists(), false);
+  assert.equal((await getDoc(other)).data().paused, undefined);
+  await setDoc(legacy, payload);
+  await assert.rejects(save(false), /presence changed/);
+  assert.equal((await getDoc(other)).data().paused, undefined);
+});

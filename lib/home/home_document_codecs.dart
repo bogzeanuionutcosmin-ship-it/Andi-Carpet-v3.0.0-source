@@ -274,6 +274,7 @@ mixin _HomeDocumentCodecs {
       returnLongitude: d['returnLongitude'] is num ? (d['returnLongitude'] as num).toDouble() : null,
       updatedAt: _dateFrom(d['updatedAt']),
       writeToken: d['writeToken']?.toString(),
+      persisted: true,
     );
   }
 

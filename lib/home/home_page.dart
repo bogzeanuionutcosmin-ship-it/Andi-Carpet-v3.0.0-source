@@ -1409,6 +1409,11 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         final reference = db.collection('schedules').doc(schedule.id);
         refs[schedule.id] = reference;
         final snapshot = await transaction.get(reference);
+        // Existence is independent of revision metadata: a deleted legacy day
+        // with no timestamp/token must not be mistaken for a new day.
+        if (schedule.persisted != snapshot.exists) {
+          throw StateError('Ziua de grafic a fost ștearsă sau identificatorul este deja folosit. Reîncarcă graficul.');
+        }
         final remoteData = snapshot.data();
         final rawUpdatedAt = remoteData?['updatedAt'];
         final remoteUpdatedAt = rawUpdatedAt is Timestamp ? rawUpdatedAt.toDate() : null;
@@ -1444,6 +1449,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     });
 
     for (final schedule in batchSchedules) {
+      schedule.persisted = true;
       schedule.updatedAt = committedAt;
       schedule.writeToken = writeTokens[schedule.id];
       final data = _scheduleMap(schedule);
