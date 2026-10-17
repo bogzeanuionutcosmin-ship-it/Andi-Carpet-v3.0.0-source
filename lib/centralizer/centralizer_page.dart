@@ -222,7 +222,10 @@ class _CentralizerPageState extends State<CentralizerPage> {
             subtitle:Text(formatDate(date)),
             trailing:const Icon(Icons.calendar_month),
             onTap:()async{
-              final picked=await showDatePicker(context:c,initialDate:date,firstDate:DateTime(2020),lastDate:DateTime.now().add(const Duration(days:1)));
+              final first=DateTime(2020);
+              final last=DateTime.now().add(const Duration(days:1));
+              final initial=date.isBefore(first)?first:(date.isAfter(last)?last:date);
+              final picked=await showDatePicker(context:c,initialDate:initial,firstDate:first,lastDate:last);
               if(picked!=null&&c.mounted)setDialogState(()=>date=picked);
             },
           ),
@@ -259,7 +262,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
       id:r.id,teamId:r.teamId,locationId:r.locationId,type:r.type,
       locationNameSnapshot:r.locationNameSnapshot,addressSnapshot:r.addressSnapshot,
       waitingStartedAt:r.waitingStartedAt,waitingEndedAt:r.waitingEndedAt,
-      startedAt:newStart,finishedAt:newFinish,status:WorkAttemptStatus.completed,
+      startedAt:newStart,finishedAt:newFinish,status:r.status,
       refusalReason:r.refusalReason,keptForLearning:r.keptForLearning,
       facadePlanned:r.facadePlanned||facadeDone,facadeDone:facadeDone,
     );
