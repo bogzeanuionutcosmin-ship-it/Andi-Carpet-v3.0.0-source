@@ -1,0 +1,23 @@
+name: Independent release guard offline checks
+on:
+  pull_request:
+    paths:
+      - 'tools/independent_release/release_guard.py'
+      - 'tools/independent_release/test_release_guard.py'
+      - '.github/workflows/independent-release-guard-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release-guard-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static guard unit tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_release_guard.py' -v
+      - name: Syntax check
+        run: python3 -m py_compile tools/independent_release/release_guard.py
