@@ -16,6 +16,14 @@ class DirectoryReconciliationTests(unittest.TestCase):
         directory = {"one": {"name": "One", "active": True, "role": "member"}}
         self.assertTrue(reconcile(users, directory)["matches"])
 
+    def test_invalid_user_profile_is_rejected(self):
+        with self.assertRaises(ValueError):
+            reconcile({"one": None}, {})
+
+    def test_invalid_directory_entry_is_rejected(self):
+        with self.assertRaises(ValueError):
+            reconcile({}, {"one": None})
+
     def test_missing_extra_changed(self):
         users = {"one": {"name": "One"}, "two": {"name": "Two"}, "hidden": {"role": "admin"}}
         directory = {"one": {"name": "Old"}, "hidden": {"name": "Admin"}}
