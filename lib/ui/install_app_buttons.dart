@@ -11,9 +11,9 @@ Future<void> _showAndroidInstallFlow(BuildContext context, AppSettings settings)
   final proceed = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
     title: const Row(children:[Icon(Icons.android),SizedBox(width:10),Expanded(child:Text('Instalare Android'))]),
     content: const Text(
-      'Instalarea APK-ului Andi Carpet din afara magazinului poate necesita dezactivarea temporară a funcției Auto Blocker pe unele telefoane Samsung. '
-      'De regulă: Setări → Securitate și confidențialitate → Auto Blocker. După instalare, recomandăm activarea lui din nou. '
-      'Android poate cere și permisiunea de instalare pentru browserul sau aplicația din care deschizi fișierul.'
+      'Descarcă APK-ul numai din linkul HTTPS oficial publicat de administrator și verifică proveniența fișierului înainte de instalare. '
+      'Android poate cere permisiunea de instalare pentru browserul sau aplicația din care deschizi fișierul. '
+      'Dacă protecția telefonului blochează instalarea, solicită administratorului o distribuție verificată; nu dezactiva protecțiile de securitate pentru un fișier necunoscut.'
     ),
     actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton.icon(onPressed:()=>Navigator.pop(c,true),icon:const Icon(Icons.download),label:const Text('Continuă la descărcare'))],
   )) ?? false;
