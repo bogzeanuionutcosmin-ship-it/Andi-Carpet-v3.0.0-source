@@ -15,6 +15,7 @@ OUT=Path('android-ui-evidence');OUT.mkdir(exist_ok=True)
 def adb(*args):
     return subprocess.check_output(['adb',*args],timeout=45)
 def snapshot(name):
+    adb('shell','rm','-f','/sdcard/andi-window.xml')
     adb('shell','uiautomator','dump','/sdcard/andi-window.xml')
     data=adb('exec-out','cat','/sdcard/andi-window.xml')
     (OUT/f'{name}.xml').write_bytes(data)
@@ -68,7 +69,8 @@ def main():
         wait_for('TEST Centralizator',f'cancelled-{attempt}')
         print(f'Android dialog open/cancel cycle {attempt}: PASS')
     adb('shell','am','force-stop',PACKAGE)
-    adb('shell','am','start','-n',ACTIVITY)
+    restart=adb('shell','am','start','-W','-n',ACTIVITY).decode()
+    assert 'Error' not in restart,restart
     wait_for('TEST Centralizator','restart');capture('restart')
     pid=adb('shell','pidof',PACKAGE).decode().strip();assert pid.isdigit(),pid
     log=adb('logcat','-d',f'--pid={pid}').decode(errors='replace')
