@@ -766,14 +766,14 @@ class RepositoryHygieneTests(unittest.TestCase):
         for declaration in ("class AdminPanelPage extends StatefulWidget", "class _AdminPanelPageState extends State<AdminPanelPage>"):
             self.assertNotIn(declaration, main)
             self.assertEqual(admin.count(declaration), 1)
-        for contract in ("_exportBackup", "_restoreBackup"):
+        for contract in ("exportBackup", "restoreBackup"):
             self.assertIn(contract, (ROOT / "lib/admin/admin_backup_panel_actions.dart").read_text(encoding="utf-8"))
         for contract in ("saveLocation", "deleteLocation"):
             self.assertIn(contract, (ROOT / "lib/admin/admin_location_actions.dart").read_text(encoding="utf-8"))
         backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
         self.assertIn("part 'admin/admin_backup_actions.dart';", main)
         self.assertIn("with _AdminBackupActions", admin)
-        for method in ("_exportBackup() async", "_restoreAutomaticBackup(String backupId) async", "_restoreBackup() async"):
+        for method in ("exportBackup() async", "restoreAutomaticBackup(String backupId) async", "restoreBackup() async"):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
@@ -922,9 +922,9 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("_AdminBackupPanelActions", admin)
         self.assertIn("Widget _backup()", panel)
         self.assertNotIn("Widget _backup()", admin)
-        self.assertIn("_restoreAutomaticBackup(", panel)
-        self.assertIn("_exportBackup", panel)
-        self.assertIn("_restoreBackup", panel)
+        self.assertIn("restoreAutomaticBackup(", panel)
+        self.assertIn("exportBackup", panel)
+        self.assertIn("restoreBackup", panel)
         self.assertIn("Conturile de autentificare rămân intacte", panel)
 
     def test_admin_function_rights_extracted_and_admin_protected(self):
@@ -1069,7 +1069,7 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_automatic_backup_preflight_prevents_missing_collection_deletion(self):
         backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
-        restore = backup.split("Future<void> _restoreAutomaticBackup(String backupId) async {", 1)[1].split("Future<void> _restoreBackup() async {", 1)[0]
+        restore = backup.split("Future<void> restoreAutomaticBackup(String backupId) async {", 1)[1].split("Future<void> restoreBackup() async {", 1)[0]
         self.assertLess(restore.index("for(final item in items.docs)"), restore.index("batch.delete(doc.reference)"))
         self.assertLess(restore.index("if(grouped.isEmpty)"), restore.index("batch.delete(doc.reference)"))
         self.assertIn("for(final collection in grouped.keys)", restore)
@@ -1079,7 +1079,7 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_backup_restore_preflights_all_documents_before_deletion(self):
         backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
-        restore = backup.split("Future<void> _restoreBackup() async {", 1)[1].split("\n  }\n", 1)[0]
+        restore = backup.split("Future<void> restoreBackup() async {", 1)[1].split("\n  }\n", 1)[0]
         validation = restore.index("for(final entry in rawCollections.entries)")
         decoding = restore.index("final decoded=_backupDecode(rawEntry.value)")
         settings_validation = restore.index("final decodedSettings=_backupDecode(parsed['uiSettings'])")
@@ -1100,7 +1100,8 @@ class RepositoryHygieneTests(unittest.TestCase):
         map_source = (ROOT / "lib/map/map_page.dart").read_text(encoding="utf-8")
         self.assertIn("hasMatch(normalized)", expense_source)
         self.assertIn("normalized = raw.trim().replaceAll", expense_source)
-        self.assertIn("Schematic fallback when Mapbox cannot provide road geometry.", map_source)
+        self.assertIn("multicolour segments", map_source)
+        self.assertIn(": _rainbowRouteLines()", map_source)
         self.assertNotIn("for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }", source)
 
 

@@ -60,6 +60,52 @@ Future<void> downloadWorkGraphPdf({
   await downloadFile(await doc.save(), 'grafic_${_safeFilePart(first.graphName)}.pdf', mimeType: 'application/pdf');
 }
 
+class CentralizerPdfExecutionRow {
+  final CentralizerRecord record;
+  final DateTime date;
+
+  const CentralizerPdfExecutionRow({required this.record, required this.date});
+}
+
+List<CentralizerPdfExecutionRow> centralizerPdfExecutionRows({
+  required List<CentralizerRecord> records,
+  required LocationType type,
+  String? teamId,
+  DateTime? from,
+  DateTime? to,
+  String search = '',
+  WorkAttemptStatus? statusFilter,
+}) {
+  final q = search.trim().toLowerCase();
+  final start = from == null ? null : DateTime(from.year, from.month, from.day);
+  final finish = to == null
+      ? null
+      : DateTime(to.year, to.month, to.day, 23, 59, 59, 999);
+
+  final rows = records.where((record) {
+    if (record.type != type) return false;
+    if (teamId != null && teamId.isNotEmpty && record.teamId != teamId) {
+      return false;
+    }
+    if (statusFilter != null && record.status != statusFilter) return false;
+    final eventDate = recordEventTime(record);
+    if (start != null && eventDate.isBefore(start)) return false;
+    if (finish != null && eventDate.isAfter(finish)) return false;
+    if (q.isNotEmpty &&
+        !record.locationNameSnapshot.toLowerCase().contains(q) &&
+        !record.addressSnapshot.toLowerCase().contains(q)) {
+      return false;
+    }
+    return true;
+  }).map((record) => CentralizerPdfExecutionRow(
+        record: record,
+        date: recordEventTime(record),
+      )).toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+
+  return rows;
+}
+
 Future<void> downloadCentralizerPdf({
   required LocationType type,
   required List<Location> locations,
@@ -81,19 +127,20 @@ Future<void> downloadCentralizerPdf({
   bool dateAllowed(DateTime d) => (start == null || !d.isBefore(start)) && (finish == null || !d.isAfter(finish));
   bool textAllowed(String name, String address) => q.isEmpty || name.toLowerCase().contains(q) || address.toLowerCase().contains(q);
 
-  final filteredRecords = records.where((r) {
-    if (r.type != type) return false;
-    if (teamId != null && teamId.isNotEmpty && r.teamId != teamId) return false;
-    if (statusFilter != null && r.status != statusFilter) return false;
-    final when = recordEventTime(r);
-    if (!dateAllowed(when)) return false;
-    if (!textAllowed(r.locationNameSnapshot, r.addressSnapshot)) return false;
-    return true;
-  }).toList()..sort((a,b)=>recordEventTime(a).compareTo(recordEventTime(b)));
+  final executionRows = centralizerPdfExecutionRows(
+    records: records,
+    type: type,
+    teamId: teamId,
+    from: from,
+    to: to,
+    search: search,
+    statusFilter: statusFilter,
+  );
 
   final rowsByLocation = <String,List<Map<String,dynamic>>>{};
-  for (final r in filteredRecords) {
-    rowsByLocation.putIfAbsent(r.locationId, () => <Map<String,dynamic>>[]).add({'record':r,'date':recordEventTime(r)});
+  for (final row in executionRows) {
+    rowsByLocation.putIfAbsent(row.record.locationId, () => <Map<String, dynamic>>[])
+        .add({'record': row.record, 'date': row.date});
   }
 
   // Fără filtru explicit de stare includem și toate sălile din grafice, chiar dacă nu există execuție.

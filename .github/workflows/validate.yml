@@ -2,9 +2,9 @@ name: Validate Flutter and Firebase
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/grafic-end-to-end-xiv-20261017, fix/application-delivery-xv-20261017]
   pull_request:
-    branches: [main]
+    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017]
   workflow_dispatch:
 
 permissions:
@@ -107,4 +107,4 @@ jobs:
       - name: Install Firebase emulator and test libraries
         run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
       - name: Run Firestore authorization tests
-        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test tests/firestore/diurna.test.cjs'
+        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test --test-concurrency=1 tests/firestore/diurna.test.cjs tests/firestore/program_schedule.test.cjs tests/firestore/centralizer_correction.test.cjs'
