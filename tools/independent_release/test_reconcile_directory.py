@@ -40,5 +40,18 @@ class DirectoryReconciliationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             json.loads('{"users":{},"users":{}}', object_pairs_hook=_unique_keys)
 
+    def test_private_fields_are_not_projected(self):
+        profile = {"name": "Synthetic", "active": True, "email": "private@example.invalid",
+                   "passwordHash": "not-real", "permissions": ["admin"]}
+        result = project_member(profile)
+        self.assertEqual(result, {"name": "Synthetic", "active": True, "role": "member"})
+
+    def test_mismatch_output_contains_only_ids(self):
+        result = reconcile({"synthetic-1": {"name": "Sensitive Synthetic Name"}},
+                           {"synthetic-1": {"name": "Outdated Synthetic Name"}})
+        self.assertEqual(result["changed"], ["synthetic-1"])
+        self.assertNotIn("Sensitive Synthetic Name", str(result))
+        self.assertNotIn("Outdated Synthetic Name", str(result))
+
 if __name__ == "__main__":
     unittest.main()
