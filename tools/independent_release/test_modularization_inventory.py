@@ -5,8 +5,8 @@ import re
 
 class ModularizationInventoryTests(unittest.TestCase):
     def test_pubspec_package_name_regex(self):
-        pattern = r"^name:\\s*([\\w-]+)\\s*$"
-        match = re.search(pattern, "name: andi_carpeta\\ndescription: Synthetic", re.MULTILINE)
+        pattern = r"^name:\s*([\w-]+)\s*$"
+        match = re.search(pattern, "name: andi_carpeta\ndescription: Synthetic", re.MULTILINE)
         self.assertIsNotNone(match)
         self.assertEqual(match.group(1), "andi_carpeta")
 
