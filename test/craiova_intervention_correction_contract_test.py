@@ -28,6 +28,11 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertIn('startedAt:newStart,finishedAt:newFinish,status:r.status', CENTRALIZER)
         self.assertIn('initialDate:initial,firstDate:first,lastDate:last', CENTRALIZER)
 
+    def test_zero_duration_correction_is_rejected_and_overnight_supported(self):
+        self.assertIn('if(newFinish.isBefore(newStart))newFinish=newFinish.add(const Duration(days:1));', CENTRALIZER)
+        self.assertIn('if(!newFinish.isAfter(newStart))', CENTRALIZER)
+        self.assertIn('Ora FINAL trebuie să fie după ora START', CENTRALIZER)
+
     def test_stale_edit_is_rejected_before_update(self):
         self.assertIn('for (final entry in expected.entries)', HOME)
         self.assertIn('if (current[entry.key] != entry.value)', HOME)
