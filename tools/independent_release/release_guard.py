@@ -17,7 +17,7 @@ def inspect(root):
         src = workflow.read_text(encoding="utf-8")
         triggers = re.search(r"(?m)^\s*[\"']?on[\"']?:\s*\n(?P<body>(?:[ \t]+[^\n]*\n|\s*\n)*)", src)
         block = triggers.group("body") if triggers else ""
-        auto = bool(re.search(r"(?m)^\s+(push|pull_request|schedule|workflow_run):", block))
+        auto = bool(re.search(r"(?m)^\s+(push|pull_request|schedule|workflow_run|repository_dispatch):", block))
         prod = bool(re.search(r"firebase\s+deploy|backfill_member_directory\.js", src))
         add("PRODUCTION_AUTO_DEPLOY", "BLOCK" if auto and prod else ("REVIEW" if prod else "PASS"),
             "Production-capable workflow with automatic trigger" if auto and prod else "Review deploy controls and environment approvals" if prod else "No production deploy commands detected in target workflow",
@@ -60,7 +60,7 @@ def main():
     else:
         for f in findings:
             print(f"{f['status']:7} {f['id']}: {f['detail']} ({f['source']})")
-    return 2 if any(f["status"] == "BLOCK" for f in findings) else 0
+    # REVIEW and UNKNOWN cannot authorize release: fail closed.\n    return 2 if any(f["status"] == "BLOCK" for f in findings) else 3
 
 
 if __name__ == "__main__":
