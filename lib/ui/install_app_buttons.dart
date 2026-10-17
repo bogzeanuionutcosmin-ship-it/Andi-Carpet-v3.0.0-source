@@ -1,5 +1,12 @@
 part of '../main.dart';
 
+Uri? validatedAndroidApkUrl(String raw) {
+  final uri = Uri.tryParse(raw.trim());
+  if (uri == null || uri.scheme != 'https' || uri.host.isEmpty || uri.userInfo.isNotEmpty) return null;
+  if (uri.host == 'localhost' || uri.host.endsWith('.localhost')) return null;
+  return uri;
+}
+
 Future<void> _showAndroidInstallFlow(BuildContext context, AppSettings settings) async {
   final proceed = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
     title: const Row(children:[Icon(Icons.android),SizedBox(width:10),Expanded(child:Text('Instalare Android'))]),
@@ -13,9 +20,14 @@ Future<void> _showAndroidInstallFlow(BuildContext context, AppSettings settings)
   if (!proceed || !context.mounted) return;
   final raw=settings.androidDownloadUrl.trim();
   if(raw.isEmpty){showErrorMessage(context,'Linkul APK nu este încă publicat. Adminul îl poate adăuga din Admin Panel → Setări sistem.');return;}
-  final uri=Uri.tryParse(raw);
-  if(uri==null || !await launchUrl(uri,mode:LaunchMode.externalApplication)){
-    if(context.mounted)showErrorMessage(context,'Linkul pentru APK nu a putut fi deschis.');
+  final uri=validatedAndroidApkUrl(raw);
+  if(uri==null){showErrorMessage(context,'Link APK invalid: este necesară o adresă HTTPS publică, fără date de autentificare în URL.');return;}
+  try {
+    if(!await launchUrl(uri,mode:LaunchMode.externalApplication) && context.mounted){
+      showErrorMessage(context,'Linkul pentru APK nu a putut fi deschis.');
+    }
+  } catch(e) {
+    if(context.mounted)showErrorMessage(context,'Descărcarea APK nu a putut fi pornită: $e');
   }
 }
 
