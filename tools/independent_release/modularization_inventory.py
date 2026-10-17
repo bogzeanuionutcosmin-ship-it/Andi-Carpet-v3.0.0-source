@@ -29,10 +29,6 @@ def analyze(sources, package_name=None):
             part_links.add((path, target))
             if target not in sources:
                 unresolved.add((path, uri))
-        for uri in PART_OF.findall(content):
-            owner = posixpath.normpath(posixpath.join(posixpath.dirname(path), uri))
-            if owner not in sources or (owner, path) not in part_links and uri not in PART.findall(sources.get(owner, "")):
-                orphan_parts.add((path, owner))
         for uri in IMPORT.findall(content):
             if uri.startswith("package:"):
                 match = re.match(r"package:[^/]+/(.+)", uri)
@@ -56,6 +52,13 @@ def analyze(sources, package_name=None):
             destination = target.split("/")[0]
             if source in DOMAINS and destination in DOMAINS and source != destination:
                 edges.add((source, destination))
+    for path, content in sources.items():
+        if not path.endswith(".dart"):
+            continue
+        for uri in PART_OF.findall(content):
+            owner = posixpath.normpath(posixpath.join(posixpath.dirname(path), uri))
+            if (owner, path) not in part_links:
+                orphan_parts.add((path, owner))
     return {"part_links": [{"owner": a, "part": b} for a, b in sorted(part_links)],
             "orphan_parts": [{"part": a, "owner": b} for a, b in sorted(orphan_parts)],
             "files": sum(k.endswith(".dart") for k in sources),
