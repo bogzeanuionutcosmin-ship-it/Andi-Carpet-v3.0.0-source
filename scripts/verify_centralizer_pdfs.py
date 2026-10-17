@@ -2,7 +2,7 @@
 from pathlib import Path
 import subprocess
 ROOT = Path('build/pdf-verification')
-for name in ['craiova', 'overnight']:
+for name in ['craiova', 'overnight', 'history']:
     pdf = ROOT / f'{name}.pdf'
     info = subprocess.check_output(['pdfinfo', str(pdf)], text=True)
     assert 'Pages:' in info and 'Encrypted:       no' in info, info
@@ -15,7 +15,10 @@ for name in ['craiova', 'overnight']:
         assert text.count('10:00') == 11 and text.count('11:00') == 11, text
         for i in range(1, 12):
             assert f'Sala {i}' in text, text
-    else:
+    elif name == 'overnight':
         assert '16.10.2026' in text and '23:55' in text and '00:20' in text, text
         assert 'Night room' in text, text
+    else:
+        assert text.count('10:00') == 80 and text.count('11:00') == 80, text
+        assert 'Istoric extins' in text, text
     print(f'{name}: valid PDF, expected dates/rows/times/names')

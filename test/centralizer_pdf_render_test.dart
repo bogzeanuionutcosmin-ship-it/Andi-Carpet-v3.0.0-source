@@ -27,5 +27,15 @@ void main() {
       expect(bytes.length,greaterThan(1000));
       File('${directory.path}/${overnight?'overnight':'craiova'}.pdf').writeAsBytesSync(bytes);
     }
+    final history=<CentralizerRecord>[
+      for(var i=0;i<80;i++) CentralizerRecord(
+        id:'history-$i',teamId:'craiova',locationId:'history-room',type:LocationType.magic,
+        locationNameSnapshot:'Istoric extins',addressSnapshot:'Craiova',
+        startedAt:DateTime(2026,10,15,10),finishedAt:DateTime(2026,10,15,11),
+        status:WorkAttemptStatus.completed,
+      ),
+    ];
+    final dense=await buildCentralizerPdf(type:LocationType.magic,locations:[],teams:[],schedules:[],records:history);
+    File('${directory.path}/history.pdf').writeAsBytesSync(dense);
   });
 }

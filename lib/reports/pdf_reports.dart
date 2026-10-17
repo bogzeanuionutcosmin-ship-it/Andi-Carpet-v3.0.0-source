@@ -164,7 +164,9 @@ Future<Uint8List> buildCentralizerPdf({
   final rowsByLocation = <String,List<Map<String,dynamic>>>{};
   for (final row in executionRows) {
     rowsByLocation.putIfAbsent(row.record.locationId, () => <Map<String, dynamic>>[])
-        .add({'record': row.record, 'date': row.date});
+        .add({'record': row.record, 'date': row.date,
+          'name': row.record.locationNameSnapshot,
+          'address': row.record.addressSnapshot});
   }
 
   // Fără filtru explicit de stare includem și toate sălile din grafice, chiar dacă nu există execuție.
