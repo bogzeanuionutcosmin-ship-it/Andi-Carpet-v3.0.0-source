@@ -333,4 +333,3 @@ class _CentralizerPageState extends State<CentralizerPage> {
     }
   }
 }
-
