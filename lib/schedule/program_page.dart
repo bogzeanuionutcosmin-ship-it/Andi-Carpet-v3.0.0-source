@@ -1,5 +1,44 @@
 part of '../main.dart';
 
+/// Keeps the schedule screen on a team accepted by the same access callback
+/// that guards rendering and writes. The fallback preserves read-only browsing
+/// when the user has no team assignment.
+int preferredProgramTeamIndex({
+  required List<Team> teams,
+  required int currentIndex,
+  required bool Function(String teamId) canEditTeam,
+}) {
+  if (teams.isEmpty) return -1;
+  final selectedIsEditable = currentIndex >= 0 &&
+      currentIndex < teams.length &&
+      canEditTeam(teams[currentIndex].id);
+  if (selectedIsEditable) return currentIndex;
+  final editableIndex = teams.indexWhere((team) => canEditTeam(team.id));
+  return editableIndex >= 0
+      ? editableIndex
+      : currentIndex.clamp(0, teams.length - 1).toInt();
+}
+
+String _scheduleSaveFailure(Object error) {
+  if (error is FirebaseException) {
+    switch (error.code) {
+      case 'permission-denied':
+        return 'Firestore a respins salvarea. Verifică apartenența activă la echipă și dreptul editProgram; regulile de securitate nu au fost ocolite.';
+      case 'unauthenticated':
+        return 'Sesiunea a expirat. Autentifică-te din nou și reîncearcă salvarea.';
+      case 'unavailable':
+      case 'deadline-exceeded':
+        return 'Firestore nu este disponibil momentan. Modificarea nu este confirmată; verifică graficul după reconectare înainte să încerci din nou.';
+      case 'failed-precondition':
+        return 'Graficul s-a schimbat sau nu mai poate fi modificat în starea curentă. Reîncarcă-l și verifică dacă este închis.';
+      default:
+        return 'Firestore nu a confirmat salvarea (${error.code}). Reîncarcă graficul înainte de o nouă încercare.';
+    }
+  }
+  if (error is StateError) return error.message;
+  return 'Eroare la salvarea graficului: $error';
+}
+
 class ProgramPage extends StatefulWidget {
   final AppUser currentUser; final List<Team> teams; final List<Car> cars; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final bool Function(String) canEditTeam; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final void Function(String,String,String) notifyTeam; final void Function(String,String) log; final Future<void> Function(WorkSchedule) saveSchedule;
   const ProgramPage({super.key, required this.currentUser, required this.teams, required this.cars, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.canEditTeam, required this.canEditProgram, required this.userName, required this.onChanged, required this.notifyTeam, required this.log, required this.saveSchedule});
@@ -505,9 +544,14 @@ class _ProgramPageState extends State<ProgramPage> {
 
   @override Widget build(BuildContext context) {
     if (widget.teams.isEmpty) return const _Page(title:'Grafic de lucru',subtitle:'Planificare lunară simplificată',child:_Empty(icon:Icons.groups_outlined,text:'Nu există încă nicio echipă.'));
-    if (teamIndex >= widget.teams.length) teamIndex = 0;
+    teamIndex = preferredProgramTeamIndex(
+      teams: widget.teams,
+      currentIndex: teamIndex,
+      canEditTeam: widget.canEditTeam,
+    );
     _ensureGraphSelection();
     final can = widget.canEditProgram && widget.canEditTeam(team.id);
+    final isTeamMember = widget.canEditTeam(team.id);
     final head = graphHead;
     final car = assignedCar;
     final km = estimateGraphDistanceKm(graphSchedules, widget.locations);
@@ -543,6 +587,15 @@ class _ProgramPageState extends State<ProgramPage> {
       child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
         _TeamSelector(teams:widget.teams,selected:teamIndex,onChanged:(v)=>setState((){teamIndex=v;selectedGraphId=null;})),
         const SizedBox(height:10),
+        if(!can) Padding(padding:const EdgeInsets.symmetric(vertical:8),child:_InfoCard(
+          icon:Icons.lock_outline,
+          title:!isTeamMember?'Nu ești repartizat în echipa ${team.name}':'Lipsește dreptul de editare a graficului',
+          text:!isTeamMember
+              ?'Administratorul trebuie să te adauge în Admin → Echipe → ${team.name}. Graficul poate fi citit, dar editarea rămâne blocată până când apartenența este confirmată de Firestore.'
+              :!widget.canEditProgram
+                  ?'Contul tău este în echipa selectată, dar funcția atribuită nu are dreptul „Poate modifica graficul de lucru”. Cere unui Admin să verifice Admin → Membri / Conturi → Funcții și dreptul editProgram.'
+                  :'Accesul echipei sau drepturile contului s-au schimbat. Reîncarcă aplicația și cere administratorului să verifice repartizarea echipei și dreptul editProgram.',
+        )),
         if(graphIds.isNotEmpty) DropdownButtonFormField<String>(
           value:selectedGraphId,
           decoration:const InputDecoration(labelText:'Grafic de lucru'),
@@ -606,7 +659,6 @@ class _ProgramPageState extends State<ProgramPage> {
               ))).toList(),
             ),
           ],
-          if(!can) Padding(padding:const EdgeInsets.symmetric(vertical:8),child:_InfoCard(icon:Icons.lock_outline,title:'Editarea graficului nu este disponibilă',text:'Ai nevoie de permisiunea de editare a programului și a echipei selectate. Solicită administratorului accesul corespunzător.')),
           if(can&&head.closed) const Padding(padding:EdgeInsets.symmetric(vertical:8),child:_InfoCard(icon:Icons.lock_clock_outlined,title:'Grafic închis',text:'Editarea locațiilor este blocată după închiderea graficului.')),
           const SizedBox(height:8),
           if (!routeData.complete) Card(child: ListTile(leading: const Icon(Icons.warning_amber_rounded), title: const Text('Traseu GPS incomplet'), subtitle: Text('Completează coordonatele pentru: ${[if(routeData.missingDeparture) 'plecare', ...routeData.missingLocations, if(routeData.missingDestination) 'destinație'].join(', ')}. Km și consumul nu pot fi estimate corect.'))),
@@ -777,7 +829,7 @@ class _ProgramPageState extends State<ProgramPage> {
       widget.log('Grafic de lucru creat','$graphName · ${drafted.length} zile · ${team.name}');
       widget.notifyTeam(team.id,'Grafic de lucru creat','$graphName · ${drafted.length} zile.');
       if(mounted){setState(()=>selectedGraphId=graphId);showSuccessMessage(context,'Graficul a fost creat cu ${drafted.length} zile.');}
-    }catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi creat: $e');}
+    }catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi creat: ${_scheduleSaveFailure(e)}');}
   }
 
   Future<void> _addLocations(WorkSchedule s) async {
@@ -805,7 +857,7 @@ class _ProgramPageState extends State<ProgramPage> {
     await _saveWithFeedback(updated,success:'Locațiile au fost adăugate în ziua selectată.',auditAction:'Locații adăugate în Grafic');
   }
   WorkSchedule _cloneSchedule(WorkSchedule s)=>WorkSchedule(id:s.id,teamId:s.teamId,graphId:s.graphId,graphName:s.graphName,date:s.date,items:s.items.map((i)=>ScheduleItem(locationId:i.locationId,locationNameSnapshot:i.locationNameSnapshot,addressSnapshot:i.addressSnapshot,typeSnapshot:i.typeSnapshot,categoryIdSnapshot:i.categoryIdSnapshot,order:i.order,transferred:i.transferred,facadePlanned:i.facadePlanned)).toList(),active:s.active,closed:s.closed,started:s.started,paused:s.paused,postponed:s.postponed,autoProposed:s.autoProposed,planAlertAt:s.planAlertAt,planAlertReason:s.planAlertReason,lastRecalculatedAt:s.lastRecalculatedAt,recalculationCount:s.recalculationCount,learningExplanation:s.learningExplanation,learningConfidence:s.learningConfidence,learningSamples:s.learningSamples,departureName:s.departureName,departureLatitude:s.departureLatitude,departureLongitude:s.departureLongitude,returnName:s.returnName,returnLatitude:s.returnLatitude,returnLongitude:s.returnLongitude);
-  Future<void> _saveWithFeedback(WorkSchedule s,{required String success,required String auditAction})async{try{await widget.saveSchedule(s);if(!mounted)return;widget.onChanged();widget.log(auditAction,'${team.name} · ${s.graphName} · ${formatDate(s.date)}');widget.notifyTeam(team.id,'Grafic de lucru modificat','${s.graphName} · ${formatDate(s.date)} a fost actualizat.');if(mounted)showSuccessMessage(context,success);}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi salvat: $e');}}
+  Future<void> _saveWithFeedback(WorkSchedule s,{required String success,required String auditAction})async{try{await widget.saveSchedule(s);if(!mounted)return;widget.onChanged();widget.log(auditAction,'${team.name} · ${s.graphName} · ${formatDate(s.date)}');widget.notifyTeam(team.id,'Grafic de lucru modificat','${s.graphName} · ${formatDate(s.date)} a fost actualizat.');if(mounted)showSuccessMessage(context,success);}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi salvat: ${_scheduleSaveFailure(e)}');}}
   Future<void> _applyGraphState({bool? started,bool? closed,bool? paused})async{final items=graphSchedules.map(_cloneSchedule).toList();for(final x in items){if(started!=null)x.started=started;if(closed!=null)x.closed=closed;if(paused!=null)x.paused=paused;await widget.saveSchedule(x);}widget.onChanged();}
   Future<Map<String,dynamic>?> _geocodeTripPoint(String query) async {
     final clean=query.trim();

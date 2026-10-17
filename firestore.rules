@@ -159,7 +159,8 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (hasPermission('editProgram')
           && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+          && isTeamMember(request.resource.data.teamId)
+          && resource.data.closed != true);
       allow delete: if isAdmin()
         || (hasPermission('editProgram') && isTeamMember(resource.data.teamId));
     }
