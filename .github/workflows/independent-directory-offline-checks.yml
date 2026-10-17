@@ -4,6 +4,8 @@ on:
     paths:
       - 'tools/independent_release/reconcile_directory.py'
       - 'tools/independent_release/test_reconcile_directory.py'
+      - 'tools/independent_release/audit_directory_privacy.py'
+      - 'tools/independent_release/test_audit_directory_privacy.py'
       - 'tests/independent/member_directory_projection.test.cjs'
       - 'functions/member_directory_projection.js'
       - '.github/workflows/independent-directory-offline-checks.yml'
@@ -21,7 +23,11 @@ jobs:
           python-version: '3.12'
       - name: Offline reconciliation tests
         run: python3 -m unittest discover -s tools/independent_release -p 'test_reconcile_directory.py' -v
+      - name: Privacy projection audit unit tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_audit_directory_privacy.py' -v
+      - name: Audit actual directory projection source
+        run: python3 tools/independent_release/audit_directory_privacy.py functions/member_directory_projection.js
       - name: Real Node projection characterization tests
         run: node --test tests/independent/member_directory_projection.test.cjs
       - name: Syntax check
-        run: python3 -m py_compile tools/independent_release/reconcile_directory.py
+        run: python3 -m py_compile tools/independent_release/reconcile_directory.py tools/independent_release/audit_directory_privacy.py
