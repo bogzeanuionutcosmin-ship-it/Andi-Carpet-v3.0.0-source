@@ -1,0 +1,46 @@
+name: XVIII isolated Android emulator UI (test only)
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: xviii-android-runtime-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  emulator-ui:
+    if: github.head_ref == 'mission-xviii/finance-identity'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: centralizer-offline-smoke-cfb00b9fea24e7e026019d81bac6ecfe3a294dd2
+          run-id: 39073106128
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: smoke-apk
+      - name: Enable KVM for temporary emulator
+        run: |
+          test -e /dev/kvm
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run pinned synthetic APK on API36 emulator
+        uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-boot-timeout: 600
+          disable-animations: true
+          script: python3 scripts/test_centralizer_android_ui.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: synthetic-android-ui-evidence
+          path: android-ui-evidence/
+          if-no-files-found: warn
+          retention-days: 7
