@@ -24,11 +24,17 @@ def inspect(apk: Path):
             for info in infos:
                 name = info.filename
                 normalized = PurePosixPath(name)
-                if name.startswith("/") or "\\" in name or ".." in normalized.parts:
+                if (name.startswith("/") or "\\" in name or ".." in normalized.parts
+                        or not name or name.startswith("./")
+                        or normalized.is_absolute()):
                     findings.append("unsafe_entry_path")
                 if name in names:
                     findings.append("duplicate_entry_name")
                 names.add(name)
+                if info.flag_bits & 0x1:
+                    findings.append("encrypted_zip_entry")
+                if info.compress_type not in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+                    findings.append("unsupported_compression")
                 total += info.file_size
                 if info.file_size > MAX_UNCOMPRESSED or total > MAX_UNCOMPRESSED:
                     findings.append("uncompressed_size_limit")
@@ -39,7 +45,8 @@ def inspect(apk: Path):
             if "classes.dex" not in names:
                 findings.append("missing_primary_dex")
             if not any(item in findings for item in (
-                "too_many_entries", "uncompressed_size_limit", "compression_ratio_limit"
+                "too_many_entries", "uncompressed_size_limit", "compression_ratio_limit",
+                "encrypted_zip_entry", "unsupported_compression"
             )) and archive.testzip() is not None:
                 findings.append("corrupt_zip_entry")
     except (zipfile.BadZipFile, EOFError) as exc:
