@@ -152,7 +152,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
             leading:Icon(Icons.circle,size:10,color:color),
             title:Text('${formatDate(when)} · ${r.status == WorkAttemptStatus.waitingAccess ? timeText(r.waitingStartedAt) : '${timeText(r.startedAt)}–${timeText(r.finishedAt)}'}'),
             subtitle:Text('${teamName(r.teamId)} · $statusText'),
-            trailing:(widget.isAdmin || (widget.canEditCentralizer && widget.canEditTeam(r.teamId))) && (r.status == WorkAttemptStatus.completed || r.status == WorkAttemptStatus.running)
+            trailing:(widget.isAdmin || (widget.canEditCentralizer && widget.canEditTeam(r.teamId))) && r.status == WorkAttemptStatus.completed
               ? IconButton(tooltip:'Corectează data, orele și fațada',onPressed:()=>_editRecord(r),icon:const Icon(Icons.edit))
               : null,
           );
@@ -201,6 +201,11 @@ class _CentralizerPageState extends State<CentralizerPage> {
     final st=parse(start.text);var fn=parse(finish.text);start.dispose();finish.dispose();
     if(st==null||fn==null){reason.dispose();if(mounted)showErrorMessage(context,'Orele trebuie scrise HH:MM.');return;}
     if(fn.isBefore(st))fn=fn.add(const Duration(days:1));
+    if(!fn.isAfter(st!)){
+      reason.dispose();
+      if(mounted)showErrorMessage(context,'Ora FINAL trebuie să fie după ora START.');
+      return;
+    }
     final note=reason.text.trim();reason.dispose();
     final l=selectedLocation!;
     // A correction to an existing execution must use Edit, not create a second record.
@@ -232,6 +237,10 @@ class _CentralizerPageState extends State<CentralizerPage> {
   }
 
   Future<void> _editRecord(CentralizerRecord r) async {
+    if (r.status != WorkAttemptStatus.completed || r.startedAt == null || r.finishedAt == null) {
+      if (mounted) showErrorMessage(context, 'Pot fi corectate doar intervențiile finalizate, cu ore START și FINAL.');
+      return;
+    }
     final s = TextEditingController(text: timeText(r.startedAt));
     final f = TextEditingController(text: timeText(r.finishedAt));
     var date = r.startedAt ?? r.finishedAt ?? DateTime.now();
@@ -282,6 +291,10 @@ class _CentralizerPageState extends State<CentralizerPage> {
       return;
     }
     if(newFinish.isBefore(newStart))newFinish=newFinish.add(const Duration(days:1));
+    if(!newFinish.isAfter(newStart)){
+      showErrorMessage(context,'Ora FINAL trebuie să fie după ora START. Pentru intervențiile peste miezul nopții, FINAL poate fi mai mică decât START.');
+      return;
+    }
     final updated=CentralizerRecord(
       id:r.id,teamId:r.teamId,locationId:r.locationId,type:r.type,
       locationNameSnapshot:r.locationNameSnapshot,addressSnapshot:r.addressSnapshot,
