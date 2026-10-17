@@ -21,6 +21,7 @@ def analyze(sources, package_name=None):
     orphan_parts = set()
     invalid_part_owners = set()
     migration_candidates = []
+    inbound_dependencies = {}
     for path, content in sources.items():
         if not path.endswith(".dart"):
             continue
@@ -51,6 +52,8 @@ def analyze(sources, package_name=None):
                 continue
             if target not in sources:
                 unresolved.add((path, uri))
+            else:
+                inbound_dependencies.setdefault(target, set()).add(path)
             destination = target.split("/")[0]
             if source in DOMAINS and destination in DOMAINS and source != destination:
                 edges.add((source, destination))
@@ -81,7 +84,11 @@ def analyze(sources, package_name=None):
                 "classification": "main_part_requires_dependency_review",
                 "safe_to_extract_automatically": False
             })
-    return {"migration_candidates": migration_candidates,
+    return {"inbound_dependencies": [
+                {"file": target, "imported_by": sorted(importers)}
+                for target, importers in sorted(inbound_dependencies.items())
+            ],
+            "migration_candidates": migration_candidates,
             "invalid_part_owners": [{"owner": a, "part": b} for a, b in sorted(invalid_part_owners)],
             "part_links": [{"owner": a, "part": b} for a, b in sorted(part_links)],
             "orphan_parts": [{"part": a, "owner": b} for a, b in sorted(orphan_parts)],
