@@ -8,6 +8,8 @@ from pathlib import Path
 
 def verify(apk: Path, manifest: Path):
     data = json.loads(manifest.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("Manifest must be a JSON object")
     expected = data.get("sha256")
     if not isinstance(expected, str) or len(expected) != 64 or any(c not in "0123456789abcdefABCDEF" for c in expected):
         raise ValueError("Manifest sha256 must be 64 hexadecimal characters")
