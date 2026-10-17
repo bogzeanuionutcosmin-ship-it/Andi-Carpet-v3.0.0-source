@@ -111,6 +111,19 @@ class ModularizationInventoryTests(unittest.TestCase):
                          package_name="andi_carpeta")
         self.assertEqual(result["inbound_dependencies"], [])
 
+    def test_non_main_part_is_not_mislabeled(self):
+        result = analyze({"features/owner.dart": "part 'detail.dart';",
+                          "features/detail.dart": "part of 'owner.dart';"})
+        self.assertEqual(result["migration_candidates"], [])
+        self.assertEqual(result["invalid_part_owners"], [])
+
+    def test_main_part_declared_without_owner_link_still_needs_review(self):
+        result = analyze({"main.dart": "",
+                          "reports/helper.dart": "part of '../main.dart';"})
+        self.assertEqual(len(result["migration_candidates"]), 1)
+        self.assertEqual(result["migration_candidates"][0]["file"], "reports/helper.dart")
+        self.assertEqual(len(result["orphan_parts"]), 1)
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
