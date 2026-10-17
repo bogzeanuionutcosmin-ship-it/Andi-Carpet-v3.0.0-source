@@ -35,6 +35,11 @@ class VerifyApkManifestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify(self.apk, self.manifest)
 
+    def test_manifest_must_be_object(self):
+        self.manifest.write_text("[]", encoding="utf-8")
+        with self.assertRaises(ValueError):
+            verify(self.apk, self.manifest)
+
     def test_missing_apk(self):
         self.write_manifest(self.expected)
         self.apk.unlink()
