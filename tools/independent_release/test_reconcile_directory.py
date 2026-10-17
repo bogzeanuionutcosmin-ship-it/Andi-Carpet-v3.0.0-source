@@ -34,5 +34,11 @@ class DirectoryReconciliationTests(unittest.TestCase):
         self.assertFalse(result["matches"])
 
 
+    def test_duplicate_fixture_keys_rejected(self):
+        import json
+        from reconcile_directory import _unique_keys
+        with self.assertRaises(ValueError):
+            json.loads('{"users":{},"users":{}}', object_pairs_hook=_unique_keys)
+
 if __name__ == "__main__":
     unittest.main()
