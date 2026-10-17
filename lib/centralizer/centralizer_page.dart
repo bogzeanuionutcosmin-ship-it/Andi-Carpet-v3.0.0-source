@@ -275,9 +275,9 @@ class _CentralizerPageState extends State<CentralizerPage> {
 
   DateTime? _sameDateTime(DateTime? base,String text) {
     final p=text.trim().split(':');
-    if(base==null||p.length!=2)return base;
+    if(base==null||p.length!=2)return null;
     final h=int.tryParse(p[0]),m=int.tryParse(p[1]);
-    if(h==null||m==null||h<0||m<0||h>23||m>59)return base;
+    if(h==null||m==null||h<0||m<0||h>23||m>59)return null;
     return DateTime(base.year,base.month,base.day,h,m);
   }
 
