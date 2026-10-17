@@ -34,6 +34,9 @@ def analyze(sources, package_name=None):
                 target = posixpath.normpath(str(PurePosixPath(path).parent / uri))
             if not target.endswith(".dart"):
                 continue
+            if target.startswith("../") or target.startswith("/"):
+                unresolved.add((path, uri))
+                continue
             if target not in sources:
                 unresolved.add((path, uri))
             destination = target.split("/")[0]
