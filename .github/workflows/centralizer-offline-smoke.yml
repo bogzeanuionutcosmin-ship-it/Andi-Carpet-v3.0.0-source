@@ -1,0 +1,58 @@
+name: Centralizator isolated offline Android test
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: centralizer-offline-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  offline:
+    if: github.head_ref == 'mission-xviii/hardening'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Isolate temporary runner copy from production
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle.kts');s=p.read_text()
+          s=s.replace('    id("com.google.gms.google-services")','    // Disabled for isolated synthetic harness')
+          s=s.replace('    buildTypes {','    buildTypes {\n        getByName("debug") { applicationIdSuffix = ".centralizersmoke" }')
+          p.write_text(s)
+          p=Path('android/app/src/main/AndroidManifest.xml');p.write_text(p.read_text().replace('android:label="Andi Carpetă"','android:label="Centralizator TEST"'))
+          forbidden=['INTERNET','ACCESS_COARSE_LOCATION','ACCESS_FINE_LOCATION','ACCESS_BACKGROUND_LOCATION','FOREGROUND_SERVICE','FOREGROUND_SERVICE_LOCATION','CAMERA','POST_NOTIFICATIONS','SEND_SMS']
+          Path('android/app/src/debug/AndroidManifest.xml').write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">'+''.join(f'<uses-permission android:name="android.permission.{p}" tools:node="remove" />' for p in forbidden)+'</manifest>')
+          PY
+      - run: flutter build apk --debug --target lib/testing/centralizer_offline_smoke.dart --dart-define=MAPBOX_ACCESS_TOKEN=
+      - name: Verify separate package and no network permission
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,subprocess
+          aapt=sorted(pathlib.Path(os.environ['ANDROID_HOME']).glob('build-tools/*/aapt'))[-1]
+          apk='build/app/outputs/flutter-apk/app-debug.apk'
+          badging=subprocess.check_output([str(aapt),'dump','badging',apk],text=True)
+          assert "package: name='com.example.andi_carpeta.centralizersmoke'" in badging
+          permissions=subprocess.check_output([str(aapt),'dump','permissions',apk],text=True)
+          for permission in ['INTERNET','CAMERA','SEND_SMS','ACCESS_FINE_LOCATION','ACCESS_COARSE_LOCATION','ACCESS_BACKGROUND_LOCATION']:
+              assert f'android.permission.{permission}' not in permissions
+          print('Separate synthetic package, no network/camera/SMS/location access.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: centralizer-offline-smoke-${{ github.event.pull_request.head.sha }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7

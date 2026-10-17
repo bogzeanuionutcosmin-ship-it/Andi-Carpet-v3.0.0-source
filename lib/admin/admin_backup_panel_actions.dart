@@ -3,9 +3,9 @@ part of '../main.dart';
 // Backup status and restore controls; implementation remains in _AdminBackupActions.
 mixin _AdminBackupPanelActions on State<AdminPanelPage> {
   AppSettings get settings;
-  Future<void> _restoreAutomaticBackup(String id);
-  Future<void> _exportBackup();
-  Future<void> _restoreBackup();
+  Future<void> restoreAutomaticBackup(String id);
+  Future<void> exportBackup();
+  Future<void> restoreBackup();
 
 Widget _backup()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
     const Text('Backup & Recuperare',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold)),
@@ -27,13 +27,13 @@ Widget _backup()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       builder:(context,snap){
         if(!snap.hasData||snap.data!.docs.isEmpty)return _InfoCard(icon:Icons.cloud_outlined,title:'Backup intern automat',text:settings.automaticBackup?'Activ · încă nu există niciun snapshot complet.':'Oprit din Setări sistem.');
         final doc=snap.data!.docs.first;final d=doc.data();final at=d['createdAt'] is Timestamp?(d['createdAt'] as Timestamp).toDate():null;final status=(d['status']??'').toString();final count=d['documentCount'] is num?(d['documentCount'] as num).toInt():0;
-        return Card(child:ListTile(leading:const Icon(Icons.cloud_done_outlined),title:const Text('Backup intern automat',style:TextStyle(fontWeight:FontWeight.bold)),subtitle:Text('${status=='complete'?'Complet':status} · ${at==null?'dată în curs':'${formatDate(at)} ${timeText(at)}'} · $count documente · retenție ${settings.backupRetentionDays} zile'),trailing:status=='complete'?OutlinedButton.icon(onPressed:()=>_restoreAutomaticBackup(doc.id),icon:const Icon(Icons.restore),label:const Text('Restaurează')):null));
+        return Card(child:ListTile(leading:const Icon(Icons.cloud_done_outlined),title:const Text('Backup intern automat',style:TextStyle(fontWeight:FontWeight.bold)),subtitle:Text('${status=='complete'?'Complet':status} · ${at==null?'dată în curs':'${formatDate(at)} ${timeText(at)}'} · $count documente · retenție ${settings.backupRetentionDays} zile'),trailing:status=='complete'?OutlinedButton.icon(onPressed:()=>restoreAutomaticBackup(doc.id),icon:const Icon(Icons.restore),label:const Text('Restaurează')):null));
       },
     ),
     const SizedBox(height:12),
     Wrap(spacing:10,runSpacing:10,children:[
-      FilledButton.icon(onPressed:_exportBackup,icon:const Icon(Icons.download),label:const Text('Exportă backup')),
-      OutlinedButton.icon(onPressed:_restoreBackup,icon:const Icon(Icons.restore),label:const Text('Restaurează backup')),
+      FilledButton.icon(onPressed:exportBackup,icon:const Icon(Icons.download),label:const Text('Exportă backup')),
+      OutlinedButton.icon(onPressed:restoreBackup,icon:const Icon(Icons.restore),label:const Text('Restaurează backup')),
     ]),
     const SizedBox(height:12),
     const _InfoCard(icon:Icons.security,title:'Siguranță',text:'Restaurarea cere confirmare și înlocuiește datele operaționale și Auditul: echipe, mașini, locații, grafice, execuții, deplasări/deconturi, diurne, financiar, documente, notificări și audit. Conturile de autentificare rămân intacte.'),

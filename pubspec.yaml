@@ -36,6 +36,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/fonts/
     - assets/ui/
     - assets/badges/
     - assets/stickers/

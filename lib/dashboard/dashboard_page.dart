@@ -1,8 +1,8 @@
 part of '../main.dart';
 
 class DashboardPage extends StatefulWidget {
-  final List<Team> teams; final List<AppUser> users; final List<FunctionDefinition> functionDefinitions; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final AppUser currentUser; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final Future<void> Function(CentralizerRecord) saveRecord; final Future<void> Function(WorkSchedule) saveSchedule; final void Function(String,String) log;
-  const DashboardPage({super.key, required this.teams, required this.users, required this.functionDefinitions, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.currentUser, required this.canEditProgram, required this.userName, required this.onChanged, required this.saveRecord, required this.saveSchedule, required this.log});
+  final List<Team> teams; final List<AppUser> users; final List<FunctionDefinition> functionDefinitions; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final AppUser currentUser; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final Future<void> Function(CentralizerRecord) saveRecord; final Future<void> Function(WorkSchedule) saveSchedule; final Future<void> Function(List<WorkSchedule>) saveSchedules; final void Function(String,String) log;
+  const DashboardPage({super.key, required this.teams, required this.users, required this.functionDefinitions, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.currentUser, required this.canEditProgram, required this.userName, required this.onChanged, required this.saveRecord, required this.saveSchedule, required this.saveSchedules, required this.log});
   @override State<DashboardPage> createState() => _DashboardPageState();
 }
 class _DashboardPageState extends State<DashboardPage> {
@@ -39,6 +39,8 @@ class _DashboardPageState extends State<DashboardPage> {
     planAlertAt:s.planAlertAt, planAlertReason:s.planAlertReason, lastRecalculatedAt:s.lastRecalculatedAt, recalculationCount:s.recalculationCount,
     learningExplanation:s.learningExplanation, learningConfidence:s.learningConfidence, learningSamples:s.learningSamples,
     departureName:s.departureName, departureLatitude:s.departureLatitude, departureLongitude:s.departureLongitude, returnName:s.returnName, returnLatitude:s.returnLatitude, returnLongitude:s.returnLongitude,
+    updatedAt:s.updatedAt,
+    persisted:s.persisted,writeToken:s.writeToken,
   );
 
   Future<Map<String,dynamic>?> _dashboardGeocodeTripPoint(String query) async {
@@ -123,8 +125,9 @@ class _DashboardPageState extends State<DashboardPage> {
         x.started=true;x.paused=false;x.closed=false;
         x.departureName=departureText;x.departureLatitude=startPoint['lat'] as double;x.departureLongitude=startPoint['lon'] as double;
         x.returnName=returnText;x.returnLatitude=endPoint['lat'] as double;x.returnLongitude=endPoint['lon'] as double;
-        await widget.saveSchedule(x);
       }
+      try { await widget.saveSchedules(sameGraph); } catch(e) { if(mounted)showErrorMessage(context,'Programul nu a putut fi pornit: ${_scheduleSaveFailure(e)}'); return; }
+      widget.onChanged();
       widget.log('START program din Acasă','${team.name} · ${schedule.graphName} · $departureText → $returnText');
       if(mounted)showSuccessMessage(context,'Programul echipei a fost pornit cu traseul complet.');
       return;

@@ -2,7 +2,7 @@ part of '../main.dart';
 
 // Backup operations are inherited by the Admin panel state; UI stays in the panel.
 mixin _AdminBackupActions on State<AdminPanelPage> {
-  Future<void> _exportBackup() async {
+  Future<void> exportBackup() async {
     const names=['teams','cars','locations','locationCategories','functions','schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit','learningEvents','backgrounds'];
     final db=FirebaseFirestore.instance;
     final data=<String,dynamic>{
@@ -27,7 +27,7 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
     }
   }
 
-  Future<void> _restoreAutomaticBackup(String backupId) async {
+  Future<void> restoreAutomaticBackup(String backupId) async {
     final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
       title:const Text('Restaurează backup-ul automat?'),
       content:Text('Snapshot: $backupId\n\nColecțiile operaționale vor fi înlocuite cu valorile din snapshot. Conturile Firebase Authentication și profilurile users nu sunt modificate.'),
@@ -87,7 +87,7 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
     }catch(e){if(mounted)showErrorMessage(context,'Restaurarea backup-ului automat a eșuat: $e');}
   }
 
-  Future<void> _restoreBackup() async {
+  Future<void> restoreBackup() async {
     final file=await FilePicker.pickFile(type:FileType.custom,allowedExtensions:['json']);
     if(file==null)return;
     final raw=utf8.decode(await file.readAsBytes());
