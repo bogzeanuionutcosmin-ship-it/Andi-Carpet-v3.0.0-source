@@ -62,6 +62,26 @@ class ModularizationInventoryTests(unittest.TestCase):
         result = analyze({"main.dart": "part 'reports/missing.dart';"})
         self.assertEqual(result["unresolved_imports"], [{"file": "main.dart", "uri": "reports/missing.dart"}])
 
+    def test_part_without_part_of_is_flagged(self):
+        result = analyze({"main.dart": "part 'reports/helper.dart';",
+                          "reports/helper.dart": "class Helper {}"})
+        self.assertEqual(result["invalid_part_owners"],
+                         [{"owner": "main.dart", "part": "reports/helper.dart"}])
+
+    def test_part_with_wrong_owner_is_flagged(self):
+        result = analyze({"main.dart": "part 'reports/helper.dart';",
+                          "reports/helper.dart": "part of '../other.dart';",
+                          "other.dart": ""})
+        self.assertEqual(result["invalid_part_owners"],
+                         [{"owner": "main.dart", "part": "reports/helper.dart"}])
+        self.assertEqual(result["orphan_parts"],
+                         [{"part": "reports/helper.dart", "owner": "other.dart"}])
+
+    def test_valid_part_owner_is_not_flagged(self):
+        result = analyze({"main.dart": "part 'reports/helper.dart';",
+                          "reports/helper.dart": "part of '../main.dart';"})
+        self.assertEqual(result["invalid_part_owners"], [])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
