@@ -86,8 +86,10 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     categories.addAll(defaultLocationCategories());
     functionDefinitions.addAll(defaultFunctionDefinitions());
     _startCoreSync();
-    _startAdaptiveLiveLocation();
-    unawaited(_initPushNotifications());
+    if (!usesLocalFirebaseEmulators) {
+      _startAdaptiveLiveLocation();
+      unawaited(_initPushNotifications());
+    }
   }
 
   void _showIncomingPopup({required String title, required String body, VoidCallback? onView}) {
@@ -277,6 +279,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _startAdaptiveLiveLocation() {
+    if (usesLocalFirebaseEmulators) return;
     _liveLocationTimer?.cancel();
     _liveLocationTimer = null;
     _backgroundLocationSubscription?.cancel();
@@ -646,7 +649,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     // Dacă între timp colegul a stabilit deja starea, nu dublăm execuția.
     if (existing?.status == WorkAttemptStatus.running || existing?.status == WorkAttemptStatus.waitingAccess || existing?.completed == true) return;
     final started = CentralizerRecord(
-      id: existing?.id ?? idNow(), teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
+      id: existing?.id ?? idNow(), writeBaseline: existing?.writeBaseline, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
       locationNameSnapshot: item.locationNameSnapshot, addressSnapshot: item.addressSnapshot,
       waitingStartedAt: existing?.waitingStartedAt,
       waitingEndedAt: existing?.waitingStartedAt != null && existing?.waitingEndedAt == null ? now : existing?.waitingEndedAt,
@@ -669,7 +672,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     final existing = _homeLatestRecord(teamId, item.locationId, workDate);
     if (existing?.status == WorkAttemptStatus.running || existing?.status == WorkAttemptStatus.waitingAccess || existing?.completed == true) return;
     final waiting = CentralizerRecord(
-      id: existing?.id ?? idNow(), teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
+      id: existing?.id ?? idNow(), writeBaseline: existing?.writeBaseline, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
       locationNameSnapshot: item.locationNameSnapshot, addressSnapshot: item.addressSnapshot,
       waitingStartedAt: existing?.waitingStartedAt ?? now, waitingEndedAt: null,
       startedAt: null, finishedAt: null, status: WorkAttemptStatus.waitingAccess,
@@ -1371,25 +1374,104 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     });
   }
 
-  Future<void> _saveScheduleDirect(WorkSchedule schedule) async {
-    if (!canEditTeam(schedule.teamId) || !hasPermission(FunctionPermission.editProgram)) {
-      throw StateError('Nu ai dreptul să modifici acest Grafic de lucru.');
+  Future<void> _saveScheduleDirect(WorkSchedule schedule) => _saveSchedulesDirect(<WorkSchedule>[schedule]);
+
+  /// Commits a whole-graph change in one Firestore transaction. Comparing each
+  /// loaded updatedAt timestamp prevents a second editor from silently
+  /// replacing a newer day, while the transaction keeps multi-day writes atomic.
+  /// Local state is updated only after Firestore confirms the transaction.
+  Future<void> _saveSchedulesDirect(List<WorkSchedule> batchSchedules) async {
+    if (batchSchedules.isEmpty) return;
+    if (batchSchedules.length > 500) {
+      throw StateError('Graficul depășește limita sigură de 500 de zile pentru o singură salvare.');
     }
-    final data = _scheduleMap(schedule);
-    await FirebaseFirestore.instance.collection('schedules').doc(schedule.id).set(data, SetOptions(merge: true));
-    unawaited(_writeLearningEvent(category: 'program', event: 'schedule_saved', teamId: schedule.teamId, scheduleId: schedule.id, data: {
-      'date': schedule.date.toIso8601String(), 'started': schedule.started, 'closed': schedule.closed,
-      'paused': schedule.paused, 'postponed': schedule.postponed, 'order': schedule.items.map((e) => e.locationId).toList(),
-      'autoProposed': schedule.autoProposed, 'learningConfidence': schedule.learningConfidence,
-    }));
-    _scheduleCache[schedule.id] = _encoded(data);
+    final ids = <String>{};
+    final teamId = batchSchedules.first.teamId;
+    final graphId = batchSchedules.first.graphId;
+    for (final schedule in batchSchedules) {
+      if (schedule.id.trim().isEmpty || !ids.add(schedule.id)) {
+        throw StateError('Graficul conține identificatori de zile lipsă sau duplicați; nicio modificare nu a fost salvată.');
+      }
+      if (schedule.teamId != teamId || schedule.graphId != graphId) {
+        throw StateError('Salvarea grupată trebuie să conțină zile dintr-un singur grafic și o singură echipă.');
+      }
+      if (!canEditTeam(schedule.teamId) || !hasPermission(FunctionPermission.editProgram)) {
+        throw StateError('Nu ai dreptul să modifici graficul echipei ${schedule.teamId}.');
+      }
+    }
+
+    final db = FirebaseFirestore.instance;
+    final committedAt = DateTime.now();
+    final writeTokens = <String, String>{
+      for (final schedule in batchSchedules)
+        schedule.id: '${committedAt.microsecondsSinceEpoch}-${idNow()}-${schedule.id}',
+    };
+    await db.runTransaction((transaction) async {
+      final refs = <String, DocumentReference<Map<String, dynamic>>>{};
+      for (final schedule in batchSchedules) {
+        final reference = db.collection('schedules').doc(schedule.id);
+        refs[schedule.id] = reference;
+        final snapshot = await transaction.get(reference);
+        // Existence is independent of revision metadata: a deleted legacy day
+        // with no timestamp/token must not be mistaken for a new day.
+        if (schedule.persisted != snapshot.exists) {
+          throw StateError('Ziua de grafic a fost ștearsă sau identificatorul este deja folosit. Reîncarcă graficul.');
+        }
+        final remoteData = snapshot.data();
+        final rawUpdatedAt = remoteData?['updatedAt'];
+        final remoteUpdatedAt = rawUpdatedAt is Timestamp ? rawUpdatedAt.toDate() : null;
+        final rawWriteToken = remoteData?['writeToken'];
+        final remoteWriteToken = rawWriteToken is String ? rawWriteToken : null;
+        if (rawUpdatedAt != null && remoteUpdatedAt == null) {
+          throw StateError('Graficul ${schedule.graphName} conține un timestamp de versiune invalid. Reîncarcă aplicația și cere administratorului să verifice datele.');
+        }
+        if (rawWriteToken != null && remoteWriteToken == null) {
+          throw StateError('Graficul ${schedule.graphName} conține un token de versiune invalid. Reîncarcă aplicația și cere administratorului să verifice datele.');
+        }
+        final expectedUpdatedAt = schedule.updatedAt;
+        final timestampChanged = snapshot.exists
+            ? expectedUpdatedAt == null
+                ? remoteUpdatedAt != null
+                : remoteUpdatedAt == null || !remoteUpdatedAt.isAtSameMomentAs(expectedUpdatedAt)
+            : expectedUpdatedAt != null;
+        final tokenChanged = snapshot.exists
+            ? schedule.writeToken == null
+                ? remoteWriteToken != null
+                : remoteWriteToken != schedule.writeToken
+            : schedule.writeToken != null;
+        if (timestampChanged || tokenChanged) {
+          throw StateError('Ziua ${formatDate(schedule.date)} din graficul ${schedule.graphName} a fost modificată sau ștearsă de pe alt dispozitiv. Reîncarcă graficul și aplică din nou modificarea.');
+        }
+      }
+      for (final schedule in batchSchedules) {
+        final data = _scheduleMap(schedule);
+        data['updatedAt'] = Timestamp.fromDate(committedAt);
+        data['writeToken'] = writeTokens[schedule.id];
+        transaction.set(refs[schedule.id]!, data, SetOptions(merge: true));
+      }
+    });
+
+    for (final schedule in batchSchedules) {
+      schedule.persisted = true;
+      schedule.updatedAt = committedAt;
+      schedule.writeToken = writeTokens[schedule.id];
+      final data = _scheduleMap(schedule);
+      _scheduleCache[schedule.id] = _encoded(data);
+      unawaited(_writeLearningEvent(category: 'program', event: 'schedule_saved', teamId: schedule.teamId, scheduleId: schedule.id, data: {
+        'date': schedule.date.toIso8601String(), 'started': schedule.started, 'closed': schedule.closed,
+        'paused': schedule.paused, 'postponed': schedule.postponed, 'order': schedule.items.map((e) => e.locationId).toList(),
+        'autoProposed': schedule.autoProposed, 'learningConfidence': schedule.learningConfidence,
+      }));
+    }
     if (!mounted) return;
     setState(() {
-      final index = schedules.indexWhere((x) => x.id == schedule.id);
-      if (index >= 0) {
-        schedules[index] = schedule;
-      } else {
-        schedules.add(schedule);
+      for (final schedule in batchSchedules) {
+        final index = schedules.indexWhere((x) => x.id == schedule.id);
+        if (index >= 0) {
+          schedules[index] = schedule;
+        } else {
+          schedules.add(schedule);
+        }
       }
     });
   }
@@ -1400,7 +1482,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       throw StateError('Nu ai dreptul să modifici execuțiile acestei echipe.');
     }
     final data = _recordMap(record);
-    await FirebaseFirestore.instance.collection('records').doc(record.id).set(data, SetOptions(merge: true));
+    await saveRecordCompared(FirebaseFirestore.instance, record.id, data, expected: record.writeBaseline);
+    record.writeBaseline = Map<String, dynamic>.from(data)..remove('updatedAt');
     unawaited(_writeLearningEvent(category: 'duration', event: 'execution_${record.status.name}', teamId: record.teamId, locationId: record.locationId, data: {
       'startedAt': record.startedAt?.toIso8601String(), 'finishedAt': record.finishedAt?.toIso8601String(),
       'durationSeconds': record.duration?.inSeconds, 'waitingSeconds': record.waitingDuration?.inSeconds,
@@ -1415,6 +1498,56 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       } else {
         records.add(record);
       }
+    });
+  }
+
+  // Centralizer corrections are compare-and-swap updates, never upserts.
+  // A stale editor cannot resurrect a deleted record or overwrite a newer correction.
+  Future<void> _correctCentralizerRecord(
+    CentralizerRecord original,
+    CentralizerRecord corrected,
+  ) async {
+    if (!hasPermission(FunctionPermission.editCentralizer) ||
+        !canEditTeam(original.teamId) ||
+        original.id != corrected.id ||
+        original.teamId != corrected.teamId ||
+        original.locationId != corrected.locationId ||
+        original.type != corrected.type) {
+      throw StateError('Corecția intervenției nu este autorizată.');
+    }
+    final ref = FirebaseFirestore.instance.collection('records').doc(original.id);
+    final expected = <String, Object?>{
+      'teamId': original.teamId,
+      'locationId': original.locationId,
+      'type': original.type.name,
+      'startedAt': original.startedAt,
+      'finishedAt': original.finishedAt,
+      'status': original.status.name,
+      'facadeDone': original.facadeDone,
+      'facadePlanned': original.facadePlanned,
+    };
+    final changes = <String, dynamic>{
+      'startedAt': corrected.startedAt == null ? null : Timestamp.fromDate(corrected.startedAt!),
+      'finishedAt': corrected.finishedAt == null ? null : Timestamp.fromDate(corrected.finishedAt!),
+      'facadeDone': corrected.facadeDone,
+      'facadePlanned': corrected.facadePlanned,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snapshot = await tx.get(ref);
+      if (!snapshot.exists) {
+        throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
+      }
+      final current = snapshot.data()!;
+      if (!centralizerCorrectionSnapshotMatches(current, expected)) {
+        throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de corectare.');
+      }
+      tx.update(ref, changes);
+    });
+    if (!mounted) return;
+    setState(() {
+      final index = records.indexWhere((item) => item.id == corrected.id);
+      if (index >= 0) records[index] = corrected;
     });
   }
 
@@ -1828,16 +1961,16 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     const settingsColor = Color(0xff607D8B);
 
     addPage(hasPermission(FunctionPermission.viewDashboard),
-      DashboardPage(teams: teams, users: users, functionDefinitions: functionDefinitions, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, currentUser: me, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, saveRecord: _saveRecordDirect, saveSchedule: _saveScheduleDirect, log: log),
+      DashboardPage(teams: teams, users: users, functionDefinitions: functionDefinitions, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, currentUser: me, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, saveRecord: _saveRecordDirect, saveSchedule: _saveScheduleDirect, saveSchedules: _saveSchedulesDirect, log: log),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_dashboard.png', size: 24, accent: homeColor), selectedIcon: appAssetIcon('assets/ui/tab_dashboard.png', size: 27, accent: homeColor, selected: true), label: 'Acasă'), homeColor);
     addPage(hasPermission(FunctionPermission.viewProgram),
-      ProgramPage(currentUser: me, teams: teams, cars: cars, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, canEditTeam: canEditTeam, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, notifyTeam: notifyTeam, log: log, saveSchedule: _saveScheduleDirect),
+      ProgramPage(currentUser: me, teams: teams, cars: cars, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, canEditTeam: canEditTeam, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, notifyTeam: notifyTeam, log: log, saveSchedules: _saveSchedulesDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_grafic.png', size: 24, accent: programColor), selectedIcon: appAssetIcon('assets/ui/tab_grafic.png', size: 27, accent: programColor, selected: true), label: 'Grafic'), programColor);
     addPage(hasPermission(FunctionPermission.viewMap),
       MapPage(currentUser: me, users: users, teams: teams, schedules: schedules, records: records, locations: locations, categories: categories, isAdmin: isAdmin, hiddenUserIds: _hiddenUserIds, onChanged: refresh, log: log, saveLocation: _saveLocationDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_harta.png', size: 24, accent: mapColor), selectedIcon: appAssetIcon('assets/ui/tab_harta.png', size: 27, accent: mapColor, selected: true), label: 'Hartă'), mapColor);
     addPage(hasPermission(FunctionPermission.viewCentralizer),
-      CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect),
+      CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect, correctRecord: _correctCentralizerRecord),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_centralizator.png', size: 24, accent: centralizerColor), selectedIcon: appAssetIcon('assets/ui/tab_centralizator.png', size: 27, accent: centralizerColor, selected: true), label: compactNav ? 'Central.' : 'Centralizator'), centralizerColor);
     addPage(hasPermission(FunctionPermission.viewOwnDecont) || hasPermission(FunctionPermission.viewOtherDecont),
       ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),

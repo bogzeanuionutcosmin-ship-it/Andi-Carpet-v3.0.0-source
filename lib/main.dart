@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, defaultTargetPlatform;
 import 'package:flutter/rendering.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -28,6 +28,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'centralizer/correction_snapshot.dart';
+import 'operations/record_writer.dart';
+import 'operations/atomic_restore.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
@@ -111,7 +114,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await _initializeFirebaseForPlatform();
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    if (!usesLocalFirebaseEmulators) FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     if (kIsWeb) {
       await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     }

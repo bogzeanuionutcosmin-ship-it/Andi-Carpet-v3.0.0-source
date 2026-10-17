@@ -2,7 +2,7 @@ part of '../main.dart';
 
 // Backup operations are inherited by the Admin panel state; UI stays in the panel.
 mixin _AdminBackupActions on State<AdminPanelPage> {
-  Future<void> _exportBackup() async {
+  Future<void> exportBackup() async {
     const names=['teams','cars','locations','locationCategories','functions','schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit','learningEvents','backgrounds'];
     final db=FirebaseFirestore.instance;
     final data=<String,dynamic>{
@@ -27,7 +27,7 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
     }
   }
 
-  Future<void> _restoreAutomaticBackup(String backupId) async {
+  Future<void> restoreAutomaticBackup(String backupId) async {
     final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
       title:const Text('Restaurează backup-ul automat?'),
       content:Text('Snapshot: $backupId\n\nColecțiile operaționale vor fi înlocuite cu valorile din snapshot. Conturile Firebase Authentication și profilurile users nu sunt modificate.'),
@@ -68,26 +68,13 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
       return;
     }
     try{
-      for(final collection in grouped.keys){
-        final current=await db.collection(collection).get();
-        WriteBatch batch=db.batch();var count=0;
-        for(final doc in current.docs){batch.delete(doc.reference);count++;if(count>=300){await batch.commit();batch=db.batch();count=0;}}
-        if(count>0)await batch.commit();
-        batch=db.batch();count=0;
-        for(final document in grouped[collection]!.entries){
-          batch.set(db.collection(collection).doc(document.key),document.value);count++;
-          if(count>=8){await batch.commit();batch=db.batch();count=0;}
-        }
-        if(count>0)await batch.commit();
-      }
-      if(validatedSettings!=null)await db.collection('meta').doc('uiSettings').set(validatedSettings,SetOptions(merge:false));
-      await db.collection('meta').doc('backup').set({'lastRestoreAt':FieldValue.serverTimestamp(),'restoredAutomaticBackup':backupId},SetOptions(merge:true));
+      await restoreAtomically(db, grouped, settings: validatedSettings, source: 'automatic:$backupId');
       widget.log('Backup automat restaurat',backupId);
       if(mounted)showSuccessMessage(context,'Backup-ul automat a fost restaurat. Datele se resincronizează.');
     }catch(e){if(mounted)showErrorMessage(context,'Restaurarea backup-ului automat a eșuat: $e');}
   }
 
-  Future<void> _restoreBackup() async {
+  Future<void> restoreBackup() async {
     final file=await FilePicker.pickFile(type:FileType.custom,allowedExtensions:['json']);
     if(file==null)return;
     final raw=utf8.decode(await file.readAsBytes());
@@ -134,25 +121,12 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
     final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Restaurare backup'),content:const Text('Datele operaționale și Auditul din backup vor înlocui colecțiile existente. Conturile Firebase Authentication nu sunt modificate. Continui?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Restaurează'))]))??false;
     if(!ok)return;
     final db=FirebaseFirestore.instance;
-    for(final entry in validated.entries){
-      final name=entry.key;
-      final current=await db.collection(name).get();
-      var batch=db.batch();
-      var count=0;
-      for(final doc in current.docs){
-        batch.delete(doc.reference);count++;
-        if(count>=400){await batch.commit();batch=db.batch();count=0;}
-      }
-      if(count>0)await batch.commit();
-      batch=db.batch();count=0;
-      for(final document in entry.value.entries){
-        batch.set(db.collection(name).doc(document.key),Map<String,dynamic>.from(document.value as Map));count++;
-        if(count>=400){await batch.commit();batch=db.batch();count=0;}
-      }
-      if(count>0)await batch.commit();
+    try {
+      await restoreAtomically(db, validated, settings: validatedSettings, source: 'file:${file.name}');
+    } catch (e) {
+      if(mounted)showErrorMessage(context,'Restaurarea atomică a fost refuzată sau a eșuat. Nu s-a aplicat un lot parțial: $e');
+      return;
     }
-    if(validatedSettings!=null)await db.collection('meta').doc('uiSettings').set(validatedSettings,SetOptions(merge:false));
-    await db.collection('meta').doc('backup').set({'lastRestoreAt':FieldValue.serverTimestamp(),'restoredFile':file.name},SetOptions(merge:true));
     widget.log('Backup restaurat',file.name);
     if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Restaurarea s-a terminat. Datele se resincronizează.')));
   }
