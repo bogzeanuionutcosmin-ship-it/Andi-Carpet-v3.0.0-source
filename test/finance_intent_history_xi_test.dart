@@ -55,6 +55,8 @@ void main(){
   final replay=await r.executeExplicitly(old);
   expect(replay.status,FinanceIntentStatus.confirmed);
   expect(replay.replayed,true);
+  final review=await r.reconcileExplicitly(old);
+  expect(review.status,FinanceIntentStatus.confirmed);
   expect(db.writes,4);
  });
  test('XI distinct equal receipts add twice and old marker remains reconcilable',()async{
