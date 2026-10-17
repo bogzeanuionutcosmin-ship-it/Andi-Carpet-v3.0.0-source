@@ -24,6 +24,17 @@ void main() {
   expect(db.writes,3); expect(db.documents[i.permitPath],i.permit());
   expect((await r.executeExplicitly(i.history)).replayed,true);expect(db.writes,3);
  });
+ test('XIII fenced replay refuses mismatched latest summary and never rewrites money', () async {
+  final db=xiDb()..seed(binding().fencePath,fence());
+  final i=FinanceSessionXiiiIntent(history:xi(1),binding:binding());
+  final port=FinanceSessionXiiiPort(inner:db,intent:i,sessionIsCurrent:()=>true);
+  final repository=FinanceHistoryXiRepository(port:port,ownerUid:'a',sessionIsCurrent:()=>true);
+  expect((await repository.executeExplicitly(i.history)).status,FinanceIntentStatus.confirmed);
+  db.documents[i.history.summaryPath]!['lastOperationId']=xi(2).receipt.operationId;
+  expect((await repository.executeExplicitly(i.history)).status,FinanceIntentStatus.conflict);
+  expect((await repository.reconcileExplicitly(i.history)).status,FinanceIntentStatus.conflict);
+  expect(db.writes,3);
+ });
  test('XIII model authoritative epoch change between read and commit retries then refuses old generation', () async {
   final db=xiDb()..seed(binding().fencePath,fence());
   final i=FinanceSessionXiiiIntent(history:xi(1),binding:binding());var changed=false;

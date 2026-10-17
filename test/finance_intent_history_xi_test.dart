@@ -18,6 +18,18 @@ void main(){
   expect(()=>HistoryXiIntent.decode(i.receipt.encode()),throwsFormatException);
   expect(i.toString(),'HistoryXiIntent');
  });
+ test('XI recovery rejects noncanonical envelope bytes without reinterpreting intent',(){
+  final canonical=xi(1).encode();
+  expect(HistoryXiIntent.decode(canonical).encode(),canonical);
+  final spaced=canonical.replaceFirst('"protocol":2','"protocol": 2');
+  expect(spaced,isNot(canonical));
+  expect(()=>HistoryXiIntent.decode(spaced),throwsFormatException);
+  final trailing=' $canonical';
+  expect(()=>HistoryXiIntent.decode(trailing),throwsFormatException);
+  final reordered='{"receipt":${canonicalFinanceJson(xi(1).receipt.toMap())},"protocol":2}';
+  expect(reordered,isNot(canonical));
+  expect(()=>HistoryXiIntent.decode(reordered),throwsFormatException);
+ });
  test('XI summary and immutable receipt marker have one atomic effect and replay no extra writes',()async{
   final db=xiDb(),r=repo(db),i=xi(1);
   expect((await r.executeExplicitly(i)).status,FinanceIntentStatus.confirmed);
@@ -27,6 +39,28 @@ void main(){
   expect(db.documents[i.summaryPath]!['receivedDeparture'],200);
   expect(db.documents[i.rowPath]!['digest'],i.digest);
   expect(db.documents['settlements/trip']!['receivedDeparture'],0);
+ });
+ test('XI replay refuses a latest summary bound to another operation',()async{
+  final db=xiDb(),r=repo(db),i=xi(1);
+  expect((await r.executeExplicitly(i)).status,FinanceIntentStatus.confirmed);
+  db.documents[i.summaryPath]!['lastOperationId']=xi(2).receipt.operationId;
+  final replay=await r.executeExplicitly(i);
+  expect(replay.status,FinanceIntentStatus.conflict);
+  expect(replay.replayed,false);
+  final review=await r.reconcileExplicitly(i);
+  expect(review.status,FinanceIntentStatus.conflict);
+  expect(db.writes,2,reason:'A forged latest summary cannot cause a second write');
+ });
+ test('XI historical receipt remains replayable after a newer legitimate summary',()async{
+  final db=xiDb(),r=repo(db),old=xi(1);
+  expect((await r.executeExplicitly(old)).status,FinanceIntentStatus.confirmed);
+  expect((await r.executeExplicitly(xi(2,revision:1))).status,FinanceIntentStatus.confirmed);
+  final replay=await r.executeExplicitly(old);
+  expect(replay.status,FinanceIntentStatus.confirmed);
+  expect(replay.replayed,true);
+  final review=await r.reconcileExplicitly(old);
+  expect(review.status,FinanceIntentStatus.confirmed);
+  expect(db.writes,4);
  });
  test('XI distinct equal receipts add twice and old marker remains reconcilable',()async{
   final db=xiDb(),r=repo(db),first=xi(1);

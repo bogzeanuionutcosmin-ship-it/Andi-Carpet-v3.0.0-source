@@ -42,7 +42,11 @@ class HistoryXiIntent {
     if(d is! Map || d.length!=2 || d['protocol']!=2 || d['receipt'] is! Map) {
       throw const FormatException('history_protocol_required');
     }
-    return HistoryXiIntent(FinanceIntent.decode(canonicalFinanceJson(d['receipt'])));
+    final restored = HistoryXiIntent(FinanceIntent.decode(canonicalFinanceJson(d['receipt'])));
+    // Persisted protocol envelopes are byte identities: never silently adopt
+    // a noncanonical representation during recovery or digest verification.
+    if (restored.encode() != raw) throw const FormatException('history_noncanonical');
+    return restored;
   }
   String get digest=>sha256.convert(utf8.encode(encode())).toString();
   Map<String,Object?> row()=>{'protocol':2,'operationId':receipt.operationId,
@@ -122,7 +126,9 @@ class FinanceHistoryXiRepository {
         final summary=await tx.read(i.summaryPath);_guard(i);
         if(summary!=null)validateHistoryXiSummary(summary,i);
         if(row!=null){
-          if(!_matches(i,row) || summary==null || (summary['revision'] as int)<i.receipt.baseRevision+1) {
+          if(!_matches(i,row) || summary==null || (summary['revision'] as int)<i.receipt.baseRevision+1 ||
+            ((summary['revision'] as int)==i.receipt.baseRevision+1 &&
+              summary['lastOperationId']!=i.receipt.operationId)) {
             throw const FinanceRevisionConflict();
           }
           return true;
@@ -166,7 +172,9 @@ class FinanceHistoryXiRepository {
         return const FinanceIntentResult(FinanceIntentStatus.uncertain,'history_uncertain');
       }
       validateHistoryXiSummary(summary.data!,i);
-      if((summary.data!['revision'] as int)<i.receipt.baseRevision+1) {
+      if((summary.data!['revision'] as int)<i.receipt.baseRevision+1 ||
+          ((summary.data!['revision'] as int)==i.receipt.baseRevision+1 &&
+            summary.data!['lastOperationId']!=i.receipt.operationId)) {
         return const FinanceIntentResult(FinanceIntentStatus.conflict,'history_evidence_mismatch');
       }
       return FinanceIntentResult(FinanceIntentStatus.confirmed,'history_confirmed',revision:i.receipt.baseRevision+1,replayed:true);
