@@ -26,7 +26,7 @@ void main(){
   expect(()=>HistoryXiIntent.decode(spaced),throwsFormatException);
   final trailing=' $canonical';
   expect(()=>HistoryXiIntent.decode(trailing),throwsFormatException);
-  final reordered=canonical.replaceFirst('{"protocol":2,"receipt":','{"receipt":').replaceFirst('}}','},"protocol":2}');
+  final reordered='{"receipt":${canonicalFinanceJson(xi(1).receipt.toMap())},"protocol":2}';
   expect(reordered,isNot(canonical));
   expect(()=>HistoryXiIntent.decode(reordered),throwsFormatException);
  });
