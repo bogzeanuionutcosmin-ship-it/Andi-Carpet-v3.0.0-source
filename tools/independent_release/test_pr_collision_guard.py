@@ -1,4 +1,6 @@
+import json
 import unittest
+from pathlib import Path
 from pr_collision_guard import analyze
 
 
@@ -27,6 +29,14 @@ class CollisionGuardTests(unittest.TestCase):
     def test_invalid_file_list_rejected(self):
         with self.assertRaises(ValueError):
             analyze({"prs": [pr(99, [None])]})
+
+    def test_recorded_github_snapshot_has_five_collision_pairs(self):
+        fixture = Path(__file__).resolve().parents[2] / "docs" / "independent" / "pr_collision_snapshot_20261018.json"
+        result = analyze(json.loads(fixture.read_text(encoding="utf-8")))
+        self.assertEqual(result["overlap_count"], 5)
+        self.assertTrue(any(pair["prs"] == [99, 100] and pair["shared_count"] == 25
+                            for pair in result["overlap_pairs"]))
+        self.assertFalse(result["integration_approved"])
 
     def test_empty_snapshot(self):
         self.assertFalse(analyze({"prs": []})["integration_approved"])
