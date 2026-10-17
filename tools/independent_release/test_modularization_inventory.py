@@ -95,6 +95,22 @@ class ModularizationInventoryTests(unittest.TestCase):
         result = analyze({"main.dart": "", "models/standalone.dart": "class Standalone {}"})
         self.assertEqual(result["migration_candidates"], [])
 
+    def test_inbound_dependencies_deduplicate_importers(self):
+        result = analyze({
+            "models/item.dart": "class Item {}",
+            "schedule/a.dart": "import '../models/item.dart';\nexport '../models/item.dart';",
+            "reports/b.dart": "import '../models/item.dart';"
+        })
+        self.assertEqual(result["inbound_dependencies"], [{
+            "file": "models/item.dart",
+            "imported_by": ["reports/b.dart", "schedule/a.dart"]
+        }])
+
+    def test_external_packages_do_not_create_inbound_edges(self):
+        result = analyze({"schedule/a.dart": "import 'package:flutter/widgets.dart';"},
+                         package_name="andi_carpeta")
+        self.assertEqual(result["inbound_dependencies"], [])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
