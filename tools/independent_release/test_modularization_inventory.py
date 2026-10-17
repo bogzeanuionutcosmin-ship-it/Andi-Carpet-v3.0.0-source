@@ -35,6 +35,10 @@ class ModularizationInventoryTests(unittest.TestCase):
     def test_never_certifies_modularization(self):
         self.assertFalse(analyze({})["modularization_complete"])
 
+    def test_import_escaping_lib_is_unresolved(self):
+        result = analyze({"schedule/a.dart": "import '../../outside.dart';"})
+        self.assertEqual(result["unresolved_imports"], [{"file": "schedule/a.dart", "uri": "../../outside.dart"}])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
