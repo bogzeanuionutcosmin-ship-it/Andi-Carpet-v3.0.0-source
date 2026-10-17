@@ -20,7 +20,7 @@ def audit(source):
     fields = STRING_PATTERN.findall(raw_fields)
     # Reject expressions and identifiers outside the literal string allowlist.
     residue = STRING_PATTERN.sub("", raw_fields)
-    residue = re.sub(r"[\\s,]", "", residue)
+    residue = re.sub(r"[\s,]", "", residue)
     if residue:
         raise ValueError("Projection FIELDS must contain only string literals")
     if len(fields) != len(set(fields)):
