@@ -1,8 +1,15 @@
 import unittest
 from modularization_inventory import analyze
+import re
 
 
 class ModularizationInventoryTests(unittest.TestCase):
+    def test_pubspec_package_name_regex(self):
+        pattern = r"^name:\\s*([\\w-]+)\\s*$"
+        match = re.search(pattern, "name: andi_carpeta\\ndescription: Synthetic", re.MULTILINE)
+        self.assertIsNotNone(match)
+        self.assertEqual(match.group(1), "andi_carpeta")
+
     def test_cross_domain_relative_import(self):
         result = analyze({"schedule/editor.dart": "import '../centralizer/model.dart';",
                           "centralizer/model.dart": ""})
