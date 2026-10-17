@@ -18,6 +18,15 @@ void main(){
   expect(()=>HistoryXiIntent.decode(i.receipt.encode()),throwsFormatException);
   expect(i.toString(),'HistoryXiIntent');
  });
+ test('XI recovery rejects noncanonical envelope bytes without reinterpreting intent',(){
+  final canonical=xi(1).encode();
+  expect(HistoryXiIntent.decode(canonical).encode(),canonical);
+  final spaced=canonical.replaceFirst('"protocol":2','"protocol": 2');
+  expect(spaced,isNot(canonical));
+  expect(()=>HistoryXiIntent.decode(spaced),throwsFormatException);
+  final trailing=' $canonical';
+  expect(()=>HistoryXiIntent.decode(trailing),throwsFormatException);
+ });
  test('XI summary and immutable receipt marker have one atomic effect and replay no extra writes',()async{
   final db=xiDb(),r=repo(db),i=xi(1);
   expect((await r.executeExplicitly(i)).status,FinanceIntentStatus.confirmed);
