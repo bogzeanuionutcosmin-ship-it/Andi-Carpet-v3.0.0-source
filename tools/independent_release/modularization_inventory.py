@@ -6,6 +6,8 @@ import re
 from pathlib import Path
 
 IMPORT = re.compile(r"^\s*(?:import|export)\s+['\"]([^'\"]+)['\"]", re.MULTILINE)
+PART = re.compile(r"^\\s*part\\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
+PART_OF = re.compile(r"^\\s*part\\s+of\\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
 DOMAINS = ("schedule", "centralizer", "reports", "models", "home", "admin", "dashboard", "map")
 
 
@@ -15,10 +17,22 @@ def analyze(sources, package_name=None):
         raise ValueError("Expected filename-to-source dictionary")
     edges = set()
     unresolved = set()
+    part_links = set()
+    orphan_parts = set()
     for path, content in sources.items():
         if not path.endswith(".dart"):
             continue
         source = path.split("/")[0]
+        import posixpath
+        for uri in PART.findall(content):
+            target = posixpath.normpath(posixpath.join(posixpath.dirname(path), uri))
+            part_links.add((path, target))
+            if target not in sources:
+                unresolved.add((path, uri))
+        for uri in PART_OF.findall(content):
+            owner = posixpath.normpath(posixpath.join(posixpath.dirname(path), uri))
+            if owner not in sources or (owner, path) not in part_links and uri not in PART.findall(sources.get(owner, "")):
+                orphan_parts.add((path, owner))
         for uri in IMPORT.findall(content):
             if uri.startswith("package:"):
                 match = re.match(r"package:[^/]+/(.+)", uri)
@@ -42,7 +56,9 @@ def analyze(sources, package_name=None):
             destination = target.split("/")[0]
             if source in DOMAINS and destination in DOMAINS and source != destination:
                 edges.add((source, destination))
-    return {"files": sum(k.endswith(".dart") for k in sources),
+    return {"part_links": [{"owner": a, "part": b} for a, b in sorted(part_links)],
+            "orphan_parts": [{"part": a, "owner": b} for a, b in sorted(orphan_parts)],
+            "files": sum(k.endswith(".dart") for k in sources),
             "cross_domain_edges": [{"from": a, "to": b} for a, b in sorted(edges)],
             "unresolved_imports": [{"file": a, "uri": b} for a, b in sorted(unresolved)],
             "modularization_complete": False}
