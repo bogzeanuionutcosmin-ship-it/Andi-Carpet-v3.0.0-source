@@ -29,6 +29,7 @@ class ReviewSuiteManifestTest(unittest.TestCase):
             "test_post_xiii_sensitive_logging.py",
             "test_post_xiii_native_activation_tripwire.py",
             "test_post_xiii_emulator_transport_tripwire.py",
+            "test_post_xiii_production_isolation_tripwire.py",
         )
         self.assertTrue(all((root / name).is_file() for name in expected))
 
