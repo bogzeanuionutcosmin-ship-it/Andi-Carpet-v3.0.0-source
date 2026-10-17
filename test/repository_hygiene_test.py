@@ -1100,7 +1100,8 @@ class RepositoryHygieneTests(unittest.TestCase):
         map_source = (ROOT / "lib/map/map_page.dart").read_text(encoding="utf-8")
         self.assertIn("hasMatch(normalized)", expense_source)
         self.assertIn("normalized = raw.trim().replaceAll", expense_source)
-        self.assertIn("Schematic fallback when Mapbox cannot provide road geometry.", map_source)
+        self.assertIn("multicolour segments", map_source)
+        self.assertIn(": _rainbowRouteLines()", map_source)
         self.assertNotIn("for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }", source)
 
 
