@@ -213,7 +213,8 @@ mixin _HomeDocumentCodecs {
       'transferred': i.transferred,
       'facadePlanned': i.facadePlanned,
     }).toList(),
-    'updatedAt': FieldValue.serverTimestamp(),
+    'updatedAt': s.updatedAt == null ? FieldValue.serverTimestamp() : Timestamp.fromDate(s.updatedAt!),
+    'writeToken': s.writeToken,
   };
 
   WorkSchedule _scheduleFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
@@ -271,55 +272,14 @@ mixin _HomeDocumentCodecs {
       returnName: (d['returnName'] ?? '').toString(),
       returnLatitude: d['returnLatitude'] is num ? (d['returnLatitude'] as num).toDouble() : null,
       returnLongitude: d['returnLongitude'] is num ? (d['returnLongitude'] as num).toDouble() : null,
+      updatedAt: _dateFrom(d['updatedAt']),
+      writeToken: d['writeToken']?.toString(),
+      persisted: true,
     );
   }
 
-  Map<String, dynamic> _recordMap(CentralizerRecord r) => {
-    'teamId': r.teamId,
-    'locationId': r.locationId,
-    'type': r.type.name,
-    'locationNameSnapshot': r.locationNameSnapshot,
-    'addressSnapshot': r.addressSnapshot,
-    'waitingStartedAt': r.waitingStartedAt == null ? null : Timestamp.fromDate(r.waitingStartedAt!),
-    'waitingEndedAt': r.waitingEndedAt == null ? null : Timestamp.fromDate(r.waitingEndedAt!),
-    'startedAt': r.startedAt == null ? null : Timestamp.fromDate(r.startedAt!),
-    'finishedAt': r.finishedAt == null ? null : Timestamp.fromDate(r.finishedAt!),
-    'status': r.status.name,
-    'refusalReason': r.refusalReason,
-    'keptForLearning': r.keptForLearning,
-    'facadePlanned': r.facadePlanned,
-    'facadeDone': r.facadeDone,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  CentralizerRecord _recordFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    var type = LocationType.million;
-    for (final value in LocationType.values) {
-      if (value.name == (d['type'] ?? 'million').toString()) type = value;
-    }
-    var status = WorkAttemptStatus.waitingAccess;
-    for (final value in WorkAttemptStatus.values) {
-      if (value.name == (d['status'] ?? 'waitingAccess').toString()) status = value;
-    }
-    return CentralizerRecord(
-      id: doc.id,
-      teamId: (d['teamId'] ?? '').toString(),
-      locationId: (d['locationId'] ?? '').toString(),
-      type: type,
-      locationNameSnapshot: (d['locationNameSnapshot'] ?? '').toString(),
-      addressSnapshot: (d['addressSnapshot'] ?? '').toString(),
-      waitingStartedAt: _dateFrom(d['waitingStartedAt']),
-      waitingEndedAt: _dateFrom(d['waitingEndedAt']),
-      startedAt: _dateFrom(d['startedAt']),
-      finishedAt: _dateFrom(d['finishedAt']),
-      status: status,
-      refusalReason: d['refusalReason']?.toString(),
-      keptForLearning: d['keptForLearning'] != false,
-      facadePlanned: d['facadePlanned'] == true,
-      facadeDone: d['facadeDone'] == true,
-    );
-  }
+  Map<String, dynamic> _recordMap(CentralizerRecord r) => recordDocumentData(r);
+  CentralizerRecord _recordFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) => centralizerRecordFromData(doc.id, doc.data());
 
   Map<String, dynamic> _notificationMap(AppNotification n) => {
     'userId': n.userId,
@@ -540,4 +500,60 @@ mixin _HomeDocumentCodecs {
     return MapEntry(key, value);
   }));
 
+}
+
+Map<String, dynamic> recordDocumentData(CentralizerRecord r) => {
+    'teamId': r.teamId,
+    'locationId': r.locationId,
+    'type': r.type.name,
+    'locationNameSnapshot': r.locationNameSnapshot,
+    'addressSnapshot': r.addressSnapshot,
+    'waitingStartedAt': r.waitingStartedAt == null ? null : Timestamp.fromDate(r.waitingStartedAt!),
+    'waitingEndedAt': r.waitingEndedAt == null ? null : Timestamp.fromDate(r.waitingEndedAt!),
+    'startedAt': r.startedAt == null ? null : Timestamp.fromDate(r.startedAt!),
+    'finishedAt': r.finishedAt == null ? null : Timestamp.fromDate(r.finishedAt!),
+    'status': r.status.name,
+    'refusalReason': r.refusalReason,
+    'keptForLearning': r.keptForLearning,
+    'facadePlanned': r.facadePlanned,
+    'facadeDone': r.facadeDone,
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
+
+
+CentralizerRecord centralizerRecordFromData(String id, Map<String, dynamic> d) {
+    var type = LocationType.million;
+    for (final value in LocationType.values) {
+      if (value.name == (d['type'] ?? 'million').toString()) type = value;
+    }
+    var status = WorkAttemptStatus.waitingAccess;
+    for (final value in WorkAttemptStatus.values) {
+      if (value.name == (d['status'] ?? 'waitingAccess').toString()) status = value;
+    }
+    return CentralizerRecord(
+      id: id,
+      writeBaseline: Map<String, dynamic>.from(d),
+      teamId: (d['teamId'] ?? '').toString(),
+      locationId: (d['locationId'] ?? '').toString(),
+      type: type,
+      locationNameSnapshot: (d['locationNameSnapshot'] ?? '').toString(),
+      addressSnapshot: (d['addressSnapshot'] ?? '').toString(),
+      waitingStartedAt: _recordDateFrom(d['waitingStartedAt']),
+      waitingEndedAt: _recordDateFrom(d['waitingEndedAt']),
+      startedAt: _recordDateFrom(d['startedAt']),
+      finishedAt: _recordDateFrom(d['finishedAt']),
+      status: status,
+      refusalReason: d['refusalReason']?.toString(),
+      keptForLearning: d['keptForLearning'] != false,
+      facadePlanned: d['facadePlanned'] == true,
+      facadeDone: d['facadeDone'] == true,
+    );
+  }
+
+
+DateTime? _recordDateFrom(dynamic value) {
+  if(value is Timestamp) return value.toDate();
+  if(value is DateTime) return value;
+  if(value is String) return DateTime.tryParse(value);
+  return null;
 }

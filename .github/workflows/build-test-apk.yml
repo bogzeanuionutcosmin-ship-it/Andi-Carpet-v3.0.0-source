@@ -1,0 +1,61 @@
+name: Build testable Android APK
+
+on:
+  push:
+    branches: [fix/grafic-end-to-end-xiv-20261017, fix/application-delivery-xv-20261017]
+  pull_request:
+    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-apk-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debug-apk:
+    name: Analyze, test, and package debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze application
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Test schedule team selection
+        run: flutter test test/program_team_selection_test.dart
+      - name: Test Centralizator correction snapshot behavior
+        run: flutter test test/centralizer_correction_snapshot_test.dart
+      - name: Test Centralizator operational-day behavior
+        run: flutter test test/centralizer_operational_day_test.dart
+      - name: Test Centralizator PDF projection
+        run: flutter test test/centralizer_pdf_projection_test.dart
+      - name: Build debug APK
+        run: flutter build apk --debug
+      - name: Verify APK package metadata
+        run: |
+          APK=build/app/outputs/flutter-apk/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/aapt" dump badging "$APK" | tee /tmp/andi-apk-badging.txt
+          grep -Fq "package: name='com.example.andi_carpeta'" /tmp/andi-apk-badging.txt
+          grep -Fq "sdkVersion:'24'" /tmp/andi-apk-badging.txt
+      - name: Upload test-only APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndiCarpet-debug-${{ github.event.pull_request.head.sha || github.sha }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7

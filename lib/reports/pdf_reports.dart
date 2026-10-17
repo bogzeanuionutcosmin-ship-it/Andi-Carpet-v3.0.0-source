@@ -60,6 +60,52 @@ Future<void> downloadWorkGraphPdf({
   await downloadFile(await doc.save(), 'grafic_${_safeFilePart(first.graphName)}.pdf', mimeType: 'application/pdf');
 }
 
+class CentralizerPdfExecutionRow {
+  final CentralizerRecord record;
+  final DateTime date;
+
+  const CentralizerPdfExecutionRow({required this.record, required this.date});
+}
+
+List<CentralizerPdfExecutionRow> centralizerPdfExecutionRows({
+  required List<CentralizerRecord> records,
+  required LocationType type,
+  String? teamId,
+  DateTime? from,
+  DateTime? to,
+  String search = '',
+  WorkAttemptStatus? statusFilter,
+}) {
+  final q = search.trim().toLowerCase();
+  final start = from == null ? null : DateTime(from.year, from.month, from.day);
+  final finish = to == null
+      ? null
+      : DateTime(to.year, to.month, to.day + 1);
+
+  final rows = records.where((record) {
+    if (record.type != type) return false;
+    if (teamId != null && teamId.isNotEmpty && record.teamId != teamId) {
+      return false;
+    }
+    if (statusFilter != null && record.status != statusFilter) return false;
+    final eventDate = recordEventTime(record);
+    if (start != null && eventDate.isBefore(start)) return false;
+    if (finish != null && !eventDate.isBefore(finish)) return false;
+    if (q.isNotEmpty &&
+        !record.locationNameSnapshot.toLowerCase().contains(q) &&
+        !record.addressSnapshot.toLowerCase().contains(q)) {
+      return false;
+    }
+    return true;
+  }).map((record) => CentralizerPdfExecutionRow(
+        record: record,
+        date: recordEventTime(record),
+      )).toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+
+  return rows;
+}
+
 Future<void> downloadCentralizerPdf({
   required LocationType type,
   required List<Location> locations,
@@ -73,27 +119,54 @@ Future<void> downloadCentralizerPdf({
   WorkAttemptStatus? statusFilter,
   String? teamLabel,
 }) async {
-  final theme = await _buildPdfTheme();
+  final bytes = await buildCentralizerPdf(
+    type: type, locations: locations, teams: teams, schedules: schedules,
+    records: records, teamId: teamId, from: from, to: to, search: search,
+    statusFilter: statusFilter, teamLabel: teamLabel,
+  );
+  final now = DateTime.now();
+  final filename='centralizator_${_safeFilePart(type.label)}_${now.year}${two(now.month)}${two(now.day)}.pdf';
+  await downloadFile(bytes,filename,mimeType:'application/pdf');
+}
+
+Future<Uint8List> buildCentralizerPdf({
+  required LocationType type,
+  required List<Location> locations,
+  required List<Team> teams,
+  required List<WorkSchedule> schedules,
+  required List<CentralizerRecord> records,
+  String? teamId,
+  DateTime? from,
+  DateTime? to,
+  String search = '',
+  WorkAttemptStatus? statusFilter,
+  String? teamLabel,
+  pw.ThemeData? pdfTheme,
+}) async {
+  final theme = pdfTheme ?? await _buildPdfTheme();
   final doc = pw.Document();
   final q = search.trim().toLowerCase();
   final start = from == null ? null : DateTime(from.year, from.month, from.day);
-  final finish = to == null ? null : DateTime(to.year, to.month, to.day, 23, 59, 59, 999);
-  bool dateAllowed(DateTime d) => (start == null || !d.isBefore(start)) && (finish == null || !d.isAfter(finish));
+  final finish = to == null ? null : DateTime(to.year, to.month, to.day + 1);
+  bool dateAllowed(DateTime d) => (start == null || !d.isBefore(start)) && (finish == null || d.isBefore(finish));
   bool textAllowed(String name, String address) => q.isEmpty || name.toLowerCase().contains(q) || address.toLowerCase().contains(q);
 
-  final filteredRecords = records.where((r) {
-    if (r.type != type) return false;
-    if (teamId != null && teamId.isNotEmpty && r.teamId != teamId) return false;
-    if (statusFilter != null && r.status != statusFilter) return false;
-    final when = recordEventTime(r);
-    if (!dateAllowed(when)) return false;
-    if (!textAllowed(r.locationNameSnapshot, r.addressSnapshot)) return false;
-    return true;
-  }).toList()..sort((a,b)=>recordEventTime(a).compareTo(recordEventTime(b)));
+  final executionRows = centralizerPdfExecutionRows(
+    records: records,
+    type: type,
+    teamId: teamId,
+    from: from,
+    to: to,
+    search: search,
+    statusFilter: statusFilter,
+  );
 
   final rowsByLocation = <String,List<Map<String,dynamic>>>{};
-  for (final r in filteredRecords) {
-    rowsByLocation.putIfAbsent(r.locationId, () => <Map<String,dynamic>>[]).add({'record':r,'date':recordEventTime(r)});
+  for (final row in executionRows) {
+    rowsByLocation.putIfAbsent(row.record.locationId, () => <Map<String, dynamic>>[])
+        .add({'record': row.record, 'date': row.date,
+          'name': row.record.locationNameSnapshot,
+          'address': row.record.addressSnapshot});
   }
 
   // Fără filtru explicit de stare includem și toate sălile din grafice, chiar dacă nu există execuție.
@@ -168,61 +241,60 @@ Future<void> downloadCentralizerPdf({
     child: pw.Text(text, style: const pw.TextStyle(fontSize: 8)),
   );
 
-  pw.Widget interventionTable(List<Map<String,dynamic>> sourceRows, Location? location) {
-    final rows=[...sourceRows]..sort((a,b)=>(a['date'] as DateTime).compareTo(b['date'] as DateTime));
-    return pw.Table(
-      border: pw.TableBorder(
-        horizontalInside: const pw.BorderSide(color: PdfColors.grey300, width: .45),
-        verticalInside: const pw.BorderSide(color: PdfColors.grey300, width: .45),
-      ),
-      columnWidths: const {
-        0: pw.FixedColumnWidth(78),
-        1: pw.FixedColumnWidth(50),
-        2: pw.FixedColumnWidth(50),
-        3: pw.FixedColumnWidth(72),
-        4: pw.FixedColumnWidth(48),
-      },
-      children: rows.map((row) {
-        final record=row['record'] is CentralizerRecord ? row['record'] as CentralizerRecord : null;
-        final date=row['date'] as DateTime;
-        final surface=location!=null && location.surfaceM2>0
-            ? '${location.surfaceM2.toStringAsFixed(location.surfaceM2%1==0?0:1)} m²'
-            : '—';
-        return pw.TableRow(children:[
-          valueCell(record==null ? '${_pdfDate(date)}\n${row['statusText'] ?? 'Neexecutată'}' : _pdfDate(date)),
-          valueCell(record==null?'—':timeText(record.startedAt),alignment:pw.Alignment.center),
-          valueCell(record==null?'—':timeText(record.finishedAt),alignment:pw.Alignment.center),
-          valueCell(surface,alignment:pw.Alignment.centerRight),
-          pw.Container(padding:const pw.EdgeInsets.symmetric(vertical:4),alignment:pw.Alignment.center,child:facadeBox(planned:record?.facadePlanned==true,done:record?.facadeDone==true)),
-        ]);
-      }).toList(),
-    );
-  }
-
-  final tableHeader=pw.Table(
-    border: pw.TableBorder.all(color: PdfColors.grey500,width:.6),
-    columnWidths: const {0: pw.FixedColumnWidth(190),1: pw.FlexColumnWidth()},
-    children:[pw.TableRow(children:[
+  // A flat table can span pages row by row. A nested per-location table
+  // was indivisible and failed with PdfTooBigPageException on long histories.
+  const columns = <int, pw.TableColumnWidth>{
+    0: pw.FixedColumnWidth(190),
+    1: pw.FlexColumnWidth(78),
+    2: pw.FlexColumnWidth(50),
+    3: pw.FlexColumnWidth(50),
+    4: pw.FlexColumnWidth(72),
+    5: pw.FlexColumnWidth(48),
+  };
+  final tableHeader = pw.Table(
+    border: pw.TableBorder.all(color: PdfColors.grey500, width: .6),
+    columnWidths: columns,
+    children: [pw.TableRow(children: [
       headerCell('LOCAȚIE / ADRESĂ'),
-      pw.Table(
-        border: const pw.TableBorder(verticalInside: pw.BorderSide(color: PdfColors.grey500,width:.6)),
-        columnWidths: const {
-          0: pw.FixedColumnWidth(78),
-          1: pw.FixedColumnWidth(50),
-          2: pw.FixedColumnWidth(50),
-          3: pw.FixedColumnWidth(72),
-          4: pw.FixedColumnWidth(48),
-        },
-        children:[pw.TableRow(children:[
-          headerCell('DATA'),
-          headerCell('START',alignment:pw.Alignment.center),
-          headerCell('FINAL',alignment:pw.Alignment.center),
-          headerCell('SUPRAFAȚĂ',alignment:pw.Alignment.centerRight),
-          headerCell('FAȚADĂ',alignment:pw.Alignment.center),
-        ])],
-      ),
+      headerCell('DATA'),
+      headerCell('START', alignment: pw.Alignment.center),
+      headerCell('FINAL', alignment: pw.Alignment.center),
+      headerCell('SUPRAFAȚĂ', alignment: pw.Alignment.centerRight),
+      headerCell('FAȚADĂ', alignment: pw.Alignment.center),
     ])],
   );
+  final tableRows = <pw.TableRow>[];
+  for (final id in orderedIds) {
+    final location = locationById[id];
+    final rows = [...rowsByLocation[id]!]
+      ..sort((a,b)=>(a['date'] as DateTime).compareTo(b['date'] as DateTime));
+    for (final row in rows) {
+      final record = row['record'] as CentralizerRecord?;
+      final date = row['date'] as DateTime;
+      final surface = location != null && location.surfaceM2 > 0
+          ? '${location.surfaceM2.toStringAsFixed(location.surfaceM2 % 1 == 0 ? 0 : 1)} m²'
+          : '—';
+      tableRows.add(pw.TableRow(children: [
+        pw.Container(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Text(location?.name ?? row['name']?.toString() ?? id,
+                style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 2),
+            pw.Text(location?.address ?? row['address']?.toString() ?? '',
+                style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+          ]),
+        ),
+        valueCell(record == null ? '${_pdfDate(date)}\n${row['statusText'] ?? 'Neexecutată'}' : _pdfDate(date)),
+        valueCell(record == null ? '—' : timeText(record.startedAt), alignment: pw.Alignment.center),
+        valueCell(record == null ? '—' : timeText(record.finishedAt), alignment: pw.Alignment.center),
+        valueCell(surface, alignment: pw.Alignment.centerRight),
+        pw.Container(padding: const pw.EdgeInsets.symmetric(vertical: 4),
+            alignment: pw.Alignment.center,
+            child: facadeBox(planned: record?.facadePlanned == true, done: record?.facadeDone == true)),
+      ]));
+    }
+  }
 
   doc.addPage(pw.MultiPage(
     pageFormat: PdfPageFormat.a4.landscape,
@@ -241,29 +313,14 @@ Future<void> downloadCentralizerPdf({
     ]),
     build: (_) => [
       if (orderedIds.isEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 20), child: pw.Text('Nu există săli pentru filtrele selectate.')),
-      for(final id in orderedIds) ...[
-        pw.Table(
-          border: pw.TableBorder.all(color:PdfColors.grey500,width:.55),
-          columnWidths: const {0: pw.FixedColumnWidth(190),1: pw.FlexColumnWidth()},
-          children:[pw.TableRow(children:[
-            pw.Container(
-              padding:const pw.EdgeInsets.all(6),
-              child:pw.Column(crossAxisAlignment:pw.CrossAxisAlignment.start,children:[
-                pw.Text(locationById[id]?.name ?? rowsByLocation[id]!.first['name']?.toString() ?? id,style:pw.TextStyle(fontSize:9,fontWeight:pw.FontWeight.bold)),
-                pw.SizedBox(height:2),
-                pw.Text(locationById[id]?.address ?? rowsByLocation[id]!.first['address']?.toString() ?? '',style:const pw.TextStyle(fontSize:7.5,color:PdfColors.grey700)),
-              ]),
-            ),
-            interventionTable(rowsByLocation[id]!,locationById[id]),
-          ])],
-        ),
-        pw.SizedBox(height:3),
-      ],
+      if (tableRows.isNotEmpty) pw.Table(
+        border: pw.TableBorder.all(color: PdfColors.grey500, width: .55),
+        columnWidths: columns,
+        children: tableRows,
+      ),
     ],
   ));
-  final bytes=await doc.save();
-  final filename='centralizator_${_safeFilePart(type.label)}_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf';
-  await downloadFile(bytes,filename,mimeType:'application/pdf');
+  return doc.save();
 }
 
 Future<void> downloadDecontPdf({

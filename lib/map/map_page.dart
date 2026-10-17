@@ -542,14 +542,16 @@ class _MapPageState extends State<MapPage> {
                       final displayPoints = hasRoadGeometry
                           ? coords.map((p) => LatLng(p[0], p[1])).toList()
                           : graphRoutePoints(_routeDays, widget.locations).points;
-                      // Schematic fallback when Mapbox cannot provide road geometry.
-                      return PolylineLayer(polylines: [
+                      // Keep a visible schedule path when Mapbox has no road
+                      // geometry. The multicolour segments also make ordered
+                      // visits easier to follow on the map.
+                      return PolylineLayer(polylines: hasRoadGeometry ? [
                         Polyline(
                           points: displayPoints,
-                          color: hasRoadGeometry ? Colors.deepOrangeAccent : Colors.blueGrey,
-                          strokeWidth: hasRoadGeometry ? 6 : 3,
+                          color: Colors.deepOrangeAccent,
+                          strokeWidth: 6,
                         ),
-                      ]);
+                      ] : _rainbowRouteLines());
                     },
                   ),
                 MarkerLayer(markers: [

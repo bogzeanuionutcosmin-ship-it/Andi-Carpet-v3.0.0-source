@@ -1,0 +1,41 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+const _defaults = <String, dynamic>{
+  'waitingStartedAt': null, 'waitingEndedAt': null, 'startedAt': null,
+  'finishedAt': null, 'status': 'waitingAccess', 'refusalReason': null,
+  'keptForLearning': true, 'facadePlanned': false, 'facadeDone': false,
+  'locationNameSnapshot': '', 'addressSnapshot': '',
+};
+
+bool recordPayloadMatches(Map<String, dynamic> current, Map<String, dynamic> expected) {
+  for (final key in {...expected.keys, ..._defaults.keys}) {
+    if (key == 'updatedAt') continue;
+    final a = current.containsKey(key) ? current[key] : _defaults[key];
+    final b = expected.containsKey(key) ? expected[key] : _defaults[key];
+    if (a != b) return false;
+  }
+  return true;
+}
+
+/// Existing records are updates, never upserts. Retrying the same ID and
+/// payload after a lost response is harmless. Distinct IDs remain distinct
+/// legitimate attempts; this is not a cross-device START reservation protocol.
+Future<void> saveRecordCompared(FirebaseFirestore db, String id,
+    Map<String, dynamic> desired, {Map<String, dynamic>? expected}) async {
+  final ref = db.collection('records').doc(id);
+  await db.runTransaction((tx) async {
+    final snap = await tx.get(ref);
+    final current = snap.data();
+    if (current != null && recordPayloadMatches(current, desired)) return;
+    if (expected == null) {
+      if (snap.exists) throw StateError('ID ocupat. Reîncarcă înainte de salvare.');
+      tx.set(ref, desired);
+    } else {
+      if (current == null) throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
+      if (!recordPayloadMatches(current, expected)) {
+        throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de salvare.');
+      }
+      tx.update(ref, desired);
+    }
+  });
+}
