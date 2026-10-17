@@ -152,7 +152,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
             title:Text('${formatDate(when)} · ${r.status == WorkAttemptStatus.waitingAccess ? timeText(r.waitingStartedAt) : '${timeText(r.startedAt)}–${timeText(r.finishedAt)}'}'),
             subtitle:Text('${teamName(r.teamId)} · $statusText'),
             trailing:(widget.isAdmin || (widget.canEditCentralizer && widget.canEditTeam(r.teamId))) && (r.status == WorkAttemptStatus.completed || r.status == WorkAttemptStatus.running)
-              ? IconButton(tooltip:'Corectează START / FINAL',onPressed:()=>_editRecord(r),icon:const Icon(Icons.edit))
+              ? IconButton(tooltip:'Corectează data, orele și fațada',onPressed:()=>_editRecord(r),icon:const Icon(Icons.edit))
               : null,
           );
         }),
@@ -210,34 +210,66 @@ class _CentralizerPageState extends State<CentralizerPage> {
   Future<void> _editRecord(CentralizerRecord r) async {
     final s = TextEditingController(text: timeText(r.startedAt));
     final f = TextEditingController(text: timeText(r.finishedAt));
+    var date = r.startedAt ?? r.finishedAt ?? DateTime.now();
+    var facadeDone = r.facadeDone;
     final result = await showDialog<bool>(
       context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Corectează START / FINAL'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: s, decoration: const InputDecoration(labelText: 'START HH:MM')),
-          TextField(controller: f, decoration: const InputDecoration(labelText: 'FINAL HH:MM')),
-        ]),
+      builder: (c) => StatefulBuilder(builder: (c, setDialogState) => AlertDialog(
+        title: const Text('Corectează intervenția'),
+        content: SizedBox(width:480,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children: [
+          ListTile(
+            title:const Text('Data intervenției'),
+            subtitle:Text(formatDate(date)),
+            trailing:const Icon(Icons.calendar_month),
+            onTap:()async{
+              final picked=await showDatePicker(context:c,initialDate:date,firstDate:DateTime(2020),lastDate:DateTime.now().add(const Duration(days:1)));
+              if(picked!=null&&c.mounted)setDialogState(()=>date=picked);
+            },
+          ),
+          TextField(controller:s,decoration:const InputDecoration(labelText:'START HH:MM')),
+          TextField(controller:f,decoration:const InputDecoration(labelText:'FINAL HH:MM')),
+          SwitchListTile(
+            contentPadding:EdgeInsets.zero,
+            title:const Text('Fațadă realizată'),
+            subtitle:const Text('Confirmă numai dacă fațada a fost efectiv executată.'),
+            value:facadeDone,
+            onChanged:(value)=>setDialogState(()=>facadeDone=value),
+          ),
+        ]))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c,false), child: const Text('Anulează')),
-          FilledButton(onPressed:()=>Navigator.pop(c,true),child: const Text('Salvează')),
+          TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),
+          FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Salvează')),
         ],
-      ),
+      )),
     );
+    if(!mounted){s.dispose();f.dispose();return;}
+    final startText=s.text;
+    final finishText=f.text;
+    s.dispose();
+    f.dispose();
     if(result!=true)return;
-    final base = r.startedAt ?? r.finishedAt ?? DateTime.now();
-    final newStart = _sameDateTime(base, s.text);
-    var newFinish = _sameDateTime(newStart ?? base, f.text);
-    if(newStart!=null && newFinish!=null && newFinish.isBefore(newStart)) newFinish=newFinish.add(const Duration(days:1));
-    r.startedAt=newStart;
-    r.finishedAt=newFinish;
-    if(r.startedAt!=null&&r.finishedAt!=null)r.status=WorkAttemptStatus.completed;
+    final newStart=_sameDateTime(date,startText);
+    var newFinish=_sameDateTime(date,finishText);
+    if(newStart==null||newFinish==null){
+      showErrorMessage(context,'Completează ore valide în format HH:MM.');
+      return;
+    }
+    if(newFinish.isBefore(newStart))newFinish=newFinish.add(const Duration(days:1));
+    final updated=CentralizerRecord(
+      id:r.id,teamId:r.teamId,locationId:r.locationId,type:r.type,
+      locationNameSnapshot:r.locationNameSnapshot,addressSnapshot:r.addressSnapshot,
+      waitingStartedAt:r.waitingStartedAt,waitingEndedAt:r.waitingEndedAt,
+      startedAt:newStart,finishedAt:newFinish,status:WorkAttemptStatus.completed,
+      refusalReason:r.refusalReason,keptForLearning:r.keptForLearning,
+      facadePlanned:r.facadePlanned||facadeDone,facadeDone:facadeDone,
+    );
     try {
-      await widget.saveRecord(r);
-      widget.log('START/FINAL corectat',r.locationNameSnapshot);
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Corecția a fost salvată.')));
+      await widget.saveRecord(updated);
+      widget.log('Intervenție corectată (dată, ore, fațadă)',r.locationNameSnapshot);
+      widget.onChanged();
+      if(mounted)showSuccessMessage(context,'Data, orele și fațada au fost salvate.');
     } catch(e) {
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Nu s-a putut salva: $e')));
+      if(mounted)showErrorMessage(context,'Nu s-a putut salva corecția: $e');
     }
   }
 
