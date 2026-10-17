@@ -16,7 +16,13 @@ def audit(source):
     match = ALLOWLIST_PATTERN.search(source)
     if not match:
         raise ValueError("Cannot identify literal projection FIELDS allowlist")
-    fields = STRING_PATTERN.findall(match.group(1))
+    raw_fields = match.group(1)
+    fields = STRING_PATTERN.findall(raw_fields)
+    # Reject expressions and identifiers outside the literal string allowlist.
+    residue = STRING_PATTERN.sub("", raw_fields)
+    residue = re.sub(r"[\\s,]", "", residue)
+    if residue:
+        raise ValueError("Projection FIELDS must contain only string literals")
     if len(fields) != len(set(fields)):
         raise ValueError("Duplicate projection field")
     exposure = sorted(set(fields) & SENSITIVE)
