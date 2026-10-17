@@ -24,8 +24,7 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertIn('initialDate:initial,firstDate:first,lastDate:last', CENTRALIZER)
 
     def test_stale_edit_is_rejected_before_update(self):
-        self.assertIn('for (final entry in expected.entries)', HOME)
-        self.assertIn('if (current[entry.key] != entry.value)', HOME)
+        self.assertIn('centralizerCorrectionSnapshotMatches(current, expected)', HOME)
         self.assertIn('hasPermission(FunctionPermission.editCentralizer)', HOME)
 
     def test_date_and_facade_can_be_corrected_with_hours(self):
