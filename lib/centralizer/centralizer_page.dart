@@ -286,6 +286,10 @@ class _CentralizerPageState extends State<CentralizerPage> {
       return;
     }
     if(newFinish.isBefore(newStart))newFinish=newFinish.add(const Duration(days:1));
+    if(!newFinish.isAfter(newStart)){
+      showErrorMessage(context,'Ora FINAL trebuie să fie după ora START. Pentru intervențiile peste miezul nopții, FINAL poate fi mai mică decât START.');
+      return;
+    }
     final updated=CentralizerRecord(
       id:r.id,teamId:r.teamId,locationId:r.locationId,type:r.type,
       locationNameSnapshot:r.locationNameSnapshot,addressSnapshot:r.addressSnapshot,
