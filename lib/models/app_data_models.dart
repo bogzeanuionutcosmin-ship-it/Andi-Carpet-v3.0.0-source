@@ -121,7 +121,9 @@ class WorkSchedule {
   String returnName;
   double? returnLatitude;
   double? returnLongitude;
-  WorkSchedule({required this.id, required this.teamId, String? graphId, String? graphName, required this.date, required this.items, this.active = true, this.closed = false, this.started = false, this.paused = false, this.postponed = false, this.autoProposed = false, this.planAlertAt, this.planAlertReason = '', this.lastRecalculatedAt, this.recalculationCount = 0, this.learningExplanation = '', this.learningConfidence = 0, this.learningSamples = 0, this.departureName = '', this.departureLatitude, this.departureLongitude, this.returnName = '', this.returnLatitude, this.returnLongitude})
+  DateTime? updatedAt;
+  String? writeToken;
+  WorkSchedule({required this.id, required this.teamId, String? graphId, String? graphName, required this.date, required this.items, this.active = true, this.closed = false, this.started = false, this.paused = false, this.postponed = false, this.autoProposed = false, this.planAlertAt, this.planAlertReason = '', this.lastRecalculatedAt, this.recalculationCount = 0, this.learningExplanation = '', this.learningConfidence = 0, this.learningSamples = 0, this.departureName = '', this.departureLatitude, this.departureLongitude, this.returnName = '', this.returnLatitude, this.returnLongitude, this.updatedAt, this.writeToken})
       : graphId = graphId ?? id,
         graphName = graphName ?? graphDefaultName(date);
 }

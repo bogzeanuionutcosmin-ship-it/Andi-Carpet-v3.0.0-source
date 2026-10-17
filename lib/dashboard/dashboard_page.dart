@@ -39,6 +39,8 @@ class _DashboardPageState extends State<DashboardPage> {
     planAlertAt:s.planAlertAt, planAlertReason:s.planAlertReason, lastRecalculatedAt:s.lastRecalculatedAt, recalculationCount:s.recalculationCount,
     learningExplanation:s.learningExplanation, learningConfidence:s.learningConfidence, learningSamples:s.learningSamples,
     departureName:s.departureName, departureLatitude:s.departureLatitude, departureLongitude:s.departureLongitude, returnName:s.returnName, returnLatitude:s.returnLatitude, returnLongitude:s.returnLongitude,
+    updatedAt:s.updatedAt,
+    writeToken:s.writeToken,
   );
 
   Future<Map<String,dynamic>?> _dashboardGeocodeTripPoint(String query) async {
