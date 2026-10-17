@@ -530,8 +530,8 @@ class _ProgramPageState extends State<ProgramPage> {
     final moved = transferable.map((e)=>ScheduleItem(locationId:e.locationId,locationNameSnapshot:e.locationNameSnapshot,addressSnapshot:e.addressSnapshot,typeSnapshot:e.typeSnapshot,categoryIdSnapshot:e.categoryIdSnapshot,order:0,transferred:true,facadePlanned:e.facadePlanned)).toList();
     next.items = <ScheduleItem>[...moved,...next.items.where((x)=>!ids.contains(x.locationId))];
     for(var i=0;i<next.items.length;i++)next.items[i].order=i+1;
-    await widget.saveSchedule(current);
-    await widget.saveSchedule(next);
+    try { await widget.saveSchedules(<WorkSchedule>[current, next]); } catch (e) { if (mounted) showErrorMessage(context, 'Transferul nu a putut fi salvat: ${_scheduleSaveFailure(e)}'); return; }
+    widget.onChanged();
     widget.log('Transfer locații între zile','${team.name} · ${day.graphName} · ${formatDate(day.date)} → ${formatDate(nextDate)} · ${transferable.length} locații');
     widget.notifyTeam(team.id,'Locații transferate','${transferable.length} locații au fost mutate în ${formatDate(nextDate)}.');
     if(mounted)showSuccessMessage(context,'${transferable.length} locații au fost transferate în ziua următoare.');
