@@ -77,8 +77,11 @@ def analyze(sources, package_name=None):
         if not path.endswith(".dart") or path == "main.dart":
             continue
         owned_by_main = ("main.dart", path) in part_links
-        has_part_of = bool(PART_OF.search(content))
-        if owned_by_main or has_part_of:
+        has_part_of_main = any(
+            posixpath.normpath(posixpath.join(posixpath.dirname(path), uri)) == "main.dart"
+            for uri in PART_OF.findall(content)
+        )
+        if owned_by_main or has_part_of_main:
             migration_candidates.append({
                 "file": path,
                 "classification": "main_part_requires_dependency_review",
