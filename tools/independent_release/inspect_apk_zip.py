@@ -18,6 +18,7 @@ def inspect(apk: Path):
         with zipfile.ZipFile(apk) as archive:
             infos = archive.infolist()
             names = set()
+            normalized_names = set()
             total = 0
             if len(infos) > MAX_ENTRIES:
                 findings.append("too_many_entries")
@@ -31,6 +32,10 @@ def inspect(apk: Path):
                 if name in names:
                     findings.append("duplicate_entry_name")
                 names.add(name)
+                canonical = str(normalized).rstrip("/")
+                if canonical in normalized_names:
+                    findings.append("duplicate_normalized_path")
+                normalized_names.add(canonical)
                 if info.flag_bits & 0x1:
                     findings.append("encrypted_zip_entry")
                 if info.compress_type not in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
