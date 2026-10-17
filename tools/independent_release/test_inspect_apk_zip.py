@@ -50,7 +50,7 @@ class ApkZipStructureTests(unittest.TestCase):
     def test_encrypted_flag_detected_without_decompression(self):
         self.write([("AndroidManifest.xml", b"a"), ("classes.dex", b"b")])
         payload = bytearray(self.apk.read_bytes())
-        offset = payload.index(b"PK\\x01\\x02")
+        offset = payload.index(b"PK\x01\x02")
         payload[offset + 8] |= 1
         self.apk.write_bytes(payload)
         self.assertIn("encrypted_zip_entry", inspect(self.apk)["findings"])
