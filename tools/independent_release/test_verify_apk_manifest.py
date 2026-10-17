@@ -40,6 +40,15 @@ class VerifyApkManifestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify(self.apk, self.manifest)
 
+    def test_hash_streaming_across_multiple_blocks(self):
+        self.apk.write_bytes(b"a" * (1024 * 1024 + 37))
+        expected = hashlib.sha256(self.apk.read_bytes()).hexdigest()
+        self.write_manifest(expected)
+        result = verify(self.apk, self.manifest)
+        self.assertTrue(result["hash_matches"])
+        self.assertEqual(result["actual_sha256"], expected)
+        self.assertFalse(result["signature_verified"])
+
     def test_modified_apk_is_detected(self):
         self.write_manifest(self.expected)
         self.apk.write_bytes(self.apk.read_bytes() + b"tampered")
