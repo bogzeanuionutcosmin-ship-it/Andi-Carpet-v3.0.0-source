@@ -42,7 +42,11 @@ class HistoryXiIntent {
     if(d is! Map || d.length!=2 || d['protocol']!=2 || d['receipt'] is! Map) {
       throw const FormatException('history_protocol_required');
     }
-    return HistoryXiIntent(FinanceIntent.decode(canonicalFinanceJson(d['receipt'])));
+    final restored = HistoryXiIntent(FinanceIntent.decode(canonicalFinanceJson(d['receipt'])));
+    // Persisted protocol envelopes are byte identities: never silently adopt
+    // a noncanonical representation during recovery or digest verification.
+    if (restored.encode() != raw) throw const FormatException('history_noncanonical');
+    return restored;
   }
   String get digest=>sha256.convert(utf8.encode(encode())).toString();
   Map<String,Object?> row()=>{'protocol':2,'operationId':receipt.operationId,
