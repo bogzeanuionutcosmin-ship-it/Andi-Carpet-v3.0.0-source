@@ -55,6 +55,11 @@ class ApkZipStructureTests(unittest.TestCase):
         self.apk.write_bytes(payload)
         self.assertIn("encrypted_zip_entry", inspect(self.apk)["findings"])
 
+    def test_colliding_normalized_zip_paths(self):
+        self.write([("AndroidManifest.xml", b"a"), ("classes.dex", b"b"),
+                    ("assets/./same.txt", b"one"), ("assets/same.txt", b"two")])
+        self.assertIn("duplicate_normalized_path", inspect(self.apk)["findings"])
+
     def test_high_compression_ratio_is_rejected_without_extracting(self):
         with zipfile.ZipFile(self.apk, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             archive.writestr("AndroidManifest.xml", b"a")
