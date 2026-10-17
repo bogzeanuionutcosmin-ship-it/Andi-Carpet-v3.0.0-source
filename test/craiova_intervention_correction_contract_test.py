@@ -34,6 +34,17 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertIn("facadeDone:facadeDone", CENTRALIZER)
         self.assertIn("if(newStart==null||newFinish==null)", CENTRALIZER)
 
+    def test_running_interventions_cannot_be_corrected_as_completed(self):
+        self.assertIn("&& r.status == WorkAttemptStatus.completed", CENTRALIZER)
+        self.assertIn("if (r.status != WorkAttemptStatus.completed || r.startedAt == null || r.finishedAt == null)", CENTRALIZER)
+        self.assertIn("Pot fi corectate doar intervențiile finalizate", CENTRALIZER)
+
+    def test_manual_and_corrected_interventions_reject_zero_duration_but_allow_overnight(self):
+        self.assertIn("if(!fn.isAfter(st!))", CENTRALIZER)
+        self.assertIn("if(newFinish.isBefore(newStart))newFinish=newFinish.add(const Duration(days:1));", CENTRALIZER)
+        self.assertIn("if(!newFinish.isAfter(newStart))", CENTRALIZER)
+        self.assertIn("Ora FINAL trebuie să fie după ora START", CENTRALIZER)
+
     def test_manual_entry_warns_about_same_team_room_and_day(self):
         self.assertIn('record.locationId==l.id', CENTRALIZER)
         self.assertIn('record.teamId==selectedTeamId', CENTRALIZER)
