@@ -55,6 +55,22 @@ class ApkZipStructureTests(unittest.TestCase):
         self.apk.write_bytes(payload)
         self.assertIn("encrypted_zip_entry", inspect(self.apk)["findings"])
 
+    def test_high_compression_ratio_is_rejected_without_extracting(self):
+        with zipfile.ZipFile(self.apk, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("AndroidManifest.xml", b"a")
+            archive.writestr("classes.dex", b"0" * 200000)
+        result = inspect(self.apk)
+        self.assertIn("compression_ratio_limit", result["findings"])
+        self.assertFalse(result["zip_structure_pass"])
+
+    def test_corrupt_member_crc_is_detected(self):
+        self.write([("AndroidManifest.xml", b"manifest-content"), ("classes.dex", b"dex-content")])
+        payload = bytearray(self.apk.read_bytes())
+        position = payload.index(b"manifest-content")
+        payload[position] ^= 1
+        self.apk.write_bytes(payload)
+        self.assertIn("corrupt_zip_entry", inspect(self.apk)["findings"])
+
     def test_non_zip_rejected(self):
         self.apk.write_bytes(b"not an apk")
         with self.assertRaises(ValueError):
