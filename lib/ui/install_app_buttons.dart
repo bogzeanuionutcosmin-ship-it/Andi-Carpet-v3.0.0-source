@@ -1,21 +1,33 @@
 part of '../main.dart';
 
+Uri? validatedAndroidApkUrl(String raw) {
+  final uri = Uri.tryParse(raw.trim());
+  if (uri == null || uri.scheme != 'https' || uri.host.isEmpty || uri.userInfo.isNotEmpty) return null;
+  if (uri.host == 'localhost' || uri.host.endsWith('.localhost')) return null;
+  return uri;
+}
+
 Future<void> _showAndroidInstallFlow(BuildContext context, AppSettings settings) async {
   final proceed = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
     title: const Row(children:[Icon(Icons.android),SizedBox(width:10),Expanded(child:Text('Instalare Android'))]),
     content: const Text(
-      'Instalarea APK-ului Andi Carpet din afara magazinului poate necesita dezactivarea temporară a funcției Auto Blocker pe unele telefoane Samsung. '
-      'De regulă: Setări → Securitate și confidențialitate → Auto Blocker. După instalare, recomandăm activarea lui din nou. '
-      'Android poate cere și permisiunea de instalare pentru browserul sau aplicația din care deschizi fișierul.'
+      'Descarcă APK-ul numai din linkul HTTPS oficial publicat de administrator și verifică proveniența fișierului înainte de instalare. '
+      'Android poate cere permisiunea de instalare pentru browserul sau aplicația din care deschizi fișierul. '
+      'Dacă protecția telefonului blochează instalarea, solicită administratorului o distribuție verificată; nu dezactiva protecțiile de securitate pentru un fișier necunoscut.'
     ),
     actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton.icon(onPressed:()=>Navigator.pop(c,true),icon:const Icon(Icons.download),label:const Text('Continuă la descărcare'))],
   )) ?? false;
   if (!proceed || !context.mounted) return;
   final raw=settings.androidDownloadUrl.trim();
   if(raw.isEmpty){showErrorMessage(context,'Linkul APK nu este încă publicat. Adminul îl poate adăuga din Admin Panel → Setări sistem.');return;}
-  final uri=Uri.tryParse(raw);
-  if(uri==null || !await launchUrl(uri,mode:LaunchMode.externalApplication)){
-    if(context.mounted)showErrorMessage(context,'Linkul pentru APK nu a putut fi deschis.');
+  final uri=validatedAndroidApkUrl(raw);
+  if(uri==null){showErrorMessage(context,'Link APK invalid: este necesară o adresă HTTPS publică, fără date de autentificare în URL.');return;}
+  try {
+    if(!await launchUrl(uri,mode:LaunchMode.externalApplication) && context.mounted){
+      showErrorMessage(context,'Linkul pentru APK nu a putut fi deschis.');
+    }
+  } catch(e) {
+    if(context.mounted)showErrorMessage(context,'Descărcarea APK nu a putut fi pornită: $e');
   }
 }
 
