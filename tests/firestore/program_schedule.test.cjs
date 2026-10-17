@@ -2,7 +2,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, setDoc, updateDoc, getDoc, serverTimestamp } = require('firebase/firestore');
+const { doc, setDoc, updateDoc, getDoc, serverTimestamp, writeBatch, runTransaction } = require('firebase/firestore');
 
 let env;
 const db = (uid) => env.authenticatedContext(uid).firestore();
@@ -77,6 +77,68 @@ test('authorized team editor creates a schedule that survives an independent rea
   const reread = await assertSucceeds(getDoc(doc(db('editor'), schedulePath('created-by-editor'))));
   assert.equal(reread.data().graphName, 'Grafic nou');
   assert.equal(reread.data().items[0].locationId, 'loc-c');
+});
+
+test('whole-graph changes commit atomically and a denied day leaves every day unchanged', async () => {
+  const editorDb = db('editor');
+  const first = doc(editorDb, schedulePath('open'));
+  const second = doc(editorDb, schedulePath('batch-second'));
+
+  const accepted = writeBatch(editorDb);
+  accepted.update(first, { paused: true, updatedAt: serverTimestamp() });
+  accepted.set(second, {
+    teamId: 'team-a', graphId: 'graph-1', graphName: 'Grafic test', closed: false,
+    paused: true, items: [], updatedAt: serverTimestamp(),
+  });
+  await assertSucceeds(accepted.commit());
+  assert.equal((await getDoc(first)).data().paused, true);
+  assert.equal((await getDoc(second)).data().paused, true);
+
+  const rejected = writeBatch(editorDb);
+  rejected.update(first, { paused: false, updatedAt: serverTimestamp() });
+  rejected.update(doc(editorDb, schedulePath('closed')), {
+    paused: true, updatedAt: serverTimestamp(),
+  });
+  await assertFails(rejected.commit());
+  assert.equal((await getDoc(first)).data().paused, true,
+    'Firestore must roll back every write if any day in the graph is denied');
+});
+
+test('two concurrent schedule editors cannot both save from the same updatedAt version', async () => {
+  const editorDb = db('editor');
+  const reference = doc(editorDb, schedulePath('open'));
+  const initial = await getDoc(reference);
+  const expectedUpdatedAt = initial.data().updatedAt ?? null;
+  const expectedWriteToken = initial.data().writeToken ?? null;
+  let readers = 0;
+  let releaseReaders;
+  const bothRead = new Promise((resolve) => { releaseReaders = resolve; });
+
+  const saveAgainstLoadedVersion = (paused, writeToken) => runTransaction(editorDb, async (transaction) => {
+    const current = await transaction.get(reference);
+    const actualUpdatedAt = current.data().updatedAt ?? null;
+    const actualWriteToken = current.data().writeToken ?? null;
+    readers += 1;
+    if (readers === 2) releaseReaders();
+    await bothRead;
+    const stale = expectedUpdatedAt == null
+      ? actualUpdatedAt != null
+      : actualUpdatedAt == null || actualUpdatedAt.toMillis() !== expectedUpdatedAt.toMillis();
+    const tokenStale = actualWriteToken !== expectedWriteToken;
+    if (stale || tokenStale) throw new Error('schedule changed since it was loaded');
+    transaction.update(reference, { paused, updatedAt: serverTimestamp(), writeToken });
+  });
+
+  const results = await Promise.allSettled([
+    saveAgainstLoadedVersion(true, 'writer-a-version-1'),
+    saveAgainstLoadedVersion(false, 'writer-b-version-1'),
+  ]);
+  assert.equal(results.filter((result) => result.status === 'fulfilled').length, 1);
+  assert.equal(results.filter((result) => result.status === 'rejected').length, 1);
+  const accepted = (await getDoc(reference)).data();
+  assert.ok(accepted.updatedAt, 'the accepted transaction must persist its update timestamp');
+  assert.ok(['writer-a-version-1', 'writer-b-version-1'].includes(accepted.writeToken),
+    'the accepted transaction must persist its unique write token');
 });
 
 test('team membership and editProgram are both required for schedule writes', async () => {
