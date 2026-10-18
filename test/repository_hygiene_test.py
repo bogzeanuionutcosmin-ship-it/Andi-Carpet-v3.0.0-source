@@ -97,6 +97,12 @@ class RepositoryHygieneTests(unittest.TestCase):
         module = (ROOT / "lib/ui/branding_theme_helpers.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/branding_theme_helpers.dart';", main)
         self.assertIn("part of '../main.dart';", module)
+        normalized = (ROOT / "lib/ui/font_choice_normalization.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'ui/font_choice_normalization.dart';", main)
+        self.assertIn("export 'ui/font_choice_normalization.dart';", main)
+        self.assertIn("String normalizeFontChoice(String? raw)", normalized)
+        self.assertIn("String _normalizeFontChoice(String? raw) => normalizeFontChoice(raw);", module)
+        self.assertNotIn("String normalizeFontChoice(String? raw)", module)
         for symbol in ("String _normalizeFontChoice(", "String? _resolvedFontFamily(",
                        "String _activeLogoAsset(", "Widget appBrandLogo("):
             self.assertNotIn(symbol, main)
