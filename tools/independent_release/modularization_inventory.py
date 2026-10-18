@@ -7,6 +7,7 @@ from pathlib import Path
 
 IMPORT = re.compile(r"^\s*(?:import|export)\s+['\"]([^'\"]+)['\"]", re.MULTILINE)
 PART = re.compile(r"^\s*part\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
+LIBRARY_NAME = re.compile(r"^\s*library\s+([A-Za-z_][\w.]*)\s*;", re.MULTILINE)
 NAMED_PART_OF = re.compile(r"^\s*part\s+of\s+([A-Za-z_][\w.]*)\s*;", re.MULTILINE)
 PART_OF = re.compile(r"^\s*part\s+of\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
 DOMAINS = ("schedule", "centralizer", "reports", "models", "home", "admin", "dashboard", "map")
@@ -92,7 +93,10 @@ def analyze(sources, package_name=None):
             posixpath.normpath(posixpath.join(posixpath.dirname(part), uri))
             for uri in PART_OF.findall(sources[part])
         }
-        if owner not in declared:
+        declared_named = set(NAMED_PART_OF.findall(sources[part]))
+        owner_library = LIBRARY_NAME.search(sources[owner])
+        named_matches = owner_library is not None and owner_library.group(1) in declared_named
+        if owner not in declared and not named_matches:
             invalid_part_owners.add((owner, part))
     for path, content in sorted(sources.items()):
         if not path.endswith(".dart") or path == "main.dart":
