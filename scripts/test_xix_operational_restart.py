@@ -83,6 +83,14 @@ def wait_screen(stem, title, alternatives, required=(), attempts=30):
         (OUT / f'{stem}-diagnostic.txt').write_text(
             f'Expected: {title}\nForeground: {in_foreground}\nVisible labels: {visible!r}\n',
             encoding='utf-8')
+        print((OUT / f'{stem}-diagnostic.txt').read_text(encoding='utf-8'), flush=True)
+        for command in [('shell', 'dumpsys', 'activity', 'activities'), ('shell', 'dumpsys', 'window', 'windows')]:
+            try:
+                dump = adb(*command).decode(errors='replace')
+                selected = [line.strip() for line in dump.splitlines() if any(token in line for token in ('mResumedActivity', 'topResumedActivity', 'mCurrentFocus', 'mFocusedApp', 'com.example.andi_carpeta'))]
+                print(f'Diagnostic {command[-2]}: {selected[:20]}', flush=True)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+                print(f'Diagnostic command unavailable: {exc}', flush=True)
         raise AssertionError(f'Expected loaded main-entry screen absent: {title}; inspect {stem}-diagnostic.txt and screenshot')
 
 
