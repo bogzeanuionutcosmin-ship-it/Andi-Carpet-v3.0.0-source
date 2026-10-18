@@ -1,0 +1,131 @@
+{
+  "prs": [
+    {
+      "number": 95,
+      "head_sha": "3c372cc839614125b9f375e5ff20b818aa1e18ed",
+      "files": [
+        "lib/ui/install_app_buttons.dart",
+        "test/android_install_link_test.dart",
+        "test/repository_hygiene_test.py"
+      ]
+    },
+    {
+      "number": 99,
+      "head_sha": "f5e3ebd078e02e14ee1e13114660f65a4cf10cd1",
+      "files": [
+        ".github/workflows/build-test-apk.yml",
+        ".github/workflows/validate.yml",
+        "firestore.rules",
+        "lib/admin/admin_backup_actions.dart",
+        "lib/admin/admin_backup_panel_actions.dart",
+        "lib/centralizer/centralizer_page.dart",
+        "lib/centralizer/correction_snapshot.dart",
+        "lib/dashboard/dashboard_page.dart",
+        "lib/home/home_document_codecs.dart",
+        "lib/home/home_page.dart",
+        "lib/main.dart",
+        "lib/map/map_page.dart",
+        "lib/models/app_data_models.dart",
+        "lib/reports/pdf_reports.dart",
+        "lib/schedule/program_page.dart",
+        "lib/schedule/schedule_card_full.dart",
+        "test/centralizer_correction_snapshot_test.dart",
+        "test/centralizer_operational_day_test.dart",
+        "test/centralizer_pdf_projection_test.dart",
+        "test/craiova_intervention_correction_contract_test.py",
+        "test/program_team_selection_test.dart",
+        "test/repository_hygiene_test.py",
+        "test/schedule_transactional_writer_contract_test.py",
+        "tests/firestore/centralizer_correction.test.cjs",
+        "tests/firestore/program_schedule.test.cjs"
+      ]
+    },
+    {
+      "number": 100,
+      "head_sha": "cfb00b9fea24e7e026019d81bac6ecfe3a294dd2",
+      "files": [
+        ".github/workflows/build-test-apk.yml",
+        ".github/workflows/centralizer-offline-smoke.yml",
+        ".github/workflows/validate.yml",
+        "ChatGpt",
+        "assets/fonts/DejaVuSans-Bold.ttf",
+        "assets/fonts/DejaVuSans-Oblique.ttf",
+        "assets/fonts/DejaVuSans.ttf",
+        "assets/fonts/LICENSE-DejaVu.txt",
+        "docs/MISIUNEA_XVIII_ENGINEERING.md",
+        "firestore.rules",
+        "lib/admin/admin_backup_actions.dart",
+        "lib/admin/admin_backup_panel_actions.dart",
+        "lib/centralizer/centralizer_page.dart",
+        "lib/centralizer/correction_snapshot.dart",
+        "lib/dashboard/dashboard_page.dart",
+        "lib/home/home_document_codecs.dart",
+        "lib/home/home_page.dart",
+        "lib/main.dart",
+        "lib/map/map_page.dart",
+        "lib/models/app_data_models.dart",
+        "lib/reports/pdf_format_helpers.dart",
+        "lib/reports/pdf_reports.dart",
+        "lib/schedule/program_page.dart",
+        "lib/schedule/schedule_card_full.dart",
+        "lib/testing/centralizer_offline_smoke.dart",
+        "pubspec.yaml",
+        "scripts/verify_centralizer_pdfs.py",
+        "test/centralizer_correction_snapshot_test.dart",
+        "test/centralizer_operational_day_test.dart",
+        "test/centralizer_pdf_projection_test.dart",
+        "test/centralizer_pdf_render_test.dart",
+        "test/centralizer_submission_test.dart",
+        "test/craiova_intervention_correction_contract_test.py",
+        "test/program_team_selection_test.dart",
+        "test/repository_hygiene_test.py",
+        "test/schedule_legacy_presence_contract_test.py",
+        "test/schedule_transactional_writer_contract_test.py",
+        "tests/firestore/centralizer_correction.test.cjs",
+        "tests/firestore/program_schedule.test.cjs"
+      ]
+    },
+    {
+      "number": 101,
+      "head_sha": "98c40ae394941ddfc185f028fc04ad6809d6de3b",
+      "files": [
+        ".github/workflows/restore-member-directory.yml",
+        ".github/workflows/validate.yml",
+        ".github/workflows/xviii-android-runtime.yml",
+        ".github/workflows/xviii-integration.yml",
+        "docs/MISIUNEA_XVIII_FINANCE_IDENTITY.md",
+        "firestore.rules",
+        "scripts/test_centralizer_android_ui.py",
+        "test/manual_member_directory_deploy_gate_test.py",
+        "tests/firestore/finance_identity.test.cjs"
+      ]
+    },
+    {
+      "number": 115,
+      "head_sha": "c0591bd68cdb720f9a3f5d6aa50c7cd727750cb0",
+      "files": [
+        "docs/independent/DATE_FORMATTERS_EXTRACTION_CONTRACT.md",
+        "lib/main.dart",
+        "lib/models/location_category_and_function_definition.dart",
+        "lib/models/location_status_and_functions.dart",
+        "lib/reports/pdf_filename_normalization.dart",
+        "lib/reports/pdf_format_helpers.dart",
+        "lib/ui/badge_metadata.dart",
+        "lib/ui/branding_theme_helpers.dart",
+        "lib/ui/font_choice_normalization.dart",
+        "lib/ui/icon_badge_catalog.dart",
+        "lib/ui/section_accent_palette.dart",
+        "lib/ui/section_visual_helpers.dart",
+        "lib/utils/date_formatters.dart",
+        "lib/utils/operational_dates.dart",
+        "test/badge_metadata_test.dart",
+        "test/date_formatters_test.dart",
+        "test/font_choice_normalization_test.dart",
+        "test/location_function_models_test.dart",
+        "test/pdf_filename_normalization_test.dart",
+        "test/repository_hygiene_test.py",
+        "test/section_accent_palette_test.dart"
+      ]
+    }
+  ]
+}
