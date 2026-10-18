@@ -1,0 +1,40 @@
+name: Characterize Finance Dialog Rollback (EXPECTED RED)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'test/finance_settlement_close_rollback.red.dart'
+      - '.github/workflows/finance-dialog-rollback-characterization.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  finance-dialog-expected-red:
+    if: github.head_ref == 'test/finance-dialog-rollback-red-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Verify actual rollback defect is reproducible (not a passing UI test)
+        shell: bash
+        run: |
+          set +e
+          flutter test test/finance_settlement_close_rollback.red.dart --reporter expanded > "$RUNNER_TEMP/finance-close-known-red.log" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/finance-close-known-red.log"
+          # No invented PASS: require the *specific* failed assertion, not
+          # arbitrary tool/compiler/test failures.
+          test "$result" -eq 1
+          grep -Fq 'failed close must not keep an endDate' "$RUNNER_TEMP/finance-close-known-red.log"
+          grep -Fq 'END_DATE_ROLLBACK_MISSING' "$RUNNER_TEMP/finance-close-known-red.log"
+          echo "EXPECTED RED reproduced: endDate rollback missing; NOT fixed"
+      # No secrets, Firebase prod, deploy, APK, publishing, billing or upload.
