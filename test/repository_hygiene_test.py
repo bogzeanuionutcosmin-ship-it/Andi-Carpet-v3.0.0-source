@@ -599,6 +599,12 @@ class RepositoryHygieneTests(unittest.TestCase):
         module = (ROOT / "lib/reports/pdf_format_helpers.dart").read_text(encoding="utf-8")
         self.assertIn("part 'reports/pdf_format_helpers.dart';", main)
         self.assertIn("part of '../main.dart';", module)
+        normalizer = (ROOT / "lib/reports/pdf_filename_normalization.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'reports/pdf_filename_normalization.dart';", main)
+        self.assertIn("export 'reports/pdf_filename_normalization.dart';", main)
+        self.assertIn("String safePdfFilePart(String text)", normalizer)
+        self.assertIn("String _safeFilePart(String text) => safePdfFilePart(text);", module)
+        self.assertNotIn("String safePdfFilePart(String text)", module)
         for symbol in ("Future<pw.ThemeData> _buildPdfTheme(",
                        "String _safeFilePart(", "String _pdfDate("):
             self.assertNotIn(symbol, main)
