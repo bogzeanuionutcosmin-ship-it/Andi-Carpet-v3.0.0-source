@@ -13,7 +13,8 @@ class CentralizerPage extends StatefulWidget {
   final VoidCallback onChanged;
   final void Function(String,String) log;
   final Future<void> Function(CentralizerRecord) saveRecord;
-  const CentralizerPage({super.key,required this.currentUser,required this.teams,required this.locations,required this.categories,required this.schedules,required this.records,required this.isAdmin,required this.canEditTeam,required this.canEditCentralizer,required this.onChanged,required this.log,required this.saveRecord});
+  final Future<void> Function(CentralizerRecord, CentralizerRecord) correctRecord;
+  const CentralizerPage({super.key,required this.currentUser,required this.teams,required this.locations,required this.categories,required this.schedules,required this.records,required this.isAdmin,required this.canEditTeam,required this.canEditCentralizer,required this.onChanged,required this.log,required this.saveRecord,required this.correctRecord});
   @override State<CentralizerPage> createState()=>_CentralizerPageState();
 }
 
@@ -32,14 +33,14 @@ class _CentralizerPageState extends State<CentralizerPage> {
   List<CentralizerRecord> _filteredRecords(){
     final q=searchController.text.trim().toLowerCase();
     final start=fromDate==null?null:DateTime(fromDate!.year,fromDate!.month,fromDate!.day);
-    final finish=toDate==null?null:DateTime(toDate!.year,toDate!.month,toDate!.day,23,59,59,999);
+    final finish=toDate==null?null:DateTime(toDate!.year,toDate!.month,toDate!.day+1);
     return widget.records.where((r){
       if(r.type!=type)return false;
       if(teamFilter!=null&&r.teamId!=teamFilter)return false;
       if(statusFilter!=null&&r.status!=statusFilter)return false;
       final when=recordEventTime(r);
       if(start!=null&&when.isBefore(start))return false;
-      if(finish!=null&&when.isAfter(finish))return false;
+      if(finish!=null&&!when.isBefore(finish))return false;
       if(q.isNotEmpty&&!r.locationNameSnapshot.toLowerCase().contains(q)&&!r.addressSnapshot.toLowerCase().contains(q))return false;
       return true;
     }).toList();
@@ -49,12 +50,12 @@ class _CentralizerPageState extends State<CentralizerPage> {
     if(statusFilter!=null)return <WorkSchedule>[];
     final q=searchController.text.trim().toLowerCase();
     final start=fromDate==null?null:DateTime(fromDate!.year,fromDate!.month,fromDate!.day);
-    final finish=toDate==null?null:DateTime(toDate!.year,toDate!.month,toDate!.day,23,59,59,999);
+    final finish=toDate==null?null:DateTime(toDate!.year,toDate!.month,toDate!.day+1);
     final out=<WorkSchedule>[];
     for(final schedule in widget.schedules){
       if(teamFilter!=null&&schedule.teamId!=teamFilter)continue;
       if(start!=null&&schedule.date.isBefore(start))continue;
-      if(finish!=null&&schedule.date.isAfter(finish))continue;
+      if(finish!=null&&!schedule.date.isBefore(finish))continue;
       final item=schedule.items.where((i)=>i.locationId==locationId&&i.typeSnapshot==type).toList();
       if(item.isEmpty)continue;
       if(q.isNotEmpty&&!item.first.locationNameSnapshot.toLowerCase().contains(q)&&!item.first.addressSnapshot.toLowerCase().contains(q))continue;
@@ -85,7 +86,16 @@ class _CentralizerPageState extends State<CentralizerPage> {
     final filtered=_filteredRecords();
     final scheduledOnlyIds=_scheduledOnlyLocationIds();
     final ids=<String>{...filtered.map((r)=>r.locationId),...scheduledOnlyIds};
-    final locs=widget.locations.where((l)=>l.type==type&&ids.contains(l.id)).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final locationsById=<String,Location>{for(final location in widget.locations)location.id:location};
+    // Execution snapshots remain visible after a registry location is removed.
+    // These inactive display-only locations never re-create registry documents.
+    for(final record in filtered){
+      locationsById.putIfAbsent(record.locationId,()=>Location(
+        id:record.locationId,name:record.locationNameSnapshot,address:record.addressSnapshot,
+        type:record.type,active:false,
+      ));
+    }
+    final locs=locationsById.values.where((l)=>l.type==type&&ids.contains(l.id)).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     final scheduledOnlyCount=locs.fold<int>(0,(sum,l)=>sum+_scheduledWithoutExecutionForLocation(l.id).length);
     return _Page(
       title:'Centralizator',subtitle:'Comun tuturor echipelor · MAGIC / Million',
@@ -98,8 +108,8 @@ class _CentralizerPageState extends State<CentralizerPage> {
         const SizedBox(height:12),
         Card(child:Padding(padding:const EdgeInsets.all(12),child:Wrap(spacing:10,runSpacing:10,crossAxisAlignment:WrapCrossAlignment.center,children:[
           SizedBox(width:260,child:TextField(controller:searchController,onChanged:(_)=>setState((){}),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),labelText:'Nume sau adresă'))),
-          SizedBox(width:220,child:DropdownButtonFormField<String?>(value:teamFilter,decoration:const InputDecoration(labelText:'Echipă'),items:[const DropdownMenuItem<String?>(value:null,child:Text('Toate echipele')),...widget.teams.map((t)=>DropdownMenuItem<String?>(value:t.id,child:Text(t.name)))],onChanged:(v)=>setState(()=>teamFilter=v))),
-          SizedBox(width:220,child:DropdownButtonFormField<WorkAttemptStatus?>(value:statusFilter,decoration:const InputDecoration(labelText:'Stare'),items:[const DropdownMenuItem<WorkAttemptStatus?>(value:null,child:Text('Toate stările')),const DropdownMenuItem(value:WorkAttemptStatus.completed,child:Text('Finalizată')),const DropdownMenuItem(value:WorkAttemptStatus.running,child:Text('În lucru')),const DropdownMenuItem(value:WorkAttemptStatus.waitingAccess,child:Text('Așteptare acces')),const DropdownMenuItem(value:WorkAttemptStatus.refused,child:Text('Refuzată')),const DropdownMenuItem(value:WorkAttemptStatus.notCompleted,child:Text('Nerealizată'))],onChanged:(v)=>setState(()=>statusFilter=v))),
+          SizedBox(width:220,child:DropdownButtonFormField<String?>(isExpanded:true,value:teamFilter,decoration:const InputDecoration(labelText:'Echipă'),items:[const DropdownMenuItem<String?>(value:null,child:Text('Toate echipele')),...widget.teams.map((t)=>DropdownMenuItem<String?>(value:t.id,child:Text(t.name)))],onChanged:(v)=>setState(()=>teamFilter=v))),
+          SizedBox(width:220,child:DropdownButtonFormField<WorkAttemptStatus?>(isExpanded:true,value:statusFilter,decoration:const InputDecoration(labelText:'Stare'),items:[const DropdownMenuItem<WorkAttemptStatus?>(value:null,child:Text('Toate stările')),const DropdownMenuItem(value:WorkAttemptStatus.completed,child:Text('Finalizată')),const DropdownMenuItem(value:WorkAttemptStatus.running,child:Text('În lucru')),const DropdownMenuItem(value:WorkAttemptStatus.waitingAccess,child:Text('Așteptare acces')),const DropdownMenuItem(value:WorkAttemptStatus.refused,child:Text('Refuzată')),const DropdownMenuItem(value:WorkAttemptStatus.notCompleted,child:Text('Nerealizată'))],onChanged:(v)=>setState(()=>statusFilter=v))),
           OutlinedButton.icon(onPressed:()=>_pickFilterDate(true),icon:const Icon(Icons.date_range),label:Text(fromDate==null?'De la':formatDate(fromDate!))),
           OutlinedButton.icon(onPressed:()=>_pickFilterDate(false),icon:const Icon(Icons.event),label:Text(toDate==null?'Până la':formatDate(toDate!))),
           if(fromDate!=null||toDate!=null||teamFilter!=null||statusFilter!=null||searchController.text.isNotEmpty)TextButton.icon(onPressed:()=>setState((){fromDate=null;toDate=null;teamFilter=null;statusFilter=null;searchController.clear();}),icon:const Icon(Icons.filter_alt_off),label:const Text('Șterge filtre')),
@@ -121,7 +131,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
       leading: categoryBrandWidget(l.categoryId, size: 38, fallbackColor: categoryColor(widget.categories,l.categoryId,fallbackType:l.type)),
       title:Text(l.name),
       subtitle:Text('${l.address}${l.surfaceM2>0?' · mochetă ${l.surfaceM2.toStringAsFixed(l.surfaceM2%1==0?0:1)} m²':''}${l.facadeM2>0?' · fațadă ${l.facadeM2.toStringAsFixed(l.facadeM2%1==0?0:1)} m²':''}'),
-      trailing:(widget.isAdmin || widget.canEditCentralizer)?IconButton(tooltip:'Adaugă încă o execuție',onPressed:()=>_addManualExecution(location:l),icon:const Icon(Icons.add_circle_outline)):null,
+      trailing:l.active&&(widget.isAdmin || widget.canEditCentralizer)?IconButton(tooltip:'Adaugă încă o execuție',onPressed:()=>_addManualExecution(location:l),icon:const Icon(Icons.add_circle_outline)):null,
       children:[
         ...scheduledOnly.map((schedule){
           final future=schedule.date.isAfter(DateTime.now());
@@ -151,15 +161,27 @@ class _CentralizerPageState extends State<CentralizerPage> {
             leading:Icon(Icons.circle,size:10,color:color),
             title:Text('${formatDate(when)} · ${r.status == WorkAttemptStatus.waitingAccess ? timeText(r.waitingStartedAt) : '${timeText(r.startedAt)}–${timeText(r.finishedAt)}'}'),
             subtitle:Text('${teamName(r.teamId)} · $statusText'),
-            trailing:(widget.isAdmin || (widget.canEditCentralizer && widget.canEditTeam(r.teamId))) && (r.status == WorkAttemptStatus.completed || r.status == WorkAttemptStatus.running)
-              ? IconButton(tooltip:'Corectează START / FINAL',onPressed:()=>_editRecord(r),icon:const Icon(Icons.edit))
+            trailing:(widget.isAdmin || (widget.canEditCentralizer && widget.canEditTeam(r.teamId))) && r.status == WorkAttemptStatus.completed
+              ? IconButton(tooltip:'Corectează data, orele și fațada',onPressed:()=>_editRecord(r),icon:const Icon(Icons.edit))
               : null,
           );
         }),
       ],
     ));
   }
+  bool _addingManualExecution = false;
+
   Future<void> _addManualExecution({Location? location}) async {
+    if (_addingManualExecution || !mounted) return;
+    _addingManualExecution = true;
+    try {
+      await _showManualExecution(location: location);
+    } finally {
+      _addingManualExecution = false;
+    }
+  }
+
+  Future<void> _showManualExecution({Location? location}) async {
     final allowedTeams = widget.isAdmin ? widget.teams : widget.teams.where((t)=>widget.canEditTeam(t.id)).toList();
     if (allowedTeams.isEmpty) { if(mounted)showErrorMessage(context,'Nu ai o echipă în care poți adăuga execuții.'); return; }
     var selectedLocation = location;
@@ -178,7 +200,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
           const SizedBox(height:10),
           DropdownButtonFormField<String>(initialValue:selectedTeamId,decoration:const InputDecoration(labelText:'Echipă'),items:allowedTeams.map((t)=>DropdownMenuItem(value:t.id,child:Text(t.name))).toList(),onChanged:(v){if(v!=null)setD(()=>selectedTeamId=v);}),
           const SizedBox(height:10),
-          ListTile(contentPadding:EdgeInsets.zero,title:const Text('Data execuției'),subtitle:Text(formatDate(date)),trailing:const Icon(Icons.calendar_month),onTap:()async{final d=await showDatePicker(context:c,firstDate:DateTime(2020),lastDate:DateTime.now().add(const Duration(days:1)),initialDate:date);if(d!=null)setD(()=>date=d);}),
+          ListTile(contentPadding:EdgeInsets.zero,title:const Text('Data execuției'),subtitle:Text(formatDate(date)),trailing:const Icon(Icons.calendar_month),onTap:()async{final d=await showDatePicker(context:c,firstDate:DateTime(2020),lastDate:DateTime.now().add(const Duration(days:1)),initialDate:date);if(d!=null&&c.mounted)setD(()=>date=d);}),
           Row(children:[Expanded(child:TextField(controller:start,decoration:const InputDecoration(labelText:'START HH:MM'))),const SizedBox(width:10),Expanded(child:TextField(controller:finish,decoration:const InputDecoration(labelText:'FINAL HH:MM')))]),
           const SizedBox(height:10),
           TextField(controller:reason,maxLines:2,decoration:const InputDecoration(labelText:'Observație (opțional)',hintText:'Ex.: a doua spălare / sală preluată de la altă echipă')),
@@ -200,52 +222,123 @@ class _CentralizerPageState extends State<CentralizerPage> {
     final st=parse(start.text);var fn=parse(finish.text);start.dispose();finish.dispose();
     if(st==null||fn==null){reason.dispose();if(mounted)showErrorMessage(context,'Orele trebuie scrise HH:MM.');return;}
     if(fn.isBefore(st))fn=fn.add(const Duration(days:1));
+    if(!fn.isAfter(st!)){
+      reason.dispose();
+      if(mounted)showErrorMessage(context,'Ora FINAL trebuie să fie după ora START.');
+      return;
+    }
     final note=reason.text.trim();reason.dispose();
     final l=selectedLocation!;
+    // A correction to an existing execution must use Edit, not create a second record.
+    final existing=widget.records.where((record)=>
+      record.locationId==l.id &&
+      record.teamId==selectedTeamId &&
+      record.status==WorkAttemptStatus.completed &&
+      record.startedAt!=null &&
+      sameDay(record.startedAt!,st!)
+    ).toList();
+    if(existing.isNotEmpty){
+      if(!mounted)return;
+      final confirmed=await showDialog<bool>(
+        context:context,
+        builder:(c)=>AlertDialog(
+          title:const Text('Execuție deja înregistrată'),
+          content:Text('Există deja ${existing.length} execuție/execuții finalizate pentru această sală, echipă și dată. Dacă vrei să corectezi data sau orele, folosește butonul de editare al intervenției existente. Adaugi totuși o execuție distinctă?'),
+          actions:[
+            TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),
+            FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Execuție distinctă')),
+          ],
+        ),
+      )??false;
+      if(!confirmed)return;
+    }
     final r=CentralizerRecord(id:idNow(),teamId:selectedTeamId,locationId:l.id,type:l.type,locationNameSnapshot:l.name,addressSnapshot:l.address,startedAt:st,finishedAt:fn,status:WorkAttemptStatus.completed,refusalReason:note.isEmpty?null:note,keptForLearning:true,facadePlanned:facadeDone,facadeDone:facadeDone);
     try{await widget.saveRecord(r);widget.log('Execuție manuală adăugată',l.name);if(mounted)showSuccessMessage(context,'Execuția a fost adăugată în Centralizator.');}
     catch(e){if(mounted)showErrorMessage(context,'Nu s-a putut salva execuția: $e');}
   }
 
   Future<void> _editRecord(CentralizerRecord r) async {
+    if (r.status != WorkAttemptStatus.completed || r.startedAt == null || r.finishedAt == null) {
+      if (mounted) showErrorMessage(context, 'Pot fi corectate doar intervențiile finalizate, cu ore START și FINAL.');
+      return;
+    }
     final s = TextEditingController(text: timeText(r.startedAt));
     final f = TextEditingController(text: timeText(r.finishedAt));
+    var date = r.startedAt ?? r.finishedAt ?? DateTime.now();
+    var facadeDone = r.facadeDone;
     final result = await showDialog<bool>(
       context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Corectează START / FINAL'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: s, decoration: const InputDecoration(labelText: 'START HH:MM')),
-          TextField(controller: f, decoration: const InputDecoration(labelText: 'FINAL HH:MM')),
-        ]),
+      builder: (c) => StatefulBuilder(builder: (c, setDialogState) => AlertDialog(
+        title: const Text('Corectează intervenția'),
+        content: SizedBox(width:480,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children: [
+          ListTile(
+            title:const Text('Data intervenției'),
+            subtitle:Text(formatDate(date)),
+            trailing:const Icon(Icons.calendar_month),
+            onTap:()async{
+              final first=DateTime(2020);
+              final last=DateTime.now().add(const Duration(days:1));
+              final initial=date.isBefore(first)?first:(date.isAfter(last)?last:date);
+              final picked=await showDatePicker(context:c,initialDate:initial,firstDate:first,lastDate:last);
+              if(picked!=null&&c.mounted)setDialogState(()=>date=picked);
+            },
+          ),
+          TextField(controller:s,decoration:const InputDecoration(labelText:'START HH:MM')),
+          TextField(controller:f,decoration:const InputDecoration(labelText:'FINAL HH:MM')),
+          SwitchListTile(
+            contentPadding:EdgeInsets.zero,
+            title:const Text('Fațadă realizată'),
+            subtitle:const Text('Confirmă numai dacă fațada a fost efectiv executată.'),
+            value:facadeDone,
+            onChanged:(value)=>setDialogState(()=>facadeDone=value),
+          ),
+        ]))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c,false), child: const Text('Anulează')),
-          FilledButton(onPressed:()=>Navigator.pop(c,true),child: const Text('Salvează')),
+          TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),
+          FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Salvează')),
         ],
-      ),
+      )),
     );
+    if(!mounted){s.dispose();f.dispose();return;}
+    final startText=s.text;
+    final finishText=f.text;
+    s.dispose();
+    f.dispose();
     if(result!=true)return;
-    final base = r.startedAt ?? r.finishedAt ?? DateTime.now();
-    final newStart = _sameDateTime(base, s.text);
-    var newFinish = _sameDateTime(newStart ?? base, f.text);
-    if(newStart!=null && newFinish!=null && newFinish.isBefore(newStart)) newFinish=newFinish.add(const Duration(days:1));
-    r.startedAt=newStart;
-    r.finishedAt=newFinish;
-    if(r.startedAt!=null&&r.finishedAt!=null)r.status=WorkAttemptStatus.completed;
+    final newStart=_sameDateTime(date,startText);
+    var newFinish=_sameDateTime(date,finishText);
+    if(newStart==null||newFinish==null){
+      showErrorMessage(context,'Completează ore valide în format HH:MM.');
+      return;
+    }
+    if(newFinish.isBefore(newStart))newFinish=newFinish.add(const Duration(days:1));
+    if(!newFinish.isAfter(newStart)){
+      showErrorMessage(context,'Ora FINAL trebuie să fie după ora START. Pentru intervențiile peste miezul nopții, FINAL poate fi mai mică decât START.');
+      return;
+    }
+    final updated=CentralizerRecord(
+      id:r.id,teamId:r.teamId,locationId:r.locationId,type:r.type,
+      locationNameSnapshot:r.locationNameSnapshot,addressSnapshot:r.addressSnapshot,
+      waitingStartedAt:r.waitingStartedAt,waitingEndedAt:r.waitingEndedAt,
+      startedAt:newStart,finishedAt:newFinish,status:r.status,
+      refusalReason:r.refusalReason,keptForLearning:r.keptForLearning,
+      facadePlanned:r.facadePlanned||facadeDone,facadeDone:facadeDone,
+    );
     try {
-      await widget.saveRecord(r);
-      widget.log('START/FINAL corectat',r.locationNameSnapshot);
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Corecția a fost salvată.')));
+      await widget.correctRecord(r, updated);
+      widget.log('Intervenție corectată (dată, ore, fațadă)',r.locationNameSnapshot);
+      widget.onChanged();
+      if(mounted)showSuccessMessage(context,'Data, orele și fațada au fost salvate.');
     } catch(e) {
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Nu s-a putut salva: $e')));
+      if(mounted)showErrorMessage(context,'Nu s-a putut salva corecția: $e');
     }
   }
 
   DateTime? _sameDateTime(DateTime? base,String text) {
     final p=text.trim().split(':');
-    if(base==null||p.length!=2)return base;
+    if(base==null||p.length!=2)return null;
     final h=int.tryParse(p[0]),m=int.tryParse(p[1]);
-    if(h==null||m==null||h<0||m<0||h>23||m>59)return base;
+    if(h==null||m==null||h<0||m<0||h>23||m>59)return null;
     return DateTime(base.year,base.month,base.day,h,m);
   }
 
@@ -261,4 +354,3 @@ class _CentralizerPageState extends State<CentralizerPage> {
     }
   }
 }
-

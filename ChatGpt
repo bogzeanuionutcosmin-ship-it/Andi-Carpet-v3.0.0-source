@@ -1317,3 +1317,33 @@ După clarificarea «conectării la un model AI online» și recomandarea explic
 ## 156. Rezolvare conflicte PR #17 și conservarea PR #18 — 2026-10-13
 
 Conflicte numai în acest document și registrul de reguli, prin append și numerotări 100/9 suprapuse. Toate deciziile PR #18 sunt păstrate integral, inclusiv Vision local, AI opțional, zero costuri suplimentare drept țintă, Error Log obligatoriu în prima versiune și retenția/curățarea limitată. Evidența refactorizării originale este mutată la 155 și registrul 74, fără pierderea conținutului. Codul/testele/configurația sunt identice byte cu byte cu PR #17 anterior. 107 teste Python + 3 Node și syntax Functions PASS local; audit cu 12 avertismente cunoscute. Flutter și emulatorul se verifică în CI. Rezultatul CI final și SHA/run sunt actualizate în descrierea PR #17 după finalizare; nu folosiți verdele vechi ca verdict pentru commitul nou. Raport complet: `AUDIT_MODULARIZARE_2026-10-12.md`, ultima secțiune. Niciun merge în main/deploy/APK/date live. După acest pas: finalizarea modularizării/contractelor și pregătirea Vision, fără activarea prematură a automatizărilor.
+
+## Misiunea XVIII — izolat, 18.10.2026
+
+Succesor al PR #99 pe ramura mission-xviii/hardening. Protecție existență pentru grafice legacy șterse/concurente, single-flight formular Centralizator, generator PDF real testabil și fonturi locale cu licență. Dovezi și limitări în docs/MISIUNEA_XVIII_ENGINEERING.md. Flutter local blocat de revizuirea automată pentru tentativa detectorului Azure către metadata; nu se ocolește, se folosește CI. Fără merge/deploy/Firebase live/distribuire APK; production_ready=false.
+
+## Misiunea XIX — RC, 18.10.2026
+
+PR #102 conține integrarea izolată #100/#101/#95, writer CAS pentru records,
+restore atomic limitat și testare Android cu Auth/Firestore emulator. CI nativ
+39076482990 a reprodus lipsa STOP după START în afara ferestrei standard; fixul
+nu mută timestampurile reale. Sunt protejate și metadata legacy nested și
+metadatele exportului la restore. Contracte/limite: docs/MISIUNEA_XIX_RC_ENGINEERING.md.
+PR #118 separă enumurile; #119 verifică integrarea cu cele șapte module #117;
+#120 separă catalogul de asseturi. CI final trebuie verificat pe fiecare HEAD.
+Nu sunt autorizate merge/deploy, Firebase live, distribuire APK, semnătură
+permanentă nouă sau activare implicită de automatizări. production_ready=false.
+
+Continuare XIX: probele native sunt întărite pentru a nu confunda o eroare
+SDK arbitrară cu un conflict/permission-denied sau un refuz de inventariere cu
+rollbackul batchului. Navigarea verifică datele sintetice și headinguri exacte,
+nu doar prezența taburilor. CI se reexecută pe commitul final; dovezile anterioare
+rămân asociate SHA-ului lor, fără revendicări pentru codul nou.
+
+Confirmarea XIX respinge și metadata isFromCache/hasPendingWrites; Source.server
+singur poate include latency compensation. Un conflict la citirea de confirmare
+este rezultat incert, nu dovada că un commit anterior nu a persistat.
+
+CI verifică prezența `flutter test --no-uninstall` în versiunea 3.47.5 și o
+folosește pentru a păstra package/Auth demo înaintea restartului entrypointului
+main. Fără flag, etapa nativă se oprește clar; nu continuă fără persistență.

@@ -1,0 +1,128 @@
+name: XIX operational candidate and native emulator validation
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: xix-native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    if: github.head_ref == 'mission-xix/release-candidate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Reproduce pinned legacy comparison and operational-day defects
+        run: |
+          mkdir -p xix-evidence
+          cp lib/operations/record_writer.dart /tmp/xix-record-writer-fixed.dart
+          cp lib/operations/atomic_restore.dart /tmp/xix-restore-fixed.dart
+          cp lib/utils/operational_dates.dart /tmp/xix-operational-dates-fixed.dart
+          git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/operations/record_writer.dart > lib/operations/record_writer.dart
+          git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/operations/atomic_restore.dart > lib/operations/atomic_restore.dart
+          git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/utils/operational_dates.dart > lib/utils/operational_dates.dart
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('lib/utils/operational_dates.dart')
+          fixed=Path('/tmp/xix-operational-dates-fixed.dart').read_text()
+          p.write_text(p.read_text()+'\nbool recordHasOpenAttempt'+fixed.split('\nbool recordHasOpenAttempt',1)[1])
+          PY
+          if flutter test --reporter=json test/record_writer_test.dart test/centralizer_operational_day_test.dart test/atomic_restore_preflight_test.dart > xix-evidence/pinned-red.log 2>&1; then
+            echo 'Expected pinned defects were not reproduced'; exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          names={};failed=[]
+          for line in open('xix-evidence/pinned-red.log'):
+              try: e=json.loads(line)
+              except ValueError: continue
+              if e.get('type')=='testStart': names[e['test']['id']]=e['test']['name']
+              if e.get('type')=='testDone' and e.get('result')=='failure': failed.append(names[e['testID']])
+          assert set(failed)=={'independently decoded nested legacy metadata compares by value','real daytime and late-evening executions do not expire at 12:30','oversized restore is rejected before database inventory','empty restore cannot write successful metadata'},failed
+          print('Four pinned behavior defects reproduced; compilation succeeded.')
+          PY
+          cp /tmp/xix-record-writer-fixed.dart lib/operations/record_writer.dart
+          cp /tmp/xix-restore-fixed.dart lib/operations/atomic_restore.dart
+          cp /tmp/xix-operational-dates-fixed.dart lib/utils/operational_dates.dart
+          flutter test test/record_writer_test.dart test/centralizer_operational_day_test.dart test/atomic_restore_preflight_test.dart > xix-evidence/fixed-green.log 2>&1
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Build operational APK without running live backend
+        run: |
+          flutter build apk --debug
+          mkdir -p xix-evidence
+          cp build/app/outputs/flutter-apk/app-debug.apk xix-evidence/operational-debug.apk
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt | sort -V | tail -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$AAPT" dump badging xix-evidence/operational-debug.apk > xix-evidence/operational-metadata.txt
+          "$AAPT" dump permissions xix-evidence/operational-debug.apk >> xix-evidence/operational-metadata.txt
+          "$APKSIGNER" verify --print-certs xix-evidence/operational-debug.apk > xix-evidence/operational-cert.txt
+          sha256sum xix-evidence/operational-debug.apk > xix-evidence/SHA256SUMS
+      - name: Configure temporary emulator backend only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle.kts');p.write_text(p.read_text().replace('    id("com.google.gms.google-services")','    // No native production Firebase auto-init in emulator build'))
+          p=Path('android/app/src/debug/AndroidManifest.xml')
+          p.write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.INTERNET"/><application android:networkSecurityConfig="@xml/xix_emulator_network"/></manifest>')
+          p=Path('android/app/src/debug/res/xml/xix_emulator_network.xml');p.parent.mkdir(parents=True,exist_ok=True)
+          p.write_text('<network-security-config><base-config cleartextTrafficPermitted="false"/><domain-config cleartextTrafficPermitted="true"><domain>10.0.2.2</domain><domain>127.0.0.1</domain><domain>localhost</domain></domain-config></network-security-config>')
+          PY
+          npm install --no-save --no-package-lock firebase-tools@14
+          test -e /dev/kvm
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify Flutter retains the operational app after integration tests
+        run: |
+          flutter test --help > xix-evidence/flutter-test-help.txt
+          grep -q -- '--no-uninstall' xix-evidence/flutter-test-help.txt
+      - name: Native connected component flow and operational app restart
+        uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-boot-timeout: 600
+          script: npx firebase emulators:exec --only auth,firestore --project demo-andi-xix --config firebase.xix-test.json 'bash scripts/run_xix_native.sh'
+      - name: Verify native PDF and checksums
+        if: always()
+        run: |
+          if test -f xix-evidence/native-flow.pdf; then
+            sudo apt-get update -qq
+            sudo apt-get install -y poppler-utils
+            pdfinfo xix-evidence/native-flow.pdf > xix-evidence/native-pdf-info.txt
+            pdftotext -layout xix-evidence/native-flow.pdf xix-evidence/native-flow.txt
+            python3 - <<'PY'
+          from pathlib import Path
+          s=Path('xix-evidence/native-flow.txt').read_text()
+          for expected in ['Sala XIX','23:55','00:20']:
+              assert expected in s, expected
+          PY
+          fi
+          cp pubspec.lock xix-evidence/pubspec.lock
+          find xix-evidence -name '*.apk' -o -name '*.pdf' | sort | xargs -r sha256sum > xix-evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: XIX-candidate-${{ github.event.pull_request.head.sha }}
+          path: xix-evidence/
+          retention-days: 7
