@@ -63,7 +63,10 @@ DateTime? _parseDate(String value) {
   }
   if (c < 100) c += c >= 70 ? 1900 : 2000;
   if (a < 1 || a > 31 || b < 1 || b > 12 || c < 2000 || c > 2100) return null;
-  try { return DateTime(c, b, a); } catch (_) { return null; }
+  // DateTime normalizes impossible dates (31 February -> March), so reject
+  // them explicitly instead of storing a different fiscal document date.
+  final parsed = DateTime(c, b, a);
+  return parsed.year == c && parsed.month == b && parsed.day == a ? parsed : null;
 }
 
 FiscalOcrData parseFiscalOcr(String text) {
@@ -102,8 +105,11 @@ FiscalOcrData parseFiscalOcr(String text) {
 
   double? amount;
   final totalPatterns = <RegExp>[
-    RegExp(r'(?:TOTAL\s+(?:DE\s+PLAT[ĂA]|PLAT[ĂA])?|TOTAL|SUMA\s+DE\s+PLAT[ĂA]|DE\s+PLAT[ĂA])[^0-9]{0,20}([0-9]{1,7}(?:[.,][0-9]{2})?)', caseSensitive: false),
-    RegExp(r'([0-9]{1,7}(?:[.,][0-9]{2})?)\s*(?:RON|LEI)\b', caseSensitive: false),
+    // Prefer the payable total regardless of the order in which VAT is printed.
+    RegExp(r'(?:\bTOTAL\s+(?:DE\s+)?PLAT[ĂA]|\bSUMA\s+DE\s+PLAT[ĂA]|\bDE\s+PLAT[ĂA])[^0-9]{0,20}([0-9]{1,3}(?:[., ][0-9]{3})+[.,][0-9]{2}|[0-9]{1,7}(?:[.,][0-9]{2})?)', caseSensitive: false),
+    // Never treat SUBTOTAL or TOTAL TVA as the final payable amount.
+    RegExp(r'\bTOTAL\b(?!\s*(?:TVA\b|TAX[ĂA]|REDUCERE|DISCOUNT|F[ĂA]R[ĂA]\s+TVA))[^\n0-9]{0,20}([0-9]{1,3}(?:[., ][0-9]{3})+[.,][0-9]{2}|[0-9]{1,7}(?:[.,][0-9]{2})?)', caseSensitive: false),
+    RegExp(r'([0-9]{1,3}(?:[., ][0-9]{3})+[.,][0-9]{2}|[0-9]{1,7}(?:[.,][0-9]{2})?)\s*(?:RON|LEI)\b', caseSensitive: false),
   ];
   for (final re in totalPatterns) {
     final matches = re.allMatches(raw).toList();
