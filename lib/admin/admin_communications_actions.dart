@@ -16,7 +16,7 @@ mixin _AdminCommunicationsActions on State<AdminPanelPage> {
   FunctionDefinition? _functionByIdLocal(String id);
 
 Future<void> _sendSystemNotification() async {
-   final recipients = users.where((u) => u.active).toList()..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+   final recipients = activeAdminNotificationRecipients(users);
    if (recipients.isEmpty) {
      if (mounted) showErrorMessage(context, 'Nu există membri activi care să primească notificarea.');
      return;
