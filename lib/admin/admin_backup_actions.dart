@@ -2,9 +2,11 @@ part of '../main.dart';
 
 // Backup operations are inherited by the Admin panel state; UI stays in the panel.
 mixin _AdminBackupActions on State<AdminPanelPage> {
+  FirebaseFirestore get _backupDb;
+  AdminBackupFiles get _backupFiles;
   Future<void> _exportBackup() async {
     const names=['teams','cars','locations','locationCategories','functions','schedules','records','expenses','perDiems','finance','settlements','documents','notifications','audit','learningEvents','backgrounds'];
-    final db=FirebaseFirestore.instance;
+    final db=_backupDb;
     final data=<String,dynamic>{
       'format':'AndiCarpetaBackupV1',
       'createdAt':DateTime.now().toIso8601String(),
@@ -19,7 +21,7 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
     }
     final bytes=Uint8List.fromList(utf8.encode(const JsonEncoder.withIndent('  ').convert(data)));
     final filename='andi_carpeta_backup_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}_${two(DateTime.now().hour)}${two(DateTime.now().minute)}.json';
-    final saved=await FilePicker.saveFile(fileName:filename,bytes:bytes);
+    final saved=await _backupFiles.saveJson(fileName:filename,bytes:bytes);
     if(saved!=null){
       await db.collection('meta').doc('backup').set({'lastExportAt':FieldValue.serverTimestamp(),'fileName':filename},SetOptions(merge:true));
       widget.log('Backup exportat',filename);
@@ -34,7 +36,7 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
       actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Restaurează'))],
     ))??false;
     if(!ok)return;
-    final db=FirebaseFirestore.instance;
+    final db=_backupDb;
     final ref=db.collection('backups').doc(backupId);
     final meta=await ref.get();
     if(!meta.exists||meta.data()?['status']!='complete'){if(mounted)showErrorMessage(context,'Backup-ul selectat nu este complet.');return;}
@@ -88,7 +90,7 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
   }
 
   Future<void> _restoreBackup() async {
-    final file=await FilePicker.pickFile(type:FileType.custom,allowedExtensions:['json']);
+    final file=await _backupFiles.pickJson();
     if(file==null)return;
     final raw=utf8.decode(await file.readAsBytes());
     final parsed=jsonDecode(raw);
@@ -133,7 +135,7 @@ mixin _AdminBackupActions on State<AdminPanelPage> {
     }
     final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Restaurare backup'),content:const Text('Datele operaționale și Auditul din backup vor înlocui colecțiile existente. Conturile Firebase Authentication nu sunt modificate. Continui?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Restaurează'))]))??false;
     if(!ok)return;
-    final db=FirebaseFirestore.instance;
+    final db=_backupDb;
     for(final entry in validated.entries){
       final name=entry.key;
       final current=await db.collection(name).get();
