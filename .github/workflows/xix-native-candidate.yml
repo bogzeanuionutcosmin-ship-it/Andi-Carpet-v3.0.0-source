@@ -30,6 +30,8 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: Verify native evidence validator contract
+        run: python3 -m unittest discover -s test -p 'xix_native_evidence_test.py'
       - name: Reproduce pinned legacy comparison and operational-day defects
         run: |
           mkdir -p xix-evidence
