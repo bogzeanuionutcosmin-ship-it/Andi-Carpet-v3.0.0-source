@@ -1,10 +1,12 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
 
-class _TeamSelector extends StatelessWidget {
+import '../models/app_data_models.dart';
+
+class TeamSelector extends StatelessWidget {
   final List<Team> teams; final int selected; final ValueChanged<int> onChanged;
-  const _TeamSelector({required this.teams,required this.selected,required this.onChanged});
+  final Color accent;
+  const TeamSelector({required this.teams,required this.selected,required this.onChanged,required this.accent});
   @override Widget build(BuildContext context){
-    final accent=sectionAccent('Echipe');
     return ConstrainedBox(
       constraints:const BoxConstraints(maxWidth:360),
       child:DropdownButtonFormField<int>(

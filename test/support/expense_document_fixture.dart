@@ -1,0 +1,104 @@
+import 'dart:async';
+import 'dart:typed_data';
+import 'package:andi_carpeta/main.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
+
+// Real ExpensePage, real parser, real form/object/save orchestration. Only
+// image selection, recognition and the save boundary are synthetic.
+class ExpenseDocumentFixture {
+  final AppUser user;
+  final String teamId;
+  final expenses = <Expense>[];
+  final attempts = <Expense>[];
+  final perDiems = <PerDiemEntry>[];
+  Future<void> Function(PerDiemEntry)? savePerDiemOverride;
+  Future<void> Function(TravelSettlement)? saveSettlementOverride;
+  final logs = <String>[];
+  final pickerRequests = <bool>[];
+  int recognizes = 0;
+  int changes = 0;
+  bool imageCancelled = false;
+  bool failRecognition = false;
+  bool failSave = false;
+  bool updateLocallyBeforeFailure = false;
+  Uint8List? imageOverride;
+  bool manager = true;
+  bool readOnlyDirector = false;
+  bool legacyFinance = false;
+  bool initialSettlementClosed = false;
+  DateTime? initialSettlementEnd;
+  TravelSettlement? settlementOverride;
+  TeamFinance? financeOverride;
+  Future<void> Function(TeamFinance)? saveFinanceOverride;
+  bool Function()? diagnosticSessionIsCurrent;
+  Completer<void>? saveGate;
+  String text;
+  late StateSetter rebuild;
+  Widget Function(Widget)? wrapPage;
+  late final Uint8List image = Uint8List.fromList(img.encodePng(img.Image(width: 2, height: 2)));
+  ExpenseDocumentFixture(this.text, {String userId = 'worker', this.teamId = 'team'})
+      : user = AppUser(id: userId, name: 'Synthetic Worker', role: UserRole.member);
+  Future<XFile?> pick(bool allowNoImage) async {
+    pickerRequests.add(allowNoImage);
+    return imageCancelled ? null : XFile.fromData(imageOverride ?? image, name: 'synthetic.png');
+  }
+  Future<String> recognize(Uint8List bytes, {String? path}) async {
+    recognizes++;
+    expect(bytes, imageOverride ?? image); // No camera/MLKit/network boundary reached.
+    if (failRecognition) throw StateError('synthetic OCR failure');
+    return text;
+  }
+  Future<void> save(Expense expense) async {
+    attempts.add(expense);
+    await saveGate?.future;
+    if (failSave) {
+      if (updateLocallyBeforeFailure) { expenses.add(expense); rebuild(() {}); }
+      throw StateError('synthetic save failure');
+    }
+    expenses.add(expense);
+    rebuild(() {});
+  }
+  Widget buildPage()=>Scaffold(body: StatefulBuilder(
+      builder: (context, setState) {
+        rebuild = setState;
+        final page = ExpensePage(
+          diagnosticSessionIsCurrent: diagnosticSessionIsCurrent,
+          currentUser: user, teams: [Team(id: teamId, name: 'Synthetic Team', members: [user.id], financialManagerId: manager ? user.id : 'other')],
+          users: [user], expenses: expenses, perDiems: perDiems,
+          finances: [financeOverride ?? TeamFinance(teamId: teamId, managerId: manager ? user.id : 'other', receivedDeparture: legacyFinance ? 1 : 0)],
+          settlements: legacyFinance ? [] : [settlementOverride ?? TravelSettlement(id: 'settlement', teamId: teamId, name: 'Synthetic Trip', startDate: DateTime(2026, 10, 1), closed: initialSettlementClosed, endDate: initialSettlementEnd, managerId: manager ? user.id : 'other')],
+          settings: AppSettings(), canEditTeam: (_) => true,
+          isAdmin: false, canEditOwnDecont: !readOnlyDirector, canViewOtherDecont: readOnlyDirector,
+          onChanged: () { changes++; }, notifyUser: (a, b, c) { fail('Unexpected notification'); },
+          log: (a, b) => logs.add('$a:$b'), saveExpense: save,
+          savePerDiem: savePerDiemOverride ?? (_) async { fail('Unexpected per-diem write'); },
+          saveFinance: saveFinanceOverride ?? (_) async { fail('Unexpected finance write'); },
+          saveSettlement: saveSettlementOverride ?? (_) async { fail('Unexpected settlement write'); },
+          documentImagePicker: pick, documentTextRecognizer: recognize,
+        );
+        return wrapPage?.call(page) ?? page;
+      },
+    ));
+  Future<void> mount(WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(home:buildPage()));
+    await tester.pumpAndSettle();
+  }
+  Future<void> scan(WidgetTester tester) async {
+    final button = find.widgetWithText(FilledButton, 'Scanează bon / factură');
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+  }
+  Finder field(String label) => find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == label);
+  Future<void> enter(WidgetTester tester, String label, String value) async {
+    await tester.ensureVisible(field(label));
+    await tester.enterText(field(label), value);
+  }
+  Future<void> submit(WidgetTester tester) async {
+    await tester.tap(find.widgetWithText(FilledButton, manager ? 'Confirmă' : 'Trimite spre confirmare'));
+    await tester.pumpAndSettle();
+  }
+}
