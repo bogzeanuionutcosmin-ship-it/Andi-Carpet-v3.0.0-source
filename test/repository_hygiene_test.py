@@ -458,6 +458,7 @@ class RepositoryHygieneTests(unittest.TestCase):
         formatters = (ROOT / "lib/utils/date_formatters.dart").read_text(encoding="utf-8")
         self.assertIn("part 'utils/operational_dates.dart';", main)
         self.assertIn("import 'utils/date_formatters.dart';", main)
+        self.assertIn("export 'utils/date_formatters.dart';", main)
         self.assertIn("part of '../main.dart';", module)
         self.assertNotIn("part of '../main.dart';", formatters)
         pure_symbols = ("String two(int n)", "String formatDate(DateTime d)",
