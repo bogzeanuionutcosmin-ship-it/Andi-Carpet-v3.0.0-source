@@ -11,6 +11,9 @@ void main() {
       'https://localhost/andi.apk', 'https://dev.localhost/andi.apk',
       'https://192.168.1.10/andi.apk', 'https://127.0.0.1/andi.apk',
       'https://10.0.0.2/andi.apk', 'https://[::1]/andi.apk',
+      // WHATWG URL parsers normalize these non-decimal IPv4 forms to loopback.
+      'https://0x7f.0.0.1/andi.apk', 'https://0177.0.0.1/andi.apk',
+      'https://0x7f000001/andi.apk',
       'https://printer.local/andi.apk', 'https://service.internal/andi.apk',
       'https://intranet/andi.apk',
       'not-a-url',
