@@ -234,6 +234,26 @@ class ModularizationInventoryTests(unittest.TestCase):
         })
         self.assertEqual(result["ambiguous_named_part_owners"], [])
 
+    def test_hotspots_rank_by_total_then_inbound_then_path(self):
+        result = analyze({
+            "a.dart": "import 'shared.dart';",
+            "b.dart": "import 'shared.dart';",
+            "shared.dart": "import 'leaf.dart';",
+            "leaf.dart": ""
+        })
+        self.assertEqual(result["dependency_hotspots"], [
+            {"file": "shared.dart", "inbound_count": 2, "outbound_count": 1},
+            {"file": "leaf.dart", "inbound_count": 1, "outbound_count": 0},
+            {"file": "a.dart", "inbound_count": 0, "outbound_count": 1},
+            {"file": "b.dart", "inbound_count": 0, "outbound_count": 1}
+        ])
+
+    def test_hotspots_ignore_unresolved_and_external_imports(self):
+        result = analyze({
+            "a.dart": "import 'missing.dart';\\nimport 'package:flutter/widgets.dart';"
+        }, package_name="andi_carpet")
+        self.assertEqual(result["dependency_hotspots"], [])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
