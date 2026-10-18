@@ -33,6 +33,25 @@ for file in native-flow.pdf observations.json; do
     echo "Missing native evidence: $file (run-as failed)" >&2
     exit 1
   fi
+  if ! python3 - "$file" "$tmp" <<'PYCHECK'
+import json, pathlib, sys
+kind, filename = sys.argv[1:]
+raw = pathlib.Path(filename).read_bytes()
+valid = (raw.startswith(b"%PDF-") and b"%%EOF" in raw[-1024:]) if kind.endswith(".pdf") else bool(raw)
+if not kind.endswith(".pdf") and valid:
+    try:
+        valid = isinstance(json.loads(raw), dict)
+    except (ValueError, UnicodeDecodeError):
+        valid = False
+if not valid:
+    print(f"INVALID native artifact {kind}: bytes={len(raw)} prefix_hex={raw[:32].hex()}", file=sys.stderr)
+    sys.exit(1)
+PYCHECK
+  then
+    mv "$tmp" "xix-evidence/$file.invalid"
+    echo "Native artifact rejected; raw diagnostic retained as $file.invalid" >&2
+    exit 1
+  fi
   mv "$tmp" "xix-evidence/$file"
 done
 python3 scripts/verify_xix_native_evidence.py
