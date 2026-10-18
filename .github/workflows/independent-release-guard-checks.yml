@@ -1,0 +1,73 @@
+name: Independent release guard offline checks
+on:
+  pull_request:
+    paths:
+      - 'tools/independent_release/release_guard.py'
+      - 'tools/independent_release/test_release_guard.py'
+      - 'tools/independent_release/pr_collision_guard.py'
+      - 'tools/independent_release/test_pr_collision_guard.py'
+      - 'docs/independent/pr_collision_snapshot_20261018.json'
+      - 'tools/independent_release/verify_ci_suite_union.py'
+      - 'tools/independent_release/test_verify_ci_suite_union.py'
+      - 'tools/independent_release/integration_gate.py'
+      - 'tools/independent_release/test_integration_gate.py'
+      - 'tools/independent_release/source_contract_guard.py'
+      - 'tools/independent_release/test_source_contract_guard.py'
+      - 'tools/independent_release/modularization_inventory.py'
+      - 'tools/independent_release/test_modularization_inventory.py'
+      - '.github/workflows/independent-release-guard-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release-guard-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static guard unit tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_release_guard.py' -v
+      - name: PR collision unit tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_pr_collision_guard.py' -v
+      - name: Firestore CI suite union unit tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_verify_ci_suite_union.py' -v
+      - name: Integration evidence gate unit tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_integration_gate.py' -v
+      - name: Source contract guard unit tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_source_contract_guard.py' -v
+      - name: Modularization inventory unit tests
+        run: python3 -m unittest discover -s tools/independent_release -p 'test_modularization_inventory.py' -v
+      - name: Inventory actual Flutter module imports
+        run: python3 tools/independent_release/modularization_inventory.py lib > independent-module-inventory.json
+      - name: Summarize dependency inventory
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("independent-module-inventory.json").read_text())
+          fields = ("files", "part_links", "orphan_parts", "invalid_part_owners", "multiple_part_owners", "local_import_cycles", "named_part_of",
+                    "cross_domain_edges", "inbound_dependencies", "migration_candidates",
+                    "unresolved_imports")
+          summary = ["## Read-only Dart dependency inventory",
+                     "This inventory does not certify modularization or release.",
+                     ""]
+          for key in fields:
+              value = report[key]
+              count = value if isinstance(value, int) else len(value)
+              summary.append(f"- {key}: {count}")
+          Path(__import__("os").environ["GITHUB_STEP_SUMMARY"]).open("a").write(
+              "\n".join(summary) + "\n"
+          )
+          PY
+      - name: Publish read-only module inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-module-inventory
+          path: independent-module-inventory.json
+          retention-days: 14
+          if-no-files-found: error
+      - name: Syntax check
+        run: python3 -m py_compile tools/independent_release/release_guard.py tools/independent_release/pr_collision_guard.py tools/independent_release/verify_ci_suite_union.py tools/independent_release/integration_gate.py tools/independent_release/source_contract_guard.py tools/independent_release/modularization_inventory.py
