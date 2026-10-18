@@ -35,6 +35,8 @@ export 'ui/badge_metadata.dart';
 import 'ui/section_accent_palette.dart';
 import 'ui/font_choice_normalization.dart';
 import 'models/location_category_and_function_definition.dart';
+import 'reports/pdf_filename_normalization.dart';
+export 'reports/pdf_filename_normalization.dart';
 export 'models/location_category_and_function_definition.dart';
 export 'ui/font_choice_normalization.dart';
 export 'ui/section_accent_palette.dart';
