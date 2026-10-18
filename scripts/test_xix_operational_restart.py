@@ -70,8 +70,29 @@ def app_screen_matches(root, title, alternatives, required=()):
     return PACKAGE in packages and screen_matches(root, title, alternatives, required)
 
 
+def dismiss_system_ui_anr(root):
+    """Tap Android's Wait action only for its exact System UI ANR dialog."""
+    system_dialog = any(
+        node.get('package') == 'android'
+        and node.get('text', '').strip() == "System UI isn't responding"
+        for node in root.iter('node'))
+    if not system_dialog:
+        return False
+    for node in root.iter('node'):
+        if (node.get('package') != 'android' or node.get('text', '').strip() != 'Wait'
+                or node.get('clickable') != 'true'):
+            continue
+        bounds = list(map(int, re.findall(r'\d+', node.get('bounds', ''))))
+        if len(bounds) == 4 and bounds[2] > bounds[0] and bounds[3] > bounds[1]:
+            adb('shell', 'input', 'tap', str((bounds[0] + bounds[2]) // 2),
+                str((bounds[1] + bounds[3]) // 2))
+            return True
+    return False
+
+
 def wait_screen(stem, title, alternatives, required=(), attempts=30):
     found = False
+    system_ui_recoveries = 0
     for _ in range(attempts):
         try:
             root, raw = state()
@@ -79,11 +100,20 @@ def wait_screen(stem, title, alternatives, required=(), attempts=30):
             if app_screen_matches(root, title, alternatives, required):
                 found = True
                 break
+            if dismiss_system_ui_anr(root):
+                system_ui_recoveries += 1
+                with (OUT / f'{stem}-system-ui-anr.txt').open('a', encoding='utf-8') as evidence:
+                    evidence.write('Dismissed Android System UI ANR using Wait; app screen must still pass validation.\n')
+                time.sleep(2)
+                continue
         except (subprocess.CalledProcessError, ET.ParseError, subprocess.TimeoutExpired):
             pass
         time.sleep(1)
     (OUT / f'{stem}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
-    assert found, f'Expected loaded main-entry screen absent: {title}'
+    assert found, (f'Expected loaded main-entry screen absent: {title}; '
+                   f'System UI recovery attempts: {system_ui_recoveries}')
+    if system_ui_recoveries:
+        print(f'{stem}: recovered transient System UI ANR {system_ui_recoveries} time(s); app screen verified')
 
 
 def tap_label(alternatives):
