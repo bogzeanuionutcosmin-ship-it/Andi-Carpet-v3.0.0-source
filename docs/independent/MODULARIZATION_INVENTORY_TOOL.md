@@ -25,3 +25,7 @@ The read-only inventory reports `multiple_part_owners` when two or more Dart lib
 ## Local Dart import/export cycles
 
 The read-only inventory includes `local_import_cycles`, listing strongly connected groups of local Dart files linked through import/export statements (including direct self-imports). Cycles require review before extracting modules; this structural signal is not a compiler verdict. External packages, conditional import branches and implicit `part` scope are not exhaustively modeled. Synthetic regression tests cover two-file cycles, transitive cycles, self-imports and acyclic graphs.
+
+## Legacy named `part of` declarations
+
+The inventory lists `named_part_of` declarations such as `part of legacy.core;` for explicit manual review. Named library ownership cannot be verified by the URI-only part owner matcher; it is intentionally not treated as safe for automatic extraction. The `invalid_part_owners` finding for such a file is conservative, not proof of a Dart compilation error. Regression tests cover both named and URI declarations.
