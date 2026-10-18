@@ -22,6 +22,7 @@ def analyze(sources, package_name=None):
     part_links = set()
     orphan_parts = set()
     named_part_of = set()
+    ambiguous_named_part_owners = []
     invalid_part_owners = set()
     migration_candidates = []
     inbound_dependencies = {}
@@ -86,6 +87,18 @@ def analyze(sources, package_name=None):
         for part, owners in sorted(owners_by_part.items())
         if len(owners) > 1
     ]
+    for part, library in sorted(named_part_of):
+        candidate_owners = sorted(
+            owner for owner, target in part_links
+            if target == part and owner in sources
+            and (match := LIBRARY_NAME.search(sources[owner])) is not None
+            and match.group(1) == library
+        )
+        if len(candidate_owners) != 1:
+            ambiguous_named_part_owners.append({
+                "part": part, "library": library,
+                "matching_owners": candidate_owners
+            })
     for owner, part in part_links:
         if part not in sources:
             continue
@@ -146,7 +159,8 @@ def analyze(sources, package_name=None):
     for node in sorted(sources):
         if node.endswith(".dart") and node not in indices:
             visit(node)
-    return {"named_part_of": [{"part": a, "library": b} for a, b in sorted(named_part_of)],
+    return {"ambiguous_named_part_owners": ambiguous_named_part_owners,
+            "named_part_of": [{"part": a, "library": b} for a, b in sorted(named_part_of)],
             "local_import_cycles": sorted(cycles),
             "multiple_part_owners": multiple_part_owners,
             "inbound_dependencies": [
