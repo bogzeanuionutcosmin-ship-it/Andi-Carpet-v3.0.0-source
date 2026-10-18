@@ -64,6 +64,15 @@ def analyze(sources, package_name=None):
             owner = posixpath.normpath(posixpath.join(posixpath.dirname(path), uri))
             if (owner, path) not in part_links:
                 orphan_parts.add((path, owner))
+    owners_by_part = {}
+    for owner, part in part_links:
+        if part in sources:
+            owners_by_part.setdefault(part, set()).add(owner)
+    multiple_part_owners = [
+        {"part": part, "owners": sorted(owners)}
+        for part, owners in sorted(owners_by_part.items())
+        if len(owners) > 1
+    ]
     for owner, part in part_links:
         if part not in sources:
             continue
@@ -87,7 +96,8 @@ def analyze(sources, package_name=None):
                 "classification": "main_part_requires_dependency_review",
                 "safe_to_extract_automatically": False
             })
-    return {"inbound_dependencies": [
+    return {"multiple_part_owners": multiple_part_owners,
+            "inbound_dependencies": [
                 {"file": target, "imported_by": sorted(importers)}
                 for target, importers in sorted(inbound_dependencies.items())
             ],
