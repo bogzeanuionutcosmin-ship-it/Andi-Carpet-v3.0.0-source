@@ -530,12 +530,20 @@ class RepositoryHygieneTests(unittest.TestCase):
         for symbol in ("const Map<String, IconData> appIconChoices",
                        "const Map<String, String> badgeAssetChoices",
                        "const List<String> availableBadgeKeys",
-                       "const Map<String, String> categoryBrandAssets",
                        "Widget _badgeGraphic(", "Widget categoryBrandWidget(",
                        "Widget sectionAssetWidget(", "String badgeLabel("):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", module)
+        catalog = (ROOT / "lib/ui/section_asset_catalog.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'ui/section_asset_catalog.dart';", main)
+        self.assertIn("export 'ui/section_asset_catalog.dart';", main)
+        self.assertNotIn("part of", catalog)
+        for symbol in ("const Map<String, String> categoryBrandAssets", "String? sectionAssetForLabel("):
+            self.assertEqual(catalog.count(symbol), 1)
+            self.assertNotIn(symbol, module)
+        self.assertIn("final asset = sectionAssetForLabel(label);", module)
+        self.assertIn("final asset = categoryBrandAssets[categoryId];", module)
 
     def test_interactive_member_badges_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")

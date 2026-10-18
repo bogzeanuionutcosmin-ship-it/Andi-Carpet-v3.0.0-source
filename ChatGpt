@@ -1317,3 +1317,12 @@ După clarificarea «conectării la un model AI online» și recomandarea explic
 ## 156. Rezolvare conflicte PR #17 și conservarea PR #18 — 2026-10-13
 
 Conflicte numai în acest document și registrul de reguli, prin append și numerotări 100/9 suprapuse. Toate deciziile PR #18 sunt păstrate integral, inclusiv Vision local, AI opțional, zero costuri suplimentare drept țintă, Error Log obligatoriu în prima versiune și retenția/curățarea limitată. Evidența refactorizării originale este mutată la 155 și registrul 74, fără pierderea conținutului. Codul/testele/configurația sunt identice byte cu byte cu PR #17 anterior. 107 teste Python + 3 Node și syntax Functions PASS local; audit cu 12 avertismente cunoscute. Flutter și emulatorul se verifică în CI. Rezultatul CI final și SHA/run sunt actualizate în descrierea PR #17 după finalizare; nu folosiți verdele vechi ca verdict pentru commitul nou. Raport complet: `AUDIT_MODULARIZARE_2026-10-12.md`, ultima secțiune. Niciun merge în main/deploy/APK/date live. După acest pas: finalizarea modularizării/contractelor și pregătirea Vision, fără activarea prematură a automatizărilor.
+
+
+## 157. Misiunea XIX — catalog independent de resurse pentru secțiuni (2026-10-18)
+
+- Bază main `8452159475ff187867002425fa9c3b8c7e8006aa`; lot izolat `mission-xix/section-assets-module`. Regulamentul, arhitectura Vision și nota de continuitate consultate.
+- Extrase textual `categoryBrandAssets` și `sectionAssetForLabel` din part-ul UI în `lib/ui/section_asset_catalog.dart`, fără dependențe Flutter; main importă și re-exportă API-ul existent. Corpurile sunt identice byte cu byte, inclusiv ordinea condițiilor și fallback null. Widgeturile și toți apelanții rămân neschimbați.
+- PR #107/#117 extrag separat badge metadata; acest lot nu repetă acea extragere. La integrare păstrați ambele module și contractele lor în main/testul de igienă.
+- Patru teste Flutter noi: etichete/accente/case/whitespace, prioritate substring, aliasuri exacte/fallback și catalog const/public. Local 107 teste Python PASS și diff-check curat; Flutter necesită CI final, nu a fost executat local.
+- Fără modificări de comportament, roluri, Firebase, assets, deploy ori main. Lot local pregătit pentru PR Draft separat și validare combinată.
