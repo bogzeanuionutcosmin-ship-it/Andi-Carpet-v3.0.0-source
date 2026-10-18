@@ -27,6 +27,7 @@ def analyze(sources, package_name=None):
     migration_candidates = []
     inbound_dependencies = {}
     local_import_graph = {}
+    local_file_dependencies = {}
     for path, content in sources.items():
         if not path.endswith(".dart"):
             continue
@@ -63,6 +64,7 @@ def analyze(sources, package_name=None):
             else:
                 inbound_dependencies.setdefault(target, set()).add(path)
                 local_import_graph.setdefault(path, set()).add(target)
+                local_file_dependencies.setdefault(path, set()).add(target)
             destination = target.split("/")[0]
             if source in DOMAINS and destination in DOMAINS and source != destination:
                 edges.add((source, destination))
@@ -159,7 +161,22 @@ def analyze(sources, package_name=None):
     for node in sorted(sources):
         if node.endswith(".dart") and node not in indices:
             visit(node)
-    return {"ambiguous_named_part_owners": ambiguous_named_part_owners,
+    # Surface import-heavy libraries for bounded, behavior-preserving extraction.
+    dependency_hotspots = [
+        {"file": path,
+         "inbound_count": len(inbound_dependencies.get(path, ())),
+         "outbound_count": len(local_file_dependencies.get(path, ()))}
+        for path in sorted(sources)
+        if path.endswith(".dart") and (
+            inbound_dependencies.get(path) or local_file_dependencies.get(path)
+        )
+    ]
+    dependency_hotspots.sort(
+        key=lambda entry: (-entry["inbound_count"] - entry["outbound_count"],
+                           -entry["inbound_count"], entry["file"])
+    )
+    return {"dependency_hotspots": dependency_hotspots[:20],
+            "ambiguous_named_part_owners": ambiguous_named_part_owners,
             "named_part_of": [{"part": a, "library": b} for a, b in sorted(named_part_of)],
             "local_import_cycles": sorted(cycles),
             "multiple_part_owners": multiple_part_owners,
