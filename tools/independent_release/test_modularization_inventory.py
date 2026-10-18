@@ -144,6 +144,18 @@ class ModularizationInventoryTests(unittest.TestCase):
         })
         self.assertEqual(result["multiple_part_owners"], [])
 
+    def test_part_escaping_lib_is_unresolved_not_owned(self):
+        result = analyze({"main.dart": "part '../outside.dart';"})
+        self.assertEqual(result["unresolved_imports"],
+                         [{"file": "main.dart", "uri": "../outside.dart"}])
+        self.assertEqual(result["part_links"], [])
+
+    def test_part_of_escaping_lib_is_unresolved_not_orphaned(self):
+        result = analyze({"features/a.dart": "part of '../../outside.dart';"})
+        self.assertEqual(result["unresolved_imports"],
+                         [{"file": "features/a.dart", "uri": "../../outside.dart"}])
+        self.assertEqual(result["orphan_parts"], [])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
