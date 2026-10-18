@@ -187,7 +187,7 @@ class ModularizationInventoryTests(unittest.TestCase):
 
     def test_legacy_named_part_of_requires_manual_review(self):
         result = analyze({
-            "owner.dart": "library legacy.core;\\npart 'detail.dart';",
+            "owner.dart": "part 'detail.dart';",
             "detail.dart": "part of legacy.core;"
         })
         self.assertEqual(result["named_part_of"],
