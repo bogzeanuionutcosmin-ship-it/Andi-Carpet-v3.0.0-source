@@ -2,6 +2,7 @@ part of '../main.dart';
 
 // Backup status and restore controls; implementation remains in _AdminBackupActions.
 mixin _AdminBackupPanelActions on State<AdminPanelPage> {
+  FirebaseFirestore get _backupDb;
   AppSettings get settings;
   Future<void> _restoreAutomaticBackup(String id);
   Future<void> _exportBackup();
@@ -13,7 +14,7 @@ Widget _backup()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
     Text('Backup manual: fișier JSON descărcat local. Backup intern automat: ${settings.automaticBackup?'ACTIV':'OPRIT'} · retenție ${settings.backupRetentionDays} zile. Conturile Firebase Authentication nu sunt incluse.'),
     const SizedBox(height:12),
     StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(
-      stream:FirebaseFirestore.instance.collection('meta').doc('backup').snapshots(),
+      stream:_backupDb.collection('meta').doc('backup').snapshots(),
       builder:(context,snap){
         final d=snap.data?.data();
         final last=d!=null && d['lastExportAt'] is Timestamp ? (d['lastExportAt'] as Timestamp).toDate() : null;
@@ -23,7 +24,7 @@ Widget _backup()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
     ),
     const SizedBox(height:10),
     StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
-      stream:FirebaseFirestore.instance.collection('backups').orderBy('createdAt',descending:true).limit(1).snapshots(),
+      stream:_backupDb.collection('backups').orderBy('createdAt',descending:true).limit(1).snapshots(),
       builder:(context,snap){
         if(!snap.hasData||snap.data!.docs.isEmpty)return _InfoCard(icon:Icons.cloud_outlined,title:'Backup intern automat',text:settings.automaticBackup?'Activ · încă nu există niciun snapshot complet.':'Oprit din Setări sistem.');
         final doc=snap.data!.docs.first;final d=doc.data();final at=d['createdAt'] is Timestamp?(d['createdAt'] as Timestamp).toDate():null;final status=(d['status']??'').toString();final count=d['documentCount'] is num?(d['documentCount'] as num).toInt():0;
