@@ -105,6 +105,18 @@ class RepositoryHygieneTests(unittest.TestCase):
                        "_bundledLogoAssets", "_bundledLogoLabels"):
             self.assertIn("const Map<String, String> " + symbol + " =", module)
             self.assertNotIn("const Map<String, String> " + symbol + " =", main)
+        catalog = (ROOT / "lib/ui/branding_asset_catalog.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'ui/branding_asset_catalog.dart';", main)
+        self.assertIn("export 'ui/branding_asset_catalog.dart';", main)
+        self.assertNotIn("part of '../main.dart';", catalog)
+        for public, private in (
+            ("bundledBackgroundAssets", "_bundledBackgroundAssets"),
+            ("bundledBackgroundLabels", "_bundledBackgroundLabels"),
+            ("bundledLogoAssets", "_bundledLogoAssets"),
+            ("bundledLogoLabels", "_bundledLogoLabels"),
+        ):
+            self.assertEqual(catalog.count("const Map<String, String> " + public + " ="), 1)
+            self.assertIn("const Map<String, String> " + private + " = " + public + ";", module)
         self.assertIn("Image.asset(_activeLogoAsset(settings)", module)
 
     def test_install_buttons_are_extracted_without_behavior_loss(self):
