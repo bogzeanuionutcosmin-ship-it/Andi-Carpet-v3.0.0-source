@@ -28,6 +28,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'ui/badge_metadata.dart';
+export 'ui/badge_metadata.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
