@@ -1,7 +1,9 @@
-part of '../main.dart';
+import '../models/app_data_models.dart';
+import '../models/app_enums.dart';
 
-mixin _HomeLocationSeed {
-  List<Location> _seedLocations() {
+/// Returns the existing local Magic and Million location catalog.
+/// A fresh list and fresh Location objects are created for each call.
+List<Location> seedOperationalLocations() {
     return [
       // MAGIC — toate cele 36 de locații din ANEXA MAGIC FEBR.
       Location(id:'magic01',name:'MAGIC Alexandria',address:'Jud. Teleorman, Mun. Alexandria, Str. București, Bl. G103, parter',type:LocationType.magic,notes:'Anexa indică aproximativ 45–50 mp; tipul suprafeței nu este precizat explicit.'),
@@ -109,6 +111,4 @@ mixin _HomeLocationSeed {
       Location(id:'million66',name:'Ploiesti Veronica Micle',address:'Ploiesti Veronica Micle',type:LocationType.million,contacts:[LocationContact(name:'ANDREI CISMARU',phone:'0739935665')]),
       Location(id:'million67',name:'Piata Victoriei Ploiesti',address:'Piata Victoriei Ploiesti',type:LocationType.million,contacts:[LocationContact(name:'MIHAELA STOICA',phone:'0799923020')]),
     ];
-  }
-
 }
