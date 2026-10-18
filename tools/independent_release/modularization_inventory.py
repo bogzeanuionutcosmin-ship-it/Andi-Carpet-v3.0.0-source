@@ -22,6 +22,7 @@ def analyze(sources, package_name=None):
     invalid_part_owners = set()
     migration_candidates = []
     inbound_dependencies = {}
+    local_import_graph = {}
     for path, content in sources.items():
         if not path.endswith(".dart"):
             continue
@@ -57,6 +58,7 @@ def analyze(sources, package_name=None):
                 unresolved.add((path, uri))
             else:
                 inbound_dependencies.setdefault(target, set()).add(path)
+                local_import_graph.setdefault(path, set()).add(target)
             destination = target.split("/")[0]
             if source in DOMAINS and destination in DOMAINS and source != destination:
                 edges.add((source, destination))
@@ -102,7 +104,42 @@ def analyze(sources, package_name=None):
                 "classification": "main_part_requires_dependency_review",
                 "safe_to_extract_automatically": False
             })
-    return {"multiple_part_owners": multiple_part_owners,
+    # Tarjan SCC: report real import/export cycles, not merely cross-domain edges.
+    index = 0
+    indices = {}
+    lowlink = {}
+    stack = []
+    on_stack = set()
+    cycles = []
+
+    def visit(node):
+        nonlocal index
+        indices[node] = lowlink[node] = index
+        index += 1
+        stack.append(node)
+        on_stack.add(node)
+        for neighbor in sorted(local_import_graph.get(node, ())):
+            if neighbor not in indices:
+                visit(neighbor)
+                lowlink[node] = min(lowlink[node], lowlink[neighbor])
+            elif neighbor in on_stack:
+                lowlink[node] = min(lowlink[node], indices[neighbor])
+        if lowlink[node] == indices[node]:
+            component = []
+            while True:
+                member = stack.pop()
+                on_stack.remove(member)
+                component.append(member)
+                if member == node:
+                    break
+            if len(component) > 1 or node in local_import_graph.get(node, ()):
+                cycles.append(sorted(component))
+
+    for node in sorted(sources):
+        if node.endswith(".dart") and node not in indices:
+            visit(node)
+    return {"local_import_cycles": sorted(cycles),
+            "multiple_part_owners": multiple_part_owners,
             "inbound_dependencies": [
                 {"file": target, "imported_by": sorted(importers)}
                 for target, importers in sorted(inbound_dependencies.items())
