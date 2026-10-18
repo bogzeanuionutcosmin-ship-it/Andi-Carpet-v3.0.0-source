@@ -124,6 +124,26 @@ class ModularizationInventoryTests(unittest.TestCase):
         self.assertEqual(result["migration_candidates"][0]["file"], "reports/helper.dart")
         self.assertEqual(len(result["orphan_parts"]), 1)
 
+    def test_multiple_owners_of_same_part_are_reported(self):
+        result = analyze({
+            "first.dart": "part 'shared.dart';",
+            "second.dart": "part 'shared.dart';",
+            "shared.dart": "part of 'first.dart';"
+        })
+        self.assertEqual(result["multiple_part_owners"], [{
+            "part": "shared.dart", "owners": ["first.dart", "second.dart"]
+        }])
+        self.assertEqual(result["invalid_part_owners"], [{
+            "owner": "second.dart", "part": "shared.dart"
+        }])
+
+    def test_single_part_owner_is_not_reported_as_conflict(self):
+        result = analyze({
+            "first.dart": "part 'shared.dart';",
+            "shared.dart": "part of 'first.dart';"
+        })
+        self.assertEqual(result["multiple_part_owners"], [])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
