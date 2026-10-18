@@ -19,6 +19,7 @@ before(async () => {
     for (const uid of ['payer', 'receiver', 'stranger']) {
       await setDoc(doc(ctx.firestore(), 'users', uid), { active: true, role: 'worker' });
     }
+    await setDoc(doc(ctx.firestore(), 'users', 'craiova-admin'), { active: true, role: 'admin' });
   });
 });
 after(async () => { if (env) await env.cleanup(); });
@@ -132,4 +133,75 @@ test('legacy perDiems: characterize currently allowed over-declared receipt', as
   await assertSucceeds(updateDoc(doc(db('receiver'), 'perDiems/legacy-overdeclared'), {
     status: 'confirmed', received: true, actualReceivedAmount: 75,
   }));
+});
+
+
+// Craiova regression: synthetic executions only, no production Firebase data.
+test('Craiova: 11 execution IDs survive 5/6 planned -> 6/5 actual date correction', async () => {
+  const { setDoc, runTransaction, Timestamp, getDocs, collection } = require('firebase/firestore');
+  const ids = Array.from({ length: 11 }, (_, i) => `craiova-test-${i + 1}`);
+  const plan = ids.map((_, i) => i < 5 ? 5 : 6);
+  const actual = ids.map((_, i) => i < 6 ? 5 : 6);
+  assert.deepEqual([plan.filter(x => x === 5).length, plan.filter(x => x === 6).length], [5, 6]);
+  await env.withSecurityRulesDisabled(async ctx => {
+    const database = ctx.firestore();
+    for (let i = 0; i < ids.length; i++) {
+      await setDoc(doc(database, 'records', ids[i]), {
+        teamId: 'craiova-team', locationId: `room-${i + 1}`,
+        type: 'million', status: 'completed',
+        startedAt: Timestamp.fromDate(new Date(Date.UTC(2026, 9, plan[i], 7))),
+        finishedAt: Timestamp.fromDate(new Date(Date.UTC(2026, 9, plan[i], 8))),
+        facadeDone: false,
+      });
+    }
+  });
+  const database = db('craiova-admin');
+  for (let i = 0; i < ids.length; i++) {
+    const ref = doc(database, 'records', ids[i]);
+    await assertSucceeds(runTransaction(database, async tx => {
+      const snapshot = await tx.get(ref);
+      assert.equal(snapshot.exists(), true);
+      tx.update(ref, {
+        startedAt: Timestamp.fromDate(new Date(Date.UTC(2026, 9, actual[i], 7))),
+        finishedAt: Timestamp.fromDate(new Date(Date.UTC(2026, 9, actual[i], 8))),
+      });
+    }));
+  }
+  const result = await getDocs(collection(database, 'records'));
+  const craiova = result.docs.filter(d => ids.includes(d.id));
+  assert.equal(craiova.length, 11, 'correction must not insert extra records');
+  assert.equal(new Set(craiova.map(d => d.id)).size, 11);
+  assert.deepEqual([
+    craiova.filter(d => d.data().startedAt.toDate().getUTCDate() === 5).length,
+    craiova.filter(d => d.data().startedAt.toDate().getUTCDate() === 6).length,
+  ], [6, 5]);
+});
+
+test('Craiova: deleted intervention is not recreated by transactional correction', async () => {
+  const { setDoc, runTransaction } = require('firebase/firestore');
+  const database = db('craiova-admin');
+  const ref = doc(database, 'records', 'craiova-deleted');
+  await assertSucceeds(setDoc(ref, { teamId:'craiova-team', locationId:'room-deleted', status:'completed' }));
+  await assertSucceeds(deleteDoc(ref));
+  await assert.rejects(runTransaction(database, async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('record deleted');
+    tx.update(ref, { facadeDone: true });
+  }), /record deleted/);
+  assert.equal((await getDoc(ref)).exists(), false);
+});
+
+test('Craiova: stale correction rejects concurrent changes', async () => {
+  const { setDoc, runTransaction } = require('firebase/firestore');
+  const database = db('craiova-admin');
+  const ref = doc(database, 'records', 'craiova-stale');
+  await assertSucceeds(setDoc(ref, { teamId:'craiova-team', locationId:'room-stale', status:'completed', facadeDone:false }));
+  const original = (await getDoc(ref)).data();
+  await assertSucceeds(updateDoc(ref, { facadeDone:true }));
+  await assert.rejects(runTransaction(database, async tx => {
+    const snap = await tx.get(ref);
+    if (snap.data().facadeDone !== original.facadeDone) throw new Error('stale correction');
+    tx.update(ref, { facadeDone:false });
+  }), /stale correction/);
+  assert.equal((await getDoc(ref)).data().facadeDone, true);
 });
