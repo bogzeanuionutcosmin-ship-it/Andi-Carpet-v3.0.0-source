@@ -139,12 +139,7 @@ Future<void> _editFunctionDefinition([FunctionDefinition? existing]) async {
        builder: (context, snap) {
          if (snap.hasError) return _InfoCard(icon: Icons.error_outline, title: 'Conturi Firebase', text: 'Eroare: ${snap.error}');
          if (!snap.hasData) return const Card(child: Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator())));
-         final docs = snap.data!.docs.toList()..sort((a,b) {
-           final ap = (a.data()['status'] ?? '').toString() == 'pending';
-           final bp = (b.data()['status'] ?? '').toString() == 'pending';
-           if (ap != bp) return ap ? -1 : 1;
-           return (a.data()['name'] ?? a.data()['email'] ?? '').toString().compareTo((b.data()['name'] ?? b.data()['email'] ?? '').toString());
-         });
+         final docs = snap.data!.docs.toList()..sort((a,b) => compareAdminAccountData(a.data(), b.data()));
          if (docs.isEmpty) return const _Empty(icon: Icons.person_off_outlined, text: 'Nu există conturi Firebase.');
          final defs = functionDefinitions.where((f) => f.active).toList()..sort((a,b) => a.name.compareTo(b.name));
          return Column(children: docs.map((doc) {
@@ -155,9 +150,7 @@ Future<void> _editFunctionDefinition([FunctionDefinition? existing]) async {
            final display = (d['name'] ?? d['email'] ?? doc.id).toString();
            final email = (d['email'] ?? '').toString();
            final pending = status == 'pending' && !active;
-           final assigned = d['functionIds'] is List
-               ? (d['functionIds'] as List).map((e) => e.toString()).where((e)=>e.isNotEmpty).toSet()
-               : <String>{(d['function'] ?? '').toString()}.where((e)=>e.isNotEmpty).toSet();
+           final assigned = adminAssignedFunctionIds(d);
            final photoData = (d['photoBase64'] ?? '').toString();
            final photo = decodeProfilePhoto(photoData);
            return Card(child: Padding(
