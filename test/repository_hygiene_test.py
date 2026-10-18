@@ -525,17 +525,25 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_icon_badge_catalog_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/icon_badge_catalog.dart").read_text(encoding="utf-8")
+        metadata = (ROOT / "lib/ui/badge_metadata.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/icon_badge_catalog.dart';", main)
+        self.assertIn("import 'ui/badge_metadata.dart';", main)
+        self.assertIn("export 'ui/badge_metadata.dart';", main)
         self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("part of '../main.dart';", metadata)
         for symbol in ("const Map<String, IconData> appIconChoices",
-                       "const Map<String, String> badgeAssetChoices",
-                       "const List<String> availableBadgeKeys",
                        "const Map<String, String> categoryBrandAssets",
                        "Widget _badgeGraphic(", "Widget categoryBrandWidget(",
-                       "Widget sectionAssetWidget(", "String badgeLabel("):
+                       "Widget sectionAssetWidget("):
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, metadata)
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", module)
+        for symbol in ("const Map<String, String> badgeAssetChoices",
+                       "const List<String> availableBadgeKeys", "String badgeLabel("):
+            self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(metadata.count(symbol), 1)
+        self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", metadata)
 
     def test_interactive_member_badges_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
