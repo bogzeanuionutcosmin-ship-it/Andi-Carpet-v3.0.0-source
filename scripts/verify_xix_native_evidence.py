@@ -29,6 +29,14 @@ def verify(root: Path) -> None:
         raise AssertionError("Connected flow did not persist exactly one record")
     if result["twoNativeClients"].get("accepted") not in ([True, False], [False, True]):
         raise AssertionError("Cross-client CAS did not select exactly one winner")
+    if result["unauthorizedTeam"] != "permission-denied":
+        raise AssertionError("Unauthorized team write was not denied")
+    if result["revokedProfile"] != "cached Auth identity cannot write after server profile deactivation":
+        raise AssertionError("Revoked profile rejection was not demonstrated")
+    if result["offlineBeforeStart"] != "native transaction rejected; reconnect has no queued record":
+        raise AssertionError("Offline fail-closed write was not demonstrated")
+    if result["restore"] != "admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records":
+        raise AssertionError("Atomic restore rollback evidence was not demonstrated")
 
 
 if __name__ == "__main__":
