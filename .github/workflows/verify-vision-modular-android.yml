@@ -1,0 +1,68 @@
+name: Verify integrated Vision modular Android (compile only)
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vision-modular-android-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  integrated-android:
+    if: github.head_ref == 'integration/vision-authgate-modular-20261014' || github.head_ref == 'hardening/vision-authgate-v1-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show exact checkout tree
+        run: git rev-parse HEAD HEAD^{tree}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: AuthGate and integrated Vision regression tests
+        run: flutter test test/auth_session_acceptance_test.dart test/auth_session_regression_test.dart test/vision_*_test.dart
+      - name: Browser FCM delayed ownership against real web branch without live SDK
+        if: github.head_ref == 'hardening/vision-authgate-v1-20261015'
+        run: flutter test --platform chrome --dart-define=FCM_WEB_VAPID_KEY=synthetic-test-only-vapid --dart-define=no_default_http_client=true test/vision_web_push_delay.browser.dart --reporter expanded
+      - name: Characterize isolated known RED financial dialog without relaxing assertions
+        if: github.head_ref == 'hardening/vision-authgate-v1-20261015'
+        shell: bash
+        run: |
+          set +e
+          flutter test test/vision_settlement_controller.red.dart --reporter expanded > "$RUNNER_TEMP/vision-money-known-red.log" 2>&1
+          test_result=$?
+          set -e
+          cat "$RUNNER_TEMP/vision-money-known-red.log"
+          test "$test_result" -eq 1
+          grep -Fq 'A TextEditingController was used after being disposed.' "$RUNNER_TEMP/vision-money-known-red.log"
+          grep -Fq 'settlement receipt failure is observed without a second save or value in journal' "$RUNNER_TEMP/vision-money-known-red.log"
+          # Expected RED is a recorded pre-existing defect, not a working flow.
+      - name: Compile actual integrated app entrypoint without install or publication
+        run: flutter build apk --debug --target lib/main.dart
+      - name: Verify build exists without uploading it
+        run: test -s build/app/outputs/flutter-apk/app-debug.apk
+      - name: Inspect compiled Android package and permissions locally in CI
+        if: github.head_ref == 'hardening/vision-authgate-v1-20261015'
+        shell: bash
+        run: |
+          aapt_tool=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          test -n "$aapt_tool"
+          "$aapt_tool" dump badging build/app/outputs/flutter-apk/app-debug.apk > "$RUNNER_TEMP/vision-integrated-badging.txt"
+          grep -Fq "package: name='com.example.andi_carpeta'" "$RUNNER_TEMP/vision-integrated-badging.txt"
+          grep -Fq "versionCode='33'" "$RUNNER_TEMP/vision-integrated-badging.txt"
+          grep -Fq "versionName='3.0.1'" "$RUNNER_TEMP/vision-integrated-badging.txt"
+          sed -n '/^package:/p;/^sdkVersion:/p;/^targetSdkVersion:/p' "$RUNNER_TEMP/vision-integrated-badging.txt"
+          "$aapt_tool" dump permissions build/app/outputs/flutter-apk/app-debug.apk
+      # Deliberately no upload-artifact, install, deploy, signing change or secrets.
