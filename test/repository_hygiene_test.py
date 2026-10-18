@@ -584,15 +584,21 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_location_status_and_function_models_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/location_status_and_functions.dart").read_text(encoding="utf-8")
+        models = (ROOT / "lib/models/location_category_and_function_definition.dart").read_text(encoding="utf-8")
         self.assertIn("part 'models/location_status_and_functions.dart';", main)
+        self.assertIn("import 'models/location_category_and_function_definition.dart';", main)
+        self.assertIn("export 'models/location_category_and_function_definition.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("extension LocationStatusX on LocationStatus",
-                       "class LocationCategory {", "class FunctionDefinition {"):
+        self.assertNotIn("part of '../main.dart';", models)
+        self.assertIn("import 'package:flutter/material.dart';", models)
+        self.assertEqual(module.count("extension LocationStatusX on LocationStatus"), 1)
+        for symbol in ("class LocationCategory {", "class FunctionDefinition {"):
             self.assertNotIn(symbol, main)
-            self.assertEqual(module.count(symbol), 1)
-        self.assertIn(".take(3).toList()", module)
-        self.assertIn("iconKey = this.badgeKeys.first;", module)
-        self.assertIn("permissions = permissions ?? <String>{}", module)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(models.count(symbol), 1)
+        self.assertIn(".take(3).toList()", models)
+        self.assertIn("iconKey = this.badgeKeys.first;", models)
+        self.assertIn("permissions = permissions ?? <String>{}", models)
 
     def test_pdf_format_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
