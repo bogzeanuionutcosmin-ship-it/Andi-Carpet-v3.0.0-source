@@ -19,6 +19,13 @@ CentralizerRecord _record({
     );
 
 void main() {
+  test('real daytime and late-evening executions do not expire at 12:30', () {
+    for(final hour in [13,22]) {
+      final record=_record(startedAt:DateTime(2026,10,16,hour));
+      expect(recordBelongsToWorkDate(record,DateTime(2026,10,16)),isTrue);
+      expect(recordBelongsToWorkDate(record,DateTime(2026,10,17)),isFalse);
+    }
+  });
   test('operational date rolls over at the configured 23:30 boundary', () {
     expect(operationalWorkDate(DateTime(2026, 10, 15, 23, 29)),
         DateTime(2026, 10, 15));

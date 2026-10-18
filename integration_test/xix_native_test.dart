@@ -81,8 +81,9 @@ void main() {
     await legacy.delete();
     await expectLater(saveRecordCompared(db,legacy.id,{...legacyBefore,'status':'running'},expected:legacyBefore),throwsA(isA<StateError>()));
     expect((await legacy.get()).exists,false);
-    await legacy.set(legacyBefore);
-    await saveRecordCompared(db,legacy.id,{...legacyBefore,'status':'running'},expected:legacyBefore);
+    await legacy.set({...legacyBefore,'metadata':{'tags':['legacy',{'version':1}]}});
+    final nestedLegacy=(await legacy.get()).data()!;
+    await saveRecordCompared(db,legacy.id,{...nestedLegacy,'status':'running'},expected:nestedLegacy);
     evidence['legacyAndDeletion']='legacy update passed; deleted baseline rejected';
     await otherAuth.signInWithEmailAndPassword(email:'outsider@andi.test',password:'synthetic-only-123');
     await expectLater(saveRecordCompared(otherDb,ref.id,{...latest,'facadeDone':true},expected:latest),throwsA(isA<FirebaseException>()));
@@ -103,11 +104,13 @@ void main() {
     evidence['pdf']='real builder with data reloaded from native Firestore; missing registry retained';
     await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
     final snapshot={for(final d in (await otherDb.collection('records').get()).docs)d.id:d.data()};
+    await otherDb.doc('meta/backup').set({'fileName':'retained.json','lastExportAt':Timestamp(1,0)});
     await restoreAtomically(otherDb,{'records':snapshot},source:'synthetic-complete');
     await restoreAtomically(otherDb,{'records':snapshot},source:'synthetic-repeat');
+    expect((await otherDb.doc('meta/backup').get()).data()!['fileName'],'retained.json');
     expect((await otherDb.collection('records').get()).size,snapshot.length);
     await expectLater(restoreAtomically(db,{'records':{},'finance':{'forbidden':{'teamId':'forbidden'}}},source:'denied-partial'),throwsA(isA<FirebaseException>()));
-    expect((await otherDb.collection('records').get()).size,snapshot.length);
+    expect({for(final d in (await otherDb.collection('records').get()).docs)d.id:d.data()},snapshot);
     await expectLater(restoreAtomically(otherDb,{'records':{for(var i=0;i<401;i++)'large-$i':{'teamId':'craiova'}}},source:'oversized'),throwsA(isA<StateError>()));
     expect((await otherDb.collection('records').get()).size,snapshot.length);
     evidence['restore']='admin complete/repeat passed; denied atomic batch and oversized restore changed no records';

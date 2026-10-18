@@ -488,7 +488,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   CentralizerRecord? _homeLatestRecord(String teamId, String locationId, DateTime workDate) {
-    final list = records.where((r) => r.teamId == teamId && r.locationId == locationId && recordBelongsToWorkDate(r, workDate)).toList()
+    final list = records.where((r) => r.teamId == teamId && r.locationId == locationId && (recordHasOpenAttempt(r) || recordBelongsToWorkDate(r, workDate))).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     return list.isEmpty ? null : list.last;
   }

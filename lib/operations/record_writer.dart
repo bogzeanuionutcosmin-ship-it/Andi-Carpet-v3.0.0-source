@@ -12,9 +12,19 @@ bool recordPayloadMatches(Map<String, dynamic> current, Map<String, dynamic> exp
     if (key == 'updatedAt') continue;
     final a = current.containsKey(key) ? current[key] : _defaults[key];
     final b = expected.containsKey(key) ? expected[key] : _defaults[key];
-    if (a != b) return false;
+    if (!_sameValue(a, b)) return false;
   }
   return true;
+}
+
+bool _sameValue(dynamic a, dynamic b) {
+  if (a is Map && b is Map) {
+    return a.length == b.length && a.keys.every((key) => b.containsKey(key) && _sameValue(a[key], b[key]));
+  }
+  if (a is List && b is List) {
+    return a.length == b.length && List.generate(a.length, (i) => i).every((i) => _sameValue(a[i], b[i]));
+  }
+  return a == b;
 }
 
 /// Existing records are updates, never upserts. Retrying the same ID and

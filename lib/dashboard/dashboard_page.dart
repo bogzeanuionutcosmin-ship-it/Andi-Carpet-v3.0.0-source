@@ -15,9 +15,12 @@ class _DashboardPageState extends State<DashboardPage> {
     final out = widget.records.where((r) =>
       r.teamId == team.id &&
       r.locationId == item.locationId &&
-      recordBelongsToWorkDate(r, workDate)
+      (recordHasOpenAttempt(r) || recordBelongsToWorkDate(r, workDate))
     ).toList();
-    out.sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
+    out.sort((a, b) {
+      final active = (recordHasOpenAttempt(a) ? 1 : 0).compareTo(recordHasOpenAttempt(b) ? 1 : 0);
+      return active != 0 ? active : recordEventTime(a).compareTo(recordEventTime(b));
+    });
     return out;
   }
 
@@ -283,7 +286,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final r = _latestRecord(i, workDate);
       return r?.status == WorkAttemptStatus.refused || r?.status == WorkAttemptStatus.notCompleted;
     }).length;
-    final running = todaysRecords.where((r) => r.status == WorkAttemptStatus.running && r.startedAt != null && r.finishedAt == null).toList()
+    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.startedAt != null && r.finishedAt == null).toList()
       ..sort((a, b) => recordEventTime(b).compareTo(recordEventTime(a)));
     final waiting = todaysRecords.where((r) => r.status == WorkAttemptStatus.waitingAccess && r.waitingStartedAt != null && r.waitingEndedAt == null).toList()
       ..sort((a, b) => recordEventTime(b).compareTo(recordEventTime(a)));
@@ -511,14 +514,14 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _startLocationOnce(ScheduleItem item) async {
     final now = DateTime.now();
     final workDate = operationalWorkDate(now);
-    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList();
+    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.finishedAt == null).toList();
     if (running.isNotEmpty && running.first.locationId != item.locationId) {
       if (mounted) showErrorMessage(context, 'Echipa este deja pe sală la ${running.first.locationNameSnapshot}. Apasă IEȘI înainte de a intra în altă locație.');
       return;
     }
     if (running.isNotEmpty && running.first.locationId == item.locationId) return;
 
-    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList()
+    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     final base = existing.isEmpty ? null : existing.last;
     final r = CentralizerRecord(
@@ -610,12 +613,12 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _markWaiting(ScheduleItem item) async {
     final now = DateTime.now();
     final workDate = operationalWorkDate(now);
-    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList();
+    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.finishedAt == null).toList();
     if (running.isNotEmpty) {
       if (mounted) showErrorMessage(context, 'Există deja o locație în lucru. Închide întâi intervenția curentă.');
       return;
     }
-    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList()
+    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     final base = existing.isEmpty ? null : existing.last;
     final r = CentralizerRecord(
@@ -675,7 +678,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (reason == null) return;
     final now = DateTime.now();
     final workDate = operationalWorkDate(now);
-    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList()
+    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     final base = existing.isEmpty ? null : existing.last;
     final r = CentralizerRecord(

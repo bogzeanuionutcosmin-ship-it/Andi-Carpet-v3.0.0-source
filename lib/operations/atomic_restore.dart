@@ -12,6 +12,7 @@ const restoreCollections = <String>{
 Future<void> restoreAtomically(FirebaseFirestore db,
     Map<String, Map<String, dynamic>> collections,
     {Map<String, dynamic>? settings, required String source}) async {
+  if (collections.isEmpty && settings == null) throw const FormatException('Backup fără date restaurabile.');
   final writes = <String, Map<String, dynamic>?>{};
   for (final entry in collections.entries) {
     if (!restoreCollections.contains(entry.key)) throw const FormatException('Colecție nepermisă.');
@@ -32,7 +33,13 @@ Future<void> restoreAtomically(FirebaseFirestore db,
   final batch = db.batch();
   for (final entry in writes.entries) {
     final ref = db.doc(entry.key);
-    if (entry.value == null) { batch.delete(ref); } else { batch.set(ref, entry.value!); }
+    if (entry.value == null) {
+      batch.delete(ref);
+    } else if (entry.key == 'meta/backup') {
+      batch.set(ref, entry.value!, SetOptions(merge: true));
+    } else {
+      batch.set(ref, entry.value!);
+    }
   }
   await batch.commit();
 }
