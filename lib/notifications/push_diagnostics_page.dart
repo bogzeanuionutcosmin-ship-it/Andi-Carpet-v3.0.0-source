@@ -155,6 +155,16 @@ class _PushDiagnosticsPageState extends State<PushDiagnosticsPage> {
         label: const Text('Verifică din nou'),
       ),
       const SizedBox(height: 12),
+      OutlinedButton.icon(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const VisionDiagnosticsPage(),
+          ),
+        ),
+        icon: const Icon(Icons.bug_report_outlined),
+        label: const Text('Vision · jurnal erori locale'),
+      ),
+      const SizedBox(height: 12),
       if (kIsWeb) const Text(
         'Dacă apare o eroare care menționează FCM Registration API, activează API-ul Firebase Cloud Messaging Registration pentru proiect și încearcă din nou. Pe web cheia VAPID publică trebuie inclusă la fiecare build.',
         style: TextStyle(fontSize: 12),
