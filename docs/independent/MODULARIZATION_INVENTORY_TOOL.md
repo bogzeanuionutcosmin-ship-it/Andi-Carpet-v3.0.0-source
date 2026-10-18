@@ -28,4 +28,4 @@ The read-only inventory includes `local_import_cycles`, listing strongly connect
 
 ## Legacy named `part of` declarations
 
-The inventory lists `named_part_of` declarations such as `part of legacy.core;` for explicit manual review. Named library ownership cannot be verified by the URI-only part owner matcher; it is intentionally not treated as safe for automatic extraction. The `invalid_part_owners` finding for such a file is conservative, not proof of a Dart compilation error. Regression tests cover both named and URI declarations.
+The inventory lists `named_part_of` declarations such as `part of legacy.core;` for explicit manual review. Named library ownership is checked against a static `library name;` declaration in the referencing owner file. Missing or mismatched names are flagged in `invalid_part_owners`; matching names are not flagged. This is a heuristic, not full Dart parsing or permission to extract automatically. Regression tests cover matching, mismatching and URI declarations.
