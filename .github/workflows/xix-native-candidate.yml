@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   native:
-    if: github.head_ref == 'mission-xix/release-candidate' || github.head_ref == 'mission-xix/modular-integration'
+    if: github.head_ref == 'mission-xix/release-candidate' || (github.head_ref == 'mission-xix/modular-integration' || github.head_ref == 'shiva/xix-native-evidence-integrity-20261018')
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
