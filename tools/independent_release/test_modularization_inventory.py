@@ -218,8 +218,8 @@ class ModularizationInventoryTests(unittest.TestCase):
 
     def test_named_part_with_two_matching_owners_is_ambiguous(self):
         result = analyze({
-            "one.dart": "library legacy.core;\\npart 'detail.dart';",
-            "two.dart": "library legacy.core;\\npart 'detail.dart';",
+            "one.dart": "library legacy.core;\npart 'detail.dart';",
+            "two.dart": "library legacy.core;\npart 'detail.dart';",
             "detail.dart": "part of legacy.core;"
         })
         self.assertEqual(result["ambiguous_named_part_owners"], [{
@@ -229,7 +229,7 @@ class ModularizationInventoryTests(unittest.TestCase):
 
     def test_named_part_with_one_matching_owner_is_unambiguous(self):
         result = analyze({
-            "one.dart": "library legacy.core;\\npart 'detail.dart';",
+            "one.dart": "library legacy.core;\npart 'detail.dart';",
             "detail.dart": "part of legacy.core;"
         })
         self.assertEqual(result["ambiguous_named_part_owners"], [])
