@@ -185,13 +185,20 @@ class ModularizationInventoryTests(unittest.TestCase):
         result = analyze({"a.dart": "import 'a.dart';"})
         self.assertEqual(result["local_import_cycles"], [["a.dart"]])
 
-    def test_legacy_named_part_of_requires_manual_review(self):
+    def test_legacy_named_part_of_matches_library_owner(self):
         result = analyze({
-            "owner.dart": "part 'detail.dart';",
+            "owner.dart": "library legacy.core;\npart 'detail.dart';",
             "detail.dart": "part of legacy.core;"
         })
         self.assertEqual(result["named_part_of"],
                          [{"part": "detail.dart", "library": "legacy.core"}])
+        self.assertEqual(result["invalid_part_owners"], [])
+
+    def test_legacy_named_part_of_mismatched_library_is_flagged(self):
+        result = analyze({
+            "owner.dart": "library other.core;\npart 'detail.dart';",
+            "detail.dart": "part of legacy.core;"
+        })
         self.assertEqual(result["invalid_part_owners"],
                          [{"owner": "owner.dart", "part": "detail.dart"}])
 
