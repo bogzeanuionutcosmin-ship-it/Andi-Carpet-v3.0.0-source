@@ -33,6 +33,8 @@ export 'utils/date_formatters.dart';
 import 'ui/badge_metadata.dart';
 export 'ui/badge_metadata.dart';
 import 'ui/section_accent_palette.dart';
+import 'ui/font_choice_normalization.dart';
+export 'ui/font_choice_normalization.dart';
 export 'ui/section_accent_palette.dart';
 
 part 'ui/dashboard_map_components.dart';
