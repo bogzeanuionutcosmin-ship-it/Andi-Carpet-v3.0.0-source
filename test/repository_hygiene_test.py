@@ -105,6 +105,21 @@ class RepositoryHygieneTests(unittest.TestCase):
                        "_bundledLogoAssets", "_bundledLogoLabels"):
             self.assertIn("const Map<String, String> " + symbol + " =", module)
             self.assertNotIn("const Map<String, String> " + symbol + " =", main)
+        catalog = (ROOT / "lib/ui/branding_asset_catalog.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'ui/branding_asset_catalog.dart';", main)
+        self.assertIn("export 'ui/branding_asset_catalog.dart';", main)
+        self.assertNotIn("part of '../main.dart';", catalog)
+        for public, private in (
+            ("bundledBackgroundAssets", "_bundledBackgroundAssets"),
+            ("bundledBackgroundLabels", "_bundledBackgroundLabels"),
+            ("bundledLogoAssets", "_bundledLogoAssets"),
+            ("bundledLogoLabels", "_bundledLogoLabels"),
+        ):
+            self.assertEqual(catalog.count("const Map<String, String> " + public + " ="), 1)
+            self.assertIn("const Map<String, String> " + private + " = " + public + ";", module)
+        self.assertIn("String _normalizeFontChoice(String? raw) => normalizeFontChoice(raw);", module)
+        self.assertIn("import 'ui/font_choice_normalization.dart';", main)
+        self.assertIn("export 'ui/font_choice_normalization.dart';", main)
         self.assertIn("Image.asset(_activeLogoAsset(settings)", module)
 
     def test_install_buttons_are_extracted_without_behavior_loss(self):
@@ -457,17 +472,27 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
+        formatters = (ROOT / "lib/utils/date_formatters.dart").read_text(encoding="utf-8")
         self.assertIn("part 'utils/operational_dates.dart';", main)
+        self.assertIn("import 'utils/date_formatters.dart';", main)
+        self.assertIn("export 'utils/date_formatters.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("String two(int n)", "String formatDate(DateTime d)",
-                       "String formatMonth(DateTime d)", "String timeText(DateTime? d)",
-                       "String durationText(Duration? d)", "bool sameDay(DateTime a, DateTime b)",
-                       "DateTime operationalWorkDate(DateTime now)",
-                       "DateTime workWindowStart(DateTime workDate)",
-                       "DateTime workWindowEnd(DateTime workDate)",
-                       "bool isInsideWorkWindow(", "bool recordBelongsToWorkDate(",
-                       "DateTime recordEventTime("):
+        self.assertNotIn("part of '../main.dart';", formatters)
+        pure_symbols = ("String two(int n)", "String formatDate(DateTime d)",
+                        "String formatMonth(DateTime d)", "String timeText(DateTime? d)",
+                        "String durationText(Duration? d)", "bool sameDay(DateTime a, DateTime b)")
+        operational_symbols = ("DateTime operationalWorkDate(DateTime now)",
+                               "DateTime workWindowStart(DateTime workDate)",
+                               "DateTime workWindowEnd(DateTime workDate)",
+                               "bool isInsideWorkWindow(", "bool recordBelongsToWorkDate(",
+                               "DateTime recordEventTime(")
+        for symbol in pure_symbols:
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(formatters.count(symbol), 1)
+        for symbol in operational_symbols:
+            self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, formatters)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("Duration(hours: 23, minutes: 30)", module)
         self.assertIn("DateTime(workDate.year, workDate.month, workDate.day, 9, 30)", module)
@@ -503,13 +528,21 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_section_visual_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/section_visual_helpers.dart").read_text(encoding="utf-8")
+        palette = (ROOT / "lib/ui/section_accent_palette.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/section_visual_helpers.dart';", main)
+        self.assertIn("import 'ui/section_accent_palette.dart';", main)
+        self.assertIn("export 'ui/section_accent_palette.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("Color sectionAccent(String label)",
-                       "void showSuccessMessage(BuildContext context, String message)",
+        self.assertIn("import 'package:flutter/material.dart';", palette)
+        self.assertNotIn("part of '../main.dart';", palette)
+        self.assertEqual(palette.count("Color sectionAccent(String label)"), 1)
+        self.assertNotIn("Color sectionAccent(String label)", main)
+        self.assertNotIn("Color sectionAccent(String label)", module)
+        for symbol in ("void showSuccessMessage(BuildContext context, String message)",
                        "void showErrorMessage(BuildContext context, String message)",
                        "Color _plainBackgroundColor(AppSettings settings, Brightness brightness)"):
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, palette)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("Colors.white", module)
 
@@ -527,17 +560,25 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_icon_badge_catalog_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/icon_badge_catalog.dart").read_text(encoding="utf-8")
+        metadata = (ROOT / "lib/ui/badge_metadata.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/icon_badge_catalog.dart';", main)
+        self.assertIn("import 'ui/badge_metadata.dart';", main)
+        self.assertIn("export 'ui/badge_metadata.dart';", main)
         self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("part of '../main.dart';", metadata)
         for symbol in ("const Map<String, IconData> appIconChoices",
-                       "const Map<String, String> badgeAssetChoices",
-                       "const List<String> availableBadgeKeys",
                        "const Map<String, String> categoryBrandAssets",
                        "Widget _badgeGraphic(", "Widget categoryBrandWidget(",
-                       "Widget sectionAssetWidget(", "String badgeLabel("):
+                       "Widget sectionAssetWidget("):
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, metadata)
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", module)
+        for symbol in ("const Map<String, String> badgeAssetChoices",
+                       "const List<String> availableBadgeKeys", "String badgeLabel("):
+            self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(metadata.count(symbol), 1)
+        self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", metadata)
 
     def test_interactive_member_badges_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
@@ -586,21 +627,33 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_location_status_and_function_models_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/location_status_and_functions.dart").read_text(encoding="utf-8")
+        models = (ROOT / "lib/models/location_category_and_function_definition.dart").read_text(encoding="utf-8")
         self.assertIn("part 'models/location_status_and_functions.dart';", main)
+        self.assertIn("import 'models/location_category_and_function_definition.dart';", main)
+        self.assertIn("export 'models/location_category_and_function_definition.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("extension LocationStatusX on LocationStatus",
-                       "class LocationCategory {", "class FunctionDefinition {"):
+        self.assertNotIn("part of '../main.dart';", models)
+        self.assertIn("import 'package:flutter/material.dart';", models)
+        self.assertEqual(module.count("extension LocationStatusX on LocationStatus"), 1)
+        for symbol in ("class LocationCategory {", "class FunctionDefinition {"):
             self.assertNotIn(symbol, main)
-            self.assertEqual(module.count(symbol), 1)
-        self.assertIn(".take(3).toList()", module)
-        self.assertIn("iconKey = this.badgeKeys.first;", module)
-        self.assertIn("permissions = permissions ?? <String>{}", module)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(models.count(symbol), 1)
+        self.assertIn(".take(3).toList()", models)
+        self.assertIn("iconKey = this.badgeKeys.first;", models)
+        self.assertIn("permissions = permissions ?? <String>{}", models)
 
     def test_pdf_format_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/reports/pdf_format_helpers.dart").read_text(encoding="utf-8")
         self.assertIn("part 'reports/pdf_format_helpers.dart';", main)
         self.assertIn("part of '../main.dart';", module)
+        normalizer = (ROOT / "lib/reports/pdf_filename_normalization.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'reports/pdf_filename_normalization.dart';", main)
+        self.assertIn("export 'reports/pdf_filename_normalization.dart';", main)
+        self.assertIn("String safePdfFilePart(String text)", normalizer)
+        self.assertIn("String _safeFilePart(String text) => safePdfFilePart(text);", module)
+        self.assertNotIn("String safePdfFilePart(String text)", module)
         for symbol in ("Future<pw.ThemeData> _buildPdfTheme(",
                        "String _safeFilePart(", "String _pdfDate("):
             self.assertNotIn(symbol, main)
@@ -748,8 +801,11 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_enums_and_permissions_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         enums = (ROOT / "lib/models/app_enums_permissions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/app_enums_permissions.dart';", main)
-        self.assertIn("part of '../main.dart';", enums)
+        self.assertIn("import 'models/app_enums_permissions.dart';", main)
+        self.assertIn("export 'models/app_enums_permissions.dart';", main)
+        self.assertNotIn("part 'models/app_enums_permissions.dart';", main)
+        self.assertNotIn("part of", enums)
+        self.assertIn("import 'package:flutter/material.dart';", enums)
         for name in ("LocationType", "LocationStatus", "UserRole",
                      "UserFunction", "FunctionPermission", "PerDiemStatus",
                      "PerDiemPaymentMethod", "ExpenseDocumentType",

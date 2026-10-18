@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   native:
-    if: github.head_ref == 'mission-xix/release-candidate'
+    if: github.head_ref == 'mission-xix/release-candidate' || github.head_ref == 'mission-xix/modular-integration'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -36,12 +36,14 @@ jobs:
           cp lib/operations/record_writer.dart /tmp/xix-record-writer-fixed.dart
           cp lib/utils/operational_dates.dart /tmp/xix-operational-dates-fixed.dart
           git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/operations/record_writer.dart > lib/operations/record_writer.dart
-          git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/utils/operational_dates.dart > lib/utils/operational_dates.dart
+          git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/utils/operational_dates.dart > /tmp/xix-pinned-dates.dart
           python3 - <<'PY'
           from pathlib import Path
           p=Path('lib/utils/operational_dates.dart')
           fixed=Path('/tmp/xix-operational-dates-fixed.dart').read_text()
-          p.write_text(p.read_text()+'\nbool recordHasOpenAttempt'+fixed.split('\nbool recordHasOpenAttempt',1)[1])
+          old=Path('/tmp/xix-pinned-dates.dart').read_text()
+          start='bool recordBelongsToWorkDate('; end='DateTime recordEventTime('
+          p.write_text(fixed[:fixed.index(start)]+old[old.index(start):old.index(end)]+fixed[fixed.index(end):])
           PY
           if flutter test --reporter=json test/record_writer_test.dart test/centralizer_operational_day_test.dart > xix-evidence/pinned-red.log 2>&1; then
             echo 'Expected pinned defects were not reproduced'; exit 1
@@ -72,6 +74,13 @@ jobs:
           "$AAPT" dump permissions xix-evidence/operational-debug.apk >> xix-evidence/operational-metadata.txt
           "$APKSIGNER" verify --print-certs xix-evidence/operational-debug.apk > xix-evidence/operational-cert.txt
           sha256sum xix-evidence/operational-debug.apk > xix-evidence/SHA256SUMS
+      - name: Compile release candidate without production signing or publication
+        if: github.head_ref == 'mission-xix/modular-integration'
+        run: |
+          flutter build apk --release --dart-define=MAPBOX_ACCESS_TOKEN=
+          cp build/app/outputs/flutter-apk/app-release.apk xix-evidence/operational-release-test.apk
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs xix-evidence/operational-release-test.apk > xix-evidence/release-test-cert.txt
       - name: Configure temporary emulator backend only
         run: |
           python3 - <<'PY'

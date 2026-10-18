@@ -1321,3 +1321,19 @@ Conflicte numai în acest document și registrul de reguli, prin append și nume
 ## Misiunea XVIII — izolat, 18.10.2026
 
 Succesor al PR #99 pe ramura mission-xviii/hardening. Protecție existență pentru grafice legacy șterse/concurente, single-flight formular Centralizator, generator PDF real testabil și fonturi locale cu licență. Dovezi și limitări în docs/MISIUNEA_XVIII_ENGINEERING.md. Flutter local blocat de revizuirea automată pentru tentativa detectorului Azure către metadata; nu se ocolește, se folosește CI. Fără merge/deploy/Firebase live/distribuire APK; production_ready=false.
+
+## 157. Misiunea XIX — modul independent enumuri/permisiuni (2026-10-18)
+
+- Bază main `8452159475ff187867002425fa9c3b8c7e8006aa`; ramură izolată `mission-xix/enums-module`. Regulamentul, arhitectura Vision și continuitatea au fost consultate înainte de schimbări.
+- `lib/models/app_enums_permissions.dart` devine bibliotecă independentă Flutter; main importă și re-exportă toate enumurile și extensiile. Corpurile declarațiilor sunt identice byte cu byte; 11 enumuri, ordinea/numele valorilor și cele 39 etichete de permisiuni sunt păstrate. Fără schimbare de autoritate, serializare, roluri sau reguli funcționale.
+- `test/app_enums_permissions_test.dart`: patru teste de caracterizare pentru nume/ordine/index, etichete, culori/iconuri și compatibilitate publică prin main; contractul de igienă verifică biblioteca independentă.
+- Local: 107 teste Python PASS și verificare textuală byte cu byte a declarațiilor. Flutter/Dart nu este disponibil local în acest workspace; testele Flutter și buildul trebuie executate în CI pe SHA final. Nu se pretinde execuție Flutter locală.
+- Fără modificarea PR #102 sau a ramurilor altor contributori, Firebase, deploy, merge ori date de producție. Următorul pas: publicare Draft, CI final și integrare simulată cu celelalte module.
+
+
+## 158. Misiunea XIX — integrare modulară izolată (2026-10-18)
+
+- Integrare locală pornită exact din PR #102 `28f886dc5474ffcfb13beb7992473ca9083de38b`, cu PR #117 `dc8e102ace59ab3dd6fd79bd7ae010ae9ee952f4` și PR #118 `fde931dd5bffe8522bd8c3691864cfeb1ed01577`. Ramură proprie `mission-xix/modular-integration`; nicio ramură sursă sau main modificată.
+- Conflicte reale: importurile din main la integrarea #117; importurile main și append-ul ChatGpt la integrarea #118. Păstrate ambele seturi de importuri/exporturi și ambele note. PDF și testele de igienă s-au combinat automat; păstrate fonturile locale și helperul de nume extras.
+- Verificarea textuală confirmă că toate funcțiile runtime din operational_dates, inclusiv apartenența semantică zilei și recordHasOpenAttempt, sunt identice cu #102; numai cei șase formatori au fost extrași conform #117.
+- Local: 121 teste Python PASS, 3 teste Node PASS, git diff --check curat. Flutter/build/emulator necesită CI pe SHA final; nu sunt deduse din CI-urile ramurilor componente. Fără push, merge main, deploy sau Firebase live în acest lot local.

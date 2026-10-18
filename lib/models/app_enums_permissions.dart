@@ -1,4 +1,4 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
 
 enum LocationType { magic, million, horeca, other }
 enum LocationStatus { open, temporarilyClosed, permanentlyClosed }
