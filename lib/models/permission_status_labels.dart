@@ -1,4 +1,4 @@
-part of '../main.dart';
+import 'app_enums.dart';
 
 String functionPermissionGroup(FunctionPermission permission) {
   switch (permission) {
