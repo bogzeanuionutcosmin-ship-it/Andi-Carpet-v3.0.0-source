@@ -1337,3 +1337,38 @@ Succesor al PR #99 pe ramura mission-xviii/hardening. Protecție existență pen
 - Conflicte reale: importurile din main la integrarea #117; importurile main și append-ul ChatGpt la integrarea #118. Păstrate ambele seturi de importuri/exporturi și ambele note. PDF și testele de igienă s-au combinat automat; păstrate fonturile locale și helperul de nume extras.
 - Verificarea textuală confirmă că toate funcțiile runtime din operational_dates, inclusiv apartenența semantică zilei și recordHasOpenAttempt, sunt identice cu #102; numai cei șase formatori au fost extrași conform #117.
 - Local: 121 teste Python PASS, 3 teste Node PASS, git diff --check curat. Flutter/build/emulator necesită CI pe SHA final; nu sunt deduse din CI-urile ramurilor componente. Fără push, merge main, deploy sau Firebase live în acest lot local.
+
+## 159. Misiunea XIX — catalog independent de resurse pentru secțiuni (2026-10-18)
+
+- Bază main `8452159475ff187867002425fa9c3b8c7e8006aa`; lot izolat `mission-xix/section-assets-module`. Regulamentul, arhitectura Vision și nota de continuitate consultate.
+- Extrase textual `categoryBrandAssets` și `sectionAssetForLabel` din part-ul UI în `lib/ui/section_asset_catalog.dart`, fără dependențe Flutter; main importă și re-exportă API-ul existent. Corpurile sunt identice byte cu byte, inclusiv ordinea condițiilor și fallback null. Widgeturile și toți apelanții rămân neschimbați.
+- PR #107/#117 extrag separat badge metadata; acest lot nu repetă acea extragere. La integrare păstrați ambele module și contractele lor în main/testul de igienă.
+- Patru teste Flutter noi: etichete/accente/case/whitespace, prioritate substring, aliasuri exacte/fallback și catalog const/public. Local 107 teste Python PASS și diff-check curat; Flutter necesită CI final, nu a fost executat local.
+- Fără modificări de comportament, roluri, Firebase, assets, deploy ori main. Lot local pregătit pentru PR Draft separat și validare combinată.
+
+
+## 160. Misiunea XIX — integrare catalog secțiuni în candidatul modular (2026-10-18)
+
+- Lot izolat bazat pe integrarea locală `123e3494d4f6f9153cb79c4097094de9767e9d5f`, plus PR #120 `b606e3a25db794e36d5f56f28425e3aee30252b0`.
+- Conflicte rezolvate numai în main, icon_badge_catalog, testul de igienă și append-ul ChatGpt: ambele importuri/exporturi sunt păstrate; badge metadata și catalogul secțiuni rămân biblioteci separate, fără definiții duplicate.
+- Păstrate neschimbate helper-ele runtime ale candidatului și scriptul de regresie existent. Local: 121 teste Python și 3 teste Node PASS; diff-check curat. Flutter/Android/PDF/Firestore necesită CI pe SHA final, fără a prelua automat verdictele PR-urilor componente.
+- Nicio modificare în ramura #102 sau alte worktree-uri; fără push, merge main, deploy ori Firebase live.
+## Misiunea XIX — RC, 18.10.2026
+
+PR #102 conține integrarea izolată #100/#101/#95, writer CAS pentru records,
+restore atomic limitat și testare Android cu Auth/Firestore emulator. CI nativ
+39076482990 a reprodus lipsa STOP după START în afara ferestrei standard; fixul
+nu mută timestampurile reale. Sunt protejate și metadata legacy nested și
+metadatele exportului la restore. Contracte/limite: docs/MISIUNEA_XIX_RC_ENGINEERING.md.
+PR #118 separă enumurile; #119 verifică integrarea cu cele șapte module #117;
+#120 separă catalogul de asseturi. CI final trebuie verificat pe fiecare HEAD.
+Nu sunt autorizate merge/deploy, Firebase live, distribuire APK, semnătură
+permanentă nouă sau activare implicită de automatizări. production_ready=false.
+
+
+## 161. Misiunea XIX — integrare finală preflight restore și fixture-uri native (2026-10-18)
+
+- Integrat în ramura proprie candidatul #102 `9c73b328af547a530e8a6ff2477145c2ef17b0e1`, peste combinația cu #117/#118/#120. Conflictele workflow/ChatGpt au fost rezolvate păstrând toate notele și condiția CI pentru integrarea modulară.
+- Reproducerea RED înlocuiește atomic_restore și record_writer cu implementările defecte fixate; pentru date înlocuiește numai funcția de apartenență, păstrând proprietatea formatterelor extrase. Sunt cerute exact patru defecte comportamentale RED și rerulare GREEN. Buildul release de test rămâne configurat exclusiv pentru candidatul combinat.
+- Fișierele restore, teste native, fixture-uri, documentație RC și pubspec.lock sunt identice cu #102 final. Local: 121 teste Python PASS, 3 Node PASS, diff-check curat; rezultatele Flutter/build/runtime se verifică în CI pe HEAD final.
+- Fără push, deploy, merge main, Firebase live sau schimbarea ramurii sursă #102.

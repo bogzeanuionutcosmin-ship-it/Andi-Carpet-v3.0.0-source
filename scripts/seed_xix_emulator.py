@@ -17,7 +17,7 @@ for role in ['admin', 'editor', 'outsider']:
         {'email':f'{role}@andi.test','password':'synthetic-only-123','returnSecureToken':True})
     uid=result['localId']
     data={'active':True,'role':'admin' if role=='admin' else 'member','name':f'XIX {role}',
-          'email':f'{role}@andi.test','function':'worker',
+          'email':f'{role}@andi.test','function':'worker','functionIds':['worker'],
           'effectivePermissions':['viewDashboard','viewProgram','editProgram','viewCentralizer','editCentralizer','viewOwnDecont']}
     writes.append({'update':{'name':f'projects/{PROJECT}/databases/(default)/documents/users/{uid}',
         'fields':{k:value(v) for k,v in data.items()}}})
