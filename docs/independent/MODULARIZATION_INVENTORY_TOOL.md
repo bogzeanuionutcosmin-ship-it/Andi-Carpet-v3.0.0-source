@@ -33,3 +33,7 @@ The inventory lists `named_part_of` declarations such as `part of legacy.core;` 
 ## Ambiguous named library ownership
 
 `ambiguous_named_part_owners` lists each named `part of` file with zero or multiple matching owner libraries that also declare the part. Exactly one matching owner is expected for a straightforward extraction review. This remains a static heuristic and never authorizes automated code movement. Tests cover missing, unique and duplicate matching owners.
+
+## Local dependency hotspots
+
+`dependency_hotspots` ranks up to 20 Dart libraries by the sum of unique inbound and outbound local import/export edges, breaking ties by inbound count then filename. Missing and external imports are excluded. A hotspot is a review priority, not proof that extraction is safe; preserve existing behavior and require characterization tests before moving code.
