@@ -27,7 +27,13 @@ PYVALID
 trap collect_evidence EXIT
 flutter test integration_test/xix_native_test.dart -d emulator-5554 --dart-define=ANDICARPET_EMULATOR_HOST=10.0.2.2 --dart-define=MAPBOX_ACCESS_TOKEN=
 for file in native-flow.pdf observations.json; do
-  adb exec-out run-as com.example.andi_carpeta cat "files/xix-evidence/$file" > "xix-evidence/$file"
+  tmp="xix-evidence/$file.tmp"
+  if ! adb exec-out run-as com.example.andi_carpeta cat "files/xix-evidence/$file" > "$tmp"; then
+    rm -f "$tmp"
+    echo "Missing native evidence: $file (run-as failed)" >&2
+    exit 1
+  fi
+  mv "$tmp" "xix-evidence/$file"
 done
 python3 scripts/verify_xix_native_evidence.py
 flutter build apk --debug --dart-define=ANDICARPET_EMULATOR_HOST=10.0.2.2 --dart-define=MAPBOX_ACCESS_TOKEN=
