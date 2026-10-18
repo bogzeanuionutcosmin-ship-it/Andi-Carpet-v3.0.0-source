@@ -50,7 +50,10 @@ PYPOLL
         complete=0
       fi
     done
-    if test "$complete" = 1; then exit 0; fi
+    if test "$complete" = 1; then
+      adb shell run-as com.example.andi_carpeta touch files/xix-evidence/host-captured.ok
+      exit 0
+    fi
     sleep 2
   done
   exit 1
