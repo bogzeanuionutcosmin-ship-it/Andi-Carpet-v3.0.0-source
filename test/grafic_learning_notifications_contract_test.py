@@ -2,7 +2,7 @@ from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-PROGRAM = (ROOT / "lib" / "schedule" / "program_page.dart").read_text()
+PROGRAM = (ROOT / "lib" / "schedule" / "program_route_learning_actions.dart").read_text()
 LEARNING = (ROOT / "lib" / "learning" / "duration_estimates.dart").read_text()
 FUNCTIONS = (ROOT / "functions" / "index.js").read_text()
 
