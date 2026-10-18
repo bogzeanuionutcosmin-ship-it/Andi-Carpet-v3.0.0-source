@@ -37,3 +37,7 @@ The inventory lists `named_part_of` declarations such as `part of legacy.core;` 
 ## Local dependency hotspots
 
 `dependency_hotspots` ranks up to 20 Dart libraries by the sum of unique inbound and outbound local import/export edges, breaking ties by inbound count then filename. Missing and external imports are excluded. A hotspot is a review priority, not proof that extraction is safe; preserve existing behavior and require characterization tests before moving code.
+
+## Direct imports or exports of Dart part files
+
+`imports_of_part_files` flags local import/export edges whose target declares `part of` (URI or named). Dart part units are not standalone importable libraries. This is a source-level risk indicator, not a claim that a full Flutter build has failed. Tests cover URI parts, named parts and ordinary libraries.
