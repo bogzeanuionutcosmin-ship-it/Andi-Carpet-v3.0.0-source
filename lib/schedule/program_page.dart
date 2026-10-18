@@ -597,14 +597,17 @@ class _ProgramPageState extends State<ProgramPage> {
           if(can&&!head.closed)...[
             const SizedBox(height:12),
             ExpansionTile(
+              initiallyExpanded:true,
               title:const Text('Editare zile',style:TextStyle(fontWeight:FontWeight.bold)),
-              subtitle:const Text('Adaugă, scoate sau schimbă ordinea locațiilor după finalizarea graficului.'),
+              subtitle:const Text('Adaugă sau elimină locații; trage de mânerul din dreapta pentru a schimba ordinea.'),
               children:graphSchedules.map((s)=>Padding(padding:const EdgeInsets.only(bottom:10),child:_ScheduleCardFull(
                 schedule:s,locations:widget.locations,categories:widget.categories,records:widget.records,canEdit:can,
                 onAdd:()=>_addLocations(s),onRemove:(item)=>unawaited(_removeItem(s,item)),onReorder:(a,b)=>unawaited(_reorder(s,a,b)),
               ))).toList(),
             ),
           ],
+          if(!can) Padding(padding:const EdgeInsets.symmetric(vertical:8),child:_InfoCard(icon:Icons.lock_outline,title:'Editarea graficului nu este disponibilă',text:'Ai nevoie de permisiunea de editare a programului și a echipei selectate. Solicită administratorului accesul corespunzător.')),
+          if(can&&head.closed) const Padding(padding:EdgeInsets.symmetric(vertical:8),child:_InfoCard(icon:Icons.lock_clock_outlined,title:'Grafic închis',text:'Editarea locațiilor este blocată după închiderea graficului.')),
           const SizedBox(height:8),
           if (!routeData.complete) Card(child: ListTile(leading: const Icon(Icons.warning_amber_rounded), title: const Text('Traseu GPS incomplet'), subtitle: Text('Completează coordonatele pentru: ${[if(routeData.missingDeparture) 'plecare', ...routeData.missingLocations, if(routeData.missingDestination) 'destinație'].join(', ')}. Km și consumul nu pot fi estimate corect.'))),
           if (routeData.complete && routeData.points.length >= 2)
@@ -779,7 +782,7 @@ class _ProgramPageState extends State<ProgramPage> {
 
   Future<void> _addLocations(WorkSchedule s) async {
     final picked=await _locationDialog(s.items.map((i)=>i.locationId).toList());
-    if(picked==null)return;
+    if(picked==null||!mounted)return;
     final additions=picked.where((l)=>!s.items.any((i)=>i.locationId==l.id)).toList();
     if(additions.isEmpty)return;
     final facadeIds=<String>{};
@@ -796,13 +799,13 @@ class _ProgramPageState extends State<ProgramPage> {
         FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Adaugă')),
       ],
     )));
-    if(accepted!=true)return;
+    if(accepted!=true||!mounted)return;
     final updated=_cloneSchedule(s);var order=updated.items.length+1;
     for(final l in additions){updated.items.add(ScheduleItem(locationId:l.id,locationNameSnapshot:l.name,addressSnapshot:l.address,typeSnapshot:l.type,categoryIdSnapshot:l.categoryId,order:order++,facadePlanned:facadeIds.contains(l.id)));}
     await _saveWithFeedback(updated,success:'Locațiile au fost adăugate în ziua selectată.',auditAction:'Locații adăugate în Grafic');
   }
   WorkSchedule _cloneSchedule(WorkSchedule s)=>WorkSchedule(id:s.id,teamId:s.teamId,graphId:s.graphId,graphName:s.graphName,date:s.date,items:s.items.map((i)=>ScheduleItem(locationId:i.locationId,locationNameSnapshot:i.locationNameSnapshot,addressSnapshot:i.addressSnapshot,typeSnapshot:i.typeSnapshot,categoryIdSnapshot:i.categoryIdSnapshot,order:i.order,transferred:i.transferred,facadePlanned:i.facadePlanned)).toList(),active:s.active,closed:s.closed,started:s.started,paused:s.paused,postponed:s.postponed,autoProposed:s.autoProposed,planAlertAt:s.planAlertAt,planAlertReason:s.planAlertReason,lastRecalculatedAt:s.lastRecalculatedAt,recalculationCount:s.recalculationCount,learningExplanation:s.learningExplanation,learningConfidence:s.learningConfidence,learningSamples:s.learningSamples,departureName:s.departureName,departureLatitude:s.departureLatitude,departureLongitude:s.departureLongitude,returnName:s.returnName,returnLatitude:s.returnLatitude,returnLongitude:s.returnLongitude);
-  Future<void> _saveWithFeedback(WorkSchedule s,{required String success,required String auditAction})async{try{await widget.saveSchedule(s);widget.log(auditAction,'${team.name} · ${s.graphName} · ${formatDate(s.date)}');widget.notifyTeam(team.id,'Grafic de lucru modificat','${s.graphName} · ${formatDate(s.date)} a fost actualizat.');if(mounted)showSuccessMessage(context,success);}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi salvat: $e');}}
+  Future<bool> _saveWithFeedback(WorkSchedule s,{required String success,required String auditAction})async{try{await widget.saveSchedule(s);if(!mounted)return true;widget.onChanged();widget.log(auditAction,'${team.name} · ${s.graphName} · ${formatDate(s.date)}');widget.notifyTeam(team.id,'Grafic de lucru modificat','${s.graphName} · ${formatDate(s.date)} a fost actualizat.');showSuccessMessage(context,success);return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi salvat: $e');return false;}}
   Future<void> _applyGraphState({bool? started,bool? closed,bool? paused})async{final items=graphSchedules.map(_cloneSchedule).toList();for(final x in items){if(started!=null)x.started=started;if(closed!=null)x.closed=closed;if(paused!=null)x.paused=paused;await widget.saveSchedule(x);}widget.onChanged();}
   Future<Map<String,dynamic>?> _geocodeTripPoint(String query) async {
     final clean=query.trim();
@@ -908,7 +911,7 @@ class _ProgramPageState extends State<ProgramPage> {
     if(chosen==null)return;final affected=graphSchedules.where((x)=>!x.date.isBefore(DateTime(chosen.year,chosen.month,chosen.day))).map(_cloneSchedule).toList()..sort((a,b)=>b.date.compareTo(a.date));for(final x in affected){x.date=DateTime(x.date.year,x.date.month,x.date.day).add(const Duration(days:1));await widget.saveSchedule(x);}widget.log('Grafic amânat','${team.name} · de la ${formatDate(chosen)} · +1 zi');if(mounted)showSuccessMessage(context,'Graficul s-a actualizat în timp real: zilele au fost mutate cu +1 zi.');
   }
   Future<void> _removeItem(WorkSchedule s,ScheduleItem item)async{final updated=_cloneSchedule(s);updated.items.removeWhere((x)=>x.locationId==item.locationId&&x.order==item.order);for(int i=0;i<updated.items.length;i++)updated.items[i].order=i+1;await _saveWithFeedback(updated,success:'Locația a fost eliminată.',auditAction:'Locație eliminată din Grafic');}
-  Future<void> _reorder(WorkSchedule s,int oldIndex,int newIndex)async{final updated=_cloneSchedule(s);if(newIndex>oldIndex)newIndex--;final item=updated.items.removeAt(oldIndex);updated.items.insert(newIndex,item);for(int i=0;i<updated.items.length;i++)updated.items[i].order=i+1;await _saveWithFeedback(updated,success:'Ordinea zilei a fost salvată.',auditAction:'Ordine Grafic modificată');unawaited(_recordRoutingChoice(updated,'manual_order'));}
+  Future<void> _reorder(WorkSchedule s,int oldIndex,int newIndex)async{if(oldIndex<0||oldIndex>=s.items.length||newIndex<0||newIndex>s.items.length)return;final updated=_cloneSchedule(s);if(newIndex>oldIndex)newIndex--;if(newIndex==oldIndex)return;final item=updated.items.removeAt(oldIndex);updated.items.insert(newIndex,item);for(int i=0;i<updated.items.length;i++)updated.items[i].order=i+1;final saved=await _saveWithFeedback(updated,success:'Ordinea zilei a fost salvată.',auditAction:'Ordine Grafic modificată');if(saved)unawaited(_recordRoutingChoice(updated,'manual_order'));}
   Future<List<Location>?> _locationDialog(List<String> already) async {
     final selected = already.toSet();
     return showDialog<List<Location>>(
