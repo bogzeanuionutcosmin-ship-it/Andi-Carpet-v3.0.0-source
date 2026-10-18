@@ -5,7 +5,20 @@ collect_evidence() {
   adb logcat -d -s AndroidRuntime:E flutter:I > xix-evidence/native-logcat.txt || true
   for file in native-flow.pdf observations.json; do
     if adb exec-out run-as com.example.andi_carpeta cat "files/xix-evidence/$file" > "xix-evidence/$file.tmp"; then
-      mv "xix-evidence/$file.tmp" "xix-evidence/$file"
+      if python3 - "$file" "xix-evidence/$file.tmp" <<'PYVALID'
+import json, pathlib, sys
+kind, path=sys.argv[1:]
+data=pathlib.Path(path).read_bytes()
+if kind.endswith('.pdf'):
+    assert data.startswith(b'%PDF-') and b'%%EOF' in data[-1024:], 'not a PDF'
+else:
+    assert isinstance(json.loads(data), dict), 'not an observation object'
+PYVALID
+      then
+        mv "xix-evidence/$file.tmp" "xix-evidence/$file"
+      else
+        rm -f "xix-evidence/$file.tmp"
+      fi
     else
       rm -f "xix-evidence/$file.tmp"
     fi

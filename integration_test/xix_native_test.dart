@@ -23,7 +23,8 @@ void main() {
     await otherAuth.useAuthEmulator('10.0.2.2',9099);
     final otherDb=FirebaseFirestore.instanceFor(app:otherApp)..useFirestoreEmulator('10.0.2.2',8080);
     await otherAuth.signInWithEmailAndPassword(email:'editor@andi.test',password:'synthetic-only-123');
-    final evidence=<String,dynamic>{};
+    final evidence=<String,dynamic>{'completed':false};
+    final permissionDenied=isA<FirebaseException>().having((e)=>e.code,'code','permission-denied');
     final workDate=app.operationalWorkDate(DateTime.now());
     final item=app.ScheduleItem(locationId:'sala-xix',locationNameSnapshot:'Sala XIX',addressSnapshot:'Craiova',typeSnapshot:app.LocationType.magic,order:0);
     final schedule=app.WorkSchedule(id:'graph-xix',teamId:'craiova',date:workDate,items:[item],started:true);
@@ -64,11 +65,17 @@ void main() {
     await saveRecordCompared(db,ref.id,desired,expected:expected); // lost acknowledgement retry
     evidence['sameAttemptRetry']='one document, identical payload accepted';
     final beforeRace=(await ref.get()).data()!;
+    final countBeforeRace=(await db.collection('records').get()).size;
     final race=await Future.wait([db,otherDb].asMap().entries.map((e) async {
       try {await saveRecordCompared(e.value,ref.id,{...beforeRace,'addressSnapshot':'race-${e.key}'},expected:beforeRace);return true;}
-      catch(_){return false;}
+      on StateError catch(e){
+        expect(e.message,contains('modificată pe alt dispozitiv'));return false;
+      }
     }));
-    expect(race.where((v)=>v).length,1);evidence['twoNativeClients']=race;
+    expect(race.where((v)=>v).length,1);
+    expect((await ref.get(const GetOptions(source:Source.server))).data()!['addressSnapshot'],'race-${race.indexOf(true)}');
+    expect((await db.collection('records').get()).size,countBeforeRace);
+    evidence['twoNativeClients']={'accepted':race,'loser':'StateError stale baseline','serverWinner':'race-${race.indexOf(true)}','documentCount':countBeforeRace};
     await expectLater(saveRecordCompared(db,ref.id,{...beforeRace,'addressSnapshot':'stale'},expected:beforeRace),throwsA(isA<StateError>()));
     final latest=(await ref.get()).data()!;
     // Actual former writer operation: demonstrate deleted-document resurrection.
@@ -86,7 +93,7 @@ void main() {
     await saveRecordCompared(db,legacy.id,{...nestedLegacy,'status':'running'},expected:nestedLegacy);
     evidence['legacyAndDeletion']='legacy update passed; deleted baseline rejected';
     await otherAuth.signInWithEmailAndPassword(email:'outsider@andi.test',password:'synthetic-only-123');
-    await expectLater(saveRecordCompared(otherDb,ref.id,{...latest,'facadeDone':true},expected:latest),throwsA(isA<FirebaseException>()));
+    await expectLater(saveRecordCompared(otherDb,ref.id,{...latest,'facadeDone':true},expected:latest),throwsA(permissionDenied));
     evidence['unauthorizedTeam']='permission-denied';
     final night={...latest,'startedAt':Timestamp.fromDate(DateTime(2026,10,15,23,55)),'finishedAt':Timestamp.fromDate(DateTime(2026,10,16,0,20)),'status':'completed'};
     await saveRecordCompared(db,ref.id,night,expected:latest);
@@ -115,9 +122,10 @@ void main() {
     final out=Directory('/data/user/0/com.example.andi_carpeta/files/xix-evidence')..createSync(recursive:true);
     File('${out.path}/native-flow.pdf').writeAsBytesSync(bytes);
     evidence['pdf']='real builder with data reloaded from native Firestore; missing registry retained';
+    File('${out.path}/observations.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(evidence));
     await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
     await otherDb.doc('users/$uid').update({'active':false});
-    await expectLater(saveRecordCompared(db,ref.id,{...night,'facadeDone':true},expected:night),throwsA(isA<FirebaseException>()));
+    await expectLater(saveRecordCompared(db,ref.id,{...night,'facadeDone':true},expected:night),throwsA(permissionDenied));
     await otherDb.doc('users/$uid').update({'active':true});
     evidence['revokedProfile']='cached Auth identity cannot write after server profile deactivation';
     final snapshot={for(final d in (await otherDb.collection('records').get()).docs)d.id:d.data()};
@@ -126,11 +134,16 @@ void main() {
     await restoreAtomically(otherDb,{'records':snapshot},source:'synthetic-repeat');
     expect((await otherDb.doc('meta/backup').get()).data()!['fileName'],'retained.json');
     expect((await otherDb.collection('records').get()).size,snapshot.length);
-    await expectLater(restoreAtomically(db,{'records':{},'finance':{'forbidden':{'teamId':'forbidden'}}},source:'denied-partial'),throwsA(isA<FirebaseException>()));
+    // records inventory is readable by an active member. The intended record
+    // update is authorized, while deletion of other records and meta/backup
+    // are not: commit must roll back the authorized update as well.
+    final deniedRestore={'records':{ref.id:{...snapshot[ref.id]!, 'addressSnapshot':'must-rollback'}}};
+    await expectLater(restoreAtomically(db,deniedRestore,source:'denied-partial'),throwsA(permissionDenied));
     expect({for(final d in (await otherDb.collection('records').get()).docs)d.id:d.data()},snapshot);
     await expectLater(restoreAtomically(otherDb,{'records':{for(var i=0;i<401;i++)'large-$i':{'teamId':'craiova'}}},source:'oversized'),throwsA(isA<StateError>()));
     expect((await otherDb.collection('records').get()).size,snapshot.length);
-    evidence['restore']='admin complete/repeat passed; denied atomic batch and oversized restore changed no records';
+    evidence['restore']='admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records';
+    evidence['completed']=true;
     File('${out.path}/observations.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(evidence));
     await otherApp.delete();
   },timeout:const Timeout(Duration(minutes:8)));

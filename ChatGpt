@@ -1333,3 +1333,9 @@ PR #118 separă enumurile; #119 verifică integrarea cu cele șapte module #117;
 #120 separă catalogul de asseturi. CI final trebuie verificat pe fiecare HEAD.
 Nu sunt autorizate merge/deploy, Firebase live, distribuire APK, semnătură
 permanentă nouă sau activare implicită de automatizări. production_ready=false.
+
+Continuare XIX: probele native sunt întărite pentru a nu confunda o eroare
+SDK arbitrară cu un conflict/permission-denied sau un refuz de inventariere cu
+rollbackul batchului. Navigarea verifică datele sintetice și headinguri exacte,
+nu doar prezența taburilor. CI se reexecută pe commitul final; dovezile anterioare
+rămân asociate SHA-ului lor, fără revendicări pentru codul nou.
