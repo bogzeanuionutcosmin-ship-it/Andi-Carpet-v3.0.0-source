@@ -1,0 +1,39 @@
+name: Finance non-finite amount characterization (EXPECTED RED)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'test/finance_received_amount_nonfinite.red.dart'
+      - '.github/workflows/finance-nonfinite-characterization.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  finance-nonfinite-expected-red:
+    if: github.head_ref == 'test/finance-nonfinite-input-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Verify the specific non-finite receipt defect (not a UI PASS)
+        shell: bash
+        run: |
+          set +e
+          flutter test test/finance_received_amount_nonfinite.red.dart --reporter expanded > "$RUNNER_TEMP/finance-nonfinite-known-red.log" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/finance-nonfinite-known-red.log"
+          # Compiler errors, dependency failures and unrelated test failures
+          # MUST NOT be mistaken for successful bug characterization.
+          test "$result" -eq 1
+          grep -Fq 'NON_FINITE_AMOUNT_ACCEPTED_NAN' "$RUNNER_TEMP/finance-nonfinite-known-red.log"
+          echo "EXPECTED RED: NaN receipt amount reached the save boundary; NOT fixed."
+      # No production credentials, Firestore, billing, APK, publish or deploy.

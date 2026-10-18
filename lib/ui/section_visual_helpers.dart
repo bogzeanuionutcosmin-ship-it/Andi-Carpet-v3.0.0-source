@@ -1,4 +1,6 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
+
+import '../models/app_data_models.dart';
 
 Color sectionAccent(String label) {
   final t = label.toLowerCase();
@@ -53,7 +55,7 @@ void showErrorMessage(BuildContext context, String message) {
     ));
 }
 
-Color _plainBackgroundColor(AppSettings settings, Brightness brightness) {
+Color plainBackgroundColor(AppSettings settings, Brightness brightness) {
   if (brightness == Brightness.dark) return const Color(0xff111318);
   return switch (settings.background) {
     'Alb simplu' => Colors.white,
