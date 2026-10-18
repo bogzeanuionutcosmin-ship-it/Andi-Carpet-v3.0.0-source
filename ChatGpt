@@ -1343,3 +1343,7 @@ rămân asociate SHA-ului lor, fără revendicări pentru codul nou.
 Confirmarea XIX respinge și metadata isFromCache/hasPendingWrites; Source.server
 singur poate include latency compensation. Un conflict la citirea de confirmare
 este rezultat incert, nu dovada că un commit anterior nu a persistat.
+
+CI verifică prezența `flutter test --no-uninstall` în versiunea 3.47.5 și o
+folosește pentru a păstra package/Auth demo înaintea restartului entrypointului
+main. Fără flag, etapa nativă se oprește clar; nu continuă fără persistență.

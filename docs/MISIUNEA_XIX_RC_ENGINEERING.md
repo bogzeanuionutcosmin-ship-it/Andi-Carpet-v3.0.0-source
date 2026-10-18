@@ -68,3 +68,9 @@ resping și snapshoturile isFromCache/hasPendingWrites. Confirmarea ulterioară
 poate raporta incertitudine dacă un alt writer legitim modifică imediat după
 commit; mesajul nu dovedește că propriul commit a eșuat. Nu se așteaptă global
 waitForPendingWrites, care ar lega această operațiune de alte scrieri.
+
+Flutter 3.47.5 a fost verificat în workflow pentru opțiunea `--no-uninstall`.
+Testul instrumentat oprește procesul după rulare, dar păstrează instalarea și
+Auth-ul emulatorului; aplicația operațională poate fi apoi reinstalată peste
+aceeași package ID pentru cold restart/nav. Dacă opțiunea lipsește, CI eșuează
+înaintea testului nativ, fără fallback care ar elimina aplicația.
