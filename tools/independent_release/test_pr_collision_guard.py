@@ -38,6 +38,24 @@ class CollisionGuardTests(unittest.TestCase):
                             for pair in result["overlap_pairs"]))
         self.assertFalse(result["integration_approved"])
 
+    def test_six_module_candidate_collision_snapshot(self):
+        fixture = Path(__file__).resolve().parents[2] / "docs" / "independent" / "pr_collision_six_modules_20261018.json"
+        snapshot = json.loads(fixture.read_text(encoding="utf-8"))
+        result = analyze(snapshot)
+        candidate_pairs = {
+            other: pair["shared_files"]
+            for pair in result["overlap_pairs"]
+            if 115 in pair["prs"]
+            for other in pair["prs"] if other != 115
+        }
+        self.assertEqual(candidate_pairs, {
+            95: ["test/repository_hygiene_test.py"],
+            99: ["lib/main.dart", "test/repository_hygiene_test.py"],
+            100: ["lib/main.dart", "lib/reports/pdf_format_helpers.dart", "test/repository_hygiene_test.py"],
+        })
+        self.assertNotIn(101, candidate_pairs)
+        self.assertFalse(result["integration_approved"])
+
     def test_empty_snapshot(self):
         self.assertFalse(analyze({"prs": []})["integration_approved"])
 
