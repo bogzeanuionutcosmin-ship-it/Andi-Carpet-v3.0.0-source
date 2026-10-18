@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'per_diem_ledger.dart';
+import 'package:andi_carpeta/finance/per_diem_ledger.dart';
 
 void main() {
   final now = DateTime.utc(2026, 10, 10);
