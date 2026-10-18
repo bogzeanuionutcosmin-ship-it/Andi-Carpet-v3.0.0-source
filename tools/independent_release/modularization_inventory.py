@@ -28,6 +28,7 @@ def analyze(sources, package_name=None):
     inbound_dependencies = {}
     local_import_graph = {}
     local_file_dependencies = {}
+    imports_of_part_files = set()
     for path, content in sources.items():
         if not path.endswith(".dart"):
             continue
@@ -80,6 +81,10 @@ def analyze(sources, package_name=None):
                 continue
             if (owner, path) not in part_links:
                 orphan_parts.add((path, owner))
+    for importer, targets in local_import_graph.items():
+        for target in targets:
+            if PART_OF.search(sources[target]) or NAMED_PART_OF.search(sources[target]):
+                imports_of_part_files.add((importer, target))
     owners_by_part = {}
     for owner, part in part_links:
         if part in sources:
@@ -175,7 +180,10 @@ def analyze(sources, package_name=None):
         key=lambda entry: (-entry["inbound_count"] - entry["outbound_count"],
                            -entry["inbound_count"], entry["file"])
     )
-    return {"dependency_hotspots": dependency_hotspots[:20],
+    return {"imports_of_part_files": [
+                {"importer": a, "part": b} for a, b in sorted(imports_of_part_files)
+            ],
+            "dependency_hotspots": dependency_hotspots[:20],
             "ambiguous_named_part_owners": ambiguous_named_part_owners,
             "named_part_of": [{"part": a, "library": b} for a, b in sorted(named_part_of)],
             "local_import_cycles": sorted(cycles),
