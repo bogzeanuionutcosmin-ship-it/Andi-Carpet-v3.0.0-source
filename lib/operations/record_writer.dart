@@ -35,7 +35,10 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
   final ref = db.collection('records').doc(id);
   // A native offline transaction completion is not a server acknowledgement.
   // Fail closed before preparing a write and confirm authoritative state after it.
-  await ref.get(const GetOptions(source: Source.server));
+  final available = await ref.get(const GetOptions(source: Source.server));
+  if (available.metadata.isFromCache || available.metadata.hasPendingWrites) {
+    throw StateError('Există o salvare neconfirmată. Reconectează și reîncarcă înainte de retry.');
+  }
   await db.runTransaction((tx) async {
     final snap = await tx.get(ref);
     final current = snap.data();
@@ -52,7 +55,8 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
     }
   });
   final confirmed = await ref.get(const GetOptions(source: Source.server));
-  if (!confirmed.exists || !recordPayloadMatches(confirmed.data()!, desired)) {
+  if (confirmed.metadata.isFromCache || confirmed.metadata.hasPendingWrites ||
+      !confirmed.exists || !recordPayloadMatches(confirmed.data()!, desired)) {
     throw StateError('Salvarea nu a putut fi confirmată. Reîncarcă înainte de retry.');
   }
 }
