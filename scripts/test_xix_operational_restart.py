@@ -61,13 +61,22 @@ def foreground():
     return foreground_is_package(adb('shell', 'dumpsys', 'window', 'windows').decode())
 
 
+def app_screen_matches(root, title, alternatives, required=()):
+    # Android 16 emulator window-focus dumps do not always expose the focused
+    # Flutter package in the older mCurrentFocus format. UIAutomator's active
+    # accessibility tree is the stronger screen witness: require both the
+    # exact expected content/navigation and nodes owned by this application.
+    packages = {node.get('package') for node in root.iter('node')}
+    return PACKAGE in packages and screen_matches(root, title, alternatives, required)
+
+
 def wait_screen(stem, title, alternatives, required=(), attempts=30):
     found = False
     for _ in range(attempts):
         try:
             root, raw = state()
             (OUT / f'{stem}.xml').write_bytes(raw)
-            if foreground() and screen_matches(root, title, alternatives, required):
+            if app_screen_matches(root, title, alternatives, required):
                 found = True
                 break
         except (subprocess.CalledProcessError, ET.ParseError, subprocess.TimeoutExpired):
