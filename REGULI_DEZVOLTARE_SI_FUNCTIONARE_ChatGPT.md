@@ -13,8 +13,7 @@ Aceste reguli au prioritate în analiza, proiectarea, modificarea și testarea c
 7. **Internet, GPS și timp real.** Aplicația este proiectată pentru conectivitate și localizare: actualizări cât mai prompte, sincronizare coerentă, tratarea pierderii conexiunii, permisiuni GPS, consum rezonabil de baterie și date, protecția confidențialității și recuperare după erori. „Timp real” înseamnă latență minimă fezabilă, nu promisiunea imposibilă de funcționare online fără rețea.
 8. **Logica funcționării are prioritate maximă.** Cerințele utilizatorului sunt analizate critic. Dacă o idee este contradictorie, riscantă, ineficientă sau tehnic nepotrivită, ChatGPT explică de ce și propune alternativa logică și corectă; nu implementează automat o cerință greșită doar pentru a o confirma.
 9. **Verificare înainte de finalizare.** Pentru orice schimbare: inventar de impact, teste relevante, CI/build unde sunt disponibile, documentarea deciziilor și raportarea sinceră a rezultatului. Nu confundăm testele structurale cu validarea funcțională. Nu facem deploy sau modificări de producție fără aprobare explicită.
-
----
+10. Se lucreaza obligatoriu cu autonimie maxima, se lucreaza obligatoriu cu maximul de procese/actiuni si operatiuni simultan in paralel. Se lucreaza la capacitate maxima folosind resursele disponibile integral, le lucreaza obligatoriu succesiv fara opriri pentru rapoarte intermediare, fara asteptare apropbari sau asteptare comfirmari , fara solicitare comfirmari. se lucreaza fara asteptarea finalizarrii actiuniilor github( in cazul un care o anumita actiune asteapta validare se continua cu alte actiuni) 
 
 
 > Document separat de nota operațională `ChatGpt`. Este un registru al DECIZIILOR și al planului aprobat de proprietarul proiectului. Nu confundați propunerile viitoare cu funcționalități deja implementate. Actualizați-l continuu când se stabilesc reguli noi.
