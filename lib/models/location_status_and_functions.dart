@@ -1,4 +1,5 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
+import 'app_enums.dart';
 
 extension LocationStatusX on LocationStatus {
   String get label => switch (this) {
