@@ -74,7 +74,12 @@ def wait_screen(stem, title, alternatives, required=(), attempts=30):
             pass
         time.sleep(1)
     (OUT / f'{stem}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
-    assert found, f'Expected loaded main-entry screen absent: {title}'
+    if not found:
+        visible = sorted(labels(root)) if 'root' in locals() else []
+        (OUT / f'{stem}-diagnostic.txt').write_text(
+            f'Expected: {title}\\nForeground: {foreground()}\\nVisible labels: {visible!r}\\n',
+            encoding='utf-8')
+        raise AssertionError(f'Expected loaded main-entry screen absent: {title}; inspect {stem}-diagnostic.txt and screenshot')
 
 
 def tap_label(alternatives):
