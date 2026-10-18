@@ -1,13 +1,6 @@
 part of '../main.dart';
 
-String _normalizeFontChoice(String? raw) {
-  final value = (raw ?? 'System').trim();
-  if (value == 'Georgia' || value == 'Serif') return 'Serif';
-  if (value == 'Monospace') return 'Monospace';
-  if (value == 'Condensed' || value == 'Cursive') return 'Cursive';
-  if (const {'Roboto','Arial','Verdana','Tahoma','Sans'}.contains(value)) return 'Sans';
-  return 'System';
-}
+String _normalizeFontChoice(String? raw) => normalizeFontChoice(raw);
 
 String? _resolvedFontFamily(String choice) => switch (_normalizeFontChoice(choice)) {
   // Pe Web folosim familii Windows/browser reale; numele generice CSS nu sunt
