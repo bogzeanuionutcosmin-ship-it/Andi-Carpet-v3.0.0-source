@@ -48,7 +48,7 @@ jobs:
           import json
           from pathlib import Path
           report = json.loads(Path("independent-module-inventory.json").read_text())
-          fields = ("files", "part_links", "orphan_parts", "invalid_part_owners", "multiple_part_owners", "local_import_cycles", "named_part_of",
+          fields = ("files", "part_links", "orphan_parts", "invalid_part_owners", "multiple_part_owners", "local_import_cycles", "named_part_of", "ambiguous_named_part_owners",
                     "cross_domain_edges", "inbound_dependencies", "migration_candidates",
                     "unresolved_imports")
           summary = ["## Read-only Dart dependency inventory",
