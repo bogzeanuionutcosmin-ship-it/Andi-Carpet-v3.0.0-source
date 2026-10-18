@@ -1,4 +1,4 @@
-part of '../main.dart';
+import '../models/app_data_models.dart';
 
 String two(int n) => n.toString().padLeft(2, '0');
 String formatDate(DateTime d) {
