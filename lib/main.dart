@@ -28,6 +28,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'utils/date_formatters.dart';
+export 'utils/date_formatters.dart';
+import 'ui/badge_metadata.dart';
+export 'ui/badge_metadata.dart';
+import 'ui/section_accent_palette.dart';
+export 'ui/section_accent_palette.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
