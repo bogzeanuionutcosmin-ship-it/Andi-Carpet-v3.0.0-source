@@ -21,3 +21,7 @@ Before approving an extraction, compare its base commit to the current integrati
 ## Conflicting Dart part ownership
 
 The read-only inventory reports `multiple_part_owners` when two or more Dart libraries declare the same existing `part` file. This is an extraction blocker requiring manual review; the report does not modify sources or certify modularization. Synthetic tests cover both conflicting and valid ownership.
+
+## Local Dart import/export cycles
+
+The read-only inventory includes `local_import_cycles`, listing strongly connected groups of local Dart files linked through import/export statements (including direct self-imports). Cycles require review before extracting modules; this structural signal is not a compiler verdict. External packages, conditional import branches and implicit `part` scope are not exhaustively modeled. Synthetic regression tests cover two-file cycles, transitive cycles, self-imports and acyclic graphs.
