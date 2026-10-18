@@ -76,8 +76,12 @@ def wait_screen(stem, title, alternatives, required=(), attempts=30):
     (OUT / f'{stem}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
     if not found:
         visible = sorted(labels(root)) if 'root' in locals() else []
+        try:
+            in_foreground = foreground()
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            in_foreground = f'unavailable: {exc}'
         (OUT / f'{stem}-diagnostic.txt').write_text(
-            f'Expected: {title}\\nForeground: {foreground()}\\nVisible labels: {visible!r}\\n',
+            f'Expected: {title}\nForeground: {in_foreground}\nVisible labels: {visible!r}\n',
             encoding='utf-8')
         raise AssertionError(f'Expected loaded main-entry screen absent: {title}; inspect {stem}-diagnostic.txt and screenshot')
 
