@@ -501,13 +501,21 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_section_visual_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/section_visual_helpers.dart").read_text(encoding="utf-8")
+        palette = (ROOT / "lib/ui/section_accent_palette.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/section_visual_helpers.dart';", main)
+        self.assertIn("import 'ui/section_accent_palette.dart';", main)
+        self.assertIn("export 'ui/section_accent_palette.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("Color sectionAccent(String label)",
-                       "void showSuccessMessage(BuildContext context, String message)",
+        self.assertIn("import 'package:flutter/material.dart';", palette)
+        self.assertNotIn("part of '../main.dart';", palette)
+        self.assertEqual(palette.count("Color sectionAccent(String label)"), 1)
+        self.assertNotIn("Color sectionAccent(String label)", main)
+        self.assertNotIn("Color sectionAccent(String label)", module)
+        for symbol in ("void showSuccessMessage(BuildContext context, String message)",
                        "void showErrorMessage(BuildContext context, String message)",
                        "Color _plainBackgroundColor(AppSettings settings, Brightness brightness)"):
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, palette)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("Colors.white", module)
 
