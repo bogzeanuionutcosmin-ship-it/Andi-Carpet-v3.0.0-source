@@ -15,6 +15,7 @@ def fixture(*entries):
     root = ET.Element('hierarchy')
     for text, selected in entries:
         ET.SubElement(root, 'node', {'content-desc': text, 'selected': selected,
+                                  'package': restart.PACKAGE,
                                   'clickable': 'true', 'bounds': '[0,0][100,50]'})
     return root
 
@@ -46,6 +47,17 @@ class RestartEvidenceParserTest(unittest.TestCase):
         self.assertFalse(restart.foreground_is_package('mCurrentFocus=Window{abc u0 com.android.launcher/.Launcher}\nbackground com.example.andi_carpeta/.MainActivity'))
         self.assertTrue(restart.own_crash('E AndroidRuntime: FATAL EXCEPTION: main\nE AndroidRuntime: Process: com.example.andi_carpeta, PID: 45'))
         self.assertFalse(restart.own_crash('E AndroidRuntime: FATAL EXCEPTION: main\nE AndroidRuntime: Process: another.package, PID: 45'))
+
+    def test_android16_accessibility_tree_proves_app_when_focus_dump_is_unavailable(self):
+        home = fixture(('Acasă\nTab 1 of 8', 'true'), ('Echipe acum', 'false'),
+                       ('Craiova XIX\nÎn program', 'false'))
+        self.assertTrue(restart.app_screen_matches(
+            home, 'Echipe acum', ('Acasă',), ('Craiova XIX',)))
+        foreign = ET.fromstring(ET.tostring(home))
+        for node in foreign.iter('node'):
+            node.set('package', 'com.android.launcher')
+        self.assertFalse(restart.app_screen_matches(
+            foreign, 'Echipe acum', ('Acasă',), ('Craiova XIX',)))
 
     def test_initial_navigation_lookup_retries_invalid_accessibility_dump(self):
         root = fixture(('Centralizator\nTab 4 of 8', 'false'))
