@@ -29,6 +29,9 @@ def analyze(sources, package_name=None):
         import posixpath
         for uri in PART.findall(content):
             target = posixpath.normpath(posixpath.join(posixpath.dirname(path), uri))
+            if target.startswith("../") or target.startswith("/") or target == "..":
+                unresolved.add((path, uri))
+                continue
             part_links.add((path, target))
             if target not in sources:
                 unresolved.add((path, uri))
@@ -62,6 +65,9 @@ def analyze(sources, package_name=None):
             continue
         for uri in PART_OF.findall(content):
             owner = posixpath.normpath(posixpath.join(posixpath.dirname(path), uri))
+            if owner.startswith("../") or owner.startswith("/") or owner == "..":
+                unresolved.add((path, uri))
+                continue
             if (owner, path) not in part_links:
                 orphan_parts.add((path, owner))
     owners_by_part = {}
