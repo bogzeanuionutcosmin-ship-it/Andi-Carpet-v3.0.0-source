@@ -45,6 +45,24 @@ void main() {
     expect(sameDay(DateTime(2024, 2, 29, 12), DateTime(2024, 2, 29, 0)), isTrue);
   });
 
+  test('sameDay preserves caller timezone calendar semantics', () {
+    final utc = DateTime.utc(2026, 10, 18, 23, 30);
+    final local = DateTime(2026, 10, 18, 0, 15);
+    // This helper compares displayed calendar fields, not instants.
+    expect(sameDay(utc, local), isTrue);
+    expect(sameDay(utc, DateTime(2026, 10, 19)), isFalse);
+  });
+
+  test('formatters do not alter DateTime instances', () {
+    final date = DateTime.utc(2026, 12, 31, 23, 59, 59);
+    final before = date.microsecondsSinceEpoch;
+    expect(formatDate(date), 'joi-31-decembrie-2026');
+    expect(formatMonth(date), 'decembrie-2026');
+    expect(timeText(date), '23:59');
+    expect(date.microsecondsSinceEpoch, before);
+    expect(date.isUtc, isTrue);
+  });
+
   test('sameDay compares calendar date without timezone conversion', () {
     expect(sameDay(DateTime(2026, 10, 18, 0), DateTime(2026, 10, 18, 23)), isTrue);
     expect(sameDay(DateTime(2026, 10, 18), DateTime(2026, 10, 19)), isFalse);
