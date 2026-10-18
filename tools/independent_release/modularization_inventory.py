@@ -7,6 +7,7 @@ from pathlib import Path
 
 IMPORT = re.compile(r"^\s*(?:import|export)\s+['\"]([^'\"]+)['\"]", re.MULTILINE)
 PART = re.compile(r"^\s*part\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
+NAMED_PART_OF = re.compile(r"^\\s*part\\s+of\\s+([A-Za-z_][\\w.]*)\\s*;", re.MULTILINE)
 PART_OF = re.compile(r"^\s*part\s+of\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
 DOMAINS = ("schedule", "centralizer", "reports", "models", "home", "admin", "dashboard", "map")
 
@@ -19,6 +20,7 @@ def analyze(sources, package_name=None):
     unresolved = set()
     part_links = set()
     orphan_parts = set()
+    named_part_of = set()
     invalid_part_owners = set()
     migration_candidates = []
     inbound_dependencies = {}
@@ -65,6 +67,8 @@ def analyze(sources, package_name=None):
     for path, content in sources.items():
         if not path.endswith(".dart"):
             continue
+        for library in NAMED_PART_OF.findall(content):
+            named_part_of.add((path, library))
         for uri in PART_OF.findall(content):
             owner = posixpath.normpath(posixpath.join(posixpath.dirname(path), uri))
             if owner.startswith("../") or owner.startswith("/") or owner == "..":
@@ -138,7 +142,8 @@ def analyze(sources, package_name=None):
     for node in sorted(sources):
         if node.endswith(".dart") and node not in indices:
             visit(node)
-    return {"local_import_cycles": sorted(cycles),
+    return {"named_part_of": [{"part": a, "library": b} for a, b in sorted(named_part_of)],
+            "local_import_cycles": sorted(cycles),
             "multiple_part_owners": multiple_part_owners,
             "inbound_dependencies": [
                 {"file": target, "imported_by": sorted(importers)}
