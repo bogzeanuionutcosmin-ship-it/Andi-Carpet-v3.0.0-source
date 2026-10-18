@@ -28,6 +28,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'models/location_category_and_function_definition.dart';
+export 'models/location_category_and_function_definition.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
