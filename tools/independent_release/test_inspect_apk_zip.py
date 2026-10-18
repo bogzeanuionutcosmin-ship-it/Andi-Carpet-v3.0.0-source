@@ -63,7 +63,7 @@ class ApkZipStructureTests(unittest.TestCase):
     def test_high_compression_ratio_is_rejected_without_extracting(self):
         with zipfile.ZipFile(self.apk, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             archive.writestr("AndroidManifest.xml", b"a")
-            archive.writestr("classes.dex", b"0" * 200000)
+            archive.writestr("classes.dex", b"0" * 2000000)
         result = inspect(self.apk)
         self.assertIn("compression_ratio_limit", result["findings"])
         self.assertFalse(result["zip_structure_pass"])
