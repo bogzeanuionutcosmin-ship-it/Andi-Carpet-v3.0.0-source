@@ -93,6 +93,19 @@ void main() {
     final nightSnapshot=await ref.get(const GetOptions(source:Source.server));
     final reloaded=app.centralizerRecordFromData(ref.id,nightSnapshot.data()!);
     expect(reloaded.duration,const Duration(minutes:25));
+    await saveRecordCompared(db,'second-legitimate',{...nightSnapshot.data()!,
+      'startedAt':Timestamp.fromDate(DateTime(2026,10,16,0,55)),
+      'finishedAt':Timestamp.fromDate(DateTime(2026,10,16,1,20))});
+    expect((await db.doc('records/second-legitimate').get()).exists,true);
+    evidence['distinctLegitimateAttempt']='a distinct completed attempt retains a distinct ID';
+    await db.disableNetwork();
+    try {
+      await expectLater(saveRecordCompared(db,'offline-attempt',{'teamId':'craiova','locationId':'offline','status':'running'}),throwsA(isA<FirebaseException>()));
+    } finally {
+      await db.enableNetwork();
+    }
+    expect((await db.doc('records/offline-attempt').get(const GetOptions(source:Source.server))).exists,false);
+    evidence['offlineBeforeStart']='native transaction rejected; reconnect has no queued record';
     await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.CentralizerPage(
       currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],
       locations:[],categories:[],schedules:[schedule],records:[reloaded],isAdmin:false,canEditTeam:(_)=>true,canEditCentralizer:true,
@@ -103,6 +116,10 @@ void main() {
     File('${out.path}/native-flow.pdf').writeAsBytesSync(bytes);
     evidence['pdf']='real builder with data reloaded from native Firestore; missing registry retained';
     await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
+    await otherDb.doc('users/$uid').update({'active':false});
+    await expectLater(saveRecordCompared(db,ref.id,{...night,'facadeDone':true},expected:night),throwsA(isA<FirebaseException>()));
+    await otherDb.doc('users/$uid').update({'active':true});
+    evidence['revokedProfile']='cached Auth identity cannot write after server profile deactivation';
     final snapshot={for(final d in (await otherDb.collection('records').get()).docs)d.id:d.data()};
     await otherDb.doc('meta/backup').set({'fileName':'retained.json','lastExportAt':Timestamp(1,0)});
     await restoreAtomically(otherDb,{'records':snapshot},source:'synthetic-complete');

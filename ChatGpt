@@ -1321,3 +1321,15 @@ Conflicte numai în acest document și registrul de reguli, prin append și nume
 ## Misiunea XVIII — izolat, 18.10.2026
 
 Succesor al PR #99 pe ramura mission-xviii/hardening. Protecție existență pentru grafice legacy șterse/concurente, single-flight formular Centralizator, generator PDF real testabil și fonturi locale cu licență. Dovezi și limitări în docs/MISIUNEA_XVIII_ENGINEERING.md. Flutter local blocat de revizuirea automată pentru tentativa detectorului Azure către metadata; nu se ocolește, se folosește CI. Fără merge/deploy/Firebase live/distribuire APK; production_ready=false.
+
+## Misiunea XIX — RC, 18.10.2026
+
+PR #102 conține integrarea izolată #100/#101/#95, writer CAS pentru records,
+restore atomic limitat și testare Android cu Auth/Firestore emulator. CI nativ
+39076482990 a reprodus lipsa STOP după START în afara ferestrei standard; fixul
+nu mută timestampurile reale. Sunt protejate și metadata legacy nested și
+metadatele exportului la restore. Contracte/limite: docs/MISIUNEA_XIX_RC_ENGINEERING.md.
+PR #118 separă enumurile; #119 verifică integrarea cu cele șapte module #117;
+#120 separă catalogul de asseturi. CI final trebuie verificat pe fiecare HEAD.
+Nu sunt autorizate merge/deploy, Firebase live, distribuire APK, semnătură
+permanentă nouă sau activare implicită de automatizări. production_ready=false.

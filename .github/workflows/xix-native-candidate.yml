@@ -34,8 +34,10 @@ jobs:
         run: |
           mkdir -p xix-evidence
           cp lib/operations/record_writer.dart /tmp/xix-record-writer-fixed.dart
+          cp lib/operations/atomic_restore.dart /tmp/xix-restore-fixed.dart
           cp lib/utils/operational_dates.dart /tmp/xix-operational-dates-fixed.dart
           git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/operations/record_writer.dart > lib/operations/record_writer.dart
+          git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/operations/atomic_restore.dart > lib/operations/atomic_restore.dart
           git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/utils/operational_dates.dart > lib/utils/operational_dates.dart
           python3 - <<'PY'
           from pathlib import Path
@@ -43,7 +45,7 @@ jobs:
           fixed=Path('/tmp/xix-operational-dates-fixed.dart').read_text()
           p.write_text(p.read_text()+'\nbool recordHasOpenAttempt'+fixed.split('\nbool recordHasOpenAttempt',1)[1])
           PY
-          if flutter test --reporter=json test/record_writer_test.dart test/centralizer_operational_day_test.dart > xix-evidence/pinned-red.log 2>&1; then
+          if flutter test --reporter=json test/record_writer_test.dart test/centralizer_operational_day_test.dart test/atomic_restore_preflight_test.dart > xix-evidence/pinned-red.log 2>&1; then
             echo 'Expected pinned defects were not reproduced'; exit 1
           fi
           python3 - <<'PY'
@@ -54,12 +56,13 @@ jobs:
               except ValueError: continue
               if e.get('type')=='testStart': names[e['test']['id']]=e['test']['name']
               if e.get('type')=='testDone' and e.get('result')=='failure': failed.append(names[e['testID']])
-          assert set(failed)=={'independently decoded nested legacy metadata compares by value','real daytime and late-evening executions do not expire at 12:30'},failed
-          print('Two pinned behavior defects reproduced; compilation succeeded.')
+          assert set(failed)=={'independently decoded nested legacy metadata compares by value','real daytime and late-evening executions do not expire at 12:30','oversized restore is rejected before database inventory','empty restore cannot write successful metadata'},failed
+          print('Four pinned behavior defects reproduced; compilation succeeded.')
           PY
           cp /tmp/xix-record-writer-fixed.dart lib/operations/record_writer.dart
+          cp /tmp/xix-restore-fixed.dart lib/operations/atomic_restore.dart
           cp /tmp/xix-operational-dates-fixed.dart lib/utils/operational_dates.dart
-          flutter test test/record_writer_test.dart test/centralizer_operational_day_test.dart > xix-evidence/fixed-green.log 2>&1
+          flutter test test/record_writer_test.dart test/centralizer_operational_day_test.dart test/atomic_restore_preflight_test.dart > xix-evidence/fixed-green.log 2>&1
       - run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Build operational APK without running live backend
         run: |
