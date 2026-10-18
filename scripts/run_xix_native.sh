@@ -26,6 +26,11 @@ PYVALID
 }
 trap collect_evidence EXIT
 flutter test integration_test/xix_native_test.dart -d emulator-5554 --dart-define=ANDICARPET_EMULATOR_HOST=10.0.2.2 --dart-define=MAPBOX_ACCESS_TOKEN=
+# Flutter test may uninstall its instrumentation APK after a successful run.
+# Install the operational app before using Android run-as to inspect its sandbox.
+flutter build apk --debug --dart-define=ANDICARPET_EMULATOR_HOST=10.0.2.2 --dart-define=MAPBOX_ACCESS_TOKEN=
+cp build/app/outputs/flutter-apk/app-debug.apk xix-evidence/emulator-operational-debug.apk
+adb install -r xix-evidence/emulator-operational-debug.apk
 for file in native-flow.pdf observations.json; do
   tmp="xix-evidence/$file.tmp"
   if ! adb exec-out run-as com.example.andi_carpeta cat "files/xix-evidence/$file" > "$tmp"; then
@@ -55,7 +60,4 @@ PYCHECK
   mv "$tmp" "xix-evidence/$file"
 done
 python3 scripts/verify_xix_native_evidence.py
-flutter build apk --debug --dart-define=ANDICARPET_EMULATOR_HOST=10.0.2.2 --dart-define=MAPBOX_ACCESS_TOKEN=
-cp build/app/outputs/flutter-apk/app-debug.apk xix-evidence/emulator-operational-debug.apk
-adb install -r xix-evidence/emulator-operational-debug.apk
 python3 scripts/test_xix_operational_restart.py
