@@ -1,4 +1,6 @@
-part of '../main.dart';
+import 'package:flutter/material.dart';
+import 'app_enums.dart';
+import 'location_status_and_functions.dart';
 
 String functionPermissionId(FunctionPermission p) => p.name;
 

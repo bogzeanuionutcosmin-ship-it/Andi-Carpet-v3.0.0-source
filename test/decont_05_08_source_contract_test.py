@@ -5,7 +5,7 @@ import unittest
 LIB = pathlib.Path(__file__).resolve().parents[1] / 'lib'
 SRC = LIB / 'main.dart'
 REPORTS = LIB / 'reports' / 'pdf_reports.dart'
-EXPENSES = LIB / 'expenses' / 'expense_page.dart'
+EXPENSES = LIB / 'expenses' / 'expense_settlement_actions.dart'
 
 class DecontSourceContract(unittest.TestCase):
     @classmethod
