@@ -17,3 +17,7 @@ The independent release guard workflow generates `independent-module-inventory.j
 The JSON also lists `part_links`, `orphan_parts`, `invalid_part_owners`, `inbound_dependencies`, and `migration_candidates`. A `main_part_requires_dependency_review` candidate is **not** safe for automatic extraction. Check imports, private identifiers, library-scoped declarations, and `part of` ownership before any move. `inbound_dependencies` covers explicit import/export directives, not references through shared Dart libraries or runtime calls.
 
 Before approving an extraction, compare its base commit to the current integration candidate, run Flutter analysis/tests and the full combined Firebase emulator suite, and keep a reversible PR. The tool never authorizes release or production changes.
+
+## Conflicting Dart part ownership
+
+The read-only inventory reports `multiple_part_owners` when two or more Dart libraries declare the same existing `part` file. This is an extraction blocker requiring manual review; the report does not modify sources or certify modularization. Synthetic tests cover both conflicting and valid ownership.
