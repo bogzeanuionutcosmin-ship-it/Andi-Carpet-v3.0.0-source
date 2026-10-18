@@ -1,4 +1,6 @@
-part of '../main.dart';
+import 'app_enums.dart';
+import 'location_type_mapping.dart';
+import '../utils/graph_names.dart';
 
 class AppUser {
   final String id;
