@@ -156,6 +156,35 @@ class ModularizationInventoryTests(unittest.TestCase):
                          [{"file": "features/a.dart", "uri": "../../outside.dart"}])
         self.assertEqual(result["orphan_parts"], [])
 
+    def test_two_file_import_cycle(self):
+        result = analyze({
+            "models/a.dart": "import 'b.dart';",
+            "models/b.dart": "import 'a.dart';"
+        })
+        self.assertEqual(result["local_import_cycles"],
+                         [["models/a.dart", "models/b.dart"]])
+
+    def test_transitive_import_cycle(self):
+        result = analyze({
+            "a.dart": "import 'b.dart';",
+            "b.dart": "export 'c.dart';",
+            "c.dart": "import 'a.dart';"
+        })
+        self.assertEqual(result["local_import_cycles"],
+                         [["a.dart", "b.dart", "c.dart"]])
+
+    def test_acyclic_imports_do_not_report_cycle(self):
+        result = analyze({
+            "a.dart": "import 'b.dart';",
+            "b.dart": "import 'c.dart';",
+            "c.dart": ""
+        })
+        self.assertEqual(result["local_import_cycles"], [])
+
+    def test_self_import_is_reported(self):
+        result = analyze({"a.dart": "import 'a.dart';"})
+        self.assertEqual(result["local_import_cycles"], [["a.dart"]])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
