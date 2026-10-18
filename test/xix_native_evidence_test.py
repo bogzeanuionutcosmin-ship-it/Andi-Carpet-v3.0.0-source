@@ -20,15 +20,24 @@ class NativeEvidenceTest(unittest.TestCase):
         (self.root / "native-flow.pdf").write_bytes(b"%PDF-1.4\n%%EOF\n")
         self.observation = {
             "completed": True,
-            "connectedFlow": {"observed": 1},
-            "sameAttemptRetry": "ok",
-            "twoNativeClients": {"accepted": [True, False]},
+            "connectedFlow": {
+                "expected": "one completed record after double taps and server reload",
+                "observed": 1,
+                "id": "record-1",
+            },
+            "sameAttemptRetry": "one document, identical payload accepted",
+            "twoNativeClients": {
+                "accepted": [True, False],
+                "loser": "StateError stale baseline",
+                "serverWinner": "race-0",
+                "documentCount": 1,
+            },
             "unauthorizedTeam": "permission-denied",
-            "legacyAndDeletion": "ok",
+            "legacyAndDeletion": "legacy update passed; deleted baseline rejected",
             "offlineBeforeStart": "native transaction rejected; reconnect has no queued record",
             "revokedProfile": "cached Auth identity cannot write after server profile deactivation",
             "restore": "admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records",
-            "pdf": "ok",
+            "pdf": "real builder with data reloaded from native Firestore; missing registry retained",
         }
         self.save()
 
@@ -69,6 +78,30 @@ class NativeEvidenceTest(unittest.TestCase):
 
     def test_both_clients_accepted_fails(self):
         self.observation["twoNativeClients"]["accepted"] = [True, True]
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_numeric_client_results_do_not_pass_as_booleans(self):
+        self.observation["twoNativeClients"]["accepted"] = [1, 0]
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_boolean_connected_count_does_not_pass_as_integer(self):
+        self.observation["connectedFlow"]["observed"] = True
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_unproven_retry_marker_fails(self):
+        self.observation["sameAttemptRetry"] = "ok"
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_unproven_pdf_marker_fails(self):
+        self.observation["pdf"] = "ok"
         self.save()
         with self.assertRaises(AssertionError):
             module.verify(self.root)
