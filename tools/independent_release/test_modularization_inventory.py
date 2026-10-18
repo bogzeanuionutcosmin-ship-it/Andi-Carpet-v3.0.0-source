@@ -254,6 +254,30 @@ class ModularizationInventoryTests(unittest.TestCase):
         }, package_name="andi_carpet")
         self.assertEqual(result["dependency_hotspots"], [])
 
+    def test_import_of_uri_part_file_is_flagged(self):
+        result = analyze({
+            "owner.dart": "part 'detail.dart';",
+            "detail.dart": "part of 'owner.dart';",
+            "consumer.dart": "import 'detail.dart';"
+        })
+        self.assertEqual(result["imports_of_part_files"],
+                         [{"importer": "consumer.dart", "part": "detail.dart"}])
+
+    def test_import_of_named_part_file_is_flagged(self):
+        result = analyze({
+            "detail.dart": "part of legacy.core;",
+            "consumer.dart": "export 'detail.dart';"
+        })
+        self.assertEqual(result["imports_of_part_files"],
+                         [{"importer": "consumer.dart", "part": "detail.dart"}])
+
+    def test_import_of_standalone_library_is_not_flagged(self):
+        result = analyze({
+            "consumer.dart": "import 'detail.dart';",
+            "detail.dart": "class Detail {}"
+        })
+        self.assertEqual(result["imports_of_part_files"], [])
+
     def test_invalid_sources(self):
         with self.assertRaises(ValueError):
             analyze({"a.dart": None})
