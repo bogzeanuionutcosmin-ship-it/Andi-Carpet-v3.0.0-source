@@ -1,7 +1,7 @@
 name: XIX operational candidate and native emulator validation
 on:
   pull_request:
-    branches: [main]
+    branches: [main, mission-xix/modular-integration]
 permissions:
   contents: read
 concurrency:
