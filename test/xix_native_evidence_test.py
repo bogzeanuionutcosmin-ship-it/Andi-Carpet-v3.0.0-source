@@ -25,9 +25,9 @@ class NativeEvidenceTest(unittest.TestCase):
             "twoNativeClients": {"accepted": [True, False]},
             "unauthorizedTeam": "permission-denied",
             "legacyAndDeletion": "ok",
-            "offlineBeforeStart": "ok",
-            "revokedProfile": "ok",
-            "restore": "ok",
+            "offlineBeforeStart": "native transaction rejected; reconnect has no queued record",
+            "revokedProfile": "cached Auth identity cannot write after server profile deactivation",
+            "restore": "admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records",
             "pdf": "ok",
         }
         self.save()
@@ -51,6 +51,18 @@ class NativeEvidenceTest(unittest.TestCase):
 
     def test_missing_assertion_fails(self):
         self.observation.pop("restore")
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_missing_permission_denial_fails(self):
+        self.observation["unauthorizedTeam"] = "success"
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_unproven_restore_fails(self):
+        self.observation["restore"] = "ok"
         self.save()
         with self.assertRaises(AssertionError):
             module.verify(self.root)
