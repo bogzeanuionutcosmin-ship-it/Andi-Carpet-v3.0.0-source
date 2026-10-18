@@ -115,6 +115,23 @@ def tap_label(alternatives):
     raise AssertionError(f'Missing navigation: {alternatives}')
 
 
+def login_synthetic_editor():
+    """Authenticate through the actual UI against the seeded demo emulator."""
+    root, _ = state()
+    if 'Intră în cont' not in labels(root):
+        return
+    edits = [node for node in root.iter('node')
+             if node.get('class', '').endswith('EditText')]
+    assert len(edits) >= 2, f'Login form missing two editable fields: {len(edits)}'
+    for node, value in zip(edits[:2], ('editor@andi.test', 'synthetic-only-123')):
+        bounds = list(map(int, re.findall(r'\\d+', node.get('bounds', ''))))
+        assert len(bounds) == 4
+        adb('shell', 'input', 'tap', str((bounds[0]+bounds[2])//2),
+            str((bounds[1]+bounds[3])//2))
+        adb('shell', 'input', 'text', value)
+    tap_label(('Intră în cont',))
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     marker = 'XIX_RESTART_BEGIN_' + str(time.time_ns())
@@ -124,6 +141,8 @@ def main():
             adb('shell', 'am', 'force-stop', PACKAGE)
             result = adb('shell', 'am', 'start', '-W', '-n', f'{PACKAGE}/.MainActivity').decode()
             assert 'Error' not in result, result
+            if cycle == 0:
+                login_synthetic_editor()
             wait_screen(f'operational-restart-{cycle}', 'Echipe acum', ('Acasă',),
                         required=('Craiova XIX',))
         print('Actual main entry, loaded synthetic team and two authenticated cold restarts: PASS')
