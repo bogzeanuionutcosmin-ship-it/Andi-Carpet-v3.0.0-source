@@ -39,21 +39,49 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
   if (available.metadata.isFromCache || available.metadata.hasPendingWrites) {
     throw StateError('Există o salvare neconfirmată. Reconectează și reîncarcă înainte de retry.');
   }
-  await db.runTransaction((tx) async {
-    final snap = await tx.get(ref);
-    final current = snap.data();
-    if (current != null && recordPayloadMatches(current, desired)) return;
-    if (expected == null) {
-      if (snap.exists) throw StateError('ID ocupat. Reîncarcă înainte de salvare.');
-      tx.set(ref, desired);
-    } else {
-      if (current == null) throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
-      if (!recordPayloadMatches(current, expected)) {
-        throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de salvare.');
+  try {
+    await db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final current = snap.data();
+      if (current != null && recordPayloadMatches(current, desired)) return;
+      if (expected == null) {
+        if (snap.exists) throw StateError('ID ocupat. Reîncarcă înainte de salvare.');
+        tx.set(ref, desired);
+      } else {
+        if (current == null) throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
+        if (!recordPayloadMatches(current, expected)) {
+          throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de salvare.');
+        }
+        tx.update(ref, desired);
       }
-      tx.update(ref, desired);
+    });
+  } on FirebaseException catch (error, stackTrace) {
+    // The Android Firestore bridge can surface a transaction conflict as a
+    // platform FirebaseException instead of the StateError thrown in the
+    // transaction callback. Resolve that ambiguity from server state only.
+    try {
+      final observed = await ref.get(const GetOptions(source: Source.server));
+      final current = observed.data();
+      if (current != null && recordPayloadMatches(current, desired)) return;
+      if (expected == null && observed.exists) {
+        throw StateError('ID ocupat. Reîncarcă înainte de salvare.');
+      }
+      if (expected != null) {
+        if (current == null) {
+          throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
+        }
+        if (!recordPayloadMatches(current, expected)) {
+          throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de salvare.');
+        }
+      }
+    } on StateError {
+      rethrow;
+    } catch (_) {
+      // Preserve permission, connectivity, and other backend errors when a
+      // server read cannot establish the committed state.
     }
-  });
+    Error.throwWithStackTrace(error, stackTrace);
+  }
   final confirmed = await ref.get(const GetOptions(source: Source.server));
   if (confirmed.metadata.isFromCache || confirmed.metadata.hasPendingWrites ||
       !confirmed.exists || !recordPayloadMatches(confirmed.data()!, desired)) {
