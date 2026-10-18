@@ -1339,3 +1339,7 @@ SDK arbitrară cu un conflict/permission-denied sau un refuz de inventariere cu
 rollbackul batchului. Navigarea verifică datele sintetice și headinguri exacte,
 nu doar prezența taburilor. CI se reexecută pe commitul final; dovezile anterioare
 rămân asociate SHA-ului lor, fără revendicări pentru codul nou.
+
+Confirmarea XIX respinge și metadata isFromCache/hasPendingWrites; Source.server
+singur poate include latency compensation. Un conflict la citirea de confirmare
+este rezultat incert, nu dovada că un commit anterior nu a persistat.

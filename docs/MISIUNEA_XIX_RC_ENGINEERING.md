@@ -62,3 +62,9 @@ server după aceasta. Sunt două citiri suplimentare explicite; o confirmare
 incertă este eroare, fără regenerarea ID-ului. Concurența rămâne în tranzacție.
 Collectorul validează headerul/trailerul PDF și obiectul JSON, astfel încât
 textul stdout «run-as: unknown package» nu este publicat ca PDF/observații.
+
+Source.server poate include latency compensation pentru scrieri locale: se
+resping și snapshoturile isFromCache/hasPendingWrites. Confirmarea ulterioară
+poate raporta incertitudine dacă un alt writer legitim modifică imediat după
+commit; mesajul nu dovedește că propriul commit a eșuat. Nu se așteaptă global
+waitForPendingWrites, care ar lega această operațiune de alte scrieri.
