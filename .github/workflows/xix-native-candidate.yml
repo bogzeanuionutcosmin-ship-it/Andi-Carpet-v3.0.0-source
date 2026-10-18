@@ -125,6 +125,8 @@ jobs:
           for expected in ['Sala XIX','23:55','00:20']:
               assert expected in s, expected
           PY
+          else
+            echo "Native evidence absent: no PDF verification claimed; inspect native step and emulator logs" >&2
           fi
           cp pubspec.lock xix-evidence/pubspec.lock
           find xix-evidence -name '*.apk' -o -name '*.pdf' | sort | xargs -r sha256sum > xix-evidence/SHA256SUMS
