@@ -28,7 +28,7 @@ trap collect_evidence EXIT
 # Capture evidence while the instrumentation package still exists. Flutter may
 # remove its test APK (and sandbox files) when flutter test exits.
 (
-  for attempt in $(seq 1 360); do
+  for attempt in $(seq 1 90); do
     complete=1
     for file in native-flow.pdf observations.json; do
       target="xix-evidence/$file"
@@ -59,6 +59,9 @@ evidence_collector=$!
 flutter test integration_test/xix_native_test.dart -d emulator-5554 --dart-define=ANDICARPET_EMULATOR_HOST=10.0.2.2 --dart-define=MAPBOX_ACCESS_TOKEN=
 if ! wait "$evidence_collector"; then
   echo "Evidence collector timed out before both completed artifacts were available" >&2
+  adb shell pm list packages | grep -F andi_carpeta || true
+  adb shell ls -la /data/user/0/com.example.andi_carpeta/files/xix-evidence || true
+  adb shell dumpsys package com.example.andi_carpeta | grep -E "userId=|pkg=|versionName" | head -12 || true
   exit 1
 fi
 python3 scripts/verify_xix_native_evidence.py
