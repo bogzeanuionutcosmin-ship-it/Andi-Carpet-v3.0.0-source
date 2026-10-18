@@ -1372,3 +1372,9 @@ permanentă nouă sau activare implicită de automatizări. production_ready=fal
 - Reproducerea RED înlocuiește atomic_restore și record_writer cu implementările defecte fixate; pentru date înlocuiește numai funcția de apartenență, păstrând proprietatea formatterelor extrase. Sunt cerute exact patru defecte comportamentale RED și rerulare GREEN. Buildul release de test rămâne configurat exclusiv pentru candidatul combinat.
 - Fișierele restore, teste native, fixture-uri, documentație RC și pubspec.lock sunt identice cu #102 final. Local: 121 teste Python PASS, 3 Node PASS, diff-check curat; rezultatele Flutter/build/runtime se verifică în CI pe HEAD final.
 - Fără push, deploy, merge main, Firebase live sau schimbarea ramurii sursă #102.
+
+Continuare XIX: probele native sunt întărite pentru a nu confunda o eroare
+SDK arbitrară cu un conflict/permission-denied sau un refuz de inventariere cu
+rollbackul batchului. Navigarea verifică datele sintetice și headinguri exacte,
+nu doar prezența taburilor. CI se reexecută pe commitul final; dovezile anterioare
+rămân asociate SHA-ului lor, fără revendicări pentru codul nou.

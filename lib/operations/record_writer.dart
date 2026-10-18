@@ -33,6 +33,9 @@ bool _sameValue(dynamic a, dynamic b) {
 Future<void> saveRecordCompared(FirebaseFirestore db, String id,
     Map<String, dynamic> desired, {Map<String, dynamic>? expected}) async {
   final ref = db.collection('records').doc(id);
+  // A native offline transaction completion is not a server acknowledgement.
+  // Fail closed before preparing a write and confirm authoritative state after it.
+  await ref.get(const GetOptions(source: Source.server));
   await db.runTransaction((tx) async {
     final snap = await tx.get(ref);
     final current = snap.data();
@@ -48,4 +51,8 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
       tx.update(ref, desired);
     }
   });
+  final confirmed = await ref.get(const GetOptions(source: Source.server));
+  if (!confirmed.exists || !recordPayloadMatches(confirmed.data()!, desired)) {
+    throw StateError('Salvarea nu a putut fi confirmată. Reîncarcă înainte de retry.');
+  }
 }

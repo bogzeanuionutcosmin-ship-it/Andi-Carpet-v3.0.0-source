@@ -43,3 +43,22 @@ Harnessul vechi centralizersmoke nu este folosit ca dovadă pentru acest flux.
 Release de test folosește încă debug signing: nu demonstrează semnătura permanentă
 sau compatibilitatea cu instalările existente. Fără telefon fizic, GPS/background
 real, distribuire APK, deploy sau modificări Firebase live.
+
+## Întărirea probelor native
+
+Testul de concurență acceptă drept pierzător numai conflictul StateError al
+baseline-ului, verifică payloadul câștigător pe server și numărul documentelor.
+Erorile de autorizare trebuie să aibă codul permission-denied, nu orice eroare SDK.
+Proba restore folosește inventarul records citibil de membru și un batch mixt:
+un update permis plus ștergeri/metadata interzise. Snapshotul integral trebuie
+să rămână neschimbat după refuz; un refuz la inventarierea finance nu ar demonstra
+rollbackul. Navigarea main verifică headinguri exacte și pachetul în foreground;
+eticheta tabului singură nu dovedește încărcarea datelor.
+
+Rularea native39093051088 a arătat că finalizarea Future-ului tranzacției cu
+rețeaua SDK oprită nu a produs eroarea așteptată. Writerul cere acum citire
+Source.server înainte de pregătirea tranzacției și confirmarea payloadului pe
+server după aceasta. Sunt două citiri suplimentare explicite; o confirmare
+incertă este eroare, fără regenerarea ID-ului. Concurența rămâne în tranzacție.
+Collectorul validează headerul/trailerul PDF și obiectul JSON, astfel încât
+textul stdout «run-as: unknown package» nu este publicat ca PDF/observații.
