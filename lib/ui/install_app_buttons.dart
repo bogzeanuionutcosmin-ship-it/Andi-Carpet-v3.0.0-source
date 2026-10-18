@@ -9,7 +9,7 @@ Uri? validatedAndroidApkUrl(String raw) {
   // DNS names can still resolve privately; the administrator must publish
   // links from the approved distribution host.
   if (host.startsWith('[') || host.contains(':') ||
-      RegExp(r'^\\d{1,3}(?:\\.\\d{1,3}){3}$').hasMatch(host)) return null;
+      RegExp(r'^\d{1,3}(?:\.\d{1,3}){3}$').hasMatch(host)) return null;
   // WHATWG URL parsers used by Android browsers accept non-decimal IPv4
   // spellings (for example 0x7f.0.0.1) and normalize them to an IP literal.
   // Reject a host made entirely of decimal/hexadecimal labels before opening
