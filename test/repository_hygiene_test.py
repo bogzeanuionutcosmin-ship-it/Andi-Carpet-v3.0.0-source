@@ -745,8 +745,11 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_enums_and_permissions_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         enums = (ROOT / "lib/models/app_enums_permissions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/app_enums_permissions.dart';", main)
-        self.assertIn("part of '../main.dart';", enums)
+        self.assertIn("import 'models/app_enums_permissions.dart';", main)
+        self.assertIn("export 'models/app_enums_permissions.dart';", main)
+        self.assertNotIn("part 'models/app_enums_permissions.dart';", main)
+        self.assertNotIn("part of", enums)
+        self.assertIn("import 'package:flutter/material.dart';", enums)
         for name in ("LocationType", "LocationStatus", "UserRole",
                      "UserFunction", "FunctionPermission", "PerDiemStatus",
                      "PerDiemPaymentMethod", "ExpenseDocumentType",

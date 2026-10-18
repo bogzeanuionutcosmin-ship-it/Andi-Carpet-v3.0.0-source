@@ -28,6 +28,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'models/app_enums_permissions.dart';
+export 'models/app_enums_permissions.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
@@ -44,7 +46,6 @@ part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
 part 'models/app_data_models.dart';
-part 'models/app_enums_permissions.dart';
 part 'models/permission_status_labels.dart';
 part 'learning/duration_estimates.dart';
 part 'ui/section_visual_helpers.dart';
