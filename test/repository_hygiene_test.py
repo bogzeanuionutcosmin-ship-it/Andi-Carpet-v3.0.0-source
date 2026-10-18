@@ -501,13 +501,21 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_section_visual_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/section_visual_helpers.dart").read_text(encoding="utf-8")
+        palette = (ROOT / "lib/ui/section_accent_palette.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/section_visual_helpers.dart';", main)
+        self.assertIn("import 'ui/section_accent_palette.dart';", main)
+        self.assertIn("export 'ui/section_accent_palette.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("Color sectionAccent(String label)",
-                       "void showSuccessMessage(BuildContext context, String message)",
+        self.assertIn("import 'package:flutter/material.dart';", palette)
+        self.assertNotIn("part of '../main.dart';", palette)
+        self.assertEqual(palette.count("Color sectionAccent(String label)"), 1)
+        self.assertNotIn("Color sectionAccent(String label)", main)
+        self.assertNotIn("Color sectionAccent(String label)", module)
+        for symbol in ("void showSuccessMessage(BuildContext context, String message)",
                        "void showErrorMessage(BuildContext context, String message)",
                        "Color _plainBackgroundColor(AppSettings settings, Brightness brightness)"):
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, palette)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("Colors.white", module)
 
@@ -525,17 +533,25 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_icon_badge_catalog_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/icon_badge_catalog.dart").read_text(encoding="utf-8")
+        metadata = (ROOT / "lib/ui/badge_metadata.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/icon_badge_catalog.dart';", main)
+        self.assertIn("import 'ui/badge_metadata.dart';", main)
+        self.assertIn("export 'ui/badge_metadata.dart';", main)
         self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("part of '../main.dart';", metadata)
         for symbol in ("const Map<String, IconData> appIconChoices",
-                       "const Map<String, String> badgeAssetChoices",
-                       "const List<String> availableBadgeKeys",
                        "const Map<String, String> categoryBrandAssets",
                        "Widget _badgeGraphic(", "Widget categoryBrandWidget(",
-                       "Widget sectionAssetWidget(", "String badgeLabel("):
+                       "Widget sectionAssetWidget("):
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, metadata)
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", module)
+        for symbol in ("const Map<String, String> badgeAssetChoices",
+                       "const List<String> availableBadgeKeys", "String badgeLabel("):
+            self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(metadata.count(symbol), 1)
+        self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", metadata)
 
     def test_interactive_member_badges_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
