@@ -1,0 +1,41 @@
+name: Test Firestore Identity Lifecycle
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/firestore/identity-lifecycle.test.cjs'
+      - 'test/home_platform_sdk_characterization_test.dart'
+      - 'test/home_fcm_valid_token_characterization_test.dart'
+      - 'test/support/home_fcm_write_fixture.dart'
+      - 'test/support/home_platform_sdk_fixture.dart'
+      - 'firestore.rules'
+      - 'firebase.rules-test.json'
+      - '.github/workflows/test-identity-lifecycle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: identity-lifecycle-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  identity-rules:
+    name: Firestore identity authorization tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Firebase emulator and test libraries
+        run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
+      - name: Run identity authorization tests with synthetic data
+        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test tests/firestore/identity-lifecycle.test.cjs'

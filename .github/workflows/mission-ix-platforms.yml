@@ -1,0 +1,48 @@
+name: Mission IX Android and Chrome (compile only)
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: mission-ix-platforms-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  integrated-platforms:
+    if: github.head_ref == 'fix/durable-journal-mission-xii-20261016' || github.head_ref == 'fix/finance-durable-integration-mission-ix-20261016' || github.head_ref == 'fix/finance-home-boundary-mission-x-20261016' || github.head_ref == 'fix/finance-history-legacy-safety-mission-xi-20261016'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact checkout and tree
+        run: git rev-parse HEAD HEAD^{tree}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: AuthGate and Vision regression
+        run: flutter test test/auth_session_acceptance_test.dart test/auth_session_regression_test.dart test/vision_*_test.dart --reporter expanded
+      - name: All financial unit and widget probes plus strict repaired witnesses
+        run: flutter test test/finance_*_test.dart test/finance_received_state.red.dart test/finance_settlement_close_rollback.red.dart test/settlement_edit_failure.red.dart test/settlement_create_cancel.red.dart test/vision_settlement_controller.red.dart test/finance_received_amount_nonfinite.red.dart test/finance_stale_close.red.dart --reporter expanded
+      - name: Chrome financial probes with no default HTTP client
+        run: flutter test --platform chrome --dart-define=no_default_http_client=true test/finance_*_test.dart --reporter expanded
+      - name: Integrated main entrypoint Android debug compile only
+        run: flutter build apk --debug --target lib/main.dart
+      - name: Verify package without upload or installation
+        shell: bash
+        run: |
+          test -s build/app/outputs/flutter-apk/app-debug.apk
+          aapt_tool=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          test -n "$aapt_tool"
+          "$aapt_tool" dump badging build/app/outputs/flutter-apk/app-debug.apk > "$RUNNER_TEMP/viii-badging.txt"
+          grep -Fq "package: name='com.example.andi_carpeta'" "$RUNNER_TEMP/viii-badging.txt"
+          grep -Fq "versionCode='33'" "$RUNNER_TEMP/viii-badging.txt"
+          sed -n '/^package:/p;/^sdkVersion:/p;/^targetSdkVersion:/p' "$RUNNER_TEMP/viii-badging.txt"
+      # No upload-artifact, installation, signing change, secrets or deployment.
