@@ -126,24 +126,7 @@ jobs:
             sudo apt-get install -y poppler-utils
             pdfinfo xix-evidence/native-flow.pdf > xix-evidence/native-pdf-info.txt
             pdftotext -layout xix-evidence/native-flow.pdf xix-evidence/native-flow.txt
-            python3 - <<'PY'
-          from pathlib import Path
-          import json
-          s=Path('xix-evidence/native-flow.txt').read_text()
-          data=json.loads(Path('xix-evidence/observations.json').read_text())
-          scenario=data['craiova11']
-          markers=scenario['pdfMarkers']
-          assert len(markers)==11 and len(set(markers))==11, markers
-          lines=s.splitlines()
-          planned=scenario['plannedRowName']
-          planned_lines=[i for i,line in enumerate(lines) if planned in line]
-          assert len(planned_lines)==1, planned_lines
-          assert any('Neexecutată' in line for line in lines[planned_lines[0]:planned_lines[0]+4]), s
-          for expected in [*markers,scenario['plannedRowName'],'Neexecutată','15.10.2026','16.10.2026','23:55','00:20']:
-              assert expected in s, expected
-          for marker in markers:
-              assert s.count(marker)==1, marker
-          PY
+            python3 scripts/verify_xix_pdf_text.py
           else
             echo "Native evidence absent: no PDF verification claimed; inspect native step and emulator logs" >&2
             exit 1
