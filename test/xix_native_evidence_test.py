@@ -166,6 +166,7 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIn("locations:graphLocations", source)
         self.assertIn("find.text('Craiova 01')", source)
         self.assertIn("find.text('Craiova 11')", source)
+        self.assertIn("tester.takeException()", source)
         self.assertLess(source.index("await graphPage();"), source.index("await dashboard();"))
 
     def test_release_test_apk_compiles_for_pull_request_validation(self):
