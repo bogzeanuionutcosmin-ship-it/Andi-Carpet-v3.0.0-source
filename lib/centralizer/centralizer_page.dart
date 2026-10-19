@@ -45,16 +45,16 @@ class _ManualExecutionDialogState extends State<_ManualExecutionDialog> {
   late final TextEditingController _note;
   late Location? _selectedLocation = widget.initialLocation;
   late String _selectedTeamId = widget.allowedTeams.first.id;
-  late DateTime _date = DateTime.now();
+  late DateTime _date;
   bool _facadeDone = false;
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    final earlier = now.subtract(const Duration(hours: 1));
-    _start = TextEditingController(text: '${two(earlier.hour)}:${two(earlier.minute)}');
-    _finish = TextEditingController(text: '${two(now.hour)}:${two(now.minute)}');
+    final defaults = createManualExecutionDefaults(DateTime.now());
+    _date = defaults.date;
+    _start = TextEditingController(text: defaults.startTime);
+    _finish = TextEditingController(text: defaults.finishTime);
     _note = TextEditingController();
   }
 

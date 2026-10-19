@@ -29,6 +29,7 @@ import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
 import 'centralizer/correction_writer.dart';
+import 'centralizer/manual_execution_defaults.dart';
 import 'operations/record_writer.dart';
 import 'operations/atomic_restore.dart';
 import 'utils/date_formatters.dart';
