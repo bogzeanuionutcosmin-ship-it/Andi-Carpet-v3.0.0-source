@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:andi_carpeta/main.dart' as app;
 
 void main() {
-  testWidgets('creates an eleven-location Graph through a lazy mobile picker', (tester) async {
+  testWidgets('creates an eleven-location Graph through the mobile search picker', (tester) async {
     tester.view.physicalSize = const Size(411, 731);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -24,13 +24,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Creează grafic'));
     await tester.pumpAndSettle();
-    // Row construction depends on viewport/cache and the growing selected-chip
-    // area. Scroll to each target without assuming it is already built.
+    // Search uses the real picker UI and handles both sorted/offscreen rows.
     for (final location in locations) {
+      await tester.enterText(find.byType(TextField), location.name);
+      await tester.pumpAndSettle();
       final tile = find.widgetWithText(CheckboxListTile, location.name);
-      await tester.scrollUntilVisible(tile, 120,
-        scrollable: find.descendant(of: find.byType(AlertDialog),
-          matching: find.byType(Scrollable)).first);
+      await tester.ensureVisible(tile);
       await tester.tap(tile);
       await tester.pumpAndSettle();
     }
