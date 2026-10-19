@@ -61,6 +61,11 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
     // transaction callback. Resolve that ambiguity from server state only.
     try {
       final observed = await ref.get(const GetOptions(source: Source.server));
+      // Source.server can still contain latency-compensated local writes.
+      // Such a snapshot cannot confirm a commit or classify a stale baseline.
+      if (observed.metadata.isFromCache || observed.metadata.hasPendingWrites) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
       final current = observed.data();
       if (current != null && recordPayloadMatches(current, desired)) return;
       if (expected == null && observed.exists) {

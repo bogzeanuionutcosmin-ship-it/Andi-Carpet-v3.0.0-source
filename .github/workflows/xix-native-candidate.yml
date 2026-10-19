@@ -68,6 +68,8 @@ jobs:
           cp /tmp/xix-operational-dates-fixed.dart lib/utils/operational_dates.dart
           flutter test test/record_writer_test.dart test/centralizer_operational_day_test.dart test/atomic_restore_preflight_test.dart > xix-evidence/fixed-green.log 2>&1
       - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Verify mobile Graph creation before native packaging
+        run: flutter test test/program_graph_creation_test.dart
       - name: Build operational APK without running live backend
         run: |
           flutter build apk --debug
