@@ -81,28 +81,6 @@ class _MapPageState extends State<MapPage> {
     return list;
   }
 
-  Future<String?> _reverseGeocodePoint(LatLng point) async {
-    try {
-      final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
-        'format': 'jsonv2',
-        'lat': point.latitude.toStringAsFixed(7),
-        'lon': point.longitude.toStringAsFixed(7),
-        'zoom': '18',
-        'addressdetails': '1',
-        'accept-language': 'ro',
-      });
-      final headers = <String,String>{'Accept': 'application/json', 'Accept-Language': 'ro'};
-      if (!kIsWeb) headers['User-Agent'] = 'AndiCarpeta/1.5.1 (internal operations app)';
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
-      if (response.statusCode != 200 || response.body.isEmpty) return null;
-      final decoded = jsonDecode(response.body);
-      if (decoded is! Map) return null;
-      return parseNominatimReverseAddress(decoded);
-    } catch (_) {
-      return null;
-    }
-  }
-
   Color _color(Location l) => categoryColor(widget.categories, l.categoryId, fallbackType: l.type);
   String _categoryName(Location l) => categoryName(widget.categories, l.categoryId, fallbackType: l.type);
 
@@ -929,7 +907,7 @@ class _MapPageState extends State<MapPage> {
     String? initialAddress;
     if (initialPoint != null) {
       if (mounted) setState(() => findingAddress = true);
-      initialAddress = await _reverseGeocodePoint(initialPoint);
+      initialAddress = await reverseGeocodePoint(initialPoint, isWeb: kIsWeb);
       if (mounted) setState(() => findingAddress = false);
     }
     final r = await _newLocationForm(initialPoint: initialPoint, initialAddress: initialAddress);
