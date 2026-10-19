@@ -132,10 +132,14 @@ class _MapPageState extends State<MapPage> {
   List<WorkSchedule> get _todayOperationalSchedules {
     final workDate = operationalWorkDate(DateTime.now());
     final teamId = widget.currentUser.teamId;
-    return widget.schedules.where((s) =>
-      s.started && sameDay(s.date, workDate) &&
-      (widget.isAdmin || (teamId != null && s.teamId == teamId))
-    ).toList();
+    return todayMapOperationalSchedules(
+      widget.schedules,
+      isAdmin: widget.isAdmin,
+      teamId: teamId,
+      startedOf: (schedule) => schedule.started,
+      isWorkDayOf: (schedule) => sameDay(schedule.date, workDate),
+      teamIdOf: (schedule) => schedule.teamId,
+    );
   }
 
   List<CentralizerRecord> _todayRecordsFor(String locationId, String teamId) {
