@@ -82,3 +82,15 @@ Testul instrumentat oprește procesul după rulare, dar păstrează instalarea �
 Auth-ul emulatorului; aplicația operațională poate fi apoi reinstalată peste
 aceeași package ID pentru cold restart/nav. Dacă opțiunea lipsește, CI eșuează
 înaintea testului nativ, fără fallback care ar elimina aplicația.
+
+## Follow-up: writerul corecțiilor din HomePage
+
+Draft #128 extrage tranzacția existentă a corecțiilor în
+`centralizer/correction_writer.dart`. HomePage păstrează verificările de
+permisiuni și identitate, iar adaptorul UI nativ folosește acum aceeași operație
+de persistență. Probele noi cer refuzul unui baseline vechi, al unei intervenții
+create apoi șterse, al echipei neautorizate și al corecției offline, urmată de
+recitire server fără modificarea fațadei. Aceste rezultate nu sunt declarate
+reușite înainte de CI; extragerea nu introduce implicit confirmare server.
+Coordonatorul privat HomePage și pregătirea calendaristică sintetică rămân limite
+explicite. Ramura include #125 ebd96c27; conținutul comun nu se integrează dublu.
