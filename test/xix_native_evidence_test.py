@@ -21,6 +21,7 @@ class NativeEvidenceTest(unittest.TestCase):
         (self.root / "native-flow.pdf").write_bytes(b"%PDF-1.4\n%%EOF\n")
         self.observation = {
             "completed": True,
+            "graphCreatedThroughUi": True,
             "connectedFlow": {
                 "expected": "11 completed Craiova Dashboard records after double taps and server reload",
                 "observed": 11,
@@ -60,6 +61,20 @@ class NativeEvidenceTest(unittest.TestCase):
 
     def test_complete_evidence_passes(self):
         module.verify(self.root)
+
+    def test_missing_ui_graph_evidence_fails(self):
+        self.observation.pop("graphCreatedThroughUi")
+        self.save()
+        with self.assertRaisesRegex(AssertionError, "UI"):
+            module.verify(self.root)
+
+    def test_ui_graph_evidence_requires_boolean_true(self):
+        for invalid in (False, 1, "true", None):
+            with self.subTest(value=invalid):
+                self.observation["graphCreatedThroughUi"] = invalid
+                self.save()
+                with self.assertRaisesRegex(AssertionError, "UI"):
+                    module.verify(self.root)
 
     def test_missing_pdf_fails(self):
         (self.root / "native-flow.pdf").unlink()

@@ -29,8 +29,12 @@ Testele pinned RED/GREEN verifică separat comparația nested și limita12:30.
 CI final și HEAD-urile actualizate sunt în descrierile PR-urilor și raportul XIX.
 
 Testul conectat folosește Auth/Firestore native SDK și componentele Dashboard/
-Centralizator cu writerul real și PDF real. Crearea graficului folosește SDK,
-nu formularul Grafic; corecția este apelată prin writer, nu dialogul complet.
+Centralizator cu writerul real și PDF real. Crearea graficului folosește acum formularul ProgramPage, cu cele 11 locații
+selectate în UI și confirmate prin citire Source.server fără cache/scrieri în
+așteptare. Markerul graphCreatedThroughUi este obligatoriu în observații;
+artefactele vechi fără acest marker sunt respinse. Activarea graficului și
+redistribuirea datelor pe 15/16 octombrie rămân pregătire sintetică prin SDK;
+corecția este apelată prin writer, nu dialogul complet.
 Nu se declară E2E UI complet. Aplicația operațională cu entrypoint main se
 instalează ulterior cu backend demo, pentru persistența Auth/cold restart.
 

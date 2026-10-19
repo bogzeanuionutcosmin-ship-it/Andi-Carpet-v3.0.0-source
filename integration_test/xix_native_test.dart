@@ -84,6 +84,14 @@ void main() {
       items=schedule.items;
       expect(schedule.graphName,'Craiova XIX');
       expect(items,hasLength(11));
+      final savedGraph=await db.collection('schedules').doc(schedule.id).get(const GetOptions(source:Source.server));
+      expect(savedGraph.metadata.isFromCache,false);
+      expect(savedGraph.metadata.hasPendingWrites,false);
+      expect(savedGraph.data()!['graphName'],'Craiova XIX');
+      expect(savedGraph.data()!['teamId'],'craiova');
+      expect((savedGraph.data()!['items'] as List).map((item)=>item['locationId']).toList(),
+        graphLocations.map((location)=>location.id).toList());
+      evidence['graphCreatedThroughUi']=true;
       // START intentionally remains outside this smoke: it geocodes real trip
       // endpoints. Mark the emulator fixture active after UI creation instead.
       schedule.started=true;

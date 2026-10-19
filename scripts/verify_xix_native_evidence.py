@@ -18,6 +18,9 @@ def verify(root: Path) -> None:
     if not isinstance(result, dict) or result.get("completed") is not True:
         raise AssertionError("Native scenario did not reach its completion marker")
 
+    if result.get("graphCreatedThroughUi") is not True:
+        raise AssertionError("Graph creation through UI and server reload were not demonstrated")
+
     required = (
         "connectedFlow", "craiova11", "sameAttemptRetry", "twoNativeClients",
         "unauthorizedTeam", "legacyAndDeletion", "offlineBeforeStart",
