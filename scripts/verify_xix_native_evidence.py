@@ -27,6 +27,14 @@ def verify(root: Path) -> None:
         raise AssertionError(f"Missing native assertions: {missing}")
     if result["connectedFlow"].get("observed") != 1:
         raise AssertionError("Connected flow did not persist exactly one record")
+    exact_witnesses = {
+        "sameAttemptRetry": "one document, identical payload accepted",
+        "legacyAndDeletion": "legacy update passed; deleted baseline rejected",
+        "pdf": "real builder with data reloaded from native Firestore; missing registry retained",
+    }
+    for key, expected in exact_witnesses.items():
+        if result[key] != expected:
+            raise AssertionError(f"Native evidence witness mismatch: {key}")
     if result["twoNativeClients"].get("accepted") not in ([True, False], [False, True]):
         raise AssertionError("Cross-client CAS did not select exactly one winner")
     if result["unauthorizedTeam"] != "permission-denied":
