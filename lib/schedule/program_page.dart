@@ -652,7 +652,9 @@ class _ProgramPageState extends State<ProgramPage> {
           RepaintBoundary(key:_graphCaptureKey,child:_graphOverview()),
           if(can&&!head.closed)...[
             const SizedBox(height:12),
-            ExpansionTile(
+            Material(
+              color: Colors.transparent,
+              child: ExpansionTile(
               initiallyExpanded:true,
               title:const Text('Editare zile',style:TextStyle(fontWeight:FontWeight.bold)),
               subtitle:const Text('Adaugă sau elimină locații; trage de mânerul din dreapta pentru a schimba ordinea.'),
@@ -660,6 +662,7 @@ class _ProgramPageState extends State<ProgramPage> {
                 schedule:s,locations:widget.locations,categories:widget.categories,records:widget.records,canEdit:can,
                 onAdd:()=>_addLocations(s),onRemove:(item)=>unawaited(_removeItem(s,item)),onReorder:(a,b)=>unawaited(_reorder(s,a,b)),
               ))).toList(),
+              ),
             ),
           ],
           if(can&&head.closed) const Padding(padding:EdgeInsets.symmetric(vertical:8),child:_InfoCard(icon:Icons.lock_clock_outlined,title:'Grafic închis',text:'Editarea locațiilor este blocată după închiderea graficului.')),
