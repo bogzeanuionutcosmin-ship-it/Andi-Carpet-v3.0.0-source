@@ -26,7 +26,7 @@ class RestartDiagnosticsTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         root = ET.fromstring(
             '<hierarchy><node package="com.example.other" text="Echipe acum" '
-            'content-desc="Craiova XIX\\nAcasă" /></hierarchy>'
+            'content-desc="Craiova XIX\nAcasă" /></hierarchy>'
         )
         self.assertFalse(restart.app_screen_matches(
             root, "Echipe acum", ("Acasă",), ("Craiova XIX",)
@@ -36,7 +36,7 @@ class RestartDiagnosticsTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         root = ET.fromstring(
             '<hierarchy><node package="com.example.andi_carpeta" '
-            'text="Echipe acum" content-desc="Craiova XIX\\nAcasă" />'
+            'text="Echipe acum" content-desc="Craiova XIX\nAcasă" />'
             '<node package="com.example.andi_carpeta" selected="true" '
             'text="Grafic" /></hierarchy>'
         )
@@ -45,8 +45,8 @@ class RestartDiagnosticsTests(unittest.TestCase):
         ))
 
     def test_crash_filter_only_matches_target_application(self):
-        other = "FATAL EXCEPTION: main\\nProcess: com.example.other, PID: 1\\n"
-        own = "FATAL EXCEPTION: main\\nProcess: com.example.andi_carpeta, PID: 2\\n"
+        other = "FATAL EXCEPTION: main\nProcess: com.example.other, PID: 1\n"
+        own = "FATAL EXCEPTION: main\nProcess: com.example.andi_carpeta, PID: 2\n"
         self.assertFalse(restart.own_crash(other))
         self.assertTrue(restart.own_crash(own))
 
