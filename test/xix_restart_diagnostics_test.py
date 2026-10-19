@@ -22,6 +22,34 @@ class RestartDiagnosticsTests(unittest.TestCase):
             root, "Echipe acum", ("Acas\u0103",), ("Craiova XIX",)
         ))
 
+    def test_other_package_cannot_impersonate_expected_screen(self):
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(
+            '<hierarchy><node package="com.example.other" text="Echipe acum" '
+            'content-desc="Craiova XIX\\nAcasă" /></hierarchy>'
+        )
+        self.assertFalse(restart.app_screen_matches(
+            root, "Echipe acum", ("Acasă",), ("Craiova XIX",)
+        ))
+
+    def test_wrong_selected_tab_is_rejected(self):
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(
+            '<hierarchy><node package="com.example.andi_carpeta" '
+            'text="Echipe acum" content-desc="Craiova XIX" />'
+            '<node package="com.example.andi_carpeta" selected="true" '
+            'text="Grafic" /></hierarchy>'
+        )
+        self.assertFalse(restart.app_screen_matches(
+            root, "Echipe acum", ("Acasă",), ("Craiova XIX",)
+        ))
+
+    def test_crash_filter_only_matches_target_application(self):
+        other = "FATAL EXCEPTION: main\\nProcess: com.example.other, PID: 1\\n"
+        own = "FATAL EXCEPTION: main\\nProcess: com.example.andi_carpeta, PID: 2\\n"
+        self.assertFalse(restart.own_crash(other))
+        self.assertTrue(restart.own_crash(own))
+
     def test_missing_screen_still_fails_and_writes_evidence(self):
         import xml.etree.ElementTree as ET
         xml = (b'<hierarchy><node package="com.example.andi_carpeta" '
