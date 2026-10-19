@@ -422,11 +422,16 @@ void main() {
     await tester.ensureVisible(mainLocation);await tester.tap(mainLocation);
     await tester.pumpAndSettle();
     Future<void> correctFromHome(String newFinish) async {
-      // The list is filtered to Craiova 01 and that location's expansion is open.
-      // Target its actual permission-gated action rather than coupling the test
-      // to the date/time typography used in the ListTile title.
+      // The first record is the overnight scenario edited above. Identify its
+      // ListTile by its unique START time, then target the permission-gated
+      // correction action inside that row. The location has another execution,
+      // so selecting only by location would be ambiguous.
+      final recordStart=find.textContaining('23:55');
+      expect(recordStart,findsOneWidget);
+      final recordRow=find.ancestor(of:recordStart,matching:find.byType(ListTile));
+      expect(recordRow,findsOneWidget);
       final edit=find.descendant(
-        of:find.widgetWithText(ExpansionTile,'Craiova 01'),
+        of:recordRow,
         matching:find.byTooltip('Corectează data, orele și fațada'),
       );
       expect(edit,findsOneWidget);
