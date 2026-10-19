@@ -43,6 +43,39 @@ class NativeEvidenceTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             module.verify(self.root)
 
+    def test_truncated_pdf_fails(self):
+        (self.root / "native-flow.pdf").write_bytes(b"%PDF-1.4\\nmissing trailer")
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_missing_observations_fails(self):
+        (self.root / "observations.json").unlink()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_malformed_observations_fails(self):
+        (self.root / "observations.json").write_text("{invalid")
+        with self.assertRaises(ValueError):
+            module.verify(self.root)
+
+    def test_missing_connected_record_fails(self):
+        self.observation["connectedFlow"]["observed"] = 0
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_revoked_profile_not_rejected_fails(self):
+        self.observation["revokedProfile"] = "success"
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_offline_write_queued_fails(self):
+        self.observation["offlineBeforeStart"] = "queued"
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
     def test_incomplete_scenario_fails(self):
         self.observation["completed"] = False
         self.save()
