@@ -88,6 +88,18 @@ class NativeEvidenceTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             module.verify(self.root)
 
+    def test_malformed_connected_flow_schema_fails_explicitly(self):
+        self.observation["connectedFlow"] = "one record"
+        self.save()
+        with self.assertRaisesRegex(AssertionError, "Connected flow evidence"):
+            module.verify(self.root)
+
+    def test_malformed_cross_client_schema_fails_explicitly(self):
+        self.observation["twoNativeClients"] = [True, False]
+        self.save()
+        with self.assertRaisesRegex(AssertionError, "Cross-client evidence"):
+            module.verify(self.root)
+
     def test_placeholder_retry_evidence_fails(self):
         self.observation["sameAttemptRetry"] = "ok"
         self.save()
