@@ -125,7 +125,7 @@ const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway
 const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';
 const String _disableSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/disableSmsGateway';
 const String _geocodeRomaniaPlaceUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/geocodeRomaniaPlace';
-const String _appVersionLabel = '3.0.0+32';
+const String _appVersionLabel = '3.0.1+33';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
