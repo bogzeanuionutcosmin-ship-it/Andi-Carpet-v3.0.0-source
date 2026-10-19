@@ -124,6 +124,10 @@ def wait_screen(stem, title, alternatives, required=(), attempts=30):
             try:
                 dump = adb(*command).decode(errors='replace')
                 selected = [line.strip() for line in dump.splitlines() if any(token in line for token in ('mResumedActivity', 'topResumedActivity', 'mCurrentFocus', 'mFocusedApp', 'com.example.andi_carpeta'))]
+                if command[-2] == 'window':
+                    (OUT / f'{stem}-window-focus.txt').write_text(
+                        '\n'.join(selected) + ('\n' if selected else ''),
+                        encoding='utf-8')
                 print(f'Diagnostic {command[-2]}: {selected[:20]}', flush=True)
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
                 print(f'Diagnostic command unavailable: {exc}', flush=True)
