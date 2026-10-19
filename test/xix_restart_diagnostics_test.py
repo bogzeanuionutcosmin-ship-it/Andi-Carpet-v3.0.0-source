@@ -56,7 +56,7 @@ class RestartDiagnosticsTests(unittest.TestCase):
             with patch.object(restart, "OUT", pathlib.Path(tmp)), \
                  patch.object(restart, "state", return_value=(root, xml)), \
                  patch.object(restart, "adb", side_effect=lambda *args: (
-                     b"PNG" if args[0] == "exec-out" else b"mCurrentFocus=Login"
+                     b"PNG" if args[0] == "exec-out" else b"mCurrentFocus=Login\nmFocusedApp=App"
                  )), \
                  patch.object(restart.time, "sleep"):
                 with self.assertRaisesRegex(AssertionError, "Expected loaded main-entry screen absent"):
@@ -66,7 +66,10 @@ class RestartDiagnosticsTests(unittest.TestCase):
             self.assertEqual((directory / "missing.xml").read_bytes(), xml)
             self.assertEqual((directory / "missing.png").read_bytes(), b"PNG")
             self.assertIn("Intrati in cont", (directory / "missing-diagnostic.txt").read_text())
-            self.assertIn("mCurrentFocus=Login", (directory / "missing-window-focus.txt").read_text())
+            self.assertEqual(
+                (directory / "missing-window-focus.txt").read_text(),
+                "mCurrentFocus=Login\nmFocusedApp=App\n",
+            )
 
 
 if __name__ == "__main__":
