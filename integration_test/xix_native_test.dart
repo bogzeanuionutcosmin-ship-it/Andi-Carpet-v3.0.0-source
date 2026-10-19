@@ -421,9 +421,14 @@ void main() {
     final mainLocation=find.widgetWithText(ExpansionTile,'Craiova 01');
     await tester.ensureVisible(mainLocation);await tester.tap(mainLocation);
     await tester.pumpAndSettle();
-    Future<void> correctFromHome(String oldFinish,String newFinish) async {
-      final row=find.ancestor(of:find.text('15.10.2026 · 23:55–$oldFinish'),matching:find.byType(ListTile));
-      final edit=find.descendant(of:row,matching:find.byTooltip('Corectează data, orele și fațada'));
+    Future<void> correctFromHome(String newFinish) async {
+      // The list is filtered to Craiova 01 and that location's expansion is open.
+      // Target its actual permission-gated action rather than coupling the test
+      // to the date/time typography used in the ListTile title.
+      final edit=find.descendant(
+        of:find.widgetWithText(ExpansionTile,'Craiova 01'),
+        matching:find.byTooltip('Corectează data, orele și fațada'),
+      );
       expect(edit,findsOneWidget);
       await tester.ensureVisible(edit);await tester.tap(edit);await tester.pumpAndSettle();
       final fields=find.descendant(of:find.byType(AlertDialog),matching:find.byType(TextField));
@@ -439,8 +444,8 @@ void main() {
       ScaffoldMessenger.of(tester.element(mainCentralizer)).clearSnackBars();
       await tester.pumpAndSettle();
     }
-    await correctFromHome('00:20','00:21');
-    await correctFromHome('00:21','00:20');
+    await correctFromHome('00:21');
+    await correctFromHome('00:20');
     await otherDb.doc('functions/xix-ui-editor').update({
       'permissions':uiPermissions.where((permission)=>permission!='editCentralizer').toList(),
     });
