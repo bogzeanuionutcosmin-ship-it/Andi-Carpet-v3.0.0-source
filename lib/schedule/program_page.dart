@@ -743,6 +743,7 @@ class _ProgramPageState extends State<ProgramPage> {
       final selected=days[dayIndex];
       final filtered=available.where((l){final q=query.trim().toLowerCase();return q.isEmpty||l.name.toLowerCase().contains(q)||l.address.toLowerCase().contains(q)||categoryName(widget.categories,l.categoryId,fallbackType:l.type).toLowerCase().contains(q);}).toList();
       return AlertDialog(
+        insetPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
         title:Text('Creează grafic · Ziua ${dayIndex+1}'),
         content:SizedBox(width:760,height:MediaQuery.sizeOf(c).height*.72,child:CustomScrollView(slivers:[SliverToBoxAdapter(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
           Wrap(spacing:6,runSpacing:6,children:days.asMap().entries.map((e)=>ChoiceChip(label:Text('Ziua ${e.key+1} · ${e.value.length}'),selected:e.key==dayIndex,onSelected:(_)=>setD((){dayIndex=e.key;query='';}))).toList()),
@@ -759,12 +760,12 @@ class _ProgramPageState extends State<ProgramPage> {
             onChanged:(v)=>setD((){if(v==true){if(!selected.contains(l.id))selected.add(l.id);}else{selected.remove(l.id);}}),
           )).toList())),
         ])),
-        actions:[
+        actions:[Wrap(alignment:WrapAlignment.end,spacing:8,runSpacing:8,children:[
           TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),
           if(dayIndex>0) OutlinedButton.icon(onPressed:()=>setD((){dayIndex--;query='';}),icon:const Icon(Icons.arrow_back),label:const Text('Ziua anterioară')),
           FilledButton.tonalIcon(onPressed:selected.isEmpty?null:()=>setD((){if(dayIndex==days.length-1)days.add(<String>[]);dayIndex++;query='';}),icon:const Icon(Icons.arrow_forward),label:const Text('Următoarea zi')),
           FilledButton.icon(onPressed:days.where((d)=>d.isNotEmpty).isEmpty?null:()=>Navigator.pop(c,days.where((d)=>d.isNotEmpty).map((d)=>[...d]).toList()),icon:const Icon(Icons.done_all),label:const Text('Finalizare')),
-        ],
+        ])],
       );
     }));
     if(drafted==null||drafted.isEmpty)return;
