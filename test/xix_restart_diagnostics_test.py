@@ -10,8 +10,6 @@ spec = importlib.util.spec_from_file_location("xix_restart", SCRIPT)
 restart = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(restart)
 
-LOGIN_XML = b'<hierarchy><node package="com.example.andi_carpeta" text="Intr\xc4\x83 \xc3\xaen cont" content-desc="" /></hierarchy>'
-
 
 class RestartDiagnosticsTests(unittest.TestCase):
     def test_expected_screen_is_not_inferred_from_unrelated_labels(self):
