@@ -24,6 +24,7 @@ void main() {
         },
       ))));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Sala test'));
       await tester.tap(find.text('Sala test'));
       await tester.pumpAndSettle();
       final edit = find.byTooltip('Corectează data, orele și fațada');
