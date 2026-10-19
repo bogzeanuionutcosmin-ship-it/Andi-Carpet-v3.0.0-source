@@ -70,6 +70,7 @@ void main() {
         await tester.pumpAndSettle();
         final tile=find.widgetWithText(CheckboxListTile,location.name);
         await tester.scrollUntilVisible(tile,80,scrollable:find.descendant(of:find.byType(AlertDialog),matching:find.byType(Scrollable)).first);
+        await tester.pumpAndSettle();
         await tester.tap(tile);
         await tester.pumpAndSettle();
       }
@@ -196,11 +197,51 @@ void main() {
     await otherAuth.signInWithEmailAndPassword(email:'outsider@andi.test',password:'synthetic-only-123');
     await expectLater(saveRecordCompared(otherDb,ref.id,{...latest,'facadeDone':true},expected:latest),throwsA(permissionDenied));
     evidence['unauthorizedTeam']='permission-denied';
-    final night={...latest,'startedAt':Timestamp.fromDate(DateTime(2026,10,15,23,55)),'finishedAt':Timestamp.fromDate(DateTime(2026,10,16,0,20)),'status':'completed'};
-    await saveRecordCompared(db,ref.id,night,expected:latest);
+    final beforeCorrection=app.centralizerRecordFromData(ref.id,latest);
+    var correctionSaved=false;
+    await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.CentralizerPage(
+      currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),
+      teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],
+      locations:[],categories:[],schedules:[],records:[beforeCorrection],
+      isAdmin:false,canEditTeam:(_)=>true,canEditCentralizer:true,
+      onChanged:(){},log:(_,__) {},saveRecord:(_) async {fail('correction must not add a record');},
+      correctRecord:(original,corrected) async {
+        expect(original.id,ref.id);expect(corrected.id,ref.id);
+        expect(corrected.teamId,original.teamId);expect(corrected.locationId,original.locationId);
+        await saveRecordCompared(db,ref.id,{
+          ...latest,'startedAt':Timestamp.fromDate(corrected.startedAt!),
+          'finishedAt':Timestamp.fromDate(corrected.finishedAt!),
+          'facadeDone':corrected.facadeDone,'facadePlanned':corrected.facadePlanned,
+          'updatedAt':FieldValue.serverTimestamp(),
+        },expected:latest);
+        correctionSaved=true;
+      },
+    ))));
+    await tester.pumpAndSettle();
+    final correctedLocation=find.text(beforeCorrection.locationNameSnapshot);
+    await tester.ensureVisible(correctedLocation);await tester.tap(correctedLocation);
+    await tester.pumpAndSettle();
+    final editCorrection=find.byTooltip('Corectează data, orele și fațada');
+    await tester.ensureVisible(editCorrection);await tester.tap(editCorrection);
+    await tester.pumpAndSettle();
+    final correctionFields=find.descendant(of:find.byType(AlertDialog),matching:find.byType(TextField));
+    expect(correctionFields,findsNWidgets(2));
+    await tester.enterText(correctionFields.at(0),'23:55');
+    await tester.enterText(correctionFields.at(1),'00:20');
+    final facadeSwitch=find.descendant(of:find.byType(AlertDialog),matching:find.byType(SwitchListTile));
+    await tester.ensureVisible(facadeSwitch);await tester.tap(facadeSwitch);
+    await tester.pumpAndSettle();await tester.tap(find.text('Salvează'));
+    for(var n=0;n<60&&!correctionSaved;n++){await tester.pump(const Duration(milliseconds:200));}
+    await tester.pumpAndSettle();
+    expect(correctionSaved,true);expect(tester.takeException(),isNull);
+    evidence['correctionThroughUi']=true;
     final nightSnapshot=await ref.get(const GetOptions(source:Source.server));
+    final night=nightSnapshot.data()!;
     final reloaded=app.centralizerRecordFromData(ref.id,nightSnapshot.data()!);
     expect(reloaded.duration,const Duration(minutes:25));
+    expect(reloaded.startedAt,DateTime(2026,10,15,23,55));
+    expect(reloaded.finishedAt,DateTime(2026,10,16,0,20));
+    expect(reloaded.facadeDone,true);
     await saveRecordCompared(db,'second-legitimate',{...nightSnapshot.data()!,
       'startedAt':Timestamp.fromDate(DateTime(2026,10,16,0,55)),
       'finishedAt':Timestamp.fromDate(DateTime(2026,10,16,1,20))});

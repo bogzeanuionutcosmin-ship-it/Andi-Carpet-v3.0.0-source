@@ -21,6 +21,9 @@ def verify(root: Path) -> None:
     if result.get("graphCreatedThroughUi") is not True:
         raise AssertionError("Graph creation through UI and server reload were not demonstrated")
 
+    if result.get("correctionThroughUi") is not True:
+        raise AssertionError("Centralizator correction through UI was not demonstrated")
+
     required = (
         "connectedFlow", "craiova11", "sameAttemptRetry", "twoNativeClients",
         "unauthorizedTeam", "legacyAndDeletion", "offlineBeforeStart",

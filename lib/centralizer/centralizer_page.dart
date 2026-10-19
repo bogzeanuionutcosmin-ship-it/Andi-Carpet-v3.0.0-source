@@ -262,8 +262,8 @@ class _CentralizerPageState extends State<CentralizerPage> {
       if (mounted) showErrorMessage(context, 'Pot fi corectate doar intervențiile finalizate, cu ore START și FINAL.');
       return;
     }
-    final s = TextEditingController(text: timeText(r.startedAt));
-    final f = TextEditingController(text: timeText(r.finishedAt));
+    var startText = timeText(r.startedAt);
+    var finishText = timeText(r.finishedAt);
     var date = r.startedAt ?? r.finishedAt ?? DateTime.now();
     var facadeDone = r.facadeDone;
     final result = await showDialog<bool>(
@@ -283,8 +283,8 @@ class _CentralizerPageState extends State<CentralizerPage> {
               if(picked!=null&&c.mounted)setDialogState(()=>date=picked);
             },
           ),
-          TextField(controller:s,decoration:const InputDecoration(labelText:'START HH:MM')),
-          TextField(controller:f,decoration:const InputDecoration(labelText:'FINAL HH:MM')),
+          TextFormField(initialValue:startText,onChanged:(value)=>startText=value,decoration:const InputDecoration(labelText:'START HH:MM')),
+          TextFormField(initialValue:finishText,onChanged:(value)=>finishText=value,decoration:const InputDecoration(labelText:'FINAL HH:MM')),
           SwitchListTile(
             contentPadding:EdgeInsets.zero,
             title:const Text('Fațadă realizată'),
@@ -299,11 +299,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
         ],
       )),
     );
-    if(!mounted){s.dispose();f.dispose();return;}
-    final startText=s.text;
-    final finishText=f.text;
-    s.dispose();
-    f.dispose();
+    if(!mounted)return;
     if(result!=true)return;
     final newStart=_sameDateTime(date,startText);
     var newFinish=_sameDateTime(date,finishText);

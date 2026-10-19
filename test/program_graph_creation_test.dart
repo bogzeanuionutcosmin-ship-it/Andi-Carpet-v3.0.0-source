@@ -36,6 +36,7 @@ void main() {
       final tile = find.widgetWithText(CheckboxListTile, location.name);
       await tester.scrollUntilVisible(tile, 80, scrollable: find.descendant(
         of: find.byType(AlertDialog), matching: find.byType(Scrollable)).first);
+      await tester.pumpAndSettle();
       await tester.tap(tile);
       await tester.pumpAndSettle();
     }

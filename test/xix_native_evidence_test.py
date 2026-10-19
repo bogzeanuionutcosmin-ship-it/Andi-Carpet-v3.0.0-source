@@ -22,6 +22,7 @@ class NativeEvidenceTest(unittest.TestCase):
         self.observation = {
             "completed": True,
             "graphCreatedThroughUi": True,
+            "correctionThroughUi": True,
             "connectedFlow": {
                 "expected": "11 completed Craiova Dashboard records after double taps and server reload",
                 "observed": 11,
@@ -74,6 +75,20 @@ class NativeEvidenceTest(unittest.TestCase):
                 self.observation["graphCreatedThroughUi"] = invalid
                 self.save()
                 with self.assertRaisesRegex(AssertionError, "UI"):
+                    module.verify(self.root)
+
+    def test_missing_correction_ui_evidence_fails(self):
+        self.observation.pop("correctionThroughUi")
+        self.save()
+        with self.assertRaisesRegex(AssertionError, "correction through UI"):
+            module.verify(self.root)
+
+    def test_correction_ui_evidence_requires_boolean_true(self):
+        for invalid in (False, 1, "true", None):
+            with self.subTest(value=invalid):
+                self.observation["correctionThroughUi"] = invalid
+                self.save()
+                with self.assertRaisesRegex(AssertionError, "correction through UI"):
                     module.verify(self.root)
 
     def test_missing_pdf_fails(self):

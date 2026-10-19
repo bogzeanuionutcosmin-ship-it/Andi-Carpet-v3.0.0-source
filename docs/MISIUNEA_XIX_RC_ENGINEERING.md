@@ -34,7 +34,11 @@ selectate în UI și confirmate prin citire Source.server fără cache/scrieri �
 așteptare. Markerul graphCreatedThroughUi este obligatoriu în observații;
 artefactele vechi fără acest marker sunt respinse. Activarea graficului și
 redistribuirea datelor pe 15/16 octombrie rămân pregătire sintetică prin SDK;
-corecția este apelată prin writer, nu dialogul complet.
+corecția este introdusă prin dialogul Centralizatorului, apoi callbackul de
+test folosește writerul nativ, recitește serverul și verifică PDF-ul. Callbackul
+privat al HomePage nu este exercitat de acest montaj de componente; nu se
+pretinde E2E complet al aplicației de producție. Markerul correctionThroughUi
+este obligatoriu pentru artefactele acestui scenariu.
 Nu se declară E2E UI complet. Aplicația operațională cu entrypoint main se
 instalează ulterior cu backend demo, pentru persistența Auth/cold restart.
 

@@ -38,7 +38,7 @@ jobs:
       - name: Test schedule team selection
         run: flutter test test/program_team_selection_test.dart test/program_graph_creation_test.dart
       - name: Test Centralizator correction snapshot behavior
-        run: flutter test test/centralizer_correction_snapshot_test.dart
+        run: flutter test test/centralizer_correction_snapshot_test.dart test/centralizer_correction_dialog_test.dart
       - name: Test Centralizator operational-day behavior
         run: flutter test test/centralizer_operational_day_test.dart
       - name: Test Centralizator PDF projection
