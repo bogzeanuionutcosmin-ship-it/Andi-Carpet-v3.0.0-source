@@ -13,7 +13,7 @@ class RecoveryDatabase implements FirebaseFirestore {
   @override
   dynamic noSuchMethod(Invocation invocation) {
     if (invocation.memberName == #collection) return RecoveryCollection(this);
-    if (invocation.memberName == #runTransaction) return Future<void>.error(failure);
+    if (invocation.memberName == #runTransaction) return Future<Never>.error(failure);
     return super.noSuchMethod(invocation);
   }
 }
