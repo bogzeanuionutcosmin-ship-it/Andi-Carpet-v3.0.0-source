@@ -53,6 +53,7 @@ void main() {
         saveSchedules:(_) async {throw StateError('Read-only Graph smoke must not write a schedule');},
       ))));
       await tester.pumpAndSettle();
+      expect(tester.takeException(),isNull,reason:'The active Graph page must not raise Flutter framework exceptions');
       expect(find.text('Grafic de lucru'),findsWidgets);
       expect(find.text('Craiova XIX'),findsWidgets);
       expect(find.text('Activ'),findsOneWidget);
