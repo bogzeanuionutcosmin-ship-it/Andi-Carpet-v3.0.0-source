@@ -21,9 +21,22 @@ class NativeEvidenceTest(unittest.TestCase):
         self.observation = {
             "completed": True,
             "connectedFlow": {
-                "expected": "one completed record after double taps and server reload",
-                "observed": 1,
+                "expected": "11 completed Craiova Dashboard records after double taps and server reload",
+                "observed": 11,
                 "id": "record-1",
+            },
+            "craiova11": {
+                "observed": 11,
+                "day15": 6,
+                "day16": 5,
+                "uniqueIds": 11,
+                "centralizerCount": 11,
+                "dashboardScheduleItems": 11,
+                "pdfMatchedScheduleItems": 11,
+                "scheduleDatesMatchExecutions": True,
+                "pdfMarkers": [f"Craiova {i:02d}" for i in range(1, 12)],
+                "plannedRowName": "Craiova planificată",
+                "plannedRowRecordCount": 0,
             },
             "sameAttemptRetry": "one document, identical payload accepted",
             "twoNativeClients": {
@@ -37,7 +50,7 @@ class NativeEvidenceTest(unittest.TestCase):
             "offlineBeforeStart": "native transaction rejected; reconnect has no queued record",
             "revokedProfile": "cached Auth identity cannot write after server profile deactivation",
             "restore": "admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records",
-            "pdf": "real builder with data reloaded from native Firestore; missing registry retained",
+            "pdf": "11 Firestore-reloaded Craiova records rendered; planned row retained",
         }
         self.save()
 
@@ -102,6 +115,42 @@ class NativeEvidenceTest(unittest.TestCase):
 
     def test_unproven_pdf_marker_fails(self):
         self.observation["pdf"] = "ok"
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_wrong_craiova_day_totals_fail(self):
+        self.observation["craiova11"]["day15"] = 5
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_missing_graph_to_record_join_fails(self):
+        self.observation["craiova11"]["pdfMatchedScheduleItems"] = 10
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_schedule_date_mismatch_fails(self):
+        self.observation["craiova11"]["scheduleDatesMatchExecutions"] = False
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_planned_row_must_have_no_execution_record(self):
+        self.observation["craiova11"]["plannedRowRecordCount"] = 1
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_duplicate_craiova_pdf_marker_fails(self):
+        self.observation["craiova11"]["pdfMarkers"][-1] = self.observation["craiova11"]["pdfMarkers"][0]
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_missing_unexecuted_pdf_row_fails(self):
+        self.observation["craiova11"]["plannedRowName"] = ""
         self.save()
         with self.assertRaises(AssertionError):
             module.verify(self.root)
