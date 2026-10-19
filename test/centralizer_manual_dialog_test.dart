@@ -12,7 +12,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home:Scaffold(body:CentralizerPage(
         currentUser:AppUser(id:'admin',name:'Admin',role:UserRole.director),
         teams:[Team(id:'craiova',name:'Craiova',members:['admin'])],
-        locations:[],categories:[],schedules:[],records:[original],
+        locations:[Location(id:'room',name:'Sala test',address:'Craiova',type:LocationType.magic,active:true)],categories:[],schedules:[],records:[original],
         isAdmin:true,canEditTeam:(_)=>true,canEditCentralizer:true,
         onChanged:(){},log:(_,__) {},saveRecord:(record) async {added=record;},
         correctRecord:(_,__) async {fail('manual execution must not correct an existing record');},
