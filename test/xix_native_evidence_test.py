@@ -23,6 +23,7 @@ class NativeEvidenceTest(unittest.TestCase):
             "completed": True,
             "graphCreatedThroughUi": True,
             "correctionThroughUi": True,
+            "productionCorrectionWriter": 'UI adapter uses HomePage persistence; stale, deleted, unauthorized and offline corrections rejected',
             "connectedFlow": {
                 "expected": "11 completed Craiova Dashboard records after double taps and server reload",
                 "observed": 11,
@@ -90,6 +91,19 @@ class NativeEvidenceTest(unittest.TestCase):
                 self.save()
                 with self.assertRaisesRegex(AssertionError, "correction through UI"):
                     module.verify(self.root)
+
+    def test_prior_general_writer_artifact_is_rejected(self):
+        self.observation.pop("productionCorrectionWriter")
+        self.save()
+        with self.assertRaisesRegex(AssertionError, "Production correction writer"):
+            module.verify(self.root)
+
+    def test_unproven_production_correction_marker_is_rejected(self):
+        for invalid in (True, "ok", None):
+            self.observation["productionCorrectionWriter"] = invalid
+            self.save()
+            with self.assertRaisesRegex(AssertionError, "Production correction writer"):
+                module.verify(self.root)
 
     def test_missing_pdf_fails(self):
         (self.root / "native-flow.pdf").unlink()

@@ -94,3 +94,13 @@ recitire server fără modificarea fațadei. Aceste rezultate nu sunt declarate
 reușite înainte de CI; extragerea nu introduce implicit confirmare server.
 Coordonatorul privat HomePage și pregătirea calendaristică sintetică rămân limite
 explicite. Ramura include #125 ebd96c27; conținutul comun nu se integrează dublu.
+
+Rularea native 39192340982, job 117867660812, pe HEAD 55cf201c437ba8f039240e4d23246a3e0c0b6adc
+reproduce la linia270 Future<void> finalizat cu null în locul refuzului corecției
+offline. Probele online UI, baseline vechi, document șters și echipă neautorizată
+au precedat acest eșec. Nu există dovadă că operația offline a persistat pe server;
+eșecul demonstrat este raportarea unui succes neconfirmat. Fixul adaugă citire
+Source.server înainte de tranzacție și confirmarea câmpurilor după ea, respingând
+metadata cache/pending. Un rezultat incert nu dovedește lipsa commitului; UI cere
+reîncărcare. Regresiile Dart simulează finalizarea bridge-ului fără mutație server,
+nu înlocuiesc rerularea nativă. Validatorul cere noul marker de writer de producție.

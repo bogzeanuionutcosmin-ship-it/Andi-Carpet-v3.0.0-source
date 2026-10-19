@@ -14,7 +14,7 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertIn("id:r.id,teamId:r.teamId,locationId:r.locationId,type:r.type", CENTRALIZER)
         self.assertIn("await widget.correctRecord(r, updated);", CENTRALIZER)
         self.assertIn("await correctCentralizerRecordCompared(", HOME)
-        self.assertIn("await db.runTransaction((tx) async {", WRITER)
+        self.assertIn("await db.runTransaction<void>((tx) async {", WRITER)
         self.assertIn("if (!snapshot.exists)", WRITER)
         self.assertIn("tx.update(ref, changes);", WRITER)
         self.assertNotIn("tx.set(ref, changes", WRITER)

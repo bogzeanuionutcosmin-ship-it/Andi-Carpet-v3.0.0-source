@@ -24,6 +24,9 @@ def verify(root: Path) -> None:
     if result.get("correctionThroughUi") is not True:
         raise AssertionError("Centralizator correction through UI was not demonstrated")
 
+    if result.get("productionCorrectionWriter") != 'UI adapter uses HomePage persistence; stale, deleted, unauthorized and offline corrections rejected':
+        raise AssertionError("Production correction writer probes were not demonstrated")
+
     required = (
         "connectedFlow", "craiova11", "sameAttemptRetry", "twoNativeClients",
         "unauthorizedTeam", "legacyAndDeletion", "offlineBeforeStart",

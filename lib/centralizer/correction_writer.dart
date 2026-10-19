@@ -10,7 +10,14 @@ Future<void> correctCentralizerRecordCompared(
   required Map<String, dynamic> changes,
 }) async {
   final ref = db.collection('records').doc(id);
-  await db.runTransaction((tx) async {
+  // The native bridge can complete an offline transaction without a server
+  // acknowledgement. Refuse before preparing it, then confirm authoritative
+  // fields before HomePage is allowed to replace its local model.
+  final available = await ref.get(const GetOptions(source: Source.server));
+  if (available.metadata.isFromCache || available.metadata.hasPendingWrites) {
+    throw StateError('Există o salvare neconfirmată. Reconectează și reîncarcă înainte de corectare.');
+  }
+  await db.runTransaction<void>((tx) async {
     final snapshot = await tx.get(ref);
     if (!snapshot.exists) {
       throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
@@ -21,4 +28,11 @@ Future<void> correctCentralizerRecordCompared(
     }
     tx.update(ref, changes);
   });
+  final confirmed = await ref.get(const GetOptions(source: Source.server));
+  final desired = <String, Object?>{...expected, ...changes}..remove('updatedAt');
+  if (confirmed.metadata.isFromCache || confirmed.metadata.hasPendingWrites ||
+      !confirmed.exists ||
+      !centralizerCorrectionSnapshotMatches(confirmed.data()!, desired)) {
+    throw StateError('Corecția nu a putut fi confirmată. Reîncarcă înainte de retry.');
+  }
 }
