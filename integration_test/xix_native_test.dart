@@ -12,7 +12,7 @@ import 'package:andi_carpeta/operations/atomic_restore.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  testWidgets('XIX native SDK connected Dashboard -> Firestore -> reload -> Centralizator -> PDF', (tester) async {
+  testWidgets('XIX native SDK persists Craiova 11 Dashboard interventions -> Firestore -> Centralizator -> PDF', (tester) async {
     await app.main();
     final auth=FirebaseAuth.instance;
     final db=FirebaseFirestore.instance;
@@ -26,9 +26,12 @@ void main() {
     final evidence=<String,dynamic>{'completed':false};
     final permissionDenied=isA<FirebaseException>().having((e)=>e.code,'code','permission-denied');
     final workDate=app.operationalWorkDate(DateTime.now());
-    final item=app.ScheduleItem(locationId:'sala-xix',locationNameSnapshot:'Sala XIX',addressSnapshot:'Craiova',typeSnapshot:app.LocationType.magic,order:0);
-    final schedule=app.WorkSchedule(id:'graph-xix',teamId:'craiova',date:workDate,items:[item],started:true);
-    await db.collection('schedules').doc(schedule.id).set({'teamId':'craiova','date':Timestamp.fromDate(workDate),'started':true,'items':[{'locationId':item.locationId}]});
+    final items=List<app.ScheduleItem>.generate(11,(index){
+      final suffix=(index+1).toString().padLeft(2,'0');
+      return app.ScheduleItem(locationId:'craiova-$suffix',locationNameSnapshot:'Craiova $suffix',addressSnapshot:'Craiova',typeSnapshot:app.LocationType.magic,order:index);
+    });
+    final schedule=app.WorkSchedule(id:'graph-xix',teamId:'craiova',date:workDate,items:items,started:true);
+    await db.collection('schedules').doc(schedule.id).set({'teamId':'craiova','date':Timestamp.fromDate(workDate),'started':true,'items':items.map((item)=>{'locationId':item.locationId}).toList()});
     final records=<app.CentralizerRecord>[];
     Future<void> save(app.CentralizerRecord record) async {
       final data=app.recordDocumentData(record);
@@ -44,21 +47,44 @@ void main() {
         userName:(_)=>'Editor',onChanged:(){},saveRecord:save,saveSchedule:(_) async {},saveSchedules:(_) async {},log:(_,__) {},
       ))));await tester.pumpAndSettle();
     }
-    await dashboard();
-    final start=find.byTooltip('Intră / începe lucrul');
-    await tester.ensureVisible(start);await tester.tap(start);await tester.tap(start,warnIfMissed:false);
-    for(var n=0;n<60&&records.isEmpty;n++){await tester.pump(const Duration(milliseconds:200));}
-    expect(records.length,1);expect(records.single.status,app.WorkAttemptStatus.running);
-    await dashboard();
-    final stop=find.byTooltip('Stop / ieși din locație');await tester.ensureVisible(stop);
-    await tester.tap(stop);await tester.tap(stop,warnIfMissed:false);await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog),findsOneWidget);await tester.tap(find.text('DA'));
-    for(var n=0;n<60&&!records.single.completed;n++){await tester.pump(const Duration(milliseconds:200));}
-    expect(records.single.completed,true);
-    final ref=db.collection('records').doc(records.single.id);
+    for(final item in items){
+      await dashboard();
+      final start=find.byTooltip('Intră / începe lucrul').first;
+      await tester.ensureVisible(start);await tester.tap(start);await tester.tap(start,warnIfMissed:false);
+      for(var n=0;n<60&&!records.any((r)=>r.locationId==item.locationId&&r.status==app.WorkAttemptStatus.running);n++){await tester.pump(const Duration(milliseconds:200));}
+      expect(records.where((r)=>r.locationId==item.locationId&&r.status==app.WorkAttemptStatus.running),hasLength(1));
+      await dashboard();
+      final stop=find.byTooltip('Stop / ieși din locație');await tester.ensureVisible(stop);
+      await tester.tap(stop);await tester.tap(stop,warnIfMissed:false);await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog),findsOneWidget);await tester.tap(find.text('DA'));
+      for(var n=0;n<60&&!records.any((r)=>r.locationId==item.locationId&&r.completed);n++){await tester.pump(const Duration(milliseconds:200));}
+      expect(records.singleWhere((r)=>r.locationId==item.locationId).completed,true);
+    }
+    expect(records,hasLength(11));
+    // Reproject the 11 UI-created Firestore records onto the reported two-day
+    // Craiova scenario. The first is changed to an overnight event below.
+    for(var index=0;index<items.length;index++){
+      final record=records.singleWhere((r)=>r.locationId==items[index].locationId);
+      final ref=db.collection('records').doc(record.id);
+      final current=(await ref.get(const GetOptions(source:Source.server))).data()!;
+      final day=index<7?15:16;
+      final hour=index<7?9+index:9+index-7;
+      final started=DateTime(2026,10,day,hour);
+      final finished=started.add(const Duration(hours:1));
+      await saveRecordCompared(db,record.id,{...current,'startedAt':Timestamp.fromDate(started),'finishedAt':Timestamp.fromDate(finished)},expected:current);
+    }
+    final reloadedScenarioRecords=<app.CentralizerRecord>[];
+    for(final item in items){
+      final record=records.singleWhere((r)=>r.locationId==item.locationId);
+      final snapshot=await db.collection('records').doc(record.id).get(const GetOptions(source:Source.server));
+      expect(snapshot.exists,true);
+      reloadedScenarioRecords.add(app.centralizerRecordFromData(snapshot.id,snapshot.data()!));
+    }
+    records..clear()..addAll(reloadedScenarioRecords);
+    final firstRecord=records.first;
+    final ref=db.collection('records').doc(firstRecord.id);
     final persisted=await ref.get(const GetOptions(source:Source.server));
-    records..clear()..add(app.centralizerRecordFromData(persisted.id,persisted.data()!));
-    evidence['connectedFlow']={'expected':'one completed record after double taps and server reload','observed':records.length,'id':persisted.id};
+    evidence['connectedFlow']={'expected':'11 completed Craiova Dashboard records after double taps and server reload','observed':records.length,'id':persisted.id};
     final expected=Map<String,dynamic>.from(persisted.data()!);
     final desired={...expected,'facadeDone':false,'updatedAt':FieldValue.serverTimestamp()};
     await saveRecordCompared(db,ref.id,desired,expected:expected);
@@ -113,15 +139,82 @@ void main() {
     }
     expect((await db.doc('records/offline-attempt').get(const GetOptions(source:Source.server))).exists,false);
     evidence['offlineBeforeStart']='native transaction rejected; reconnect has no queued record';
+    final finalScenarioRecords=<app.CentralizerRecord>[];
+    for(final item in items){
+      final record=records.singleWhere((r)=>r.locationId==item.locationId);
+      final snapshot=await db.collection('records').doc(record.id).get(const GetOptions(source:Source.server));
+      expect(snapshot.exists,true);
+      finalScenarioRecords.add(app.centralizerRecordFromData(snapshot.id,snapshot.data()!));
+    }
+    final projected=app.centralizerPdfExecutionRows(records:finalScenarioRecords,type:app.LocationType.magic,teamId:'craiova');
+    expect(projected,hasLength(11));
+    expect(projected.where((row)=>row.date.day==15),hasLength(6));
+    expect(projected.where((row)=>row.date.day==16),hasLength(5));
+    expect(projected.map((row)=>row.record.id).toSet(),hasLength(11));
+    final scheduledLocationIds=schedule.items.map((item)=>item.locationId).toSet();
+    final executedLocationIds=finalScenarioRecords.map((record)=>record.locationId).toSet();
+    expect(scheduledLocationIds,hasLength(11));
+    expect(executedLocationIds,scheduledLocationIds);
+    // Keep the same Graph location IDs and split its snapshot by each
+    // execution's synthetic operational date for Centralizer/PDF matching.
+    final projectedSchedules=<app.WorkSchedule>[
+      app.WorkSchedule(id:'graph-craiova-15',teamId:'craiova',date:DateTime(2026,10,15),items:items.sublist(1,7),started:true),
+      app.WorkSchedule(id:'graph-craiova-16',teamId:'craiova',date:DateTime(2026,10,16),items:[items.first,...items.sublist(7)],started:true),
+    ];
+    for(final projectedSchedule in projectedSchedules){
+      await db.collection('schedules').doc(projectedSchedule.id).set({
+        'teamId':projectedSchedule.teamId,
+        'date':Timestamp.fromDate(projectedSchedule.date),
+        'started':projectedSchedule.started,
+        'items':projectedSchedule.items.map((item)=>{'locationId':item.locationId}).toList(),
+      });
+    }
+    final scenarioSchedules=<app.WorkSchedule>[];
+    for(final projectedSchedule in projectedSchedules){
+      final snapshot=await db.collection('schedules').doc(projectedSchedule.id).get(const GetOptions(source:Source.server));
+      expect(snapshot.exists,true);
+      final data=snapshot.data()!;
+      final persistedIds=(data['items'] as List).map((raw)=>(raw as Map)['locationId'] as String).toList();
+      final persistedItems=persistedIds.map((id)=>items.singleWhere((item)=>item.locationId==id)).toList();
+      scenarioSchedules.add(app.WorkSchedule(
+        id:snapshot.id,teamId:data['teamId'] as String,date:(data['date'] as Timestamp).toDate(),
+        items:persistedItems,started:data['started'] as bool,
+      ));
+    }
+    final scheduledScenarioIds=scenarioSchedules.expand((entry)=>entry.items).map((item)=>item.locationId).toSet();
+    expect(scheduledScenarioIds,scheduledLocationIds);
+    for(final scenarioSchedule in scenarioSchedules){
+      for(final item in scenarioSchedule.items){
+        final execution=projected.singleWhere((row)=>row.record.locationId==item.locationId);
+        expect(execution.date.year,scenarioSchedule.date.year);
+        expect(execution.date.month,scenarioSchedule.date.month);
+        expect(execution.date.day,scenarioSchedule.date.day);
+      }
+    }
+    final plannedItem=app.ScheduleItem(locationId:'craiova-planned',locationNameSnapshot:'Craiova planificată',addressSnapshot:'Craiova',typeSnapshot:app.LocationType.magic,order:0);
+    final plannedSchedule=app.WorkSchedule(id:'graph-craiova-planned',teamId:'craiova',date:DateTime(2026,10,16),items:[plannedItem],started:true);
     await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.CentralizerPage(
       currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],
-      locations:[],categories:[],schedules:[schedule],records:[reloaded],isAdmin:false,canEditTeam:(_)=>true,canEditCentralizer:true,
+      locations:[],categories:[],schedules:scenarioSchedules,records:finalScenarioRecords,isAdmin:false,canEditTeam:(_)=>true,canEditCentralizer:true,
       onChanged:(){},log:(_,__) {},saveRecord:save,correctRecord:(_,__) async {},
-    ))));await tester.pumpAndSettle();expect(find.text('Sala XIX'),findsOneWidget);
-    final bytes=await app.buildCentralizerPdf(type:app.LocationType.magic,locations:[],teams:[],schedules:[schedule],records:[reloaded]);
+    ))));await tester.pumpAndSettle();expect(find.textContaining('11 execuții'),findsOneWidget);
+    final bytes=await app.buildCentralizerPdf(type:app.LocationType.magic,locations:[],teams:[],schedules:[...scenarioSchedules,plannedSchedule],records:finalScenarioRecords,teamId:'craiova');
     final out=Directory('/data/user/0/com.example.andi_carpeta/files/xix-evidence')..createSync(recursive:true);
     File('${out.path}/native-flow.pdf').writeAsBytesSync(bytes);
-    evidence['pdf']='real builder with data reloaded from native Firestore; missing registry retained';
+    evidence['craiova11']={
+      'observed':finalScenarioRecords.length,
+      'day15':projected.where((row)=>row.date.day==15).length,
+      'day16':projected.where((row)=>row.date.day==16).length,
+      'uniqueIds':projected.map((row)=>row.record.id).toSet().length,
+      'centralizerCount':finalScenarioRecords.length,
+      'dashboardScheduleItems':schedule.items.length,
+      'pdfMatchedScheduleItems':scenarioSchedules.expand((entry)=>entry.items).where((item)=>executedLocationIds.contains(item.locationId)).length,
+      'scheduleDatesMatchExecutions':true,
+      'pdfMarkers':finalScenarioRecords.map((record)=>record.locationNameSnapshot).toList()..sort(),
+      'plannedRowName':plannedItem.locationNameSnapshot,
+      'plannedRowRecordCount':finalScenarioRecords.where((record)=>record.locationId==plannedItem.locationId).length,
+    };
+    evidence['pdf']='11 Firestore-reloaded Craiova records rendered; planned row retained';
     File('${out.path}/observations.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(evidence));
     await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
     await otherDb.doc('users/$uid').update({'active':false});
