@@ -796,11 +796,7 @@ class _MapPageState extends State<MapPage> {
   );
 
   // Validare înainte de orice modificare a markerelor persistate.
-  bool _validMapPoint(LatLng point) =>
-      point.latitude.isFinite && point.longitude.isFinite &&
-      point.latitude >= -90 && point.latitude <= 90 &&
-      point.longitude >= -180 && point.longitude <= 180 &&
-      !(point.latitude == 0 && point.longitude == 0);
+  bool _validMapPoint(LatLng point) => isValidMapPoint(point);
 
   void _invalidMapPointNotice() {
     if (!mounted) return;
