@@ -168,7 +168,10 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIsNotNone(step, "release test APK build step must remain present")
         self.assertEqual(step.group(1), "github.event_name == 'pull_request'")
         self.assertIn("flutter build apk --release", step.group(2))
-        self.assertIn("operational-release-test.apk", step.group(2))
+        self.assertIn("release-test-metadata.txt", step.group(2))
+        self.assertIn("release-test-cert.txt", step.group(2))
+        self.assertNotIn("operational-release-test.apk", step.group(2))
+        self.assertNotRegex(step.group(2), r"cp\s+.+app-release\.apk\s+xix-evidence")
 
 
 if __name__ == "__main__":
