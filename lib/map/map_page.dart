@@ -148,36 +148,25 @@ class _MapPageState extends State<MapPage> {
 
   Color? _workBadgeColor(Location l) {
     final schedules = _todayOperationalSchedules;
-    if (schedules.isEmpty) return null;
-    var assignments = 0;
-    var finishedAssignments = 0;
-    var nextOrRunning = false;
-    for (final day in schedules) {
-      final ordered = [...day.items]..sort((a, b) => a.order.compareTo(b.order));
-      ScheduleItem? nextItem;
-      for (final item in ordered) {
-        final records = _todayRecordsFor(item.locationId, day.teamId);
-        final done = records.any((r) => r.completed);
-        final running = records.any((r) =>
-          r.status == WorkAttemptStatus.running ||
-          r.status == WorkAttemptStatus.waitingAccess);
-        final cancelled = records.isNotEmpty && records.every((r) =>
-          r.status == WorkAttemptStatus.refused ||
-          r.status == WorkAttemptStatus.notCompleted);
-        if (item.locationId == l.id) {
-          assignments++;
-          if (done) finishedAssignments++;
-          if (!done && running) nextOrRunning = true;
-        }
-        if (nextItem == null && !done && !cancelled) nextItem = item;
-      }
-      if (nextItem?.locationId == l.id) nextOrRunning = true;
-    }
-    if (assignments == 0) return null;
-    // Nu afișăm verde dacă aceeași locație mai are o intervenție restantă.
-    if (finishedAssignments == assignments) return Colors.green;
-    if (nextOrRunning) return Colors.orange;
-    return Colors.red;
+    final state = mapWorkBadgeState(
+      schedules,
+      targetLocationId: l.id,
+      itemsOf: (day) => day.items,
+      orderOf: (item) => item.order,
+      teamIdOf: (day) => day.teamId,
+      locationIdOf: (item) => item.locationId,
+      recordsFor: _todayRecordsFor,
+      completedOf: (record) => record.completed,
+      statusOf: (record) => record.status,
+      runningStatus: WorkAttemptStatus.running,
+      waitingStatus: WorkAttemptStatus.waitingAccess,
+      refusedStatus: WorkAttemptStatus.refused,
+      notCompletedStatus: WorkAttemptStatus.notCompleted,
+    );
+    if (state == MapWorkBadgeState.completed) return Colors.green;
+    if (state == MapWorkBadgeState.nextOrRunning) return Colors.orange;
+    if (state == MapWorkBadgeState.notCompleted) return Colors.red;
+    return null;
   }
 
   String _workBadgeText(Location l) {
