@@ -334,7 +334,7 @@ void main() {
     File('${out.path}/observations.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(evidence));
     await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
     await otherDb.doc('users/$uid').update({'active':false});
-    await expectLater(saveRecordCompared(db,ref.id,{...night,'facadeDone':true},expected:night),throwsA(permissionDenied));
+    await expectLater(saveRecordCompared(db,ref.id,{...night,'facadeDone':false},expected:night),throwsA(permissionDenied));
     await otherDb.doc('users/$uid').update({'active':true});
     evidence['revokedProfile']='cached Auth identity cannot write after server profile deactivation';
     final snapshot={for(final d in (await otherDb.collection('records').get()).docs)d.id:d.data()};
