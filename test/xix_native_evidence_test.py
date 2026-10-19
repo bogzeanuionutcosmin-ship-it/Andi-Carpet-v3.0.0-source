@@ -158,6 +158,16 @@ class NativeEvidenceTest(unittest.TestCase):
 
 
 class NativeWorkflowContractTest(unittest.TestCase):
+    def test_native_scenario_opens_active_graph_before_dashboard_execution(self):
+        source = (ROOT / "integration_test/xix_native_test.dart").read_text()
+        self.assertIn("app.ProgramPage(", source)
+        self.assertIn("graphName:'Craiova XIX'", source)
+        self.assertIn("final graphLocations=List<app.Location>.generate(11", source)
+        self.assertIn("locations:graphLocations", source)
+        self.assertIn("find.text('Craiova 01')", source)
+        self.assertIn("find.text('Craiova 11')", source)
+        self.assertLess(source.index("await graphPage();"), source.index("await dashboard();"))
+
     def test_release_test_apk_compiles_for_pull_request_validation(self):
         workflow = (ROOT / ".github/workflows/xix-native-candidate.yml").read_text()
         step = re.search(
