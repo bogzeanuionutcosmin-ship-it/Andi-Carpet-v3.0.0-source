@@ -24,8 +24,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Creează grafic'));
     await tester.pumpAndSettle();
-    // The last row is not initially built; ensureVisible alone cannot find it.
-    expect(find.widgetWithText(CheckboxListTile, 'Sala 11'), findsNothing);
+    // Row construction depends on viewport/cache and the growing selected-chip
+    // area. Scroll to each target without assuming it is already built.
     for (final location in locations) {
       final tile = find.widgetWithText(CheckboxListTile, location.name);
       await tester.scrollUntilVisible(tile, 120,
