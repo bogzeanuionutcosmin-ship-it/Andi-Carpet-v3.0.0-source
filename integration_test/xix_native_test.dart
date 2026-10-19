@@ -65,10 +65,11 @@ void main() {
       await tester.tap(find.text('Creează grafic'));
       await tester.pumpAndSettle();
       for(final location in graphLocations){
+        await tester.ensureVisible(find.byType(TextField));
         await tester.enterText(find.byType(TextField),location.name);
         await tester.pumpAndSettle();
         final tile=find.widgetWithText(CheckboxListTile,location.name);
-        await tester.ensureVisible(tile);
+        await tester.scrollUntilVisible(tile,80,scrollable:find.descendant(of:find.byType(AlertDialog),matching:find.byType(Scrollable)).first);
         await tester.tap(tile);
         await tester.pumpAndSettle();
       }

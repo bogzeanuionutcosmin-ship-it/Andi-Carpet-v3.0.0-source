@@ -3,11 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:andi_carpeta/main.dart' as app;
 
 void main() {
-  testWidgets('creates an eleven-location Graph through the mobile search picker', (tester) async {
+  for (final keyboardInset in [0.0, 290.0]) {
+  testWidgets('creates an eleven-location Graph with keyboard inset $keyboardInset', (tester) async {
     tester.view.physicalSize = const Size(411, 731);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
     final locations = List.generate(11, (i) => app.Location(
       id: 'room-$i', name: 'Sala ${i + 1}', address: 'Adresă ${i + 1}',
       type: app.LocationType.magic,
@@ -24,12 +26,16 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Creează grafic'));
     await tester.pumpAndSettle();
+    tester.view.viewInsets = FakeViewPadding(bottom: keyboardInset);
+    await tester.pumpAndSettle();
     // Search uses the real picker UI and handles both sorted/offscreen rows.
     for (final location in locations) {
+      await tester.ensureVisible(find.byType(TextField));
       await tester.enterText(find.byType(TextField), location.name);
       await tester.pumpAndSettle();
       final tile = find.widgetWithText(CheckboxListTile, location.name);
-      await tester.ensureVisible(tile);
+      await tester.scrollUntilVisible(tile, 80, scrollable: find.descendant(
+        of: find.byType(AlertDialog), matching: find.byType(Scrollable)).first);
       await tester.tap(tile);
       await tester.pumpAndSettle();
     }
@@ -48,4 +54,5 @@ void main() {
     expect(saved.single.items.map((item) => item.locationId).toList(),
       locations.map((location) => location.id).toList());
   });
+  }
 }
