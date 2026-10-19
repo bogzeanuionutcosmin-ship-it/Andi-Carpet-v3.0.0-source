@@ -83,7 +83,30 @@ def wait_screen(stem, title, alternatives, required=(), attempts=30):
             pass
         time.sleep(1)
     (OUT / f'{stem}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
-    assert found, f'Expected loaded main-entry screen absent: {title}'
+    if not found:
+        # Preserve the last observed accessibility state rather than hiding the
+        # reason behind a generic timeout. This is diagnostic-only: no screen
+        # assertion is relaxed and the test still fails closed.
+        details = ['Expected loaded main-entry screen absent: ' + title]
+        try:
+            root, raw = state()
+            (OUT / f'{stem}-failure.xml').write_bytes(raw)
+            observed = sorted(labels(root))
+            packages = sorted({node.get('package', '') for node in root.iter('node')})
+            details.append('Observed packages: ' + repr(packages))
+            details.append('Expected title visible: ' + str(title in observed))
+            details.append('Missing required labels: ' + repr(sorted(set(required) - set(observed))))
+            details.append('Observed labels: ' + repr(observed[:100]))
+        except (subprocess.CalledProcessError, ET.ParseError, subprocess.TimeoutExpired) as exc:
+            details.append('Final UI dump unavailable: ' + repr(exc))
+        try:
+            focus = adb('shell', 'dumpsys', 'window', 'windows').decode(errors='replace')
+            (OUT / f'{stem}-window-focus.txt').write_text(
+                '\n'.join(line for line in focus.splitlines()
+                          if 'mCurrentFocus=' in line or 'mFocusedApp=' in line))
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            details.append('Window focus unavailable: ' + repr(exc))
+        raise AssertionError(' | '.join(details))
 
 
 def tap_label(alternatives):
