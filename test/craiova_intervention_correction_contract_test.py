@@ -40,17 +40,21 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertIn("Pot fi corectate doar intervențiile finalizate", CENTRALIZER)
 
     def test_manual_and_corrected_interventions_reject_zero_duration_but_allow_overnight(self):
-        self.assertIn("if(!fn.isAfter(st!))", CENTRALIZER)
+        self.assertIn("if (finish.isBefore(start)) finish = finish.add(const Duration(days: 1));", CENTRALIZER)
+        self.assertIn("if (!finish.isAfter(start))", CENTRALIZER)
         self.assertIn("if(newFinish.isBefore(newStart))newFinish=newFinish.add(const Duration(days:1));", CENTRALIZER)
         self.assertIn("if(!newFinish.isAfter(newStart))", CENTRALIZER)
         self.assertIn("Ora FINAL trebuie să fie după ora START", CENTRALIZER)
 
     def test_manual_entry_warns_about_same_team_room_and_day(self):
-        self.assertIn('record.locationId==l.id', CENTRALIZER)
-        self.assertIn('record.teamId==selectedTeamId', CENTRALIZER)
-        self.assertIn('sameDay(record.startedAt!,st!)', CENTRALIZER)
-        self.assertIn('Execuție deja înregistrată', CENTRALIZER)
-        self.assertIn('if(!confirmed)return;', CENTRALIZER)
+        manual_entry = CENTRALIZER.split(
+            "Future<void> _showManualExecution", 1
+        )[1].split("Future<void> _editRecord", 1)[0]
+        self.assertIn("record.locationId == selectedLocation.id", manual_entry)
+        self.assertIn("record.teamId == draft.teamId", manual_entry)
+        self.assertIn("sameDay(record.startedAt!, start)", manual_entry)
+        self.assertIn("Execuție deja înregistrată", manual_entry)
+        self.assertIn("if (!confirmed) return;", manual_entry)
 
     def test_report_uses_actual_record_dates_and_facade(self):
         self.assertIn("final eventDate = recordEventTime(record);", REPORT)
