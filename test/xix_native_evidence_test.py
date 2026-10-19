@@ -21,14 +21,14 @@ class NativeEvidenceTest(unittest.TestCase):
         self.observation = {
             "completed": True,
             "connectedFlow": {"observed": 1},
-            "sameAttemptRetry": "ok",
+            "sameAttemptRetry": "one document, identical payload accepted",
             "twoNativeClients": {"accepted": [True, False]},
             "unauthorizedTeam": "permission-denied",
-            "legacyAndDeletion": "ok",
+            "legacyAndDeletion": "legacy update passed; deleted baseline rejected",
             "offlineBeforeStart": "native transaction rejected; reconnect has no queued record",
             "revokedProfile": "cached Auth identity cannot write after server profile deactivation",
             "restore": "admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records",
-            "pdf": "ok",
+            "pdf": "real builder with data reloaded from native Firestore; missing registry retained",
         }
         self.save()
 
@@ -84,6 +84,24 @@ class NativeEvidenceTest(unittest.TestCase):
 
     def test_missing_assertion_fails(self):
         self.observation.pop("restore")
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_placeholder_retry_evidence_fails(self):
+        self.observation["sameAttemptRetry"] = "ok"
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_placeholder_legacy_evidence_fails(self):
+        self.observation["legacyAndDeletion"] = "ok"
+        self.save()
+        with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_placeholder_pdf_evidence_fails(self):
+        self.observation["pdf"] = "ok"
         self.save()
         with self.assertRaises(AssertionError):
             module.verify(self.root)
