@@ -193,3 +193,28 @@ Aceasta este dovadă de mutare textuală, nu test real pe dispozitiv.
 - Endpointul de workflow a confirmat că #137 nu primea run-uri când baza branch-ului copil nu era în allowlist. PR #136 a primit un commit numai de rutare/contract CI (`611373f5f40fab34754a9629d5249d55c457c825`); acesta nu schimbă codul aplicației sau testele de produs. Validate, Android și Native au pornit pe acest HEAD; Validate a trecut, celelalte două sunt încă în curs la momentul acestei note.
 - PR #137 include o extindere suplimentară numai pentru CI (`b49512b382e1731fd0158149b5b527a163780185`) astfel încât următorul PR stacked să primească aceleași trei workflow-uri. `test/stacked_pull_request_ci_contract_test.py` verifică toate filtrele și condiția native.
 - #137 rămâne diferența modulară: tabelul și lotul schedule; branch routing-ul necesar pentru copil este parte a istoricului #136/#137 ca să existe validări CI reale. Niciun merge nu este permis sau făcut.
+
+
+
+## Addendum XIX — verificarea incrementală a politicilor MapPage (19 octombrie 2026, UTC)
+
+### Diferențial față de auditul din 12 octombrie
+
+Recontrolul codului din #136 a confirmat că validarea punctelor GPS și politica cache-ului geometriei rutiere erau încă implementate în `MapPage` (`part` din `main.dart`). Ambele sunt funcții pure fără IO; au fost mutate în module autonome și acoperite cu teste de graniță. Regulile geospațiale și expirarea nu s-au schimbat. Aceste constatări au fost reconfirmate în HEAD-ul curent și nu reutilizează automat observațiile istorice.
+
+| PR / exact HEAD | Modulare și dependențe | Duplicare/dead code | Teste și CI |
+|---|---|---|---|
+| #139 `d4c5325f3ef7ae9831ff2b99c7a8a10ad257b551` | `map_geometry_cache_policy.dart` separă formarea cheii coordonatelor și TTL-ul de 5 minute din `MapPage`; depinde de `latlong2`, fără UI sau IO. | Niciun dead code șters și niciun duplicat Dart byte-identic identificat. Ordinea coordonatelor, precizia 6 zecimale și pragul strict rămân identice. | `map_geometry_cache_policy_test.dart`; Validate `39330028546`, Android `39330028582`, Native `39330028636`: SUCCESS pe HEAD. |
+| #140 `adc1484ae579ad17372e7f70609a231ff4f40451` | `map_point_validation.dart` separă regula GPS apelată înaintea scrierilor markerelor; depinde de `latlong2), fără storage, permisiuni sau UI. | Nu s-a eliminat logică presupus moartă. Limitele inclusive, coordonatele finite și respingerea `(0,0)` sunt păstrate pentru aceleași trei apeluri. | `map_point_validation_test.dart`; Validate `39330296822`, Android `39330296806`, Native `39330296765`: SUCCESS pe HEAD. |
+
+### CI final și compoziție stacked
+
+- #136 code HEAD `0c9cbc6e1090c295db2c867826ca58447e738df9` rămâne checkpointul anterior validat. Pe descendentul routing-only `611373f5f40fab34754a9629d5249d55c457c825`, Validate `39328855282`, Android `39328855242`, Native `39328855346` au toate SUCCESS. Native a avut două încercări eșuate de runner: finder-ul UI nu a găsit temporar „Craiova 02”, apoi descărcarea NDK a returnat arhivă invalidă. A treia încercare a trecut testul UI, verificarea PDF și upload-ul.
+- #137 HEAD `b49512b382e1731fd0158149b5b527a163780185`: Validate `39329182964`, Android `39329183035`, Native `39329183078` — SUCCESS.
+- #138 code HEAD anterior `9d80d35a0e9b8a1b134a20afe52d8dc71b6669a0`: Validate `39329350464`, Android `39329350579`, Native `39329350418` — SUCCESS. Această notă documentară este adăugată în continuarea branch-ului #138 și va fi retestată pe noul exact HEAD.
+- Pentru #139/#140 au trecut local 173 teste Python/security, 3 Node projection tests și `git diff --check`; Flutter/Dart sunt verificate prin CI exact de mai sus. Toate cele patru loturi rămân Draft/Open și nemergate, direct bazate pe #136 routing-only; niciun patch de produs #134–#138 nu a fost reaplicat.
+- `main` și regulile oficiale sunt neschimbate. Nu s-au modificat Firebase, comportament, dependențe, releases, semnare ori APK.
+
+### Obligații care rămân după loturile MapPage
+
+Extragerea a două politici pure nu modularizează întregul MapPage. MapPage, HomePage, ExpensePage, ProgramPage și DashboardPage rămân pagini mari `part`-uri. Nu elimina cache-urile Home, nu simplifica parsarea financiară și nu fragmentează mutații Firestore până când contractele/fallback-urile nu sunt modelate prin teste. Continuă inventarierea dependențelor, verifică orice candidat de cod nefolosit înainte de ștergere, apoi separă UI și IO incremental cu teste pe fiecare limită. `production_ready=false`.
