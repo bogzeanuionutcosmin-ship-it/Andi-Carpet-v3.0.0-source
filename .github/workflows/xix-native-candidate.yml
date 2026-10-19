@@ -80,7 +80,7 @@ jobs:
           "$APKSIGNER" verify --print-certs xix-evidence/operational-debug.apk > xix-evidence/operational-cert.txt
           sha256sum xix-evidence/operational-debug.apk > xix-evidence/SHA256SUMS
       - name: Compile release candidate without production signing or publication
-        if: github.head_ref == 'mission-xix/modular-integration'
+        if: github.event_name == 'pull_request'
         run: |
           flutter build apk --release --dart-define=MAPBOX_ACCESS_TOKEN=
           cp build/app/outputs/flutter-apk/app-release.apk xix-evidence/operational-release-test.apk
