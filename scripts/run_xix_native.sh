@@ -12,7 +12,7 @@ data=pathlib.Path(path).read_bytes()
 if kind.endswith('.pdf'):
     assert data.startswith(b'%PDF-') and b'%%EOF' in data[-1024:], 'not a PDF'
 else:
-    assert isinstance(json.loads(data), dict), 'not an observation object'
+    assert isinstance(json.loads(data), dict) and json.loads(data).get('completed') is True, 'not completed observations'
 PYVALID
       then
         mv "xix-evidence/$file.tmp" "xix-evidence/$file"
