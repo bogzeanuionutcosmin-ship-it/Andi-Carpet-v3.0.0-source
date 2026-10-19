@@ -12,7 +12,7 @@ import 'package:andi_carpeta/operations/atomic_restore.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  testWidgets('XIX native SDK persists Craiova 11 Dashboard interventions -> Firestore -> Centralizator -> PDF', (tester) async {
+  testWidgets('XIX native UI creates Craiova Graph -> 11 Dashboard interventions -> Firestore -> Centralizator -> PDF', (tester) async {
     await app.main();
     final auth=FirebaseAuth.instance;
     final db=FirebaseFirestore.instance;
@@ -25,17 +25,13 @@ void main() {
     await otherAuth.signInWithEmailAndPassword(email:'editor@andi.test',password:'synthetic-only-123');
     final evidence=<String,dynamic>{'completed':false};
     final permissionDenied=isA<FirebaseException>().having((e)=>e.code,'code','permission-denied');
-    final workDate=app.operationalWorkDate(DateTime.now());
-    final items=List<app.ScheduleItem>.generate(11,(index){
-      final suffix=(index+1).toString().padLeft(2,'0');
-      return app.ScheduleItem(locationId:'craiova-$suffix',locationNameSnapshot:'Craiova $suffix',addressSnapshot:'Craiova',typeSnapshot:app.LocationType.magic,order:index);
-    });
+    late List<app.ScheduleItem> items;
+    late app.WorkSchedule schedule;
+    final schedules=<app.WorkSchedule>[];
     final graphLocations=List<app.Location>.generate(11,(index){
       final suffix=(index+1).toString().padLeft(2,'0');
       return app.Location(id:'craiova-$suffix',name:'Craiova $suffix',address:'Craiova $suffix',type:app.LocationType.magic);
     });
-    final schedule=app.WorkSchedule(id:'graph-xix',graphId:'graph-xix',graphName:'Craiova XIX',teamId:'craiova',date:workDate,items:items,started:true);
-    await db.collection('schedules').doc(schedule.id).set({'teamId':'craiova','graphId':schedule.graphId,'graphName':schedule.graphName,'date':Timestamp.fromDate(workDate),'started':true,'items':items.map((item)=>{'locationId':item.locationId}).toList()});
     final records=<app.CentralizerRecord>[];
     Future<void> save(app.CentralizerRecord record) async {
       final data=app.recordDocumentData(record);
@@ -43,17 +39,58 @@ void main() {
       record.writeBaseline=Map<String,dynamic>.from(data)..remove('updatedAt');
       records.removeWhere((r)=>r.id==record.id);records.add(record);
     }
-    Future<void> graphPage() async {
+    Future<void> persistSchedules(List<app.WorkSchedule> updated) async {
+      for(final entry in updated){
+        await db.collection('schedules').doc(entry.id).set({
+          'teamId':entry.teamId,'graphId':entry.graphId,'graphName':entry.graphName,
+          'date':Timestamp.fromDate(entry.date),'started':entry.started,
+          'items':entry.items.map((item)=>{'locationId':item.locationId}).toList(),
+        });
+      }
+      schedules..clear()..addAll(updated);
+    }
+    Future<void> openProgramPage() async {
       await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.ProgramPage(
         currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),
         teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],cars:[],locations:graphLocations,categories:[],
-        schedules:[schedule],records:records,settings:app.AppSettings(),
+        schedules:schedules,records:records,settings:app.AppSettings(),
         canEditTeam:(_)=>true,canEditProgram:true,userName:(_)=>'Editor',
-        onChanged:(){},notifyTeam:(_,__,___){},log:(_,__) {},
-        saveSchedules:(_) async {throw StateError('Read-only Graph smoke must not write a schedule');},
+        onChanged:(){},notifyTeam:(_,__,___){},log:(_,__) {},saveSchedules:persistSchedules,
       ))));
       await tester.pumpAndSettle();
-      expect(tester.takeException(),isNull,reason:'The active Graph page must not raise Flutter framework exceptions');
+      expect(tester.takeException(),isNull,reason:'The Graph page must not raise Flutter framework exceptions');
+    }
+    Future<void> createGraphThroughUi() async {
+      await openProgramPage();
+      await tester.tap(find.text('Creează grafic'));
+      await tester.pumpAndSettle();
+      for(final location in graphLocations){
+        final tile=find.widgetWithText(CheckboxListTile,location.name);
+        await tester.ensureVisible(tile);
+        await tester.tap(tile);
+        await tester.pumpAndSettle();
+      }
+      expect(find.widgetWithText(CheckboxListTile,'Craiova 01'),findsOneWidget);
+      await tester.tap(find.text('Finalizare'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continuă'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first,'Craiova XIX');
+      await tester.tap(find.text('Creează graficul'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(),isNull,reason:'Creating a Graph through the UI must not raise Flutter framework exceptions');
+      expect(schedules,hasLength(1));
+      schedule=schedules.single;
+      items=schedule.items;
+      expect(schedule.graphName,'Craiova XIX');
+      expect(items,hasLength(11));
+      // START intentionally remains outside this smoke: it geocodes real trip
+      // endpoints. Mark the emulator fixture active after UI creation instead.
+      schedule.started=true;
+      await persistSchedules([schedule]);
+    }
+    Future<void> graphPage() async {
+      await openProgramPage();
       expect(find.text('Grafic de lucru'),findsWidgets);
       expect(find.text('Craiova XIX'),findsWidgets);
       expect(find.text('Activ'),findsOneWidget);
@@ -65,13 +102,14 @@ void main() {
     Future<void> dashboard() async {
       await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.DashboardPage(
         teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],users:[],functionDefinitions:[],locations:[],categories:[],
-        schedules:[schedule],records:records,settings:app.AppSettings()..allowUndo=false,
+        schedules:schedules,records:records,settings:app.AppSettings()..allowUndo=false,
         currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),canEditProgram:true,
         userName:(_)=>'Editor',onChanged:(){},saveRecord:save,saveSchedule:(_) async {},saveSchedules:(_) async {},log:(_,__) {},
       ))));await tester.pumpAndSettle();
     }
-    // Confirm the active 11-location Graph fixture is visible in the real
-    // ProgramPage before following its locations through Dashboard execution.
+    // Create and persist the Craiova Graph through ProgramPage UI, then mark
+    // the emulator fixture active without invoking external geocoding.
+    await createGraphThroughUi();
     await graphPage();
     for(final item in items){
       await dashboard();
