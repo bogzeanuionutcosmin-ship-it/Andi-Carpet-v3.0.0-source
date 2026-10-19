@@ -1386,3 +1386,13 @@ este rezultat incert, nu dovada că un commit anterior nu a persistat.
 CI verifică prezența `flutter test --no-uninstall` în versiunea 3.47.5 și o
 folosește pentru a păstra package/Auth demo înaintea restartului entrypointului
 main. Fără flag, etapa nativă se oprește clar; nu continuă fără persistență.
+
+
+## 162. Misiunea XIX — candidat combinat #133, CI complet verde (2026-10-19)
+
+- Baza: `mission-xix/modular-integration` / #119, SHA `5dfbb39be8606f1a9c1bf09703fc2645c5cbde10`. Candidatul propriu Draft #133 integrează fără modificarea ramurilor-sursă: validarea URL APK din #123, diagnosticul de restart din #131 și probele native din #121. #132 rămâne candidat parțial, nu se face merge cumulativ al acestor PR-uri suprapuse.
+- HEAD verificat #133: `5129667511fa9b976d4f330f742292f54d926ca5`. GitHub CI: Validate Flutter and Firebase `39203098098` SUCCESS; Build testable Android APK `39203098022` SUCCESS; XIX native emulator `39203098075` SUCCESS.
+- Jurnalul nativ confirmă: `1 test passed`, `Native PDF and completed scenario evidence: PASS`, două reporniri autentificate și navigare reală Grafic / Centralizator / Acasă PASS. Artifact `12165206284`, arhivă 255809396 bytes; jurnalul raportează checksum SHA256 al arhivei `b68fe9a4f7dc15eaf388557a510354b7b92f3517ce5561882343a7441f025675`. Dovezile aparțin strict SHA-ului de mai sus.
+- Testele contractului de dovezi resping PDF/JSON lipsă, PDF trunchiat, JSON invalid, scenarii incomplete, absența unei înregistrări persistate, acceptarea ambilor clienți, acceptarea unei scrieri neautorizate, profil revocat care poate scrie, scriere offline pusă la coadă și restore neprobat.
+- CI verde în emulator NU reprezintă validare pe dispozitive fizice, securitate/distribuție în producție ori autorizare de merge. PR #133 rămâne Draft; fără merge în main, deploy, Firebase live, publicare APK sau schimbări de semnare. `production_ready=false`.
+- Următoarele verificări înainte de release: test fizic Android pe fluxul complet Grafic → Centralizator → PDF; scenarii multi-dispozitiv și revocare, semnare de producție, domeniu oficial de descărcare, politici anti-rollback/issuer/sesiune financiară și audit de permisiuni. Nu se declară închise pe baza emulatorului.
