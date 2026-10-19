@@ -129,7 +129,7 @@ class _DashboardPageState extends State<DashboardPage> {
         x.departureName=departureText;x.departureLatitude=startPoint['lat'] as double;x.departureLongitude=startPoint['lon'] as double;
         x.returnName=returnText;x.returnLatitude=endPoint['lat'] as double;x.returnLongitude=endPoint['lon'] as double;
       }
-      try { await widget.saveSchedules(sameGraph); } catch(e) { if(mounted)showErrorMessage(context,'Programul nu a putut fi pornit: ${_scheduleSaveFailure(e)}'); return; }
+      try { await widget.saveSchedules(sameGraph); } catch(e) { if(mounted)showErrorMessage(context,'Programul nu a putut fi pornit: ${scheduleSaveFailureMessage(e)}'); return; }
       widget.onChanged();
       widget.log('START program din Acasă','${team.name} · ${schedule.graphName} · $departureText → $returnText');
       if(mounted)showSuccessMessage(context,'Programul echipei a fost pornit cu traseul complet.');
