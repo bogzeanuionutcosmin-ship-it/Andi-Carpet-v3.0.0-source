@@ -30,14 +30,36 @@ void main() {
       final suffix=(index+1).toString().padLeft(2,'0');
       return app.ScheduleItem(locationId:'craiova-$suffix',locationNameSnapshot:'Craiova $suffix',addressSnapshot:'Craiova',typeSnapshot:app.LocationType.magic,order:index);
     });
-    final schedule=app.WorkSchedule(id:'graph-xix',teamId:'craiova',date:workDate,items:items,started:true);
-    await db.collection('schedules').doc(schedule.id).set({'teamId':'craiova','date':Timestamp.fromDate(workDate),'started':true,'items':items.map((item)=>{'locationId':item.locationId}).toList()});
+    final graphLocations=List<app.Location>.generate(11,(index){
+      final suffix=(index+1).toString().padLeft(2,'0');
+      return app.Location(id:'craiova-$suffix',name:'Craiova $suffix',address:'Craiova $suffix',type:app.LocationType.magic);
+    });
+    final schedule=app.WorkSchedule(id:'graph-xix',graphId:'graph-xix',graphName:'Craiova XIX',teamId:'craiova',date:workDate,items:items,started:true);
+    await db.collection('schedules').doc(schedule.id).set({'teamId':'craiova','graphId':schedule.graphId,'graphName':schedule.graphName,'date':Timestamp.fromDate(workDate),'started':true,'items':items.map((item)=>{'locationId':item.locationId}).toList()});
     final records=<app.CentralizerRecord>[];
     Future<void> save(app.CentralizerRecord record) async {
       final data=app.recordDocumentData(record);
       await saveRecordCompared(db,record.id,data,expected:record.writeBaseline);
       record.writeBaseline=Map<String,dynamic>.from(data)..remove('updatedAt');
       records.removeWhere((r)=>r.id==record.id);records.add(record);
+    }
+    Future<void> graphPage() async {
+      await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.ProgramPage(
+        currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),
+        teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],cars:[],locations:graphLocations,categories:[],
+        schedules:[schedule],records:records,settings:app.AppSettings(),
+        canEditTeam:(_)=>true,canEditProgram:true,userName:(_)=>'Editor',
+        onChanged:(){},notifyTeam:(_,__,___){},log:(_,__) {},
+        saveSchedules:(_) async {throw StateError('Read-only Graph smoke must not write a schedule');},
+      ))));
+      await tester.pumpAndSettle();
+      expect(find.text('Grafic de lucru'),findsWidgets);
+      expect(find.text('Craiova XIX'),findsWidgets);
+      expect(find.text('Activ'),findsOneWidget);
+      expect(find.text('Locații'),findsWidgets);
+      expect(find.text('11'),findsWidgets);
+      expect(find.text('Craiova 01'),findsWidgets);
+      expect(find.text('Craiova 11'),findsWidgets);
     }
     Future<void> dashboard() async {
       await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.DashboardPage(
@@ -47,6 +69,9 @@ void main() {
         userName:(_)=>'Editor',onChanged:(){},saveRecord:save,saveSchedule:(_) async {},saveSchedules:(_) async {},log:(_,__) {},
       ))));await tester.pumpAndSettle();
     }
+    // Confirm the active 11-location Graph fixture is visible in the real
+    // ProgramPage before following its locations through Dashboard execution.
+    await graphPage();
     for(final item in items){
       await dashboard();
       final start=find.byTooltip('Intră / începe lucrul').first;
