@@ -422,7 +422,7 @@ void main() {
     await tester.ensureVisible(mainLocation);await tester.tap(mainLocation);
     await tester.pumpAndSettle();
     Future<void> correctFromHome(String oldFinish,String newFinish) async {
-      final row=find.ancestor(of:find.text('16.10.2026 · 23:55–$oldFinish'),matching:find.byType(ListTile));
+      final row=find.ancestor(of:find.text('15.10.2026 · 23:55–$oldFinish'),matching:find.byType(ListTile));
       final edit=find.descendant(of:row,matching:find.byTooltip('Corectează data, orele și fațada'));
       expect(edit,findsOneWidget);
       await tester.ensureVisible(edit);await tester.tap(edit);await tester.pumpAndSettle();
