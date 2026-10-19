@@ -66,11 +66,11 @@ void main() {
       await tester.pumpAndSettle();
       for(final location in graphLocations){
         final tile=find.widgetWithText(CheckboxListTile,location.name);
-        await tester.ensureVisible(tile);
+        await tester.scrollUntilVisible(tile,120,scrollable:find.descendant(of:find.byType(AlertDialog),matching:find.byType(Scrollable)).first);
         await tester.tap(tile);
         await tester.pumpAndSettle();
       }
-      expect(find.widgetWithText(CheckboxListTile,'Craiova 01'),findsOneWidget);
+      expect(find.widgetWithText(Chip,'1. Craiova 01'),findsOneWidget);
       await tester.tap(find.text('Finalizare'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continuă'));

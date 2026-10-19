@@ -185,6 +185,8 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIn("await createGraphThroughUi();", source)
         self.assertIn("find.text('Creează grafic')", source)
         self.assertIn("find.widgetWithText(CheckboxListTile,location.name)", source)
+        self.assertIn("tester.scrollUntilVisible(tile,120", source)
+        self.assertNotIn("tester.ensureVisible(tile)", source)
         self.assertLess(source.index("await graphPage();"), source.index("await dashboard();"))
 
     def test_release_test_apk_compiles_for_pull_request_validation(self):
