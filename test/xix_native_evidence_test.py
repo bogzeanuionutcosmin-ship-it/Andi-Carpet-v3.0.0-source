@@ -1,6 +1,7 @@
 """Contract tests for fail-closed XIX native evidence collection."""
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -154,6 +155,20 @@ class NativeEvidenceTest(unittest.TestCase):
         self.save()
         with self.assertRaises(AssertionError):
             module.verify(self.root)
+
+
+class NativeWorkflowContractTest(unittest.TestCase):
+    def test_release_test_apk_compiles_for_pull_request_validation(self):
+        workflow = (ROOT / ".github/workflows/xix-native-candidate.yml").read_text()
+        step = re.search(
+            r"(?ms)^      - name: Compile release candidate without production signing or publication\n"
+            r"        if: ([^\n]+)\n        run: \|\n(.*?)(?=^      - name:|\Z)",
+            workflow,
+        )
+        self.assertIsNotNone(step, "release test APK build step must remain present")
+        self.assertEqual(step.group(1), "github.event_name == 'pull_request'")
+        self.assertIn("flutter build apk --release", step.group(2))
+        self.assertIn("operational-release-test.apk", step.group(2))
 
 
 if __name__ == "__main__":
