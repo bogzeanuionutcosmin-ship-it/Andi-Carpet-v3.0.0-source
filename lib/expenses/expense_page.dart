@@ -1100,19 +1100,6 @@ class _ExpensePageState extends State<ExpensePage> {
     if (expense != null) await _saveNewExpense(expense);
   }
 
-  // Monetary input is validated as decimal text before conversion to double.
-  // This prevents NaN, infinity, exponential notation and sub-ban amounts.
-  int? _expenseAmountBani(String raw) {
-    final normalized = raw.trim().replaceAll(',', '.');
-    if (!RegExp(r'^\d{1,9}(?:\.\d{1,2})?$').hasMatch(normalized)) return null;
-    final parts = normalized.split('.');
-    final lei = int.tryParse(parts.first);
-    if (lei == null) return null;
-    final bani = parts.length == 1 ? 0 : int.parse(parts.last.padRight(2, '0'));
-    final total = lei * 100 + bani;
-    return total > 0 ? total : null;
-  }
-
   Future<Expense?> _expenseDialog({FiscalOcrData? ocr, Uint8List? imageBytes}) async {
     final formKey = GlobalKey<FormState>();
     final number = TextEditingController(text: ocr?.documentNumber ?? '');
@@ -1150,7 +1137,7 @@ class _ExpensePageState extends State<ExpensePage> {
         const SizedBox(height: 8),
         TextFormField(controller: supplier, decoration: const InputDecoration(labelText: 'Furnizor / comerciant')),
         const SizedBox(height: 8),
-        TextFormField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Sumă', suffixText: 'lei'), validator: (v) => _expenseAmountBani(v ?? '') == null ? 'Introdu o sumă pozitivă, cu maximum 2 zecimale.' : null),
+        TextFormField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Sumă', suffixText: 'lei'), validator: (v) => parseExpenseAmountBani(v ?? '') == null ? 'Introdu o sumă pozitivă, cu maximum 2 zecimale.' : null),
         const SizedBox(height: 8),
         ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event), title: const Text('Data documentului'), subtitle: Text(_shortDate(docDate)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: docDate); if (x != null) setD(() => docDate = x); }, child: const Text('Alege'))),
         DropdownButtonFormField<String>(initialValue: cat, decoration: const InputDecoration(labelText: 'Categorie'), items: const [DropdownMenuItem(value: 'Combustibil', child: Text('Combustibil')), DropdownMenuItem(value: 'Facturi', child: Text('Facturi')), DropdownMenuItem(value: 'Alte cheltuieli', child: Text('Alte cheltuieli'))], onChanged: (v) { if (v != null) setD(() => cat = v); }),
@@ -1170,7 +1157,7 @@ class _ExpensePageState extends State<ExpensePage> {
             ScaffoldMessenger.of(d).showSnackBar(const SnackBar(content: Text('Data documentului nu poate fi în viitor.')));
             return;
           }
-          final bani = _expenseAmountBani(amount.text);
+          final bani = parseExpenseAmountBani(amount.text);
           if (bani == null) return;
           final value = bani / 100.0;
           Navigator.pop(d, Expense(

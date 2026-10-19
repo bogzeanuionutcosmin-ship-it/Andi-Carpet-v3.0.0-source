@@ -178,3 +178,18 @@ Aceasta este dovadă de mutare textuală, nu test real pe dispozitiv.
 4. Investighează separat cache-urile write-only și parsările `receivedEntries`; fără eliminare până când efectele la erori și ordinea/identitatea sunt testate.
 5. Păstrează fluxurile financiare legacy/v2, cele 32 de stickere și adaptoarele specifice platformei.
 6. Nu declara modularizarea integrală încheiată până când cuplarea implicită la `main.dart`, codul nefolosit și testele pentru toate familiile nu au fost închise verificabil. `production_ready=false`.
+
+## Lot independent — parser de sumă Expense (20 octombrie 2026)
+
+- Următorul lot separat pornește din PR #137, HEAD-ul său curent fiind baza tehnică. Nu atinge SchedulePage/DashboardPage și nu repetă delta din #134–#137.
+- `ExpensePage._expenseAmountBani` este mutat în `lib/expenses/expense_amount_parser.dart`, bibliotecă Dart autonomă. Modulul reutilizează `parseLeiToBani` din `lib/finance/per_diem_money.dart`, păstrând limita formularului `1–9` cifre întregi, separator virgulă/punct, cel mult două zecimale și sumă strict pozitivă.
+- Formularul continuă să valideze aceeași expresie de eroare și să trimită aceeași valoare integer-bani către `Expense`. Nu se schimbă modelul, settlement-ul, OCR-ul sau stocarea. `test/expense_amount_parser_test.dart` acoperă bani întregi/fracționari, limita maximă, zero, semne, formate invalide, exponent și precizie prea mare.
+- Contractul de igienă a repository-ului a fost mutat de la verificarea sursei UI la modulul responsabil de parsing și confirmă folosirea conversiei integer-bani comune.
+- Verificări locale pe codul lotului: Python/security 173/173 PASS; Node member projection 3/3 PASS; `git diff --check` PASS. Flutter/Dart nu sunt instalate local; testele Dart, analyze și build-ul rămân de confirmat în CI pe SHA-ul exact al PR-ului.
+- Aceasta este o a doua extracție țintită, nu închiderea modulului Expenses. `expense_page.dart` rămâne un `part` mare; OCR, dialogurile, filtrele de settlement și scrierile au cuplare la modele/starea principală și sunt obligații separate.
+
+### CI pentru PR-uri copil stacked
+
+- Endpointul de workflow a confirmat că #137 nu primea run-uri când baza branch-ului copil nu era în allowlist. PR #136 a primit un commit numai de rutare/contract CI (`611373f5f40fab34754a9629d5249d55c457c825`); acesta nu schimbă codul aplicației sau testele de produs. Validate, Android și Native au pornit pe acest HEAD; Validate a trecut, celelalte două sunt încă în curs la momentul acestei note.
+- PR #137 include o extindere suplimentară numai pentru CI (`b49512b382e1731fd0158149b5b527a163780185`) astfel încât următorul PR stacked să primească aceleași trei workflow-uri. `test/stacked_pull_request_ci_contract_test.py` verifică toate filtrele și condiția native.
+- #137 rămâne diferența modulară: tabelul și lotul schedule; branch routing-ul necesar pentru copil este parte a istoricului #136/#137 ca să existe validări CI reale. Niciun merge nu este permis sau făcut.

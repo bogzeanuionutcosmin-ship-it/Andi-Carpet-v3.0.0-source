@@ -31,6 +31,7 @@ import 'mapbox_services.dart';
 import 'centralizer/correction_writer.dart';
 import 'centralizer/manual_execution_defaults.dart';
 import 'schedule/schedule_save_failure.dart';
+import 'expenses/expense_amount_parser.dart';
 import 'operations/record_writer.dart';
 import 'operations/atomic_restore.dart';
 import 'utils/date_formatters.dart';
