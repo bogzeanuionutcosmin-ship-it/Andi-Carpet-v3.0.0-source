@@ -104,3 +104,16 @@ Source.server înainte de tranzacție și confirmarea câmpurilor după ea, resp
 metadata cache/pending. Un rezultat incert nu dovedește lipsa commitului; UI cere
 reîncărcare. Regresiile Dart simulează finalizarea bridge-ului fără mutație server,
 nu înlocuiesc rerularea nativă. Validatorul cere noul marker de writer de producție.
+
+## Probă suplimentară: coordonatorul HomePage
+
+Ramura separată `codex/xix-home-correction-ui` montează AndiCarpetaApp real,
+încarcă funcția editorului din emulator, deschide Centralizatorul din navigare și
+corectează FINAL 00:20→00:21→00:20 prin callbackul privat al HomePage. Fiecare
+salvare cere mesajul de succes și citire server cu metadata autoritativă. Proba
+elimină apoi dreptul editCentralizer din funcția sintetică și cere dispariția
+acțiunilor de corecție, fără schimbarea serverului. Funcția temporară și atribuirea
+se restaurează înaintea restarturilor. Nu se declară reușită înainte de CI.
+Markerul homeCorrectionThroughUi respinge artefactele limitate la componente.
+Crearea/activarea Graph și datele istorice rămân limite distincte; proba nouă nu
+transformă întreaga suită în validare de producție.

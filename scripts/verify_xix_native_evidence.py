@@ -27,6 +27,9 @@ def verify(root: Path) -> None:
     if result.get("productionCorrectionWriter") != 'UI adapter uses HomePage persistence; stale, deleted, unauthorized and offline corrections rejected':
         raise AssertionError("Production correction writer probes were not demonstrated")
 
+    if result.get("homeCorrectionThroughUi") != 'actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal':
+        raise AssertionError("HomePage correction UI and permission probes were not demonstrated")
+
     required = (
         "connectedFlow", "craiova11", "sameAttemptRetry", "twoNativeClients",
         "unauthorizedTeam", "legacyAndDeletion", "offlineBeforeStart",

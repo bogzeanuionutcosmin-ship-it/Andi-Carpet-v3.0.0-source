@@ -390,6 +390,67 @@ void main() {
     await expectLater(restoreAtomically(otherDb,{'records':{for(var i=0;i<401;i++)'large-$i':{'teamId':'craiova'}}},source:'oversized'),throwsA(isA<StateError>()));
     expect((await otherDb.collection('records').get()).size,snapshot.length);
     evidence['restore']='admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records';
+    // Mount the real application and let HomePage supply the correction
+    // callback and permission result. Grants exist only in the demo emulator.
+    final uiPermissions=['viewDashboard','viewProgram','editProgram','viewCentralizer','editCentralizer'];
+    await otherDb.doc('functions/xix-ui-editor').set({
+      'name':'Synthetic UI editor','active':true,'permissions':uiPermissions,
+    });
+    await otherDb.doc('users/$uid').update({'functionIds':['xix-ui-editor']});
+    await tester.pumpWidget(const app.AndiCarpetaApp());
+    Future<void> pumpUntil(bool Function() ready,String reason) async {
+      for(var n=0;n<120&&!ready();n++){
+        await tester.pump(const Duration(milliseconds:200));
+      }
+      expect(ready(),true,reason:reason);
+    }
+    final centralNav=find.text('Central.');
+    final centralWideNav=find.text('Centralizator');
+    await pumpUntil(()=>centralNav.evaluate().isNotEmpty||centralWideNav.evaluate().isNotEmpty,
+      'Actual HomePage must load the synthetic editor navigation');
+    await tester.tap(centralNav.evaluate().isNotEmpty?centralNav:centralWideNav);
+    await tester.pumpAndSettle();
+    final mainCentralizer=find.byType(app.CentralizerPage);
+    await pumpUntil((){
+      if(mainCentralizer.evaluate().isEmpty)return false;
+      final page=tester.widget<app.CentralizerPage>(mainCentralizer);
+      return page.canEditCentralizer&&page.records.any((record)=>record.id==ref.id);
+    },'Actual HomePage must grant correction and load the server record');
+    final mainSearch=find.descendant(of:mainCentralizer,matching:find.byType(TextField));
+    await tester.enterText(mainSearch,'Craiova 01');await tester.pumpAndSettle();
+    final mainLocation=find.widgetWithText(ExpansionTile,'Craiova 01');
+    await tester.ensureVisible(mainLocation);await tester.tap(mainLocation);
+    await tester.pumpAndSettle();
+    Future<void> correctFromHome(String oldFinish,String newFinish) async {
+      final row=find.ancestor(of:find.text('16.10.2026 · 23:55–$oldFinish'),matching:find.byType(ListTile));
+      final edit=find.descendant(of:row,matching:find.byTooltip('Corectează data, orele și fațada'));
+      expect(edit,findsOneWidget);
+      await tester.ensureVisible(edit);await tester.tap(edit);await tester.pumpAndSettle();
+      final fields=find.descendant(of:find.byType(AlertDialog),matching:find.byType(TextField));
+      await tester.enterText(fields.at(1),newFinish);await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Salvează'));await tester.tap(find.text('Salvează'));
+      await pumpUntil(()=>find.text('Data, orele și fațada au fost salvate.').evaluate().isNotEmpty,
+        'HomePage correction must report server-confirmed success');
+      await tester.pumpAndSettle();
+      final server=await ref.get(const GetOptions(source:Source.server));
+      expect(server.metadata.isFromCache,false);expect(server.metadata.hasPendingWrites,false);
+      expect((server.data()!['finishedAt'] as Timestamp).toDate(),DateTime(2026,10,16,0,int.parse(newFinish.split(':')[1])));
+      expect(server.data()!['facadeDone'],true);
+      ScaffoldMessenger.of(tester.element(mainCentralizer)).clearSnackBars();
+      await tester.pumpAndSettle();
+    }
+    await correctFromHome('00:20','00:21');
+    await correctFromHome('00:21','00:20');
+    await otherDb.doc('functions/xix-ui-editor').update({
+      'permissions':uiPermissions.where((permission)=>permission!='editCentralizer').toList(),
+    });
+    await pumpUntil(()=>!tester.widget<app.CentralizerPage>(mainCentralizer).canEditCentralizer,
+      'HomePage must remove correction permission after the function changes');
+    expect(find.byTooltip('Corectează data, orele și fațada'),findsNothing);
+    expect((await ref.get(const GetOptions(source:Source.server))).data()!['finishedAt'],night['finishedAt']);
+    await otherDb.doc('users/$uid').update({'functionIds':['worker']});
+    await otherDb.doc('functions/xix-ui-editor').delete();
+    evidence['homeCorrectionThroughUi']='actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal';
     evidence['completed']=true;
     File('${out.path}/observations.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(evidence));
     // Wait for the host to confirm that both native artifacts were copied.
