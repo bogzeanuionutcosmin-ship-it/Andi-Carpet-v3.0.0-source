@@ -32,8 +32,10 @@ void main() {
       await tester.tap(edit);
       await tester.pumpAndSettle();
       expect(find.text('Corectează intervenția'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).at(0), '09:15');
-      await tester.enterText(find.byType(TextField).at(1), '10:45');
+      final fields = find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField));
+      expect(fields, findsNWidgets(2));
+      await tester.enterText(fields.at(0), '09:15');
+      await tester.enterText(fields.at(1), '10:45');
       await tester.tap(find.byType(SwitchListTile));
       await tester.pumpAndSettle();
       await tester.tap(find.text(save ? 'Salvează' : 'Anulează'));
