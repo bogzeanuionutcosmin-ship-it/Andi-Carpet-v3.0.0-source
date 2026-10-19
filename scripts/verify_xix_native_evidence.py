@@ -19,7 +19,7 @@ def verify(root: Path) -> None:
         raise AssertionError("Native scenario did not reach its completion marker")
 
     required = (
-        "connectedFlow", "sameAttemptRetry", "twoNativeClients",
+        "connectedFlow", "craiova11", "sameAttemptRetry", "twoNativeClients",
         "unauthorizedTeam", "legacyAndDeletion", "offlineBeforeStart",
         "revokedProfile", "restore", "pdf",
     )
@@ -30,12 +30,34 @@ def verify(root: Path) -> None:
     connected = result["connectedFlow"]
     if not isinstance(connected, dict):
         raise AssertionError("Connected flow evidence must be an object")
-    if connected.get("expected") != "one completed record after double taps and server reload":
-        raise AssertionError("Connected flow did not declare its expected server-reload assertion")
-    if type(connected.get("observed")) is not int or connected["observed"] != 1:
-        raise AssertionError("Connected flow did not persist exactly one record")
+    if connected.get("expected") != "11 completed Craiova Dashboard records after double taps and server reload":
+        raise AssertionError("Connected flow did not declare the 11-record Dashboard/server-reload assertion")
+    if type(connected.get("observed")) is not int or connected["observed"] != 11:
+        raise AssertionError("Connected flow did not persist exactly 11 records")
     if not isinstance(connected.get("id"), str) or not connected["id"].strip():
         raise AssertionError("Connected flow is missing the persisted record ID")
+
+    scenario = result["craiova11"]
+    if not isinstance(scenario, dict):
+        raise AssertionError("Craiova 11 evidence must be an object")
+    for key, expected in (("observed", 11), ("day15", 6), ("day16", 5),
+                          ("uniqueIds", 11), ("centralizerCount", 11),
+                          ("dashboardScheduleItems", 11), ("pdfMatchedScheduleItems", 11),
+                          ("plannedRowRecordCount", 0)):
+        if type(scenario.get(key)) is not int or scenario[key] != expected:
+            raise AssertionError(f"Craiova 11 evidence {key} must be {expected}")
+    markers = scenario.get("pdfMarkers")
+    if (
+        not isinstance(markers, list)
+        or len(markers) != 11
+        or any(not isinstance(marker, str) or not marker.strip() for marker in markers)
+        or len(set(markers)) != 11
+    ):
+        raise AssertionError("Craiova PDF must declare 11 unique non-empty location markers")
+    if scenario.get("plannedRowName") != "Craiova planificată":
+        raise AssertionError("Craiova PDF planned-row marker is missing")
+    if scenario.get("scheduleDatesMatchExecutions") is not True:
+        raise AssertionError("Craiova schedule dates do not match reloaded execution event dates")
 
     if result["sameAttemptRetry"] != "one document, identical payload accepted":
         raise AssertionError("Same-attempt retry evidence was not demonstrated")
@@ -66,8 +88,8 @@ def verify(root: Path) -> None:
         raise AssertionError("Revoked profile rejection was not demonstrated")
     if result["restore"] != "admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records":
         raise AssertionError("Atomic restore rollback evidence was not demonstrated")
-    if result["pdf"] != "real builder with data reloaded from native Firestore; missing registry retained":
-        raise AssertionError("Native Firestore data was not shown in the generated PDF")
+    if result["pdf"] != "11 Firestore-reloaded Craiova records rendered; planned row retained":
+        raise AssertionError("11 reloaded Craiova records were not rendered into the PDF")
 
 
 if __name__ == "__main__":
