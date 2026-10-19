@@ -448,15 +448,25 @@ class _MapPageState extends State<MapPage> {
 
   @override
   Widget build(BuildContext context) {
-    final positioned = widget.locations.where((l) =>
-      l.latitude != null && l.longitude != null &&
-      _selectedCategoryIds.contains(l.categoryId) &&
-      _selectedStatuses.contains(l.status)
-    ).toList();
-    final unpositioned = widget.locations.where((l) =>
-      (l.latitude == null || l.longitude == null) &&
-      _selectedCategoryIds.contains(l.categoryId) &&
-      _selectedStatuses.contains(l.status)
+    final positioned = filterMapLocations<Location, LocationStatus>(
+      widget.locations,
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedStatuses: _selectedStatuses,
+      categoryIdOf: (location) => location.categoryId,
+      statusOf: (location) => location.status,
+      hasCoordinatesOf: (location) =>
+          location.latitude != null && location.longitude != null,
+      hasCoordinates: true,
+    );
+    final unpositioned = filterMapLocations<Location, LocationStatus>(
+      widget.locations,
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedStatuses: _selectedStatuses,
+      categoryIdOf: (location) => location.categoryId,
+      statusOf: (location) => location.status,
+      hasCoordinatesOf: (location) =>
+          location.latitude != null && location.longitude != null,
+      hasCoordinates: false,
     ).length;
     final compact = MediaQuery.sizeOf(context).width < 650;
     return _Page(
@@ -653,11 +663,16 @@ class _MapPageState extends State<MapPage> {
   }
 
   Widget _unpositionedPanel() {
-    final items = widget.locations.where((l) =>
-      (l.latitude == null || l.longitude == null) &&
-      _selectedCategoryIds.contains(l.categoryId) &&
-      _selectedStatuses.contains(l.status)
-    ).toList()..sort((a,b) {
+    final items = filterMapLocations<Location, LocationStatus>(
+      widget.locations,
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedStatuses: _selectedStatuses,
+      categoryIdOf: (location) => location.categoryId,
+      statusOf: (location) => location.status,
+      hasCoordinatesOf: (location) =>
+          location.latitude != null && location.longitude != null,
+      hasCoordinates: false,
+    )..sort((a,b) {
       final cat = _categoryName(a).toLowerCase().compareTo(_categoryName(b).toLowerCase());
       return cat != 0 ? cat : a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
@@ -711,12 +726,17 @@ class _MapPageState extends State<MapPage> {
       cats.add(LocationCategory(id: id, name: categoryName(widget.categories, id), colorValue: categoryColor(widget.categories, id).value));
     }
     return cats.map((cat) {
-      final items = widget.locations.where((l) =>
-        l.categoryId == cat.id &&
-        l.latitude != null && l.longitude != null &&
-        _selectedCategoryIds.contains(cat.id) &&
-        _selectedStatuses.contains(l.status)
-      ).toList()..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      final items = filterMapLocations<Location, LocationStatus>(
+        widget.locations,
+        selectedCategoryIds: _selectedCategoryIds,
+        selectedStatuses: _selectedStatuses,
+        categoryIdOf: (location) => location.categoryId,
+        statusOf: (location) => location.status,
+        hasCoordinatesOf: (location) =>
+            location.latitude != null && location.longitude != null,
+        hasCoordinates: true,
+        categoryId: cat.id,
+      )..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       if (items.isEmpty) return const SizedBox.shrink();
       return Card(
         child: ExpansionTile(
