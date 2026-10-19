@@ -36,7 +36,7 @@ class RestartDiagnosticsTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         root = ET.fromstring(
             '<hierarchy><node package="com.example.andi_carpeta" '
-            'text="Echipe acum" content-desc="Craiova XIX" />'
+            'text="Echipe acum" content-desc="Craiova XIX\\nAcasă" />'
             '<node package="com.example.andi_carpeta" selected="true" '
             'text="Grafic" /></hierarchy>'
         )
