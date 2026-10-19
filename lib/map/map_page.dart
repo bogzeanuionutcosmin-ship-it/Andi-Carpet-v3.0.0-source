@@ -49,9 +49,8 @@ class _MapPageState extends State<MapPage> {
   DateTime? _roadGeometryRequestedAt;
 
   Future<List<List<double>>?> _loadRoadGeometry(List<LatLng> points) {
-    final key = points.map((p) => '${p.latitude.toStringAsFixed(6)},${p.longitude.toStringAsFixed(6)}').join('|');
-    final stale = _roadGeometryRequestedAt == null ||
-        DateTime.now().difference(_roadGeometryRequestedAt!) > const Duration(minutes: 5);
+    final key = mapRoadGeometryCacheKey(points);
+    final stale = isMapRoadGeometryStale(_roadGeometryRequestedAt, DateTime.now());
     if (_roadGeometryKey != key || _roadGeometryFuture == null || stale) {
       _roadGeometryKey = key;
       _roadGeometryRequestedAt = DateTime.now();

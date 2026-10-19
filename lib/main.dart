@@ -28,6 +28,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
+import 'map/map_geometry_cache_policy.dart';
 import 'centralizer/correction_writer.dart';
 import 'centralizer/manual_execution_defaults.dart';
 import 'operations/record_writer.dart';
