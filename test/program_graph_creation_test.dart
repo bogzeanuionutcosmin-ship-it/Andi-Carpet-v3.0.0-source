@@ -47,6 +47,8 @@ void main() {
     await tester.tap(find.text('Continuă'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Craiova XI');
+    await tester.pumpAndSettle();
+    expect(find.text('Creează graficul').hitTestable(), findsOneWidget);
     await tester.tap(find.text('Creează graficul'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);

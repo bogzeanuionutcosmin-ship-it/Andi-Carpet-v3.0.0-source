@@ -198,6 +198,8 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIn("find.text('Craiova 11')", source)
         self.assertIn("tester.takeException()", source)
         self.assertIn("await createGraphThroughUi();", source)
+        self.assertIn("await pendingScheduleWrite!.timeout(const Duration(seconds:30));", source)
+        self.assertIn("\'closed\':entry.closed", source)
         self.assertIn("find.text('Creează grafic')", source)
         self.assertIn("find.widgetWithText(CheckboxListTile,location.name)", source)
         self.assertIn("tester.enterText(find.byType(TextField),location.name)", source)

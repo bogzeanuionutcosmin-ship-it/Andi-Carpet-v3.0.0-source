@@ -33,6 +33,7 @@ void main() {
       return app.Location(id:'craiova-$suffix',name:'Craiova $suffix',address:'Craiova $suffix',type:app.LocationType.magic);
     });
     final records=<app.CentralizerRecord>[];
+    Future<void>? pendingScheduleWrite;
     Future<void> save(app.CentralizerRecord record) async {
       final data=app.recordDocumentData(record);
       await saveRecordCompared(db,record.id,data,expected:record.writeBaseline);
@@ -44,6 +45,7 @@ void main() {
         await db.collection('schedules').doc(entry.id).set({
           'teamId':entry.teamId,'graphId':entry.graphId,'graphName':entry.graphName,
           'date':Timestamp.fromDate(entry.date),'started':entry.started,
+          'closed':entry.closed,'active':entry.active,'paused':entry.paused,
           'items':entry.items.map((item)=>{'locationId':item.locationId}).toList(),
         });
       }
@@ -55,7 +57,9 @@ void main() {
         teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],cars:[],locations:graphLocations,categories:[],
         schedules:schedules,records:records,settings:app.AppSettings(),
         canEditTeam:(_)=>true,canEditProgram:true,userName:(_)=>'Editor',
-        onChanged:(){},notifyTeam:(_,__,___){},log:(_,__) {},saveSchedules:persistSchedules,
+        onChanged:(){},notifyTeam:(_,__,___){},log:(_,__) {},saveSchedules:(updated){
+          final pending=persistSchedules(updated);pendingScheduleWrite=pending;return pending;
+        },
       ))));
       await tester.pumpAndSettle();
       expect(tester.takeException(),isNull,reason:'The Graph page must not raise Flutter framework exceptions');
@@ -80,7 +84,12 @@ void main() {
       await tester.tap(find.text('Continuă'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first,'Craiova XIX');
+      await tester.pumpAndSettle();
+      expect(find.text('Creează graficul').hitTestable(),findsOneWidget);
       await tester.tap(find.text('Creează graficul'));
+      await tester.pumpAndSettle();
+      expect(pendingScheduleWrite,isNotNull,reason:'Graph UI must invoke its persistence callback');
+      await pendingScheduleWrite!.timeout(const Duration(seconds:30));
       await tester.pumpAndSettle();
       expect(tester.takeException(),isNull,reason:'Creating a Graph through the UI must not raise Flutter framework exceptions');
       expect(schedules,hasLength(1));
@@ -93,6 +102,7 @@ void main() {
       expect(savedGraph.metadata.hasPendingWrites,false);
       expect(savedGraph.data()!['graphName'],'Craiova XIX');
       expect(savedGraph.data()!['teamId'],'craiova');
+      expect(savedGraph.data()!['closed'],false);
       expect((savedGraph.data()!['items'] as List).map((item)=>item['locationId']).toList(),
         graphLocations.map((location)=>location.id).toList());
       evidence['graphCreatedThroughUi']=true;
@@ -228,6 +238,7 @@ void main() {
     expect(correctionFields,findsNWidgets(2));
     await tester.enterText(correctionFields.at(0),'23:55');
     await tester.enterText(correctionFields.at(1),'00:20');
+    await tester.pumpAndSettle();
     final facadeSwitch=find.descendant(of:find.byType(AlertDialog),matching:find.byType(SwitchListTile));
     await tester.ensureVisible(facadeSwitch);await tester.tap(facadeSwitch);
     await tester.pumpAndSettle();await tester.tap(find.text('Salvează'));
