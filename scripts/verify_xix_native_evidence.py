@@ -25,6 +25,10 @@ def verify(root: Path) -> None:
     missing = [key for key in required if key not in result]
     if missing:
         raise AssertionError(f"Missing native assertions: {missing}")
+    if not isinstance(result["connectedFlow"], dict):
+        raise AssertionError("Connected flow evidence must be an object")
+    if not isinstance(result["twoNativeClients"], dict):
+        raise AssertionError("Cross-client evidence must be an object")
     if result["connectedFlow"].get("observed") != 1:
         raise AssertionError("Connected flow did not persist exactly one record")
     exact_witnesses = {
