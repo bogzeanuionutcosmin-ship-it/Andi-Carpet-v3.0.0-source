@@ -5,12 +5,19 @@ mixin _AdminSettingsActions on State<AdminPanelPage> {
   AppSettings get settings;
 
 Future<void> _saveUiSettings() async {
+    final androidDownloadUrl = settings.androidDownloadUrl.trim();
+    if (androidDownloadUrl.isNotEmpty && validatedAndroidApkUrl(androidDownloadUrl) == null) {
+      if (mounted) {
+        showErrorMessage(context, 'Linkul APK salvat trebuie să fie HTTPS și public. Corectează sau golește linkul înainte de salvarea setărilor.');
+      }
+      return;
+    }
     try {
       await FirebaseFirestore.instance.collection('meta').doc('uiSettings').set({
         'background': settings.background,
         'brandingBackgroundId': settings.brandingBackgroundId,
         'brandingLogoId': settings.brandingLogoId,
-        'androidDownloadUrl': settings.androidDownloadUrl,
+        'androidDownloadUrl': androidDownloadUrl,
         'smsPreviousDayTime': settings.smsPreviousDayTime,
         'smsTemplates': settings.smsTemplates,
         'backgroundOpacity': settings.backgroundOpacity,
@@ -111,7 +118,10 @@ Future<void> _saveUiSettings() async {
       actions:[TextButton(onPressed:()=>Navigator.pop(d),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(d,c.text.trim()),child:const Text('Salvează'))],
     ));
     c.dispose();if(value==null)return;
-    if(value.isNotEmpty){final uri=Uri.tryParse(value);if(uri==null||!(uri.scheme=='https'||uri.scheme=='http')){if(mounted)showErrorMessage(context,'Linkul trebuie să înceapă cu https:// sau http://');return;}}
+    if(value.isNotEmpty && validatedAndroidApkUrl(value)==null){
+      if(mounted)showErrorMessage(context,'Linkul APK trebuie să fie HTTPS și public, fără date de autentificare în URL.');
+      return;
+    }
     setState(()=>settings.androidDownloadUrl=value);await _saveUiSettings();
   }
 

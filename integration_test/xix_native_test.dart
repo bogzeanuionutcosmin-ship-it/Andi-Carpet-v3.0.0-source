@@ -145,6 +145,14 @@ void main() {
     evidence['restore']='admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records';
     evidence['completed']=true;
     File('${out.path}/observations.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(evidence));
+    // Wait for the host to confirm that both native artifacts were copied.
+    final receipt=File('${out.path}/host-captured.ok');
+    var received=false;
+    for (var n=0;n<120;n++) {
+      if (receipt.existsSync()) { received=true; break; }
+      await Future<void>.delayed(const Duration(milliseconds:500));
+    }
+    expect(received,isTrue,reason:'Host evidence capture acknowledgement missing');
     await otherApp.delete();
   },timeout:const Timeout(Duration(minutes:8)));
 }

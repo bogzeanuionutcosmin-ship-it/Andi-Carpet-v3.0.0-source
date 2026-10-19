@@ -30,6 +30,8 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: Verify native evidence validator contract
+        run: python3 -m unittest discover -s test -p 'xix_native_evidence_test.py'
       - name: Reproduce pinned legacy comparison and operational-day defects
         run: |
           mkdir -p xix-evidence
@@ -115,7 +117,8 @@ jobs:
       - name: Verify native PDF and checksums
         if: always()
         run: |
-          if test -f xix-evidence/native-flow.pdf; then
+          if test -f xix-evidence/native-flow.pdf && test -f xix-evidence/observations.json; then
+            python3 scripts/verify_xix_native_evidence.py
             sudo apt-get update -qq
             sudo apt-get install -y poppler-utils
             pdfinfo xix-evidence/native-flow.pdf > xix-evidence/native-pdf-info.txt

@@ -83,7 +83,30 @@ def wait_screen(stem, title, alternatives, required=(), attempts=30):
             pass
         time.sleep(1)
     (OUT / f'{stem}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
-    assert found, f'Expected loaded main-entry screen absent: {title}'
+    if not found:
+        # Preserve the last observed accessibility state rather than hiding the
+        # reason behind a generic timeout. This is diagnostic-only: no screen
+        # assertion is relaxed and the test still fails closed.
+        details = ['Expected loaded main-entry screen absent: ' + title]
+        try:
+            root, raw = state()
+            (OUT / f'{stem}-failure.xml').write_bytes(raw)
+            observed = sorted(labels(root))
+            packages = sorted({node.get('package', '') for node in root.iter('node')})
+            details.append('Observed packages: ' + repr(packages))
+            details.append('Expected title visible: ' + str(title in observed))
+            details.append('Missing required labels: ' + repr(sorted(set(required) - set(observed))))
+            details.append('Observed labels: ' + repr(observed[:100]))
+        except (subprocess.CalledProcessError, ET.ParseError, subprocess.TimeoutExpired) as exc:
+            details.append('Final UI dump unavailable: ' + repr(exc))
+        try:
+            focus = adb('shell', 'dumpsys', 'window', 'windows').decode(errors='replace')
+            (OUT / f'{stem}-window-focus.txt').write_text(
+                '\n'.join(line for line in focus.splitlines()
+                          if 'mCurrentFocus=' in line or 'mFocusedApp=' in line))
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            details.append('Window focus unavailable: ' + repr(exc))
+        raise AssertionError(' | '.join(details))
 
 
 def tap_label(alternatives):
@@ -107,6 +130,23 @@ def tap_label(alternatives):
     raise AssertionError(f'Missing navigation: {alternatives}')
 
 
+def login_synthetic_editor():
+    """Authenticate through the actual UI against the seeded demo emulator."""
+    root, _ = state()
+    if 'Intră în cont' not in labels(root):
+        return
+    edits = [node for node in root.iter('node')
+             if node.get('class', '').endswith('EditText')]
+    assert len(edits) >= 2, f'Login form missing two editable fields: {len(edits)}'
+    for node, value in zip(edits[:2], ('editor@andi.test', 'synthetic-only-123')):
+        bounds = list(map(int, re.findall(r'\d+', node.get('bounds', ''))))
+        assert len(bounds) == 4
+        adb('shell', 'input', 'tap', str((bounds[0]+bounds[2])//2),
+            str((bounds[1]+bounds[3])//2))
+        adb('shell', 'input', 'text', value)
+    tap_label(('Intră în cont',))
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     marker = 'XIX_RESTART_BEGIN_' + str(time.time_ns())
@@ -116,6 +156,8 @@ def main():
             adb('shell', 'am', 'force-stop', PACKAGE)
             result = adb('shell', 'am', 'start', '-W', '-n', f'{PACKAGE}/.MainActivity').decode()
             assert 'Error' not in result, result
+            if cycle == 0:
+                login_synthetic_editor()
             wait_screen(f'operational-restart-{cycle}', 'Echipe acum', ('Acasă',),
                         required=('Craiova XIX',))
         print('Actual main entry, loaded synthetic team and two authenticated cold restarts: PASS')
