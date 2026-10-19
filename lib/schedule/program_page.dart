@@ -810,18 +810,17 @@ class _ProgramPageState extends State<ProgramPage> {
     if(facadeAccepted!=true)return;
 
     DateTime startDate=operationalWorkDate(DateTime.now());
-    final name=TextEditingController(text:graphDefaultName(startDate));
+    var graphNameInput=graphDefaultName(startDate);
     final meta=await showDialog<Map<String,dynamic>>(context:context,builder:(c)=>StatefulBuilder(builder:(c,setD){
       final endDate=DateTime(startDate.year,startDate.month,startDate.day).add(Duration(days:drafted.length-1));
       return AlertDialog(title:const Text('Finalizează Graficul de lucru'),content:SizedBox(width:520,child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
-        TextField(controller:name,decoration:const InputDecoration(labelText:'Nume grafic')),
+        TextFormField(initialValue:graphNameInput,onChanged:(value)=>graphNameInput=value,decoration:const InputDecoration(labelText:'Nume grafic')),
         const SizedBox(height:12),
         ListTile(contentPadding:EdgeInsets.zero,leading:const Icon(Icons.play_circle_outline),title:const Text('Data început'),subtitle:Text(formatDate(startDate)),trailing:const Icon(Icons.calendar_month),onTap:()async{final d=await showDatePicker(context:c,firstDate:DateTime(2025),lastDate:DateTime(2035),initialDate:startDate);if(d!=null)setD(()=>startDate=d);}),
         ListTile(contentPadding:EdgeInsets.zero,leading:const Icon(Icons.flag_outlined),title:const Text('Data final'),subtitle:Text(formatDate(endDate))),
         Text('${drafted.length} zile · ${drafted.fold<int>(0,(a,b)=>a+b.length)} locații selectate'),
-      ])),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Înapoi')),FilledButton(onPressed:()=>Navigator.pop(c,{'name':name.text.trim().isEmpty?graphDefaultName(startDate):name.text.trim(),'start':startDate}),child:const Text('Creează graficul'))]);
+      ])),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Înapoi')),FilledButton(onPressed:()=>Navigator.pop(c,{'name':graphNameInput.trim().isEmpty?graphDefaultName(startDate):graphNameInput.trim(),'start':startDate}),child:const Text('Creează graficul'))]);
     }));
-    name.dispose();
     if(meta==null)return;
     final graphId=idNow();final graphName=meta['name'] as String;final start=meta['start'] as DateTime;
     try{
