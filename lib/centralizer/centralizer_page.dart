@@ -18,6 +18,117 @@ class CentralizerPage extends StatefulWidget {
   @override State<CentralizerPage> createState()=>_CentralizerPageState();
 }
 
+class _ManualExecutionDraft {
+  final Location? location;
+  final String teamId;
+  final DateTime date;
+  final String startTime;
+  final String finishTime;
+  final String note;
+  final bool facadeDone;
+  const _ManualExecutionDraft({required this.location, required this.teamId, required this.date, required this.startTime, required this.finishTime, required this.note, required this.facadeDone});
+}
+
+class _ManualExecutionDialog extends StatefulWidget {
+  final String title;
+  final List<Location> locations;
+  final List<Team> allowedTeams;
+  final LocationType type;
+  final Location? initialLocation;
+  const _ManualExecutionDialog({required this.title, required this.locations, required this.allowedTeams, required this.type, required this.initialLocation});
+  @override State<_ManualExecutionDialog> createState() => _ManualExecutionDialogState();
+}
+
+class _ManualExecutionDialogState extends State<_ManualExecutionDialog> {
+  late final TextEditingController _start;
+  late final TextEditingController _finish;
+  late final TextEditingController _note;
+  late Location? _selectedLocation = widget.initialLocation;
+  late String _selectedTeamId = widget.allowedTeams.first.id;
+  late DateTime _date = DateTime.now();
+  bool _facadeDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    final earlier = now.subtract(const Duration(hours: 1));
+    _start = TextEditingController(text: '${two(earlier.hour)}:${two(earlier.minute)}');
+    _finish = TextEditingController(text: '${two(now.hour)}:${two(now.minute)}');
+    _note = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _start.dispose();
+    _finish.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final choices = widget.locations.where((location) => location.type == widget.type).toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return AlertDialog(
+      title: Text(widget.title),
+      content: SizedBox(
+        width: 560,
+        child: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            DropdownButtonFormField<String>(
+              initialValue: _selectedLocation?.id,
+              decoration: const InputDecoration(labelText: 'Locație'),
+              items: choices.map((location) => DropdownMenuItem(value: location.id, child: Text(location.name, overflow: TextOverflow.ellipsis))).toList(),
+              onChanged: widget.initialLocation != null ? null : (value) => setState(() => _selectedLocation = value == null ? null : choices.firstWhere((location) => location.id == value)),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedTeamId,
+              decoration: const InputDecoration(labelText: 'Echipă'),
+              items: widget.allowedTeams.map((team) => DropdownMenuItem(value: team.id, child: Text(team.name))).toList(),
+              onChanged: (value) { if (value != null) setState(() => _selectedTeamId = value); },
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              contentPadding: EdgeInsets.zero, title: const Text('Data execuției'),
+              subtitle: Text(formatDate(_date)), trailing: const Icon(Icons.calendar_month),
+              onTap: () async {
+                final date = await showDatePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime.now().add(const Duration(days: 1)), initialDate: _date);
+                if (date != null && mounted) setState(() => _date = date);
+              },
+            ),
+            Row(children: [
+              Expanded(child: TextField(controller: _start, decoration: const InputDecoration(labelText: 'START HH:MM'))),
+              const SizedBox(width: 10),
+              Expanded(child: TextField(controller: _finish, decoration: const InputDecoration(labelText: 'FINAL HH:MM'))),
+            ]),
+            const SizedBox(height: 10),
+            TextField(controller: _note, maxLines: 2, decoration: const InputDecoration(labelText: 'Observație (opțional)', hintText: 'Ex.: a doua spălare / sală preluată de la altă echipă')),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero, value: _facadeDone,
+              title: const Text('Fațadă realizată'),
+              subtitle: const Text('Bifează numai dacă fațada a fost făcută efectiv la această intervenție.'),
+              onChanged: (value) => setState(() => _facadeDone = value),
+            ),
+          ]),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Anulează')),
+        FilledButton.icon(
+          onPressed: _selectedLocation == null ? null : () => Navigator.pop(context, _ManualExecutionDraft(
+            location: _selectedLocation, teamId: _selectedTeamId, date: _date,
+            startTime: _start.text, finishTime: _finish.text, note: _note.text, facadeDone: _facadeDone,
+          )),
+          icon: const Icon(Icons.save), label: const Text('Adaugă'),
+        ),
+      ],
+    );
+  }
+}
+
 class _CentralizerPageState extends State<CentralizerPage> {
   int typeIndex = 0;
   bool exporting = false;
@@ -182,79 +293,85 @@ class _CentralizerPageState extends State<CentralizerPage> {
   }
 
   Future<void> _showManualExecution({Location? location}) async {
-    final allowedTeams = widget.isAdmin ? widget.teams : widget.teams.where((t)=>widget.canEditTeam(t.id)).toList();
-    if (allowedTeams.isEmpty) { if(mounted)showErrorMessage(context,'Nu ai o echipă în care poți adăuga execuții.'); return; }
-    var selectedLocation = location;
-    var selectedTeamId = allowedTeams.first.id;
-    var date = DateTime.now();
-    final start = TextEditingController(text:'${two((DateTime.now().subtract(const Duration(hours:1))).hour)}:${two((DateTime.now().subtract(const Duration(hours:1))).minute)}');
-    final finish = TextEditingController(text:'${two(DateTime.now().hour)}:${two(DateTime.now().minute)}');
-    final reason = TextEditingController();
-    var facadeDone = false;
-    final result = await showDialog<bool>(context:context,builder:(c)=>StatefulBuilder(builder:(c,setD){
-      final choices=widget.locations.where((l)=>l.type==type).toList()..sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      return AlertDialog(
-        title:Text(location==null?'Adaugă execuție în Centralizator':'Adaugă încă o execuție'),
-        content:SizedBox(width:560,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
-          DropdownButtonFormField<String>(initialValue:selectedLocation?.id,decoration:const InputDecoration(labelText:'Locație'),items:choices.map((l)=>DropdownMenuItem(value:l.id,child:Text(l.name,overflow:TextOverflow.ellipsis))).toList(),onChanged:location!=null?null:(v)=>setD(()=>selectedLocation=v==null?null:choices.firstWhere((l)=>l.id==v))),
-          const SizedBox(height:10),
-          DropdownButtonFormField<String>(initialValue:selectedTeamId,decoration:const InputDecoration(labelText:'Echipă'),items:allowedTeams.map((t)=>DropdownMenuItem(value:t.id,child:Text(t.name))).toList(),onChanged:(v){if(v!=null)setD(()=>selectedTeamId=v);}),
-          const SizedBox(height:10),
-          ListTile(contentPadding:EdgeInsets.zero,title:const Text('Data execuției'),subtitle:Text(formatDate(date)),trailing:const Icon(Icons.calendar_month),onTap:()async{final d=await showDatePicker(context:c,firstDate:DateTime(2020),lastDate:DateTime.now().add(const Duration(days:1)),initialDate:date);if(d!=null&&c.mounted)setD(()=>date=d);}),
-          Row(children:[Expanded(child:TextField(controller:start,decoration:const InputDecoration(labelText:'START HH:MM'))),const SizedBox(width:10),Expanded(child:TextField(controller:finish,decoration:const InputDecoration(labelText:'FINAL HH:MM')))]),
-          const SizedBox(height:10),
-          TextField(controller:reason,maxLines:2,decoration:const InputDecoration(labelText:'Observație (opțional)',hintText:'Ex.: a doua spălare / sală preluată de la altă echipă')),
-          const SizedBox(height:8),
-          SwitchListTile(
-            contentPadding:EdgeInsets.zero,
-            value:facadeDone,
-            title:const Text('Fațadă realizată'),
-            subtitle:const Text('Bifează numai dacă fațada a fost făcută efectiv la această intervenție.'),
-            onChanged:(v)=>setD(()=>facadeDone=v),
-          ),
-        ]))),
-        actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton.icon(onPressed:selectedLocation==null?null:()=>Navigator.pop(c,true),icon:const Icon(Icons.save),label:const Text('Adaugă'))],
-      );
-    }))??false;
-    if(!result||selectedLocation==null){start.dispose();finish.dispose();reason.dispose();return;}
-    final base=DateTime(date.year,date.month,date.day);
-    DateTime? parse(String raw){final p=raw.trim().split(':');if(p.length!=2)return null;final h=int.tryParse(p[0]),m=int.tryParse(p[1]);if(h==null||m==null||h<0||h>23||m<0||m>59)return null;return DateTime(base.year,base.month,base.day,h,m);}
-    final st=parse(start.text);var fn=parse(finish.text);start.dispose();finish.dispose();
-    if(st==null||fn==null){reason.dispose();if(mounted)showErrorMessage(context,'Orele trebuie scrise HH:MM.');return;}
-    if(fn.isBefore(st))fn=fn.add(const Duration(days:1));
-    if(!fn.isAfter(st!)){
-      reason.dispose();
-      if(mounted)showErrorMessage(context,'Ora FINAL trebuie să fie după ora START.');
+    final allowedTeams = widget.isAdmin
+        ? widget.teams
+        : widget.teams.where((team) => widget.canEditTeam(team.id)).toList();
+    if (allowedTeams.isEmpty) {
+      if (mounted) showErrorMessage(context, 'Nu ai o echipă în care poți adăuga execuții.');
       return;
     }
-    final note=reason.text.trim();reason.dispose();
-    final l=selectedLocation!;
-    // A correction to an existing execution must use Edit, not create a second record.
-    final existing=widget.records.where((record)=>
-      record.locationId==l.id &&
-      record.teamId==selectedTeamId &&
-      record.status==WorkAttemptStatus.completed &&
-      record.startedAt!=null &&
-      sameDay(record.startedAt!,st!)
+    final draft = await showDialog<_ManualExecutionDraft>(
+      context: context,
+      builder: (_) => _ManualExecutionDialog(
+        title: location == null ? 'Adaugă execuție în Centralizator' : 'Adaugă încă o execuție',
+        locations: widget.locations,
+        allowedTeams: allowedTeams,
+        type: type,
+        initialLocation: location,
+      ),
+    );
+    if (draft == null || draft.location == null) return;
+
+    final base = DateTime(draft.date.year, draft.date.month, draft.date.day);
+    DateTime? parse(String raw) {
+      final parts = raw.trim().split(':');
+      if (parts.length != 2) return null;
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour == null || minute == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+      return DateTime(base.year, base.month, base.day, hour, minute);
+    }
+    final start = parse(draft.startTime);
+    var finish = parse(draft.finishTime);
+    if (start == null || finish == null) {
+      if (mounted) showErrorMessage(context, 'Orele trebuie scrise HH:MM.');
+      return;
+    }
+    if (finish.isBefore(start)) finish = finish.add(const Duration(days: 1));
+    if (!finish.isAfter(start)) {
+      if (mounted) showErrorMessage(context, 'Ora FINAL trebuie să fie după ora START.');
+      return;
+    }
+
+    final note = draft.note.trim();
+    final selectedLocation = draft.location!;
+    final existing = widget.records.where((record) =>
+      record.locationId == selectedLocation.id &&
+      record.teamId == draft.teamId &&
+      record.status == WorkAttemptStatus.completed &&
+      record.startedAt != null &&
+      sameDay(record.startedAt!, start)
     ).toList();
-    if(existing.isNotEmpty){
-      if(!mounted)return;
-      final confirmed=await showDialog<bool>(
-        context:context,
-        builder:(c)=>AlertDialog(
-          title:const Text('Execuție deja înregistrată'),
-          content:Text('Există deja ${existing.length} execuție/execuții finalizate pentru această sală, echipă și dată. Dacă vrei să corectezi data sau orele, folosește butonul de editare al intervenției existente. Adaugi totuși o execuție distinctă?'),
-          actions:[
-            TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),
-            FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Execuție distinctă')),
+    if (existing.isNotEmpty) {
+      if (!mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Execuție deja înregistrată'),
+          content: Text('Există deja ${existing.length} execuție/execuții finalizate pentru această sală, echipă și dată. Dacă vrei să corectezi data sau orele, folosește butonul de editare al intervenției existente. Adaugi totuși o execuție distinctă?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Anulează')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Execuție distinctă')),
           ],
         ),
-      )??false;
-      if(!confirmed)return;
+      ) ?? false;
+      if (!confirmed) return;
     }
-    final r=CentralizerRecord(id:idNow(),teamId:selectedTeamId,locationId:l.id,type:l.type,locationNameSnapshot:l.name,addressSnapshot:l.address,startedAt:st,finishedAt:fn,status:WorkAttemptStatus.completed,refusalReason:note.isEmpty?null:note,keptForLearning:true,facadePlanned:facadeDone,facadeDone:facadeDone);
-    try{await widget.saveRecord(r);widget.log('Execuție manuală adăugată',l.name);if(mounted)showSuccessMessage(context,'Execuția a fost adăugată în Centralizator.');}
-    catch(e){if(mounted)showErrorMessage(context,'Nu s-a putut salva execuția: $e');}
+
+    final record = CentralizerRecord(
+      id: idNow(), teamId: draft.teamId, locationId: selectedLocation.id,
+      type: selectedLocation.type, locationNameSnapshot: selectedLocation.name,
+      addressSnapshot: selectedLocation.address, startedAt: start, finishedAt: finish,
+      status: WorkAttemptStatus.completed, refusalReason: note.isEmpty ? null : note,
+      keptForLearning: true, facadePlanned: draft.facadeDone, facadeDone: draft.facadeDone,
+    );
+    try {
+      await widget.saveRecord(record);
+      widget.log('Execuție manuală adăugată', selectedLocation.name);
+      if (mounted) showSuccessMessage(context, 'Execuția a fost adăugată în Centralizator.');
+    } catch (error) {
+      if (mounted) showErrorMessage(context, 'Nu s-a putut salva execuția: $error');
+    }
   }
 
   Future<void> _editRecord(CentralizerRecord r) async {
