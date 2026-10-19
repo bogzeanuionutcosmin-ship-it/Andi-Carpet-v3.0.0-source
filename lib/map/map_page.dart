@@ -212,18 +212,30 @@ class _MapPageState extends State<MapPage> {
   }
 
   List<String> get _activeRouteGraphIds {
-    final teamId = widget.currentUser.teamId;
-    final active = widget.schedules.where((s) => s.started && !s.closed && (teamId == null || s.teamId == teamId)).toList();
-    final ids = <String>[];
-    for (final s in active) { if (!ids.contains(s.graphId)) ids.add(s.graphId); }
-    return ids;
+    return activeMapRouteGraphIds(
+      widget.schedules,
+      teamId: widget.currentUser.teamId,
+      graphIdOf: (schedule) => schedule.graphId,
+      teamIdOf: (schedule) => schedule.teamId,
+      startedOf: (schedule) => schedule.started,
+      closedOf: (schedule) => schedule.closed,
+    );
   }
 
   List<WorkSchedule> get _routeDays {
-    final ids = _activeRouteGraphIds;
-    if (ids.isEmpty) return <WorkSchedule>[];
-    final id = (_routeGraphId != null && ids.contains(_routeGraphId)) ? _routeGraphId! : ids.first;
-    return widget.schedules.where((s) => s.graphId == id && s.started && !s.closed).toList()..sort((a,b)=>a.date.compareTo(b.date));
+    final graphId = selectedActiveMapRouteGraphId(
+      _activeRouteGraphIds,
+      _routeGraphId,
+    );
+    if (graphId == null) return <WorkSchedule>[];
+    return mapRouteDays(
+      widget.schedules,
+      graphId: graphId,
+      graphIdOf: (schedule) => schedule.graphId,
+      startedOf: (schedule) => schedule.started,
+      closedOf: (schedule) => schedule.closed,
+      dateOf: (schedule) => schedule.date,
+    );
   }
 
   List<Polyline> _rainbowRouteLines() {
