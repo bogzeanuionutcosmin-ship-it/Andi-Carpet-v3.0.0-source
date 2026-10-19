@@ -1515,7 +1515,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         original.type != corrected.type) {
       throw StateError('Corecția intervenției nu este autorizată.');
     }
-    final ref = FirebaseFirestore.instance.collection('records').doc(original.id);
     final expected = <String, Object?>{
       'teamId': original.teamId,
       'locationId': original.locationId,
@@ -1533,17 +1532,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       'facadePlanned': corrected.facadePlanned,
       'updatedAt': FieldValue.serverTimestamp(),
     };
-    await FirebaseFirestore.instance.runTransaction((tx) async {
-      final snapshot = await tx.get(ref);
-      if (!snapshot.exists) {
-        throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
-      }
-      final current = snapshot.data()!;
-      if (!centralizerCorrectionSnapshotMatches(current, expected)) {
-        throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de corectare.');
-      }
-      tx.update(ref, changes);
-    });
+    await correctCentralizerRecordCompared(
+      FirebaseFirestore.instance, original.id, expected: expected, changes: changes,
+    );
     if (!mounted) return;
     setState(() {
       final index = records.indexWhere((item) => item.id == corrected.id);

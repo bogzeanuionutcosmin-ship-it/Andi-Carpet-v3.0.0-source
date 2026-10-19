@@ -28,7 +28,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
-import 'centralizer/correction_snapshot.dart';
+import 'centralizer/correction_writer.dart';
 import 'operations/record_writer.dart';
 import 'operations/atomic_restore.dart';
 import 'utils/date_formatters.dart';

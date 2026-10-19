@@ -4,6 +4,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CENTRALIZER = (ROOT / "lib/centralizer/centralizer_page.dart").read_text()
 HOME = (ROOT / "lib/home/home_page.dart").read_text()
+WRITER = (ROOT / "lib/centralizer/correction_writer.dart").read_text()
 REPORT = (ROOT / "lib/reports/pdf_reports.dart").read_text()
 DATES = (ROOT / "lib/utils/operational_dates.dart").read_text()
 
@@ -12,10 +13,11 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
     def test_correction_keeps_existing_intervention_identity(self):
         self.assertIn("id:r.id,teamId:r.teamId,locationId:r.locationId,type:r.type", CENTRALIZER)
         self.assertIn("await widget.correctRecord(r, updated);", CENTRALIZER)
-        self.assertIn("await FirebaseFirestore.instance.runTransaction((tx) async {", HOME)
-        self.assertIn("if (!snapshot.exists)", HOME)
-        self.assertIn("tx.update(ref, changes);", HOME)
-        self.assertNotIn("tx.set(ref, changes", HOME)
+        self.assertIn("await correctCentralizerRecordCompared(", HOME)
+        self.assertIn("await db.runTransaction((tx) async {", WRITER)
+        self.assertIn("if (!snapshot.exists)", WRITER)
+        self.assertIn("tx.update(ref, changes);", WRITER)
+        self.assertNotIn("tx.set(ref, changes", WRITER)
         self.assertNotIn("r.startedAt=newStart;", CENTRALIZER)
         self.assertNotIn("r.finishedAt=newFinish;", CENTRALIZER)
 
@@ -24,7 +26,7 @@ class CraiovaInterventionCorrectionContract(unittest.TestCase):
         self.assertIn('initialDate:initial,firstDate:first,lastDate:last', CENTRALIZER)
 
     def test_stale_edit_is_rejected_before_update(self):
-        self.assertIn('centralizerCorrectionSnapshotMatches(current, expected)', HOME)
+        self.assertIn('centralizerCorrectionSnapshotMatches(current, expected)', WRITER)
         self.assertIn('hasPermission(FunctionPermission.editCentralizer)', HOME)
 
     def test_date_and_facade_can_be_corrected_with_hours(self):

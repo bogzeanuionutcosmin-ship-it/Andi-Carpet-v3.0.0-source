@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:andi_carpeta/main.dart' as app;
 import 'package:andi_carpeta/operations/record_writer.dart';
+import 'package:andi_carpeta/centralizer/correction_writer.dart';
 import 'package:andi_carpeta/operations/atomic_restore.dart';
 
 void main() {
@@ -204,6 +205,8 @@ void main() {
     final nestedLegacy=(await legacy.get()).data()!;
     await saveRecordCompared(db,legacy.id,{...nestedLegacy,'status':'running'},expected:nestedLegacy);
     evidence['legacyAndDeletion']='legacy update passed; deleted baseline rejected';
+    final deletedCorrection=otherDb.collection('records').doc('deleted-correction');
+    await deletedCorrection.set(legacyBefore);await deletedCorrection.delete();
     await otherAuth.signInWithEmailAndPassword(email:'outsider@andi.test',password:'synthetic-only-123');
     await expectLater(saveRecordCompared(otherDb,ref.id,{...latest,'facadeDone':true},expected:latest),throwsA(permissionDenied));
     evidence['unauthorizedTeam']='permission-denied';
@@ -218,12 +221,16 @@ void main() {
       correctRecord:(original,corrected) async {
         expect(original.id,ref.id);expect(corrected.id,ref.id);
         expect(corrected.teamId,original.teamId);expect(corrected.locationId,original.locationId);
-        await saveRecordCompared(db,ref.id,{
-          ...latest,'startedAt':Timestamp.fromDate(corrected.startedAt!),
+        await correctCentralizerRecordCompared(db,ref.id,expected:{
+          'teamId':original.teamId,'locationId':original.locationId,'type':original.type.name,
+          'startedAt':original.startedAt,'finishedAt':original.finishedAt,'status':original.status.name,
+          'facadeDone':original.facadeDone,'facadePlanned':original.facadePlanned,
+        },changes:{
+          'startedAt':Timestamp.fromDate(corrected.startedAt!),
           'finishedAt':Timestamp.fromDate(corrected.finishedAt!),
           'facadeDone':corrected.facadeDone,'facadePlanned':corrected.facadePlanned,
           'updatedAt':FieldValue.serverTimestamp(),
-        },expected:latest);
+        });
         correctionSaved=true;
       },
     ))));
@@ -248,6 +255,26 @@ void main() {
     evidence['correctionThroughUi']=true;
     final nightSnapshot=await ref.get(const GetOptions(source:Source.server));
     final night=nightSnapshot.data()!;
+    // Exercise the production correction writer, rather than the general writer
+    // substituted by the earlier component adapter. No synthetic live backend.
+    await expectLater(correctCentralizerRecordCompared(db,ref.id,
+      expected:{'finishedAt':beforeCorrection.finishedAt},changes:{'facadeDone':false}),
+      throwsA(anyOf(isA<StateError>(),isA<FirebaseException>())));
+    await expectLater(correctCentralizerRecordCompared(db,'deleted-correction',
+      expected:{'teamId':'craiova'},changes:{'facadeDone':false}),
+      throwsA(anyOf(isA<StateError>(),isA<FirebaseException>())));
+    await expectLater(correctCentralizerRecordCompared(otherDb,ref.id,
+      expected:{'teamId':'craiova'},changes:{'facadeDone':false}),throwsA(permissionDenied));
+    await db.disableNetwork();
+    try {
+      await expectLater(correctCentralizerRecordCompared(db,ref.id,
+        expected:{'facadeDone':true},changes:{'facadeDone':false}),
+        throwsA(anyOf(isA<StateError>(),isA<FirebaseException>())));
+    } finally {
+      await db.enableNetwork();
+    }
+    expect((await ref.get(const GetOptions(source:Source.server))).data()!['facadeDone'],true);
+    evidence['productionCorrectionWriter']='UI adapter uses HomePage persistence; stale, deleted, unauthorized and offline corrections rejected';
     final reloaded=app.centralizerRecordFromData(ref.id,nightSnapshot.data()!);
     expect(reloaded.duration,const Duration(minutes:25));
     expect(reloaded.startedAt,DateTime(2026,10,15,23,55));
