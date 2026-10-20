@@ -29,6 +29,7 @@ import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
 import 'finance/per_diem_money.dart';
+import 'finance/legacy_per_diem_balance.dart';
 import 'centralizer/correction_writer.dart';
 import 'centralizer/manual_execution_defaults.dart';
 import 'schedule/schedule_save_failure.dart';

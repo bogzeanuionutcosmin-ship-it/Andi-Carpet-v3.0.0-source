@@ -110,20 +110,18 @@ class _ExpensePageState extends State<ExpensePage> {
     ..sort((a, b) => b.date.compareTo(a.date));
   // Sold informativ pe toate deplasările, inclusiv cele închise.
   // Diferențele contestate nu sunt compensate automat.
-  int _perDiemDifferenceBani(String beneficiaryId, String distributorId) {
-    var balance = 0;
-    for (final entry in widget.perDiems) {
-      if (entry.memberId != beneficiaryId || entry.distributedBy != distributorId ||
-          entry.status != PerDiemStatus.confirmed || entry.actualReceivedAmount == null) continue;
-      final receivedBani = parsePerDiemBani(entry.actualReceivedAmount!.toString());
-      final declaredBani = parsePerDiemBani(entry.amount.toString());
-      if (receivedBani == null || declaredBani == null) continue;
-      // A supplementary distribution is cash paid toward a prior debt,
-      // not an additional daily allowance.
-      balance += (entry.supplementaryFor == null ? declaredBani : 0) - receivedBani;
-    }
-    return balance;
-  }
+  int _perDiemDifferenceBani(String beneficiaryId, String distributorId) =>
+      calculateLegacyPerDiemDifferenceBani<PerDiemEntry>(
+        entries: widget.perDiems,
+        beneficiaryId: beneficiaryId,
+        distributorId: distributorId,
+        memberId: (entry) => entry.memberId,
+        distributedBy: (entry) => entry.distributedBy,
+        isConfirmed: (entry) => entry.status == PerDiemStatus.confirmed,
+        actualReceivedAmount: (entry) => entry.actualReceivedAmount,
+        declaredAmount: (entry) => entry.amount,
+        supplementaryFor: (entry) => entry.supplementaryFor,
+      );
 
   double _perDiemDifference(String beneficiaryId, String distributorId) =>
       _perDiemDifferenceBani(beneficiaryId, distributorId) / 100;
