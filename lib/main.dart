@@ -48,6 +48,7 @@ import 'map/map_point_validation.dart';
 export 'utils/work_date_policy.dart';
 import 'utils/work_date_policy.dart';
 import 'map/map_geometry_cache_policy.dart';
+import 'map/map_road_geometry_controller.dart';
 export 'reports/centralizer_pdf_projection.dart';
 import 'reports/centralizer_pdf_projection.dart';
 import 'ocr_service.dart';
