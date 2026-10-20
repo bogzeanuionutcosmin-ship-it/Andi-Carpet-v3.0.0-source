@@ -24,11 +24,15 @@ void main() {
       final jpeg = Uint8List.fromList(img.encodeJpg(source, quality: 95));
       final input = _withExifOrientation(jpeg, 6);
       final decodedInput = img.decodeImage(input)!;
-      expect(decodedInput.exif.imageIfd['Orientation']?.toInt(), 6);
+      // The image package applies JPEG EXIF orientation while decoding and
+      // clears the metadata from the returned image.
+      expect(decodedInput.width, 3);
+      expect(decodedInput.height, 2);
+      expect(decodedInput.exif.imageIfd['Orientation'], isNull);
 
       final output = img.decodeImage(compressExpenseDocumentImage(input))!;
-      expect(output.width, decodedInput.height);
-      expect(output.height, decodedInput.width);
+      expect(output.width, 3);
+      expect(output.height, 2);
       expect(output.exif.imageIfd['Orientation'], isNull);
     });
 
