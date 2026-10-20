@@ -621,8 +621,11 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_default_categories_and_functions_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/default_categories_functions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/default_categories_functions.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/default_categories_functions.dart';", main)
+        self.assertIn("export 'models/default_categories_functions.dart';", main)
+        self.assertNotIn("part of '../main.dart';", module)
+        self.assertIn("import 'app_enums_permissions.dart';", module)
+        self.assertIn("import 'location_category_and_function_definition.dart';", module)
         for symbol in ("String functionPermissionId(",
                        "List<LocationCategory> defaultLocationCategories(",
                        "List<FunctionDefinition> defaultFunctionDefinitions(",
