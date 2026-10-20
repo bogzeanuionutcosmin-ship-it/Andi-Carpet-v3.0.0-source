@@ -88,7 +88,6 @@ void main() {
 
     test('native uses server only after direct candidates fail and keeps server name', () async {
       final calls = <String>[];
-      final logs = <String>[];
       final geocoder = RomaniaPlaceGeocoder(
         serverEndpoint: Uri.https('example.test', '/geocode'),
         getIdToken: () async => 'native-token',
@@ -101,19 +100,19 @@ void main() {
           return http.Response(
             jsonEncode({'name': 'Brăila, România', 'lat': 45.26, 'lon': 27.97}),
             200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
           );
         },
         isWeb: false,
         includeName: true,
-        log: logs.add,
+        log: (_) {},
       );
 
-      final result = await geocoder.geocode('Brăila');
-      expect(result, {
+      expect(await geocoder.geocode('Brăila'), {
         'name': 'Brăila, România',
         'lat': 45.26,
         'lon': 27.97,
-      }, reason: 'calls=$calls logs=$logs');
+      });
       expect(calls, ['nominatim:Brăila', 'nominatim:Brăila, România', 'server']);
     });
 
