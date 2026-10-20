@@ -24,6 +24,8 @@ class FakeMapLocationPlatform implements app.MapLocationPlatform {
   final calls = <String>[];
   final stream = StreamController<Position>.broadcast();
   Object? currentPositionError;
+  Completer<Position>? pendingCurrentPosition;
+  Completer<void>? currentPositionRequested;
 
   @override
   Future<bool> isLocationServiceEnabled() async {
@@ -46,6 +48,11 @@ class FakeMapLocationPlatform implements app.MapLocationPlatform {
   @override
   Future<Position> getCurrentPosition() {
     calls.add('current');
+    final pending = pendingCurrentPosition;
+    if (pending != null) {
+      currentPositionRequested?.complete();
+      return pending.future;
+    }
     final error = currentPositionError;
     if (error != null) return Future<Position>.error(error);
     return Future.value(position(44));
@@ -146,4 +153,29 @@ void main() {
     expect(platform.calls, ['service', 'check', 'current']);
     await platform.close();
   });
+  test('stopping during the current fix prevents stream attachment', () async {
+    final pending = Completer<Position>();
+    final requested = Completer<void>();
+    final platform = FakeMapLocationPlatform()
+      ..permission = LocationPermission.always
+      ..pendingCurrentPosition = pending
+      ..currentPositionRequested = requested;
+    final tracker = app.MapLocationTrackingController(platform: platform);
+    final positions = <Position>[];
+
+    final starting = tracker.start(
+      onPosition: positions.add,
+      onError: (_) {},
+    );
+    await requested.future;
+    await tracker.stop();
+    pending.complete(position(46));
+
+    final result = await starting;
+    expect(result.status, app.MapLocationTrackingStatus.cancelled);
+    expect(positions, isEmpty);
+    expect(platform.calls, ['service', 'check', 'current']);
+    await platform.close();
+  });
+
 }
