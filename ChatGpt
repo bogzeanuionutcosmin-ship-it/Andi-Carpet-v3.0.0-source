@@ -1430,3 +1430,17 @@ main. Fără flag, etapa nativă se oprește clar; nu continuă fără persisten
 - Teste locale comune: 173 Python, 3 Node și `git diff --check` SUCCESS; auditul repo-wide la checkpointul #136 a identificat 12 grupuri identice exclusiv assets/configuri de platformă. Flutter/Dart lipsesc local; CI Flutter rulează pe HEAD-urile exacte. La 23:46 UTC, Validate/Android sunt verzi pentru #141–#144, Validate pentru #145; nu există eșec de aserțiune Map raportat. Eșecul Native #141 attempt 2 este documentat separat ca întrerupere de transport Auth Emulator după generarea PDF; attempt 3 rulează.
 - Delta auditului oficial păstrează fotografia verificată la #136 și adaugă progresul #141–#145; MapPage rămâne incomplet modularizat (GPS, UI, modele și orchestration). Cache-urile Home numai-scrise și parsing-ul `receivedEntries` rămân neatinse fiindcă efectele/ordinea/identitatea nu sunt caracterizate suficient.
 - Fără merge/deploy, acces Firebase de producție, semnare sau distribuire APK. Modularizarea întregii aplicații nu este închisă; `production_ready=false`. Obligații: terminal SUCCESS pentru Android/Native #141–#145; apoi update documentar final și reverificarea CI pe noul HEAD; continuarea separării controlate a celorlalte familii `part`; review uman și validarea Android fizică rămân deschise.
+
+
+## 164. Misiunea XIX — loturi #141–#146, statusuri CI terminale și obligații (2026-10-20 UTC)
+
+- Auditul oficial din main a fost citit la blob 1f7d9fb93b7be46a28348db8110cefaed9f99a8f; regulile oficiale rămân blob ddbdc55128c285337b006958f86ef323ff6be7c5, iar main SHA 8452159475ff187867002425fa9c3b8c7e8006aa. Matricea repo-wide este la PR #137 și addendumul auditului; constatările istorice au fost reverificate față de cod, nu preluate automat.
+- #141 39f3506df19d9a53cd2060f646f57a0df567f7e6: Validate 39341558517, Android 39341558484, Native attempt 3 39341558511 — SUCCESS.
+- #142 43690da9808830c3ac2f71d06ca778a09fd910eb: 39341819031, 39341819032, 39341819051 — toate SUCCESS.
+- #143 97b9f9198a8e739957fe1b4ab9d1b9ffa20e11b3: 39341822453, 39341822515, 39341822442 — toate SUCCESS.
+- #144 fd551da6163e014aad901c40e9b7975e1a29f0e9: 39342521773, 39342521800, 39342521775 — toate SUCCESS.
+- #145 cod 817489db98f1a47140ba5c07fd7bc175d1081e79: 39342732825, 39342732850, Native rerun 39342732906 — toate SUCCESS. Addendum documentar #145 este 7da7476dd8fc28f08e6105abfcdcce5d704329f3; codul nu s-a schimbat.
+- #146 913d9a2ed34aeff46514acead45c054f105a67e8: Validate 39344765440, Android 39344765436, Native 39344765414 — toate SUCCESS.
+- #146 extrage în lib/map/map_location_filters.dart filtrarea existentă categorie/status/GPS pentru marker list, count/list fără coordonate și panouri grupate. Testele acoperă coordonate complete/parțiale, category/status selection, categorie exactă și seturi goale. Nu introduce modele, dependențe sau schimbări de comportament.
+- Toate PR-urile #134–#146 rămân Draft/Open și nemergate. Local: 173 Python, 3 Node și git diff --check PASS; Flutter/Dart nu sunt disponibile local. Nu s-au făcut merge/deploy, modificări Firebase de producție, signing sau distribuire APK.
+- Modularizarea aplicației este încă incompletă: rămân paginile mari și familiile part/importuri implicite din matricea PR #137. Map încă are GPS/UI/models/orchestration cuplate. Cache-urile Home write-only și parser-ele receivedEntries nu se șterg fără probe de efecte, ordonare și identitate. Validarea Android fizică și review-ul uman rămân deschise. production_ready=false.
