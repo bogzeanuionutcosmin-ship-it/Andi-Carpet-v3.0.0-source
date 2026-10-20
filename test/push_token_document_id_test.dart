@@ -11,7 +11,7 @@ void main() {
 
   test('encodes Unicode tokens from UTF-8 bytes', () {
     expect(pushTokenDocumentId('λ'), 'zrs');
-    expect(pushTokenDocumentId('🔒'), '8J-SmA');
+    expect(pushTokenDocumentId('🔒'), '8J-Ukg');
   });
 
   test('uses URL-safe alphabet and strips all Base64 padding', () {
