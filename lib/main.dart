@@ -137,6 +137,7 @@ part 'centralizer/centralizer_page.dart';
 part 'dashboard/dashboard_page.dart';
 part 'dashboard/dashboard_program_transition.dart';
 part 'dashboard/dashboard_record_selection.dart';
+part 'dashboard/dashboard_live_location_label.dart';
 part 'map/map_location_tracking_controller.dart';
 part 'map/map_page.dart';
 part 'expenses/expense_page.dart';

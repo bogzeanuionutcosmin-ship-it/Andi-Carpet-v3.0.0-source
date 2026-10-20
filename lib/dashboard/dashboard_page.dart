@@ -84,50 +84,20 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   String _memberLocationLabel(String userId, Map<String, Map<String,dynamic>> live, String teamId) {
-    final d = live[userId];
-    if (d == null) return 'Locație live indisponibilă';
-    final lat = d['latitude'];
-    final lon = d['longitude'];
-    if (lat is! num || lon is! num || !lat.toDouble().isFinite ||
-        !lon.toDouble().isFinite || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      return 'Locație live indisponibilă';
-    }
-    final updated = d['updatedAt'];
-    final at = updated is Timestamp ? updated.toDate() : null;
-    if (at == null || DateTime.now().difference(at) > const Duration(minutes: 30) ||
-        at.isAfter(DateTime.now().add(const Duration(minutes: 5)))) {
-      return 'Locație live neactualizată';
-    }
-    final age = ' · actualizat ${timeText(at)}';
-    final locality = (d['localityLabel'] ?? '').toString().trim();
-
-    // Apropierea GPS de o sală nu dovedește că membrul lucrează acolo.
-    // Afișăm sala numai când echipa are o intervenție efectiv în lucru.
-    final active = widget.records.where((r) =>
-        r.teamId == teamId && r.status == WorkAttemptStatus.running &&
-        r.finishedAt == null && recordBelongsToWorkDate(r, DateTime.now()));
-    Location? currentSite;
-    var closest = double.infinity;
-    for (final record in active) {
-      for (final site in widget.locations) {
-        if (site.id != record.locationId || site.latitude == null || site.longitude == null) continue;
-        final meters = Geolocator.distanceBetween(lat.toDouble(), lon.toDouble(),
-            site.latitude!, site.longitude!);
-        if (meters <= 150 && meters < closest) {
-          currentSite = site;
-          closest = meters;
-        }
-      }
-    }
-    if (currentSite != null) {
-      final city = dashboardLocationCityLabel(
-        name: currentSite.name,
-        address: currentSite.address,
-      );
-      return city.isEmpty ? '${currentSite.name}$age' : '${currentSite.name} · $city$age';
-    }
-    if (locality.isNotEmpty) return '$locality$age';
-    return 'Oraș/județ indisponibil$age';
+    return dashboardMemberLocationLabel(
+      live: live[userId],
+      teamId: teamId,
+      records: widget.records,
+      locations: widget.locations,
+      now: DateTime.now,
+      belongsToWorkDate: recordBelongsToWorkDate,
+      distanceBetween: Geolocator.distanceBetween,
+      formatTime: timeText,
+      locationCityLabel: (name, address) => dashboardLocationCityLabel(
+        name: name,
+        address: address,
+      ),
+    );
   }
 
   String _confidenceLabel(List<int> counts) {
