@@ -29,6 +29,7 @@ import 'ocr_service.dart';
 import 'ocr_parser.dart';
 import 'mapbox_services.dart';
 import 'map/map_operational_schedules.dart';
+import 'map/map_location_filters.dart';
 import 'centralizer/correction_writer.dart';
 import 'centralizer/manual_execution_defaults.dart';
 import 'schedule/schedule_save_failure.dart';

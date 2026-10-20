@@ -196,3 +196,25 @@ Baza comparației este checkpointul de modularizare #136 și ramura părinte #13
 Auditul din 12 octombrie descria MapPage ca `part` cu GPS, pluginuri, HTTP/Mapbox și stare globală, fără teste focalizate identificate. Constatarea structurală rămâne corectă pentru pagina întreagă; nu implică faptul că fiecare helper era netestat după #136. Loturile #139–#145 au scos politici/helpers importabile pentru cheia/expirarea geometriei, validarea punctelor, selecția rutelor, parsing/transport reverse geocoding, starea badge-ului și filtrul de programe operaționale. GPS, UI, modele și orchestration MapPage rămân cuplate; aceste loturi sunt îmbunătățiri incrementale, nu închiderea modularizării Map. Constatările istorice despre duplicate nu justifică ștergerea celor 12 grupuri de asset/config sau a codului cu efecte/ordini necaracterizate.
 
 Nu s-au șters cod/asseturi pe baza inventarului de identități, nu s-au schimbat date Firebase și nu s-au atins fluxurile existente. `production_ready=false`.
+
+
+## Corecție finală CI și lotul Map #146 (20 octombrie 2026 UTC)
+
+Acest addendum închide statusurile intermediare din tabelul de mai sus pe baza run-urilor terminale pentru SHA-urile exacte:
+
+| PR / SHA de cod | Validate | Android debug | Native emulator |
+|---|---|---|---|
+| #141 39f3506df19d9a53cd2060f646f57a0df567f7e6 | 39341558517 SUCCESS | 39341558484 SUCCESS | 39341558511 attempt 3 SUCCESS |
+| #142 43690da9808830c3ac2f71d06ca778a09fd910eb | 39341819031 SUCCESS | 39341819032 SUCCESS | 39341819051 SUCCESS |
+| #143 97b9f9198a8e739957fe1b4ab9d1b9ffa20e11b3 | 39341822453 SUCCESS | 39341822515 SUCCESS | 39341822442 SUCCESS |
+| #144 fd551da6163e014aad901c40e9b7975e1a29f0e9 | 39342521773 SUCCESS | 39342521800 SUCCESS | 39342521775 SUCCESS |
+| #145 817489db98f1a47140ba5c07fd7bc175d1081e79 | 39342732825 SUCCESS | 39342732850 SUCCESS | 39342732906 rerun SUCCESS |
+| #146 913d9a2ed34aeff46514acead45c054f105a67e8 | 39344765440 SUCCESS | 39344765436 SUCCESS | 39344765414 SUCCESS |
+
+La #145, prima execuție Native a fost marcată cancelled după avansarea ramurii cu un commit exclusiv documentar; jobul a fost relansat pe același SHA de cod și a terminat SUCCESS. Pentru #141, attempt-urile de mediu 1–2 și retry-ul cu succes sunt descrise în PR și raport. Codul verificat pentru #145 rămâne părinte al commitului documentar 7da7476dd8fc28f08e6105abfcdcce5d704329f3.
+
+### Lot #146 — filtrele locațiilor mapate
+
+PR Draft #146 913d9a2ed34aeff46514acead45c054f105a67e8, copil al #145, extrage intersecția generică categorie/status/GPS folosită de marker list, count/list fără coordonate și gruparea pe categorie în lib/map/map_location_filters.dart. Testele test/map_location_filters_test.dart acoperă categoria și statusul selectat, GPS complet/parțial, restricția unui panel la o categorie și selecții goale. Se păstrează ordinea de intrare înaintea sortărilor existente. Nu depinde de modele, UI, Firebase sau pachete noi. Branch-filter-ele Validate/Android/Native admit baza #145, iar contractul lor structural este actualizat; nu s-au schimbat pașii workflow sau politica de deploy.
+
+Testele locale per lot: 173 Python, 3 Node și git diff --check PASS; Flutter/Dart nu sunt instalate local. Pentru toate schimbările Map #141–#146, codul/politicile au regression tests focalizate și CI exact-head este verde. PR-urile #134–#146 rămân Draft/Open și nemergate la această verificare. MapPage păstrează cuplare între GPS, UI, modele și orchestration; acesta este progres incremental, nu închiderea modularizării aplicației. Nicio ștergere bazată pe duplicate de asset/config fără dovadă, nicio schimbare Firebase. production_ready=false.
