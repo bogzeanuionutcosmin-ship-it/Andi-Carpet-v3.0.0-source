@@ -11,27 +11,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Team get team => widget.teams[teamIndex.clamp(0, widget.teams.length - 1)];
 
-  List<CentralizerRecord> _recordsForItem(ScheduleItem item, DateTime workDate) {
-    final out = widget.records.where((r) =>
-      r.teamId == team.id &&
-      r.locationId == item.locationId &&
-      (recordHasOpenAttempt(r) || recordBelongsToWorkDate(r, workDate))
-    ).toList();
-    out.sort((a, b) {
-      final active = (recordHasOpenAttempt(a) ? 1 : 0).compareTo(recordHasOpenAttempt(b) ? 1 : 0);
-      return active != 0 ? active : recordEventTime(a).compareTo(recordEventTime(b));
-    });
-    return out;
-  }
+  List<CentralizerRecord> _recordsForItem(ScheduleItem item, DateTime workDate) =>
+      dashboardRecordsForItem(widget.records, teamId: team.id, item: item, workDate: workDate);
 
   CentralizerRecord? _latestRecord(ScheduleItem item, DateTime workDate) {
     final rs = _recordsForItem(item, workDate);
     return rs.isEmpty ? null : rs.last;
   }
 
-  List<CentralizerRecord> _completedHistory(String locationId) => widget.records
-      .where((r) => r.locationId == locationId && r.completed && r.duration != null)
-      .toList();
+  List<CentralizerRecord> _completedHistory(String locationId) =>
+      dashboardCompletedHistory(widget.records, locationId: locationId);
 
   Duration? _averageDuration(String locationId) => learnedAverageDuration(widget.records, locationId, widget.settings);
 
