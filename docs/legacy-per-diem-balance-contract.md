@@ -22,3 +22,11 @@ accepts up to 100,000,000 lei and returns bani, while the standalone ledger
 validates amounts up to 100,000,000 bani (1,000,000 lei). This document and the
 boundary test record that difference; they do not define an adapter or make the
 two calculators interchangeable.
+
+## Stacked validation trigger
+
+The three required pull request workflows filter on their target branches.
+The base branch for this stacked change must be present in each allowlist,
+including the Native workflow's job condition, or GitHub creates no workflow
+runs for this PR. PR #156 adds its own branch to those filters so this stack
+receives Validate, Android, and Native checks.
