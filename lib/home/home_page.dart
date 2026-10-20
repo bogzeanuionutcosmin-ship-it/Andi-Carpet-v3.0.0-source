@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     }
   }
 
-  String _pushTokenDocId(String token) => base64UrlEncode(utf8.encode(token)).replaceAll('=', '');
+  String _pushTokenDocId(String token) => pushTokenDocumentId(token);
 
   Future<void> _savePushToken(String token) async {
     if (token.trim().isEmpty) return;
