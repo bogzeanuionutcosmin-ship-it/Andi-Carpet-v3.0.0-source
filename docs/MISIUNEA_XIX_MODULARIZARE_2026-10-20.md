@@ -225,3 +225,22 @@ Prima încercare Native pe SHA superseded `32ddacd755ead3bd727c8b2f0e0e1f5fdc717
 - Verificările folosesc emulator Firebase și echipe sintetice; nu certifică datele/proiectul Firebase de producție, hardware GPS sau configurația de distribuție. Nu s-a făcut merge, deploy, signed release ori distribuire APK. `production_ready=false`.
 
 Retry-ul Native #166 este acum SUCCESS și digest-urile sunt consemnate. Următoarea actualizare va valida exact noul HEAD al raportului; alte joburi active se vor raporta separat.
+
+
+## Checkpoint live — 20 octombrie 2026, 06:40 UTC
+
+Verificare GitHub după actualizarea de la 06:30; stările istorice de mai sus rămân timestamped, iar acest checkpoint le supersedează unde indică explicit.
+
+| PR | HEAD exact | Validate | Android | Native | Observație |
+|---|---|---|---|---|---|
+| #148 (raport) | `7c6690d7fa41349cfaffed1560a1f5f4ee03749e` | run `39381155407`: prima încercare FAILED la instalarea Poppler, nu la teste/cod; re-rulare a jobului eșuat pe același SHA în curs | `39381155411` IN PROGRESS | `39381155495` IN PROGRESS | 121 teste Flutter au trecut; pasul `apt-get update` a primit 403 de la `packages.microsoft.com`. Artefact PDF încărcat pentru diagnostic, ID `12244828508`, ZIP SHA-256 `2d38360f4cd578638c8e5477da6a8f32bc2431f7eb42ceffe8020480ce9a13ac`. |
+| #166 Expenses image helpers | `8dce69c178438e89f2f5916b2f74c0d26dd1c72e` | `39378750766` SUCCESS | `39378750728` SUCCESS | `39378750720` SUCCESS, attempt 2 | Retry pe același SHA; connected flow, restart, PDF/checksum/upload SUCCESS. Artifact `12245347718`, ZIP SHA-256 `13d9348b3017069b699d05031392b67e15b8e565e4077f33d4e9da3920eae184`; PDF SHA-256 `c670b03fd52f671bf5676add66c0dbc56efc9cc34c889ffa2b88d48256852373`. Prima încercare a eșuat tranzitoriu la rezolvarea markerului Kotlin Gradle; nu s-a schimbat codul/dependințele. |
+| #168 Audit PDF projection | `8749c0049587274c13c433b9be428f59d2ca386b` | `39381349375` QUEUED | `39381349463` IN PROGRESS | `39381349430` IN PROGRESS | Noua proiecție pură păstrează ordinea, duplicatele și câmpurile; testele dedicate sunt în `test/audit_pdf_projection_test.dart`. PR Draft/Open, fără merge. |
+
+### Delta de modularizare
+
+PR #168 extrage selecția câmpurilor audit în `lib/reports/audit_pdf_projection.dart`; `downloadAuditPdf` păstrează semnătura, formatarea datei/orei, ordinea, layout-ul și descărcarea. Adăugate două contracte pentru ordinea și duplicatele, câmpurile proiectate, lista nemodificată și input gol. Nu copiază extragerile Work Graph #164 ori Centralizer #157. Următoarea extragere PDF rămâne maparea/renderizarea cu risc financiar; aceasta se amână până la contracte explicite pentru text/totale și sursa financiară.
+
+Expenses #166 este acum SUCCESS pe SHA exact. Nu se declară Expenses consolidat: #162 și #166 rămân siblings pe baza #137 cu editări separate în aceeași pagină/importuri; integrarea lor trebuie reconciliată înaintea următorului seam de salvare/UI. Ledgerul și politica legacy continuă să fie surse distincte.
+
+Toate PR-urile menționate rămân Draft/Open și nemergate. Nu s-a făcut deploy, modificare Firebase de producție, semnare sau distribuire APK. CI-ul raportului #148 este încă în verificare din cauza unei erori de infrastructură apt, cu rerun pe același SHA în lucru. `production_ready=false`.
