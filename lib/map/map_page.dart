@@ -65,7 +65,11 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-    _selectedCategoryIds.addAll(widget.categories.where((c) => c.active).map((c) => c.id));
+    _selectedCategoryIds.addAll(activeMapCategoriesSorted(
+      widget.categories,
+      isActive: (category) => category.active,
+      nameOf: (category) => category.name,
+    ).map((category) => category.id));
     unawaited(_startLocationTracking());
   }
 
@@ -76,9 +80,11 @@ class _MapPageState extends State<MapPage> {
   }
 
   List<LocationCategory> get visibleCategories {
-    final list = widget.categories.where((c) => c.active).toList();
-    list.sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    return list;
+    return activeMapCategoriesSorted(
+      widget.categories,
+      isActive: (category) => category.active,
+      nameOf: (category) => category.name,
+    );
   }
 
   Future<String?> _reverseGeocodePoint(LatLng point) async {
