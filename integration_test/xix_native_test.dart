@@ -74,8 +74,20 @@ void main() {
         await tester.enterText(find.byType(TextField),location.name);
         await tester.pumpAndSettle();
         final tile=find.widgetWithText(CheckboxListTile,location.name);
-        await tester.scrollUntilVisible(tile,80,scrollable:find.descendant(of:find.byType(AlertDialog),matching:find.byType(Scrollable)).first);
+        // Selecting the first location adds a nested SingleChildScrollView for
+        // the selected chips. Target the picker CustomScrollView explicitly so
+        // subsequent locations scroll the result list instead of the chips.
+        final picker=find.descendant(
+          of:find.byType(AlertDialog),
+          matching:find.byType(CustomScrollView),
+        ).first;
+        final pickerScrollable=find.descendant(
+          of:picker,
+          matching:find.byType(Scrollable),
+        ).first;
+        await tester.scrollUntilVisible(tile,80,scrollable:pickerScrollable);
         await tester.pumpAndSettle();
+        expect(tile,findsOneWidget,reason:'The picker must show ${location.name} after search and scrolling.');
         await tester.tap(tile);
         await tester.pumpAndSettle();
       }
