@@ -76,34 +76,24 @@ List<CentralizerPdfExecutionRow> centralizerPdfExecutionRows({
   String search = '',
   WorkAttemptStatus? statusFilter,
 }) {
-  final q = search.trim().toLowerCase();
-  final start = from == null ? null : DateTime(from.year, from.month, from.day);
-  final finish = to == null
-      ? null
-      : DateTime(to.year, to.month, to.day + 1);
-
-  final rows = records.where((record) {
-    if (record.type != type) return false;
-    if (teamId != null && teamId.isNotEmpty && record.teamId != teamId) {
-      return false;
-    }
-    if (statusFilter != null && record.status != statusFilter) return false;
-    final eventDate = recordEventTime(record);
-    if (start != null && eventDate.isBefore(start)) return false;
-    if (finish != null && !eventDate.isBefore(finish)) return false;
-    if (q.isNotEmpty &&
-        !record.locationNameSnapshot.toLowerCase().contains(q) &&
-        !record.addressSnapshot.toLowerCase().contains(q)) {
-      return false;
-    }
-    return true;
-  }).map((record) => CentralizerPdfExecutionRow(
-        record: record,
-        date: recordEventTime(record),
-      )).toList()
-    ..sort((a, b) => a.date.compareTo(b.date));
-
-  return rows;
+  return projectCentralizerPdfExecutionRows<CentralizerRecord>(
+    records: records,
+    type: type,
+    teamId: teamId,
+    from: from,
+    to: to,
+    search: search,
+    statusFilter: statusFilter,
+    typeOf: (record) => record.type,
+    teamIdOf: (record) => record.teamId,
+    statusOf: (record) => record.status,
+    locationNameOf: (record) => record.locationNameSnapshot,
+    addressOf: (record) => record.addressSnapshot,
+    eventDateOf: recordEventTime,
+  ).map((row) => CentralizerPdfExecutionRow(
+        record: row.record,
+        date: row.date,
+      )).toList();
 }
 
 Future<void> downloadCentralizerPdf({
