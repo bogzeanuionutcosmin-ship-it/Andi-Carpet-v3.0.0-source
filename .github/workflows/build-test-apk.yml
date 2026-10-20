@@ -4,7 +4,7 @@ on:
   push:
     branches: [fix/grafic-end-to-end-xiv-20261017, fix/application-delivery-xv-20261017]
   pull_request:
-    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021, codex/xix-map-road-geometry-controller-20261021, codex/xix-home-financial-scope-20261021, codex/xix-expense-ocr-scan-20261021, codex/xix-dashboard-pending-operation-20261021, codex/xix-pdf-summary-row-20261021, codex/xix-program-postpone-policy-20261021, codex/xix-program-start-snapshot-20261021, codex/xix-pdf-decont-input-selection-20261021, codex/xix-program-schedule-item-removal-20261021, codex/xix-program-schedule-item-addition-20261021, codex/xix-home-team-membership-projection-20261021]
+    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021, codex/xix-map-road-geometry-controller-20261021, codex/xix-home-financial-scope-20261021, codex/xix-expense-ocr-scan-20261021, codex/xix-dashboard-pending-operation-20261021, codex/xix-pdf-summary-row-20261021, codex/xix-program-postpone-policy-20261021, codex/xix-program-start-snapshot-20261021, codex/xix-pdf-decont-input-selection-20261021, codex/xix-program-schedule-item-removal-20261021, codex/xix-program-schedule-item-addition-20261021, codex/xix-home-team-membership-projection-20261021, codex/xix-program-start-location-resolution-20261021]
   workflow_dispatch:
 
 permissions:
@@ -55,6 +55,8 @@ jobs:
         run: flutter test test/program_schedule_item_creation_test.dart
       - name: Test Home team membership projection contract
         run: flutter test test/home_team_membership_projection_test.dart
+      - name: Test Program START location resolution contract
+        run: flutter test test/program_start_location_resolution_test.dart
       - name: Analyze application
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Test schedule team selection
