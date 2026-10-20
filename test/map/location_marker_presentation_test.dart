@@ -17,7 +17,11 @@ void main() {
       ),
     );
 
-    final stack = tester.widget<Stack>(find.byType(Stack));
+    final markerFinder = find.byType(LocationMapMarker);
+    final stack = tester.widget<Stack>(find.descendant(
+      of: markerFinder,
+      matching: find.byType(Stack),
+    ));
     expect(stack.clipBehavior, Clip.none);
     expect(stack.alignment, Alignment.center);
     expect(stack.children, hasLength(1));
@@ -25,7 +29,10 @@ void main() {
     final opacity = tester.widget<Opacity>(find.byType(Opacity));
     expect(opacity.opacity, .62);
 
-    final markerBox = tester.widget<DecoratedBox>(find.byType(DecoratedBox));
+    final markerBox = tester.widget<DecoratedBox>(find.descendant(
+      of: markerFinder,
+      matching: find.byType(DecoratedBox),
+    ));
     final markerDecoration = markerBox.decoration as BoxDecoration;
     expect(markerDecoration.color, Colors.blue);
     expect(markerDecoration.shape, BoxShape.circle);
@@ -35,14 +42,17 @@ void main() {
     expect(markerDecoration.boxShadow!.single.color, Colors.black26);
 
     final markerSizeFinder = find.descendant(
-      of: find.byType(DecoratedBox),
+      of: markerFinder,
       matching: find.byType(SizedBox),
     );
     final markerSize = tester.widget<SizedBox>(markerSizeFinder);
     expect(markerSize.width, 40);
     expect(markerSize.height, 40);
 
-    final icon = tester.widget<Icon>(find.byType(Icon));
+    final icon = tester.widget<Icon>(find.descendant(
+      of: markerFinder,
+      matching: find.byType(Icon),
+    ));
     expect(icon.icon, Icons.store);
     expect(icon.color, Colors.white);
     expect(find.byType(Positioned), findsNothing);
