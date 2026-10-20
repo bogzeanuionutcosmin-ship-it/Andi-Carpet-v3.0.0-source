@@ -534,8 +534,14 @@ Future<void> downloadAuditPdf(List<AuditEntry> audit) async {
       pw.Divider(),
     ]),
     build: (_) => [
-      for (final a in audit)
-        pw.Padding(padding: const pw.EdgeInsets.only(bottom: 5), child: pw.Text('${formatDate(a.at)} ${timeText(a.at)} · ${a.actor} · ${a.action} · ${a.target}', style: const pw.TextStyle(fontSize: 8))),
+      for (final row in projectAuditPdfRows<AuditEntry>(
+        entries: audit,
+        dateOf: (entry) => entry.at,
+        actorOf: (entry) => entry.actor,
+        actionOf: (entry) => entry.action,
+        targetOf: (entry) => entry.target,
+      ))
+        pw.Padding(padding: const pw.EdgeInsets.only(bottom: 5), child: pw.Text('${formatDate(row.at)} ${timeText(row.at)} · ${row.actor} · ${row.action} · ${row.target}', style: const pw.TextStyle(fontSize: 8))),
     ],
   ));
   await downloadFile(await doc.save(), 'audit_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf', mimeType: 'application/pdf');
