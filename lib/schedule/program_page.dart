@@ -891,12 +891,15 @@ class _ProgramPageState extends State<ProgramPage> {
     final startPoint=await _geocodeTripPoint(departureText);
     final endPoint=departureText.toLowerCase()==returnText.toLowerCase()?startPoint:await _geocodeTripPoint(returnText);
     if(startPoint==null||endPoint==null){if(mounted)showErrorMessage(context,'Nu am putut identifica una dintre localități. Scrie localitatea mai explicit, de exemplu „Brăila, România”.');return;}
-    final items=graphSchedules.map(cloneWorkSchedule).toList();
-    for(final x in items){
-      x.started=true;x.closed=false;x.paused=false;
-      x.departureName=departureText;x.departureLatitude=startPoint['lat'] as double;x.departureLongitude=startPoint['lon'] as double;
-      x.returnName=returnText;x.returnLatitude=endPoint['lat'] as double;x.returnLongitude=endPoint['lon'] as double;
-    }
+    final items=buildStartedProgramScheduleSnapshot(
+      schedules:graphSchedules,
+      departureName:departureText,
+      departureLatitude:startPoint['lat'] as double,
+      departureLongitude:startPoint['lon'] as double,
+      returnName:returnText,
+      returnLatitude:endPoint['lat'] as double,
+      returnLongitude:endPoint['lon'] as double,
+    );
     try { await widget.saveSchedules(items); } catch (e) { if (mounted) showErrorMessage(context, 'Graficul nu a putut fi pornit: ${scheduleSaveFailureMessage(e)}'); return; }
     widget.onChanged();
     final km=estimateGraphDistanceKm(items,widget.locations);
