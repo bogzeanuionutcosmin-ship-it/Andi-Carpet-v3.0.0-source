@@ -21,7 +21,7 @@ void main() {
     await runDashboardPendingOperation(
       pending: pending,
       key: 'location-a',
-      action: () async => calls++,
+      action: () async { calls++; },
     );
 
     expect(calls, 1);
@@ -92,7 +92,7 @@ void main() {
     await runDashboardPendingOperation(
       pending: pending,
       key: 'record-a',
-      action: () async => retryCalls++,
+      action: () async { retryCalls++; },
     );
     expect(retryCalls, 1);
     expect(pending, isEmpty);
