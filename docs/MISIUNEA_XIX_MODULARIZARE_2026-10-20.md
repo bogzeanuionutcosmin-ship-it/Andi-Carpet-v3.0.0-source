@@ -177,3 +177,51 @@ Cauza demonstrată la #154 este automatizarea UI: locator global TextField într
 - Emulatorul și echipa sintetică nu validează configurația Firestore de producție, hardware GPS real, multi-process sau distribuția APK. Nicio schimbare Firebase live, merge, deploy, signing sau distribuire.
 - Următorul pas autonom: finalizarea rundelor active, inspectarea logurilor și artifact SHA-256, actualizarea PR bodies cu rezultate exacte, validarea noului HEAD #148 și continuarea unei extrageri independente cu contracte păstrate.
 - production_ready=false.
+
+
+## Checkpoint continuare — 20 octombrie 2026, 06:30 UTC
+
+Stări recitite din GitHub înainte de acest checkpoint. Toate PR-urile de modularizare #154–#167 sunt încă Open/Draft și nemergate. Run-urile SUCCESS sunt legate de SHA-ul de mai jos; cele marcate IN PROGRESS nu sunt certificate.
+
+### CI exact-head și dovezi
+
+| PR | HEAD | Validate | Android | Native | Artefact / dovadă | Stare |
+|---|---|---|---|---|---|---|
+| #154 | `dd209555054e247fd907f9b71608ab9cdaed335b` | 39363877750 SUCCESS | 39363877801 SUCCESS | 39363877751 SUCCESS | Artifact 12238413393, ZIP SHA-256 `31815a16004d56997c16ee913f264109626095e554b577162c4a38c8b54ccbc3`; PDF SHA-256 `25281c932adc9b80cd0b721a012b621d59f3c74bd5b808b67283f93578fde589` | SUCCESS; 11 rânduri Firestore și PDF verificate |
+| #155 | `7b3dd70f6028a827c9bf89faf260d6635059068e` | 39362736082 SUCCESS | 39362736225 SUCCESS | 39362736043 SUCCESS | Artifact 12238402379, ZIP SHA-256 `7d096652f41cbff395544a9427c5fee4684f1c0f342e6749464512f7af36328b`; PDF SHA-256 `c51270c89c4eecbca1386f2f48f8a8b2e639962786679022cc6103c20fc160e7` | SUCCESS; două cold restarts și PDF verificate |
+| #156 | `93861efab61b762a5e0b9ee9485232feb578326c` | 39369094268 SUCCESS | 39369094283 SUCCESS | 39369094381 SUCCESS | Artifact 12241092689, ZIP SHA-256 `e9327e78a37cffd63cafef79f00d0feaaf352008099ec50b03c81831a14c6405`; PDF SHA-256 `94e875a6c4cfb1604f174c101fce7ee5ff6a701766d3a822bf9052a9947ac417` | SUCCESS; parserul rămâne distinct de calculul legacy și ledger |
+| #157 | `310368920f86be7e5a3a97298c4dd31714c6ee63` | 39368459523 SUCCESS | 39368459549 SUCCESS | 39368459469 SUCCESS | Native artifact 12240423292, ZIP SHA-256 `62aa1376521800245c2b8d20bc6fe882485a764ebc9b6f008dd87f2330d8b2f2`; PDF SHA-256 `cf3ccb06c9a8da57c3c442cbb2cd3c11e151fab14cfa7c2d05bb63f8dfb7872b` | SUCCESS |
+| #158 | `8f77859eb6ab590e3aeafd69a8683be136a5404d` | 39369120334 SUCCESS | 39369120287 SUCCESS | 39369120306 SUCCESS | Native artifact 12240639885, ZIP SHA-256 `7342dae9d06da4da78c0120034c8cc41b36cae6045d8c07fd66ffe0fd2004f73`; PDF SHA-256 `9f60a1bf740a98d2313e5c8a7bba9448d45e0930ce9941d9518670ccf4ff569b` | SUCCESS; stacked peste #156 |
+| #159 | `240fc94912ede6b970711ffddb55d724e710767b` | 39369245152 SUCCESS | 39369245161 SUCCESS | 39369245054 SUCCESS | Native artifact 12240509336, ZIP SHA-256 `f4257981471f29988358ba7517396e062d9fb990ab6ad51eda359c9fc4c7f2ca`; PDF SHA-256 `18e67824a9c3ac25e460ec9c8d5344564710698cdb9df9617a389ba1d80c158d` | SUCCESS |
+| #160 | `32ddacd755ead3bd727c8b2f0e0e1f5fdc717f50` | 39370471019 SUCCESS | 39370471221 SUCCESS | 39370471025 first attempt FAILED; same-SHA retry queued/running | Failed artifact 12241726298, ZIP SHA-256 `1c8bbe6cad848ea2492c4b09a20ff4478c78931dd2c509d4793ac2511c217ed0`; no valid PDF | IN PROGRESS; retry has not completed |
+| #161 | `c30c60794a812991328cb9094d8d1a8ea3b4ff0e` | 39371522926 SUCCESS | 39371522913 SUCCESS | 39371523027 SUCCESS | Native artifact evidence was not freshly re-downloaded for this checkpoint | SUCCESS |
+| #162 | `f408eedd1325b0c45b528f960ce6cec93320d66a` | 39371034740 SUCCESS | 39371034683 SUCCESS | 39371034711 SUCCESS | Native evidence and PDF passed; exact artifact digest not refreshed in this checkpoint | SUCCESS |
+| #163 | `f67a3bd9e5bd854b3b76c1622ee026d8a564516c` | 39371563027 SUCCESS | 39371563083 SUCCESS | 39371563029 SUCCESS | Native connected/restart/PDF passed; exact artifact digest not refreshed in this checkpoint | SUCCESS |
+| #164 | `f1cece1b552cb45a7c8d97fe0a104d124e17e0b5` | 39374035581 SUCCESS | 39374035559 SUCCESS | 39374035607 SUCCESS | Artifact 12243632177, ZIP SHA-256 `b3d6409883b618e2fd771ca95f960c0cfddc3c4e4d3f487bb6002c972c1e197f`; PDF SHA-256 `7e1bc6ba14e274c521f7f0fb02b44a88698829e3fdd63798700836733d208465` | SUCCESS; same-SHA rerun a închis locatorul Craiova 02 |
+| #165 | `f40267d9aed6c206eadfb3d95a25aaff3eb329af` | 39377002007 SUCCESS | 39377002272 SUCCESS | 39377002099 SUCCESS | Artifact 12244675348, ZIP SHA-256 `c79556183e4a9805dc2125dabb92ea467f6c418d5e80139294da82a41ab67309`; PDF SHA-256 `f300bb96b3b22e5e21e2eaa65426da54aff89e909889f9ff0c3e7e1458d05526` | SUCCESS |
+| #166 | `8dce69c178438e89f2f5916b2f74c0d26dd1c72e` | 39378750766 SUCCESS | 39378750728 SUCCESS | 39378750720 first attempt FAILED in Kotlin plugin marker resolution; retry job 118484493941 passed APK build and is now in connected flow | First failed artifact 12244806628 was diagnostic only, ZIP SHA-256 `02375452a13db76650c2f919ebd6025c26f112ddafeed8cb9fb6239c3cde9b82`; no PDF | IN PROGRESS; no final Native/PDF claim |
+| #167 | `19c9d2a84678c87d96169bd40bb1752accf1f4fd` | 39378529344 SUCCESS | 39378529273 SUCCESS | 39378529299 SUCCESS | Artifact 12244761885, ZIP SHA-256 `5748d22b81e6c2504ca8bc0f4796943cf9859c7ced6dc172cb1f8e35559ff400`; PDF SHA-256 `d915557781109b4d1d4249862c530e72d1fb1a4ce38b83d44d06dee007d8e58d` | SUCCESS; 11 rânduri, restart și validarea PDF confirmate |
+
+### Diagnostic curent Native pentru #160
+
+Run-ul inițial #160 a construit APK-ul, dar Connected UI a eșuat la tap pe `CheckboxListTile` pentru `Craiova 02`; testul nu a produs un PDF valid. Fixture-ul transmite explicit lista de 11 `Location` direct către `ProgramPage`, iar logul nu arată lipsa Firestore sau un eșec de build. Artefactul nu conține arbore UI/captură la momentul eșecului, deci numai dovezile actuale nu separă complet o cursă de sincronizare a selectorului de o problemă UI. Am pornit rerun-ul jobului Native pe același SHA, fără schimbarea testului ori a aserțiunilor; verdictul rămâne IN PROGRESS.
+
+### Matricea actualizată a celor șase module mari
+
+| Modul | Extrageri existente până la #167 | Responsabilități încă amestecate / următoarea extragere | Dependențe și risc |
+|---|---|---|---|
+| Home | codec/backup/permisii/sincronizare; politică live-location #163; categorie și allow-policy pentru alerte personale #167 | Lifecycle, listeners/subscriptions, cache, push tokens, GPS, navigare și operații Firestore; următorul pas cere contract de stare înaintea orchestration-ului | Permisiuni/Auth/timer/stream și Firestore; ridicat. Nu muta `canEditTeam` sau scrieri fără teste de autorizare/concurență |
+| Expenses | parser bani #138; parser diurne #156; carryover legacy #158 (stacked peste #156); duplicate matcher #162; image compression/fingerprint #166 | UI/dialoguri, OCR/picker, încărcare și salvare, settlement legacy/v2 și PDF; următoarea etapă: contracte pentru pipeline OCR/save și integrare, fără calculator duplicat | #162/#166 sunt siblings cu hunk-uri distincte în `expense_page.dart`/`main.dart`; reconciliere la consolidare. Ledgerul nu este substitut pentru soldul legacy |
+| Program/Grafic | save failure #137; route selection #141; work-date selection #148; geocoder #154; ordonare ID-uri graf #165 | editare și lifecycle-ul graficului, START/STOP/pause/restart, optimizare rută și persistență; următorul pas cere characterization înainte de mutarea orchestration-ului | Callback-uri și modele globale, team/date/GPS. #165 sibling pe #137; logică de rută cu risc ridicat |
+| Map | geometry cache/point validation/route selection/reverse geocode/badges/schedules/location filters/categories #139–#147; URI #160 (Native retry); marker widget #161 | Controller Mapbox/GPS, construirea markerelor, sheet-uri, tap/edit/navigation și lifecycle; următorul pas: contract marker/status/permission, apoi stateful lifecycle | Pluginuri, permisiuni, mounted/dispose, identitate echipă; #160 retry e blocaj curent, risc mediu-ridicat |
+| Dashboard | mesaje de salvare #137; eticheta orașului #153; geocoder #154; prezentarea statusului #159 | START/STOP și state orchestration (create/finish/wait/write); următoarea extragere numai după contracte pentru starea/t tranzițiile curente | Lock/CAS/idempotency și izolare echipă; scrieri cu risc ridicat, păstrează flows și corrections |
+| Rapoarte/PDF | filename normalization; projection Centralizator #157; projection Work Graph #164 | Maparea modelului Centralizator și randarea/layout-ul PDF, calculul/formatările de raport și I/O/download; următorul pas: DTO/projection explicit și comparații text/hash înainte de extragere | Dependințe de record/status/date și sursa de date, risc ridicat de regresie vizuală/financiară |
+
+### Concluzie și blocaje
+
+- #154, #155 și #156 sunt SUCCESS pe SHA-urile exacte de mai sus. Cauza Craiova 03 pentru #154 rămâne locatorul global `TextField` și scroll-ul ambiguu al testului; pickerul a fost restrâns după eticheta câmpului și lista `CustomScrollView`. UI-ul a creat/reîncărcat 11 rânduri și PDF-ul a fost generat și verificat; nu s-a găsit defect PDF separat.
+- #165 și #167 sunt complet SUCCESS. #166 are Validate/Android verde, dar Native/PDF este încă în execuție după un eșec tranzitoriu de rezolvare Gradle Kotlin pe prima încercare. #160 are Native eșuat inițial la selectorul Craiova 02; same-SHA retry în execuție.
+- Aceste PR-uri sunt în principal siblings pe baza #137; #158 este stack justificat pe #156. Nu există încă un SHA consolidat care să conțină toate extragerile și să fi trecut CI complet. Importurile din `main.dart` și hunk-urile din `expense_page.dart` trebuie reconcilitate la compunere; nu copia patch-uri între siblings.
+- Verificările folosesc emulator Firebase și echipe sintetice; nu certifică datele/proiectul Firebase de producție, hardware GPS sau configurația de distribuție. Nu s-a făcut merge, deploy, signed release ori distribuire APK. `production_ready=false`.
+
+Următorul checkpoint va înlocui stările IN PROGRESS numai după terminarea joburilor, va adăuga digest-urile finale și va valida exact noul HEAD al raportului.
