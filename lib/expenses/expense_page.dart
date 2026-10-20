@@ -1026,19 +1026,17 @@ class _ExpensePageState extends State<ExpensePage> {
     return h.toRadixString(16).padLeft(16, '0');
   }
 
-  String _normalizedDocNo(String s) => s.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-
-  Expense? _duplicateOf(Expense candidate) {
-    for (final e in widget.expenses) {
-      if (e.teamId != candidate.teamId) continue;
-      final sameSettlement = (e.settlementId ?? '') == (candidate.settlementId ?? '');
-      if (!sameSettlement) continue;
-      if (candidate.imageFingerprint.isNotEmpty && e.imageFingerprint == candidate.imageFingerprint) return e;
-      final n1 = _normalizedDocNo(candidate.documentNumber), n2 = _normalizedDocNo(e.documentNumber);
-      if (n1.isNotEmpty && n1 == n2 && sameDay(candidate.date, e.date) && (candidate.amount - e.amount).abs() < .02) return e;
-    }
-    return null;
-  }
+  Expense? _duplicateOf(Expense candidate) =>
+      findPotentialExpenseDuplicate<Expense>(
+        existing: widget.expenses,
+        candidate: candidate,
+        teamId: (expense) => expense.teamId,
+        settlementId: (expense) => expense.settlementId,
+        imageFingerprint: (expense) => expense.imageFingerprint,
+        documentNumber: (expense) => expense.documentNumber,
+        date: (expense) => expense.date,
+        amount: (expense) => expense.amount,
+      );
 
   Future<bool> _duplicateAllowed(Expense candidate) async {
     final learning = widget.settings.learning['conflicts'];
