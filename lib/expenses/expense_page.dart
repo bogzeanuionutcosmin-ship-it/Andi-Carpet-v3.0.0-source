@@ -62,17 +62,15 @@ class _ExpensePageState extends State<ExpensePage> {
       || finance.receivedDeparture != 0
       || finance.receivedDuring != 0;
 
-  String? _resolvedSettlementId() {
-    final available = teamSettlements.map((e) => e.id).toSet();
-    if (selectedSettlementId != null && (available.contains(selectedSettlementId) || (selectedSettlementId == _legacySettlementKey && hasLegacyData))) {
-      return selectedSettlementId;
-    }
-    final open = teamSettlements.where((s) => !s.closed).toList();
-    if (open.isNotEmpty) return open.first.id;
-    if (teamSettlements.isNotEmpty) return teamSettlements.first.id;
-    if (hasLegacyData) return _legacySettlementKey;
-    return null;
-  }
+  String? _resolvedSettlementId() =>
+      resolveExpenseSettlementId<TravelSettlement>(
+        orderedSettlements: teamSettlements,
+        selectedSettlementId: selectedSettlementId,
+        hasLegacyData: hasLegacyData,
+        legacySettlementKey: _legacySettlementKey,
+        idOf: (settlement) => settlement.id,
+        isClosed: (settlement) => settlement.closed,
+      );
 
   TravelSettlement? get settlement {
     final id = _resolvedSettlementId();
