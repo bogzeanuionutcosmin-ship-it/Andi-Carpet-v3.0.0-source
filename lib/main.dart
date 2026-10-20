@@ -173,6 +173,7 @@ part 'admin/admin_panel_page.dart';
 part 'schedule/program_schedule_clone.dart';
 part 'schedule/program_graph_state.dart';
 part 'schedule/program_start_snapshot.dart';
+part 'schedule/program_start_location_resolution.dart';
 part 'schedule/program_page.dart';
 part 'schedule/program_schedule_edits.dart';
 part 'schedule/program_schedule_item_removal.dart';

@@ -887,17 +887,20 @@ class _ProgramPageState extends State<ProgramPage> {
     final departureText=(choice['departure']??'').trim();final returnText=(choice['return']??'').trim();
     if(departureText.isEmpty||returnText.isEmpty){if(mounted)showErrorMessage(context,'Completează atât plecarea, cât și punctul final.');return;}
     if(mounted)showSuccessMessage(context,'Identific punctele de plecare și întoarcere…');
-    final startPoint=await _geocodeTripPoint(departureText);
-    final endPoint=departureText.toLowerCase()==returnText.toLowerCase()?startPoint:await _geocodeTripPoint(returnText);
-    if(startPoint==null||endPoint==null){if(mounted)showErrorMessage(context,'Nu am putut identifica una dintre localități. Scrie localitatea mai explicit, de exemplu „Brăila, România”.');return;}
+    final tripPoints=await resolveProgramStartLocations(
+      departure:departureText,
+      destination:returnText,
+      geocode:_geocodeTripPoint,
+    );
+    if(tripPoints==null){if(mounted)showErrorMessage(context,'Nu am putut identifica una dintre localități. Scrie localitatea mai explicit, de exemplu „Brăila, România”.');return;}
     final items=buildStartedProgramScheduleSnapshot(
       schedules:graphSchedules,
       departureName:departureText,
-      departureLatitude:startPoint['lat'] as double,
-      departureLongitude:startPoint['lon'] as double,
+      departureLatitude:tripPoints.departureLatitude,
+      departureLongitude:tripPoints.departureLongitude,
       returnName:returnText,
-      returnLatitude:endPoint['lat'] as double,
-      returnLongitude:endPoint['lon'] as double,
+      returnLatitude:tripPoints.destinationLatitude,
+      returnLongitude:tripPoints.destinationLongitude,
     );
     try { await widget.saveSchedules(items); } catch (e) { if (mounted) showErrorMessage(context, 'Graficul nu a putut fi pornit: ${scheduleSaveFailureMessage(e)}'); return; }
     widget.onChanged();
