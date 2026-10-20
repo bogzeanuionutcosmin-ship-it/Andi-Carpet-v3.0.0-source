@@ -9,9 +9,10 @@ typedef PdfByteDownload = Future<void> Function(
 /// Saves a PDF document and forwards its bytes using the shared PDF MIME type.
 Future<void> deliverPdf({
   required Future<Uint8List> Function() buildBytes,
-  required String filename,
+  required String Function() filename,
   required PdfByteDownload download,
 }) async {
   final bytes = await buildBytes();
-  await download(bytes, filename, mimeType: 'application/pdf');
+  final targetFilename = filename();
+  await download(bytes, targetFilename, mimeType: 'application/pdf');
 }
