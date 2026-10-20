@@ -29,4 +29,5 @@ The three required pull request workflows filter on their target branches.
 The base branch for this stacked change must be present in each allowlist,
 including the Native workflow's job condition, or GitHub creates no workflow
 runs for this PR. PR #156 adds its own branch to those filters so this stack
-receives Validate, Android, and Native checks.
+receives Validate, Android, and Native checks. The strict Python workflow
+contract test asserts all three allowlists and the Native job condition.
