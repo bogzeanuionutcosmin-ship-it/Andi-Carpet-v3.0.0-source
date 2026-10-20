@@ -113,6 +113,7 @@ part 'utils/operational_dates.dart';
 part 'map/verified_location_fix.dart';
 part 'map/graph_route_calculations.dart';
 part 'map/location_adjust_page.dart';
+part 'reports/financial_summary_row_projection.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
