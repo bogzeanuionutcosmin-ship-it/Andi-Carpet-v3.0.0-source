@@ -50,7 +50,10 @@ void main() {
 
     final markerSizeFinder = find.descendant(
       of: markerFinder,
-      matching: find.byType(SizedBox),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is SizedBox && widget.width == 40 && widget.height == 40,
+      ),
     );
     expect(markerSizeFinder, findsOneWidget);
     final markerSize = tester.widget<SizedBox>(markerSizeFinder);
