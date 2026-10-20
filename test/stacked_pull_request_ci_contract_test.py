@@ -12,6 +12,7 @@ STACK_BASES = (
     "codex/xix-home-team-membership-projection-20261021",
     "codex/xix-program-start-location-resolution-20261021",
     "codex/xix-expense-duplicate-decision-20261021",
+    "codex/xix-program-graph-state-persistence-20261021",
 )
 
 
@@ -33,6 +34,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("flutter test test/program_schedule_item_creation_test.dart", workflow)
         self.assertIn("flutter test test/program_start_location_resolution_test.dart", workflow)
         self.assertIn("flutter test test/expense_duplicate_decision_test.dart", workflow)
+        self.assertIn("flutter test test/program_graph_state_persistence_test.dart", workflow)
         self.assertIn("flutter test test/home_team_membership_projection_test.dart", workflow)
         self.assertIn("retention-days: 7", workflow)
 
@@ -46,6 +48,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("flutter test test/program_schedule_item_creation_test.dart", workflow)
         self.assertIn("flutter test test/program_start_location_resolution_test.dart", workflow)
         self.assertIn("flutter test test/expense_duplicate_decision_test.dart", workflow)
+        self.assertIn("flutter test test/program_graph_state_persistence_test.dart", workflow)
         self.assertIn("flutter test test/home_team_membership_projection_test.dart", workflow)
         self.assertIn("permissions:", workflow)
         self.assertIn("contents: read", workflow)
