@@ -89,11 +89,17 @@ List<CentralizerPdfExecutionRow> centralizerPdfExecutionRows({
     statusOf: (record) => record.status,
     locationNameOf: (record) => record.locationNameSnapshot,
     addressOf: (record) => record.addressSnapshot,
-    eventDateOf: recordEventTime,
-  ).map((row) => CentralizerPdfExecutionRow(
-        record: row.record,
-        date: row.date,
-      )).toList();
+    eventDateOf: (record) {
+      final eventDate = recordEventTime(record);
+      return eventDate;
+    },
+  ).map((row) {
+    final record = row.record;
+    return CentralizerPdfExecutionRow(
+      record: record,
+      date: recordEventTime(record),
+    );
+  }).toList();
 }
 
 Future<void> downloadCentralizerPdf({
