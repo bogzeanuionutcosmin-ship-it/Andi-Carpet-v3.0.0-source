@@ -345,26 +345,33 @@ Future<void> downloadDecontPdf({
 }) async {
   final theme = await _buildPdfTheme();
   final doc = pw.Document();
-  bool matchesSettlement(String? id) {
-    if (settlement != null) return id == settlement.id;
-    if (legacyOnly) return id == null || id.isEmpty;
-    return true;
-  }
-
   // Reconcile by immutable document/transfer IDs before exporting totals.
   // A repeated Firestore snapshot must not duplicate an expense or payment.
-  final expenseIds = <String>{};
-  final confirmedExpenses = expenses.where((e) =>
-      e.teamId == team.id && e.confirmed && e.amount.isFinite && e.amount >= 0 &&
-      matchesSettlement(e.settlementId) && expenseIds.add(e.id)).toList()
-    ..sort((a,b)=>a.date.compareTo(b.date));
-  final paymentIds = <String>{};
-  final confirmedPerDiems = perDiems.where((d) =>
-      d.teamId == team.id && d.status == PerDiemStatus.confirmed &&
-      d.received == true && d.actualReceivedAmount != null &&
-      d.actualReceivedAmount!.isFinite && d.actualReceivedAmount! >= 0 &&
-      matchesSettlement(d.settlementId) && paymentIds.add(d.id)).toList()
-    ..sort((a,b)=>a.date.compareTo(b.date));
+  final confirmedExpenses = selectDecontPdfExpenses<Expense>(
+    expenses: expenses,
+    teamId: team.id,
+    selectedSettlementId: settlement?.id,
+    legacyOnly: legacyOnly,
+    teamIdOf: (expense) => expense.teamId,
+    confirmedOf: (expense) => expense.confirmed,
+    amountOf: (expense) => expense.amount,
+    settlementIdOf: (expense) => expense.settlementId,
+    idOf: (expense) => expense.id,
+    dateOf: (expense) => expense.date,
+  );
+  final confirmedPerDiems = selectDecontPdfPerDiems<PerDiemEntry>(
+    entries: perDiems,
+    teamId: team.id,
+    selectedSettlementId: settlement?.id,
+    legacyOnly: legacyOnly,
+    teamIdOf: (entry) => entry.teamId,
+    confirmedOf: (entry) => entry.status == PerDiemStatus.confirmed,
+    receivedOf: (entry) => entry.received == true,
+    actualAmountOf: (entry) => entry.actualReceivedAmount,
+    settlementIdOf: (entry) => entry.settlementId,
+    idOf: (entry) => entry.id,
+    dateOf: (entry) => entry.date,
+  );
   String userName(String id) => users.firstWhere((u) => u.id == id, orElse: () => AppUser(id: id, name: id, role: UserRole.member)).name;
 
   final fuelReceipts = confirmedExpenses.where((e) => e.category == 'Combustibil').toList();
@@ -376,23 +383,29 @@ Future<void> downloadDecontPdf({
   // Derive received totals from the same unique transfers shown in the PDF.
   // Legacy aggregate-only records retain their historical stored totals.
   final rawReceipts = settlement?.receivedEntries ?? finance.receivedEntries;
-  final uniqueReceiptIds = <String>{};
-  final uniqueReceipts = rawReceipts.where((e) => e.amount.isFinite && e.amount >= 0 &&
-      uniqueReceiptIds.add(e.id)).toList();
+  final uniqueReceipts = selectDecontPdfReceivedEntries(
+    entries: rawReceipts,
+    amountOf: (entry) => entry.amount,
+    idOf: (entry) => entry.id,
+  );
   final receivedDeparture = rawReceipts.isEmpty
       ? (settlement?.departureTotal ?? finance.departureTotal)
-      : uniqueReceipts.where((e)=>e.kind=='departure').fold<double>(0,(a,e)=>a+e.amount);
+      : uniqueReceipts.where((entry) => entry.kind == 'departure')
+          .fold<double>(0, (total, entry) => total + entry.amount);
   final receivedDuring = rawReceipts.isEmpty
       ? (settlement?.duringTotal ?? finance.duringTotal)
-      : uniqueReceipts.where((e)=>e.kind=='during').fold<double>(0,(a,e)=>a+e.amount);
+      : uniqueReceipts.where((entry) => entry.kind == 'during')
+          .fold<double>(0, (total, entry) => total + entry.amount);
   final totalReceived = receivedDeparture + receivedDuring;
   final budgetRemaining = math.max(0.0, totalReceived - spent).toDouble();
   final amountDue = math.max(0.0, spent - totalReceived).toDouble();
   final titleSuffix = settlement?.name ?? (legacyOnly ? 'Istoric anterior' : team.name);
   final rawEntries = settlement?.receivedEntries ?? finance.receivedEntries;
-  final receiptIds = <String>{};
-  final entries = rawEntries.where((e) => e.amount.isFinite && e.amount >= 0 &&
-      receiptIds.add(e.id)).toList();
+  final entries = selectDecontPdfReceivedEntries(
+    entries: rawEntries,
+    amountOf: (entry) => entry.amount,
+    idOf: (entry) => entry.id,
+  );
   final duringEntries = entries.where((e)=>e.kind=='during').toList()..sort((a,b)=>a.date.compareTo(b.date));
 
   String money(double value) => '${value.toStringAsFixed(2)} lei';
