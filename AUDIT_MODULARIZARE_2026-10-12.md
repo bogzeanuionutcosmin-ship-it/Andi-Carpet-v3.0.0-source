@@ -170,11 +170,91 @@ Aceasta este dovadă de mutare textuală, nu test real pe dispozitiv.
 - Mutarea reduce utilizările dublate și scoate această logică din `part`-ul UI. Nu pretinde că decuplează întregul ProgramPage/DashboardPage.
 - Testele Python locale la baza #136: 173/173 PASS. Repository audit: 457 fișiere urmărite, 12 grupuri de asset/config identice. Flutter/Dart nu sunt instalate în mediul local; testul nou, analyze și build-ul sunt obligatoriu de verificat în workflows CI pe SHA-ul lotului.
 
-### Obligații rămase
+### Obligații rămase la checkpointul #136 (înregistrare istorică)
 
-1. Păstrează PR #134/#135/#136 ca Draft/Open, fără merge; examinează lotul nou ca PR Draft bazat pe capul #136.
+1. La acel checkpoint: păstrează PR #134/#135/#136 ca Draft/Open, fără merge; propune următorul lot ca PR Draft bazat pe capul #136. Starea curentizată #137–#145 și obligațiile încă deschise sunt notate în addendumul diferențial de la final.
 2. Confirmă CI Validate, Android debug și Native emulator pe SHA-ul exact al noului lot înainte de a declara validarea completă.
 3. Continuă cu separarea paginilor mari și a modelelor din `part` în biblioteci importabile, numai după inventarierea API-urilor și a importurilor.
 4. Investighează separat cache-urile write-only și parsările `receivedEntries`; fără eliminare până când efectele la erori și ordinea/identitatea sunt testate.
 5. Păstrează fluxurile financiare legacy/v2, cele 32 de stickere și adaptoarele specifice platformei.
 6. Nu declara modularizarea integrală încheiată până când cuplarea implicită la `main.dart`, codul nefolosit și testele pentru toate familiile nu au fost închise verificabil. `production_ready=false`.
+
+## Actualizare diferențială — candidații Map #141–#145 (19 octombrie 2026)
+
+Baza comparației este checkpointul de modularizare #136 și ramura părinte #137 `b49512b382e1731fd0158149b5b527a163780185`. Aceste schimbări sunt pe ramuri Draft separate; ele nu modifică `main`. Matricea de la checkpoint rămâne fotografia verificată la acel SHA, iar tabelul de mai jos consemnează delta, nu rescrie retrospectiv starea main.
+
+| Lot | Modul / contract mutat | Dependențe noi și duplicări | Regresii | SHA candidat și CI exact |
+|---|---|---|---|---|
+| #141 | `lib/map/map_route_selection.dart`: deduplicarea ID-urilor de graf activ, alegerea grafului solicitat cu fallback la primul activ și selectarea zilelor sortate cronologic. API-ul generic folosește accessors, fără dependență de `WorkSchedule`, widget sau `main.dart`. | Nicio dependență de pachet nou; nicio logică duplicată introdusă. Lista-ID păstrează filtrarea de echipă și ordinea primei apariții; zilele păstrează filtrul istoric doar pe graphId/started/closed, inclusiv rezultatul existent când un graphId apare la mai multe echipe. | `test/map_route_selection_test.dart`: ordinea/deduplicarea, closed/not-started, fallback, echipă null, sortare și stare goală. | `39f3506df19d9a53cd2060f646f57a0df567f7e6`; Validate `39341558517` și Android `39341558484` SUCCESS; Native `39341558511` attempt 3 în curs pe același SHA. Attempt 1 a eșuat la instalarea NDK (`ZipFile unknown archive`); attempt 2 a ajuns până după generarea PDF, apoi Auth Emulator a întrerupt stream-ul la autentificarea celui de-al doilea client (`unexpected end of stream`), fără eșec de aserțiune Map. |
+| #142 | `lib/map/reverse_geocode_address.dart`: parser pur pentru răspunsul Nominatim, separat de transportul HTTP. | Fără dependențe noi; nu atinge URL/parametri, headers, User-Agent, timeout, tratarea codului HTTP ori fallback-ul de excepții. Nu unifică reverse geocoding cu căutarea înainte din Dashboard. Contractul CI permite explicit ramura copilă, fără schimbare de pași/politici. | `test/reverse_geocode_address_test.dart`: aliasuri/prioritate drum, număr, localitate/județ, deduplicare, fallback display_name și lipsa rezultatului. | `43690da9808830c3ac2f71d06ca778a09fd910eb`; Validate `39341819031`, Android `39341819032`, Native `39341819051` — toate SUCCESS pe SHA exact. |
+| #143 | `lib/map/map_reverse_geocoder.dart`: transportul HTTP Nominatim injectabil, consumând parserul din #142. | Fără dependență nouă; păstrează endpointul, parametrii, precizia coordonatelor, antetele, User-Agent nativ, timeoutul, validarea răspunsului și fail-to-null. | `test/map_reverse_geocoder_test.dart`: request/antete web+nativ, rezultate invalide și excepții; toate testele folosesc transport fals, fără rețea. | `97b9f9198a8e739957fe1b4ab9d1b9ffa20e11b3`; Validate `39341822453`, Android `39341822515`, Native `39341822442` — toate SUCCESS; flux conectat și verificările PDF/checksum/artifact au trecut. |
+| #144 | `lib/map/map_work_badge_state.dart`: logică generică de stare completed/next-or-running/not-completed, fără modele sau widgeturi; MapPage păstrează maparea la culori existente. | Nicio dependență/pachet nou și nicio logică duplicată. | `test/map_work_badge_state_test.dart`: fără asignări, toate vizitele terminate, restante între echipe, running/waiting, ordinea programului și sărirea intrărilor refuzate/necompletate. | `fd551da6163e014aad901c40e9b7975e1a29f0e9`; Validate `39342521773` SUCCESS; Android `39342521800` SUCCESS; Native `39342521775` încă în curs la 23:46 UTC. |
+| #145 | `lib/map/map_operational_schedules.dart`: filtrarea generică a programelor pornite din ziua operațională, pentru admin/echipă. Caller-ul păstrează calculul datei. | Fără pachet nou; include intenționat grafice închise, ca să nu dispară markerul verde după închidere. | `test/map_operational_schedules_test.dart`: zi/pornire, scope admin, teamId absent și includerea programului închis. | `817489db98f1a47140ba5c07fd7bc175d1081e79`; Validate `39342732825` și Android `39342732850` SUCCESS; Native `39342732906` încă în curs la 23:46 UTC. |
+
+### Comparație cu constatarea istorică despre MapPage
+
+Auditul din 12 octombrie descria MapPage ca `part` cu GPS, pluginuri, HTTP/Mapbox și stare globală, fără teste focalizate identificate. Constatarea structurală rămâne corectă pentru pagina întreagă; nu implică faptul că fiecare helper era netestat după #136. Loturile #139–#145 au scos politici/helpers importabile pentru cheia/expirarea geometriei, validarea punctelor, selecția rutelor, parsing/transport reverse geocoding, starea badge-ului și filtrul de programe operaționale. GPS, UI, modele și orchestration MapPage rămân cuplate; aceste loturi sunt îmbunătățiri incrementale, nu închiderea modularizării Map. Constatările istorice despre duplicate nu justifică ștergerea celor 12 grupuri de asset/config sau a codului cu efecte/ordini necaracterizate.
+
+Nu s-au șters cod/asseturi pe baza inventarului de identități, nu s-au schimbat date Firebase și nu s-au atins fluxurile existente. `production_ready=false`.
+
+
+## Corecție finală CI și lotul Map #146 (20 octombrie 2026 UTC)
+
+Acest addendum închide statusurile intermediare din tabelul de mai sus pe baza run-urilor terminale pentru SHA-urile exacte:
+
+| PR / SHA de cod | Validate | Android debug | Native emulator |
+|---|---|---|---|
+| #141 39f3506df19d9a53cd2060f646f57a0df567f7e6 | 39341558517 SUCCESS | 39341558484 SUCCESS | 39341558511 attempt 3 SUCCESS |
+| #142 43690da9808830c3ac2f71d06ca778a09fd910eb | 39341819031 SUCCESS | 39341819032 SUCCESS | 39341819051 SUCCESS |
+| #143 97b9f9198a8e739957fe1b4ab9d1b9ffa20e11b3 | 39341822453 SUCCESS | 39341822515 SUCCESS | 39341822442 SUCCESS |
+| #144 fd551da6163e014aad901c40e9b7975e1a29f0e9 | 39342521773 SUCCESS | 39342521800 SUCCESS | 39342521775 SUCCESS |
+| #145 817489db98f1a47140ba5c07fd7bc175d1081e79 | 39342732825 SUCCESS | 39342732850 SUCCESS | 39342732906 rerun SUCCESS |
+| #146 913d9a2ed34aeff46514acead45c054f105a67e8 | 39344765440 SUCCESS | 39344765436 SUCCESS | 39344765414 SUCCESS |
+
+La #145, prima execuție Native a fost marcată cancelled după avansarea ramurii cu un commit exclusiv documentar; jobul a fost relansat pe același SHA de cod și a terminat SUCCESS. Pentru #141, attempt-urile de mediu 1–2 și retry-ul cu succes sunt descrise în PR și raport. Codul verificat pentru #145 rămâne părinte al commitului documentar 7da7476dd8fc28f08e6105abfcdcce5d704329f3.
+
+### Lot #146 — filtrele locațiilor mapate
+
+PR Draft #146 913d9a2ed34aeff46514acead45c054f105a67e8, copil al #145, extrage intersecția generică categorie/status/GPS folosită de marker list, count/list fără coordonate și gruparea pe categorie în lib/map/map_location_filters.dart. Testele test/map_location_filters_test.dart acoperă categoria și statusul selectat, GPS complet/parțial, restricția unui panel la o categorie și selecții goale. Se păstrează ordinea de intrare înaintea sortărilor existente. Nu depinde de modele, UI, Firebase sau pachete noi. Branch-filter-ele Validate/Android/Native admit baza #145, iar contractul lor structural este actualizat; nu s-au schimbat pașii workflow sau politica de deploy.
+
+Testele locale per lot: 173 Python, 3 Node și git diff --check PASS; Flutter/Dart nu sunt instalate local. Pentru toate schimbările Map #141–#146, codul/politicile au regression tests focalizate și CI exact-head este verde. PR-urile #134–#146 rămân Draft/Open și nemergate la această verificare. MapPage păstrează cuplare între GPS, UI, modele și orchestration; acesta este progres incremental, nu închiderea modularizării aplicației. Nicio ștergere bazată pe duplicate de asset/config fără dovadă, nicio schimbare Firebase. production_ready=false.
+
+## Lot independent — parser de sumă Expense (20 octombrie 2026)
+
+- Următorul lot separat pornește din PR #137, HEAD-ul său curent fiind baza tehnică. Nu atinge SchedulePage/DashboardPage și nu repetă delta din #134–#137.
+- `ExpensePage._expenseAmountBani` este mutat în `lib/expenses/expense_amount_parser.dart`, bibliotecă Dart autonomă. Modulul reutilizează `parseLeiToBani` din `lib/finance/per_diem_money.dart`, păstrând limita formularului `1–9` cifre întregi, separator virgulă/punct, cel mult două zecimale și sumă strict pozitivă.
+- Formularul continuă să valideze aceeași expresie de eroare și să trimită aceeași valoare integer-bani către `Expense`. Nu se schimbă modelul, settlement-ul, OCR-ul sau stocarea. `test/expense_amount_parser_test.dart` acoperă bani întregi/fracționari, limita maximă, zero, semne, formate invalide, exponent și precizie prea mare.
+- Contractul de igienă a repository-ului a fost mutat de la verificarea sursei UI la modulul responsabil de parsing și confirmă folosirea conversiei integer-bani comune.
+- Verificări locale pe codul lotului: Python/security 173/173 PASS; Node member projection 3/3 PASS; `git diff --check` PASS. Flutter/Dart nu sunt instalate local; testele Dart, analyze și build-ul rămân de confirmat în CI pe SHA-ul exact al PR-ului.
+- Aceasta este o a doua extracție țintită, nu închiderea modulului Expenses. `expense_page.dart` rămâne un `part` mare; OCR, dialogurile, filtrele de settlement și scrierile au cuplare la modele/starea principală și sunt obligații separate.
+
+### CI pentru PR-uri copil stacked
+
+- Endpointul de workflow a confirmat că #137 nu primea run-uri când baza branch-ului copil nu era în allowlist. PR #136 a primit un commit numai de rutare/contract CI (`611373f5f40fab34754a9629d5249d55c457c825`); acesta nu schimbă codul aplicației sau testele de produs. Validate, Android și Native au pornit pe acest HEAD; Validate a trecut, celelalte două sunt încă în curs la momentul acestei note.
+- PR #137 include o extindere suplimentară numai pentru CI (`b49512b382e1731fd0158149b5b527a163780185`) astfel încât următorul PR stacked să primească aceleași trei workflow-uri. `test/stacked_pull_request_ci_contract_test.py` verifică toate filtrele și condiția native.
+- #137 rămâne diferența modulară: tabelul și lotul schedule; branch routing-ul necesar pentru copil este parte a istoricului #136/#137 ca să existe validări CI reale. Niciun merge nu este permis sau făcut.
+
+
+
+## Addendum XIX — verificarea incrementală a politicilor MapPage (19 octombrie 2026, UTC)
+
+### Diferențial față de auditul din 12 octombrie
+
+Recontrolul codului din #136 a confirmat că validarea punctelor GPS și politica cache-ului geometriei rutiere erau încă implementate în `MapPage` (`part` din `main.dart`). Ambele sunt funcții pure fără IO; au fost mutate în module autonome și acoperite cu teste de graniță. Regulile geospațiale și expirarea nu s-au schimbat. Aceste constatări au fost reconfirmate în HEAD-ul curent și nu reutilizează automat observațiile istorice.
+
+| PR / exact HEAD | Modulare și dependențe | Duplicare/dead code | Teste și CI |
+|---|---|---|---|
+| #139 `d4c5325f3ef7ae9831ff2b99c7a8a10ad257b551` | `map_geometry_cache_policy.dart` separă formarea cheii coordonatelor și TTL-ul de 5 minute din `MapPage`; depinde de `latlong2`, fără UI sau IO. | Niciun dead code șters și niciun duplicat Dart byte-identic identificat. Ordinea coordonatelor, precizia 6 zecimale și pragul strict rămân identice. | `map_geometry_cache_policy_test.dart`; Validate `39330028546`, Android `39330028582`, Native `39330028636`: SUCCESS pe HEAD. |
+| #140 `adc1484ae579ad17372e7f70609a231ff4f40451` | `map_point_validation.dart` separă regula GPS apelată înaintea scrierilor markerelor; depinde de `latlong2), fără storage, permisiuni sau UI. | Nu s-a eliminat logică presupus moartă. Limitele inclusive, coordonatele finite și respingerea `(0,0)` sunt păstrate pentru aceleași trei apeluri. | `map_point_validation_test.dart`; Validate `39330296822`, Android `39330296806`, Native `39330296765`: SUCCESS pe HEAD. |
+
+### CI final și compoziție stacked
+
+- #136 code HEAD `0c9cbc6e1090c295db2c867826ca58447e738df9` rămâne checkpointul anterior validat. Pe descendentul routing-only `611373f5f40fab34754a9629d5249d55c457c825`, Validate `39328855282`, Android `39328855242`, Native `39328855346` au toate SUCCESS. Native a avut două încercări eșuate de runner: finder-ul UI nu a găsit temporar „Craiova 02”, apoi descărcarea NDK a returnat arhivă invalidă. A treia încercare a trecut testul UI, verificarea PDF și upload-ul.
+- #137 HEAD `b49512b382e1731fd0158149b5b527a163780185`: Validate `39329182964`, Android `39329183035`, Native `39329183078` — SUCCESS.
+- #138 code HEAD anterior `9d80d35a0e9b8a1b134a20afe52d8dc71b6669a0`: Validate `39329350464`, Android `39329350579`, Native `39329350418` — SUCCESS. Această notă documentară este adăugată în continuarea branch-ului #138 și va fi retestată pe noul exact HEAD.
+- Pentru #139/#140 au trecut local 173 teste Python/security, 3 Node projection tests și `git diff --check`; Flutter/Dart sunt verificate prin CI exact de mai sus. Toate cele patru loturi rămân Draft/Open și nemergate, direct bazate pe #136 routing-only; niciun patch de produs #134–#138 nu a fost reaplicat.
+- `main` și regulile oficiale sunt neschimbate. Nu s-au modificat Firebase, comportament, dependențe, releases, semnare ori APK.
+
+### Obligații care rămân după loturile MapPage
+
+Extragerea a două politici pure nu modularizează întregul MapPage. MapPage, HomePage, ExpensePage, ProgramPage și DashboardPage rămân pagini mari `part`-uri. Nu elimina cache-urile Home, nu simplifica parsarea financiară și nu fragmentează mutații Firestore până când contractele/fallback-urile nu sunt modelate prin teste. Continuă inventarierea dependențelor, verifică orice candidat de cod nefolosit înainte de ștergere, apoi separă UI și IO incremental cu teste pe fiecare limită. `production_ready=false`.

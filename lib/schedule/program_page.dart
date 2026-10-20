@@ -54,15 +54,11 @@ class _ProgramPageState extends State<ProgramPage> {
     if (id == null) return <WorkSchedule>[];
     return teamSchedules.where((s) => s.graphId == id).toList()..sort((a,b)=>a.date.compareTo(b.date));
   }
-  List<String> get graphIds {
-    final out = <String>[];
-    for (final s in teamSchedules) { if (!out.contains(s.graphId)) out.add(s.graphId); }
-    out.sort((a,b) {
-      DateTime first(String id) => teamSchedules.where((s)=>s.graphId==id).map((s)=>s.date).reduce((x,y)=>y.isBefore(x)?y:x);
-      return first(b).compareTo(first(a));
-    });
-    return out;
-  }
+  List<String> get graphIds => orderedProgramGraphIds<WorkSchedule>(
+    schedules: teamSchedules,
+    graphIdOf: (schedule) => schedule.graphId,
+    dateOf: (schedule) => schedule.date,
+  );
   WorkSchedule? get graphHead => graphSchedules.isEmpty ? null : graphSchedules.first;
   Car? get assignedCar {
     final id = team.carId;
@@ -854,63 +850,15 @@ class _ProgramPageState extends State<ProgramPage> {
   Future<bool> _saveWithFeedback(WorkSchedule s,{required String success,required String auditAction})async{try{await widget.saveSchedules(<WorkSchedule>[s]);if(!mounted)return true;widget.onChanged();widget.log(auditAction,'${team.name} · ${s.graphName} · ${formatDate(s.date)}');widget.notifyTeam(team.id,'Grafic de lucru modificat','${s.graphName} · ${formatDate(s.date)} a fost actualizat.');showSuccessMessage(context,success);return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi salvat: ${scheduleSaveFailureMessage(e)}');return false;}}
   Future<bool> _applyGraphState({bool? started,bool? closed,bool? paused})async{final items=graphSchedules.map(_cloneSchedule).toList();for(final x in items){if(started!=null)x.started=started;if(closed!=null)x.closed=closed;if(paused!=null)x.paused=paused;}try{await widget.saveSchedules(items);if(!mounted)return true;widget.onChanged();return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi actualizat: ${scheduleSaveFailureMessage(e)}');return false;}}
   Future<Map<String,dynamic>?> _geocodeTripPoint(String query) async {
-    final clean=query.trim();
-    if(clean.isEmpty)return null;
-
-    Map<String,dynamic>? parsePoint(Object? raw){
-      if(raw is! Map)return null;
-      final lat=double.tryParse((raw['lat']??'').toString());
-      final lon=double.tryParse((raw['lon']??'').toString());
-      if(lat==null||lon==null)return null;
-      return {'name':(raw['name']??clean).toString(),'lat':lat,'lon':lon};
-    }
-
-    Future<Map<String,dynamic>?> viaServer() async {
-      try{
-        final token=await FirebaseAuth.instance.currentUser?.getIdToken();
-        if(token==null||token.isEmpty)return null;
-        final response=await http.post(
-          Uri.parse(_geocodeRomaniaPlaceUrl),
-          headers:{'Content-Type':'application/json','Authorization':'Bearer $token'},
-          body:jsonEncode({'query':clean}),
-        ).timeout(const Duration(seconds:12));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        final decoded=jsonDecode(response.body);
-        return parsePoint(decoded);
-      }catch(e){debugPrint('[geocode] Server fallback: $e');return null;}
-    }
-
-    Future<Map<String,dynamic>?> viaNominatim(String value) async {
-      try{
-        final uri=Uri.https('nominatim.openstreetmap.org','/search',{
-          'format':'jsonv2','q':value,'limit':'1','countrycodes':'ro','accept-language':'ro','addressdetails':'1'
-        });
-        final headers=<String,String>{'Accept':'application/json','Accept-Language':'ro'};
-        if(!kIsWeb)headers['User-Agent']='AndiCarpeta/2.0.8 (internal operations app)';
-        final response=await http.get(uri,headers:headers).timeout(const Duration(seconds:10));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        final decoded=jsonDecode(response.body);
-        if(decoded is! List||decoded.isEmpty)return null;
-        return parsePoint(decoded.first);
-      }catch(e){debugPrint('[geocode] Nominatim $value: $e');return null;}
-    }
-
-    // În browser cererea directă către Nominatim poate fi blocată/intermediată
-    // diferit față de Android. Web folosește întâi proxy-ul nostru Firebase.
-    if(kIsWeb){
-      final server=await viaServer();
-      if(server!=null)return server;
-    }
-
-    final candidates=<String>[clean];
-    if(!clean.toLowerCase().contains('românia')&&!clean.toLowerCase().contains('romania'))candidates.add('$clean, România');
-    for(final candidate in candidates){
-      final direct=await viaNominatim(candidate);
-      if(direct!=null)return direct;
-    }
-
-    if(!kIsWeb)return viaServer();
-    return null;
+    return RomaniaPlaceGeocoder(
+      serverEndpoint: Uri.parse(_geocodeRomaniaPlaceUrl),
+      getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
+      get: (uri, {headers}) => http.get(uri, headers: headers),
+      post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),
+      isWeb: kIsWeb,
+      includeName: true,
+      log: (message) => debugPrint(message),
+    ).geocode(query);
   }
 
   Future<void> _startGraph()async{

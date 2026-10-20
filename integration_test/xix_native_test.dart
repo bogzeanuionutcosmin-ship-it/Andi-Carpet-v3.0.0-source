@@ -70,24 +70,28 @@ void main() {
       await tester.tap(find.text('Creează grafic'));
       await tester.pumpAndSettle();
       for(final location in graphLocations){
-        await tester.ensureVisible(find.byType(TextField));
-        await tester.enterText(find.byType(TextField),location.name);
+        final search=find.byWidgetPredicate((widget) =>
+          widget is TextField &&
+          widget.decoration?.labelText == 'Caută sală / adresă / categorie');
+        expect(search,findsOneWidget,reason:'The Graph picker must expose its location search field');
+        await tester.ensureVisible(search);
+        await tester.enterText(search,location.name);
         await tester.pumpAndSettle();
-        final tile=find.widgetWithText(CheckboxListTile,location.name);
-        // Selecting the first location adds a nested SingleChildScrollView for
-        // the selected chips. Target the picker CustomScrollView explicitly so
-        // subsequent locations scroll the result list instead of the chips.
-        final picker=find.descendant(
-          of:find.byType(AlertDialog),
-          matching:find.byType(CustomScrollView),
-        ).first;
-        final pickerScrollable=find.descendant(
-          of:picker,
+        // Scope scrolling to the picker's CustomScrollView. AlertDialog can
+        // contain other scrollables (selected chips/actions); scrolling those
+        // leaves virtualized location rows unbuilt.
+        final pickerList=find.descendant(
+          of:find.byType(CustomScrollView).last,
           matching:find.byType(Scrollable),
         ).first;
-        await tester.scrollUntilVisible(tile,80,scrollable:pickerScrollable);
+        final tile=find.widgetWithText(CheckboxListTile,location.name);
+        await tester.scrollUntilVisible(tile,80,scrollable:pickerList);
         await tester.pumpAndSettle();
-        expect(tile,findsOneWidget,reason:'The picker must show ${location.name} after search and scrolling.');
+        debugPrint('[xix-native] picker query="${location.name}" '
+          'resultTiles=${tile.evaluate().length} '
+          'listScrollables=${find.descendant(of:find.byType(CustomScrollView).last,matching:find.byType(Scrollable)).evaluate().length}');
+        expect(tile,findsOneWidget,
+          reason:'The open/active fixture location "${location.name}" must remain present after filtering and scrolling the Graph picker');
         await tester.tap(tile);
         await tester.pumpAndSettle();
       }

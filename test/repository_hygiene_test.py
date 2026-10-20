@@ -474,6 +474,10 @@ class RepositoryHygieneTests(unittest.TestCase):
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
         formatters = (ROOT / "lib/utils/date_formatters.dart").read_text(encoding="utf-8")
         self.assertIn("part 'utils/operational_dates.dart';", main)
+        self.assertIn("import 'utils/work_date_policy.dart';", main)
+        self.assertIn("export 'utils/work_date_policy.dart';", main)
+        policy = (ROOT / "lib/utils/work_date_policy.dart").read_text(encoding="utf-8")
+        self.assertNotIn("part of '../main.dart';", policy)
         self.assertIn("import 'utils/date_formatters.dart';", main)
         self.assertIn("export 'utils/date_formatters.dart';", main)
         self.assertIn("part of '../main.dart';", module)
@@ -481,27 +485,33 @@ class RepositoryHygieneTests(unittest.TestCase):
         pure_symbols = ("String two(int n)", "String formatDate(DateTime d)",
                         "String formatMonth(DateTime d)", "String timeText(DateTime? d)",
                         "String durationText(Duration? d)", "bool sameDay(DateTime a, DateTime b)")
-        operational_symbols = ("DateTime operationalWorkDate(DateTime now)",
-                               "DateTime workWindowStart(DateTime workDate)",
-                               "DateTime workWindowEnd(DateTime workDate)",
-                               "bool isInsideWorkWindow(", "bool recordBelongsToWorkDate(",
-                               "DateTime recordEventTime(")
+        policy_symbols = ("DateTime operationalWorkDate(DateTime now)",
+                          "DateTime workWindowStart(DateTime workDate)",
+                          "DateTime workWindowEnd(DateTime workDate)",
+                          "bool isInsideWorkWindow(")
+        operational_symbols = ("bool recordBelongsToWorkDate(", "DateTime recordEventTime(")
         for symbol in pure_symbols:
             self.assertNotIn(symbol, main)
             self.assertNotIn(symbol, module)
             self.assertEqual(formatters.count(symbol), 1)
+        for symbol in policy_symbols:
+            self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, formatters)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(policy.count(symbol), 1)
         for symbol in operational_symbols:
             self.assertNotIn(symbol, main)
             self.assertNotIn(symbol, formatters)
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("Duration(hours: 23, minutes: 30)", module)
-        self.assertIn("DateTime(workDate.year, workDate.month, workDate.day, 9, 30)", module)
+        self.assertIn("Duration(hours: 23, minutes: 30)", policy)
+        self.assertIn("DateTime(workDate.year, workDate.month, workDate.day, 9, 30)", policy)
 
     def test_permission_groups_and_payment_labels_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/permission_status_labels.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/permission_status_labels.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/permission_status_labels.dart';", main)
+        self.assertIn("export 'models/permission_status_labels.dart';", main)
+        self.assertIn("import 'app_enums_permissions.dart';", module)
         for symbol in ("String functionPermissionGroup(FunctionPermission permission)",
                        "extension PerDiemStatusX on PerDiemStatus",
                        "extension PaymentMethodX on PerDiemPaymentMethod"):
@@ -621,8 +631,11 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_default_categories_and_functions_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/default_categories_functions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/default_categories_functions.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/default_categories_functions.dart';", main)
+        self.assertIn("export 'models/default_categories_functions.dart';", main)
+        self.assertNotIn("part of '../main.dart';", module)
+        self.assertIn("import 'app_enums_permissions.dart';", module)
+        self.assertIn("import 'location_category_and_function_definition.dart';", module)
         for symbol in ("String functionPermissionId(",
                        "List<LocationCategory> defaultLocationCategories(",
                        "List<FunctionDefinition> defaultFunctionDefinitions(",
@@ -637,10 +650,12 @@ class RepositoryHygieneTests(unittest.TestCase):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/location_status_and_functions.dart").read_text(encoding="utf-8")
         models = (ROOT / "lib/models/location_category_and_function_definition.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/location_status_and_functions.dart';", main)
+        self.assertIn("import 'models/location_status_and_functions.dart';", main)
+        self.assertIn("export 'models/location_status_and_functions.dart';", main)
+        self.assertIn("import 'app_enums_permissions.dart';", module)
         self.assertIn("import 'models/location_category_and_function_definition.dart';", main)
         self.assertIn("export 'models/location_category_and_function_definition.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("part of '../main.dart';", module)
         self.assertNotIn("part of '../main.dart';", models)
         self.assertIn("import 'package:flutter/material.dart';", models)
         self.assertEqual(module.count("extension LocationStatusX on LocationStatus"), 1)
@@ -1164,13 +1179,30 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        expense_source = (ROOT / "lib/expenses/expense_page.dart").read_text(encoding="utf-8")
+        expense_source = (ROOT / "lib/expenses/expense_amount_parser.dart").read_text(encoding="utf-8")
         map_source = (ROOT / "lib/map/map_page.dart").read_text(encoding="utf-8")
         self.assertIn("hasMatch(normalized)", expense_source)
         self.assertIn("normalized = raw.trim().replaceAll", expense_source)
+        self.assertIn("parseLeiToBani(normalized)", expense_source)
         self.assertIn("multicolour segments", map_source)
         self.assertIn(": _rainbowRouteLines()", map_source)
         self.assertNotIn("for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }", source)
+
+
+    def test_profile_employment_tenure_is_standalone_and_directly_tested(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        profile = (ROOT / "lib/profile/profile_page.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/profile/employment_tenure.dart").read_text(encoding="utf-8")
+        test = (ROOT / "test/employment_tenure_test.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'profile/employment_tenure.dart';", main)
+        self.assertIn("export 'profile/employment_tenure.dart';", main)
+        self.assertIn("calculateEmploymentParts(hire, now: DateTime.now())", profile)
+        self.assertNotIn("_employmentParts(", profile)
+        self.assertIn("if (start.isAfter(now))", module)
+        self.assertIn("DateTime anchorFor(int months)", module)
+        for path in ("end-of-month", "leap-year", "future hire date"):
+            self.assertIn(path, test)
+
 
 
 if __name__ == "__main__":

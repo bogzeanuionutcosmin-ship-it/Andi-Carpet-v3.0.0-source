@@ -8,7 +8,13 @@ Future<void> downloadWorkGraphPdf({
 }) async {
   if (days.isEmpty) return;
   final theme = await _buildPdfTheme();
-  final orderedDays = [...days]..sort((a, b) => a.date.compareTo(b.date));
+  final dayProjections = projectWorkGraphPdfDays<WorkSchedule, ScheduleItem>(
+    days: days,
+    dateOf: (day) => day.date,
+    itemsOf: (day) => day.items,
+    orderOf: (item) => item.order,
+  );
+  final orderedDays = dayProjections.map((projection) => projection.day).toList();
   final first = orderedDays.first;
   final roadKm = await estimateGraphRoadDistanceKm(orderedDays, locations);
   final km = roadKm ?? estimateGraphDistanceKm(orderedDays, locations);
@@ -36,10 +42,11 @@ Future<void> downloadWorkGraphPdf({
         if (fuelCost > 0) pw.Text('Cost carburant estimat: ${fuelCost.toStringAsFixed(2)} lei'),
       ]),
       pw.SizedBox(height: 14),
-      ...orderedDays.asMap().entries.expand((entry) {
+      ...dayProjections.asMap().entries.expand((entry) {
         final dayIndex = entry.key;
-        final day = entry.value;
-        final orderedItems = [...day.items]..sort((a, b) => a.order.compareTo(b.order));
+        final dayProjection = entry.value;
+        final day = dayProjection.day;
+        final orderedItems = dayProjection.items;
         return <pw.Widget>[
           pw.Container(
             margin: const pw.EdgeInsets.only(top: 10, bottom: 4),
@@ -76,34 +83,30 @@ List<CentralizerPdfExecutionRow> centralizerPdfExecutionRows({
   String search = '',
   WorkAttemptStatus? statusFilter,
 }) {
-  final q = search.trim().toLowerCase();
-  final start = from == null ? null : DateTime(from.year, from.month, from.day);
-  final finish = to == null
-      ? null
-      : DateTime(to.year, to.month, to.day + 1);
-
-  final rows = records.where((record) {
-    if (record.type != type) return false;
-    if (teamId != null && teamId.isNotEmpty && record.teamId != teamId) {
-      return false;
-    }
-    if (statusFilter != null && record.status != statusFilter) return false;
-    final eventDate = recordEventTime(record);
-    if (start != null && eventDate.isBefore(start)) return false;
-    if (finish != null && !eventDate.isBefore(finish)) return false;
-    if (q.isNotEmpty &&
-        !record.locationNameSnapshot.toLowerCase().contains(q) &&
-        !record.addressSnapshot.toLowerCase().contains(q)) {
-      return false;
-    }
-    return true;
-  }).map((record) => CentralizerPdfExecutionRow(
-        record: record,
-        date: recordEventTime(record),
-      )).toList()
-    ..sort((a, b) => a.date.compareTo(b.date));
-
-  return rows;
+  return projectCentralizerPdfExecutionRows<CentralizerRecord>(
+    records: records,
+    type: type,
+    teamId: teamId,
+    from: from,
+    to: to,
+    search: search,
+    statusFilter: statusFilter,
+    typeOf: (record) => record.type,
+    teamIdOf: (record) => record.teamId,
+    statusOf: (record) => record.status,
+    locationNameOf: (record) => record.locationNameSnapshot,
+    addressOf: (record) => record.addressSnapshot,
+    eventDateOf: (record) {
+      final eventDate = recordEventTime(record);
+      return eventDate;
+    },
+  ).map((row) {
+    final record = row.record;
+    return CentralizerPdfExecutionRow(
+      record: record,
+      date: recordEventTime(record),
+    );
+  }).toList();
 }
 
 Future<void> downloadCentralizerPdf({

@@ -36,58 +36,16 @@ class _DashboardPageState extends State<DashboardPage> {
   );
 
   Future<Map<String,dynamic>?> _dashboardGeocodeTripPoint(String query) async {
-    final clean=query.trim();
-    if(clean.isEmpty)return null;
-
-    Map<String,dynamic>? parsePoint(Object? raw){
-      if(raw is! Map)return null;
-      final lat=double.tryParse((raw['lat']??'').toString());
-      final lon=double.tryParse((raw['lon']??'').toString());
-      if(lat==null||lon==null)return null;
-      return {'lat':lat,'lon':lon};
-    }
-
-    Future<Map<String,dynamic>?> viaServer() async {
-      try{
-        final token=await FirebaseAuth.instance.currentUser?.getIdToken();
-        if(token==null||token.isEmpty)return null;
-        final response=await http.post(
-          Uri.parse(_geocodeRomaniaPlaceUrl),
-          headers:{'Content-Type':'application/json','Authorization':'Bearer $token'},
-          body:jsonEncode({'query':clean}),
-        ).timeout(const Duration(seconds:12));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        return parsePoint(jsonDecode(response.body));
-      }catch(e){debugPrint('[geocode] Dashboard server fallback: $e');return null;}
-    }
-
-    Future<Map<String,dynamic>?> viaNominatim(String value) async {
-      try{
-        final uri=Uri.https('nominatim.openstreetmap.org','/search',{
-          'format':'jsonv2','q':value,'limit':'1','countrycodes':'ro','accept-language':'ro','addressdetails':'1'
-        });
-        final headers=<String,String>{'Accept':'application/json','Accept-Language':'ro'};
-        if(!kIsWeb)headers['User-Agent']='AndiCarpeta/2.0.8 (internal operations app)';
-        final response=await http.get(uri,headers:headers).timeout(const Duration(seconds:10));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        final decoded=jsonDecode(response.body);
-        if(decoded is! List||decoded.isEmpty)return null;
-        return parsePoint(decoded.first);
-      }catch(e){debugPrint('[geocode] Dashboard Nominatim $value: $e');return null;}
-    }
-
-    if(kIsWeb){
-      final server=await viaServer();
-      if(server!=null)return server;
-    }
-    final candidates=<String>[clean];
-    if(!clean.toLowerCase().contains('românia')&&!clean.toLowerCase().contains('romania'))candidates.add('$clean, România');
-    for(final candidate in candidates){
-      final direct=await viaNominatim(candidate);
-      if(direct!=null)return direct;
-    }
-    if(!kIsWeb)return viaServer();
-    return null;
+    return RomaniaPlaceGeocoder(
+      serverEndpoint: Uri.parse(_geocodeRomaniaPlaceUrl),
+      getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
+      get: (uri, {headers}) => http.get(uri, headers: headers),
+      post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),
+      isWeb: kIsWeb,
+      includeName: false,
+      logPrefix: 'Dashboard',
+      log: (message) => debugPrint(message),
+    ).geocode(query);
   }
 
   Future<void> _toggleProgram(WorkSchedule schedule) async {
@@ -132,26 +90,6 @@ class _DashboardPageState extends State<DashboardPage> {
     if(mounted)showSuccessMessage(context,'Programul echipei a fost oprit.');
   }
 
-  // Orașul este preluat din denumirea locației sau din ultimul segment al
-  // adresei, nu din numele străzii (primul segment al adresei).
-  String _locationCityLabel(Location l) {
-    final name = l.name.trim().replaceFirst(
-      RegExp(r'^(million|magic)\s+', caseSensitive: false), '',
-    ).trim();
-    final parts = l.address.split(',').map((s) => s.trim())
-        .where((s) => s.isNotEmpty).toList();
-    if (parts.length >= 2) {
-      final candidate = parts.last.replaceFirst(
-        RegExp(r'^(jud\.?|județul|municipiul|orașul)\s+', caseSensitive: false), '',
-      ).trim();
-      if (candidate.isNotEmpty &&
-          !RegExp(r'^(românia|romania|rom|\d{5,6})$', caseSensitive: false).hasMatch(candidate)) {
-        return candidate;
-      }
-    }
-    return name.split(RegExp(r'[-–]')).first.trim();
-  }
-
   String _memberLocationLabel(String userId, Map<String, Map<String,dynamic>> live, String teamId) {
     final d = live[userId];
     if (d == null) return 'Locație live indisponibilă';
@@ -189,7 +127,10 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     }
     if (currentSite != null) {
-      final city = _locationCityLabel(currentSite);
+      final city = dashboardLocationCityLabel(
+        name: currentSite.name,
+        address: currentSite.address,
+      );
       return city.isEmpty ? '${currentSite.name}$age' : '${currentSite.name} · $city$age';
     }
     if (locality.isNotEmpty) return '$locality$age';
@@ -204,44 +145,21 @@ class _DashboardPageState extends State<DashboardPage> {
     return 'inițială';
   }
 
-  String _recordStateText(CentralizerRecord? r) {
-    if (r == null) return 'Neîncepută';
-    switch (r.status) {
-      case WorkAttemptStatus.completed:
-        return 'Finalizată · ${durationText(r.duration)} · ${timeText(r.startedAt)}–${timeText(r.finishedAt)}';
-      case WorkAttemptStatus.running:
-        final wait = r.waitingDuration;
-        return 'Pe sală din ${timeText(r.startedAt)}${wait == null ? '' : ' · așteptare ${durationText(wait)}'}';
-      case WorkAttemptStatus.waitingAccess:
-        return 'Așteptare acces din ${timeText(r.waitingStartedAt)}';
-      case WorkAttemptStatus.refused:
-        return 'Refuzată${(r.refusalReason ?? '').trim().isEmpty ? '' : ' · ${r.refusalReason}'}';
-      case WorkAttemptStatus.notCompleted:
-        return 'Nerealizată${(r.refusalReason ?? '').trim().isEmpty ? '' : ' · ${r.refusalReason}'}';
-    }
-  }
+  String _recordStateText(CentralizerRecord? r) => dashboardRecordStateText(
+    status: r?.status,
+    refusalReason: r?.refusalReason,
+    duration: r?.duration,
+    startedAt: r?.startedAt,
+    finishedAt: r?.finishedAt,
+    waitingStartedAt: r?.waitingStartedAt,
+    waitingDuration: r?.waitingDuration,
+  );
 
-  Color _recordStateColor(CentralizerRecord? r) {
-    if (r == null) return Colors.blueGrey;
-    return switch (r.status) {
-      WorkAttemptStatus.completed => Colors.green,
-      WorkAttemptStatus.running => Colors.blue,
-      WorkAttemptStatus.waitingAccess => Colors.orange,
-      WorkAttemptStatus.refused => Colors.red,
-      WorkAttemptStatus.notCompleted => Colors.deepOrange,
-    };
-  }
+  Color _recordStateColor(CentralizerRecord? r) =>
+      dashboardRecordStateColor(r?.status);
 
-  IconData _recordStateIcon(CentralizerRecord? r) {
-    if (r == null) return Icons.radio_button_unchecked;
-    return switch (r.status) {
-      WorkAttemptStatus.completed => Icons.check,
-      WorkAttemptStatus.running => Icons.cleaning_services,
-      WorkAttemptStatus.waitingAccess => Icons.hourglass_top,
-      WorkAttemptStatus.refused => Icons.block,
-      WorkAttemptStatus.notCompleted => Icons.warning_amber_rounded,
-    };
-  }
+  IconData _recordStateIcon(CentralizerRecord? r) =>
+      dashboardRecordStateIcon(r?.status);
 
   @override
   Widget build(BuildContext context) {

@@ -110,20 +110,18 @@ class _ExpensePageState extends State<ExpensePage> {
     ..sort((a, b) => b.date.compareTo(a.date));
   // Sold informativ pe toate deplasările, inclusiv cele închise.
   // Diferențele contestate nu sunt compensate automat.
-  int _perDiemDifferenceBani(String beneficiaryId, String distributorId) {
-    var balance = 0;
-    for (final entry in widget.perDiems) {
-      if (entry.memberId != beneficiaryId || entry.distributedBy != distributorId ||
-          entry.status != PerDiemStatus.confirmed || entry.actualReceivedAmount == null) continue;
-      final receivedBani = parsePerDiemBani(entry.actualReceivedAmount!.toString());
-      final declaredBani = parsePerDiemBani(entry.amount.toString());
-      if (receivedBani == null || declaredBani == null) continue;
-      // A supplementary distribution is cash paid toward a prior debt,
-      // not an additional daily allowance.
-      balance += (entry.supplementaryFor == null ? declaredBani : 0) - receivedBani;
-    }
-    return balance;
-  }
+  int _perDiemDifferenceBani(String beneficiaryId, String distributorId) =>
+      calculateLegacyPerDiemDifferenceBani<PerDiemEntry>(
+        entries: widget.perDiems,
+        beneficiaryId: beneficiaryId,
+        distributorId: distributorId,
+        memberId: (entry) => entry.memberId,
+        distributedBy: (entry) => entry.distributedBy,
+        isConfirmed: (entry) => entry.status == PerDiemStatus.confirmed,
+        actualReceivedAmount: (entry) => entry.actualReceivedAmount,
+        declaredAmount: (entry) => entry.amount,
+        supplementaryFor: (entry) => entry.supplementaryFor,
+      );
 
   double _perDiemDifference(String beneficiaryId, String distributorId) =>
       _perDiemDifferenceBani(beneficiaryId, distributorId) / 100;
@@ -995,50 +993,17 @@ class _ExpensePageState extends State<ExpensePage> {
     } catch (e) { if (mounted) showErrorMessage(context, 'Imaginea nu a putut fi deschisă: $e'); return null; }
   }
 
-  Uint8List _compressDocumentImage(Uint8List bytes) {
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) { if (bytes.length <= 550000) return bytes; throw const FormatException('Imagine prea mare sau format nesuportat.'); }
-    var work = img.bakeOrientation(decoded);
-    int longest = work.width > work.height ? work.width : work.height;
-    if (longest > 1400) {
-      work = work.width >= work.height ? img.copyResize(work, width: 1400) : img.copyResize(work, height: 1400);
-    }
-    var encoded = Uint8List.fromList(img.encodeJpg(work, quality: 68));
-    if (encoded.length > 480000) {
-      work = work.width >= work.height ? img.copyResize(work, width: 1050) : img.copyResize(work, height: 1050);
-      encoded = Uint8List.fromList(img.encodeJpg(work, quality: 56));
-    }
-    if (encoded.length > 480000) {
-      work = work.width >= work.height ? img.copyResize(work, width: 800) : img.copyResize(work, height: 800);
-      encoded = Uint8List.fromList(img.encodeJpg(work, quality: 48));
-    }
-    return encoded;
-  }
-
-  String _fingerprint(Uint8List bytes) {
-    var h = BigInt.parse('cbf29ce484222325', radix: 16);
-    final prime = BigInt.parse('100000001b3', radix: 16);
-    final mask = (BigInt.one << 64) - BigInt.one;
-    for (final b in bytes) {
-      h ^= BigInt.from(b);
-      h = (h * prime) & mask;
-    }
-    return h.toRadixString(16).padLeft(16, '0');
-  }
-
-  String _normalizedDocNo(String s) => s.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-
-  Expense? _duplicateOf(Expense candidate) {
-    for (final e in widget.expenses) {
-      if (e.teamId != candidate.teamId) continue;
-      final sameSettlement = (e.settlementId ?? '') == (candidate.settlementId ?? '');
-      if (!sameSettlement) continue;
-      if (candidate.imageFingerprint.isNotEmpty && e.imageFingerprint == candidate.imageFingerprint) return e;
-      final n1 = _normalizedDocNo(candidate.documentNumber), n2 = _normalizedDocNo(e.documentNumber);
-      if (n1.isNotEmpty && n1 == n2 && sameDay(candidate.date, e.date) && (candidate.amount - e.amount).abs() < .02) return e;
-    }
-    return null;
-  }
+  Expense? _duplicateOf(Expense candidate) =>
+      findPotentialExpenseDuplicate<Expense>(
+        existing: widget.expenses,
+        candidate: candidate,
+        teamId: (expense) => expense.teamId,
+        settlementId: (expense) => expense.settlementId,
+        imageFingerprint: (expense) => expense.imageFingerprint,
+        documentNumber: (expense) => expense.documentNumber,
+        date: (expense) => expense.date,
+        amount: (expense) => expense.amount,
+      );
 
   Future<bool> _duplicateAllowed(Expense candidate) async {
     final learning = widget.settings.learning['conflicts'];
@@ -1100,19 +1065,6 @@ class _ExpensePageState extends State<ExpensePage> {
     if (expense != null) await _saveNewExpense(expense);
   }
 
-  // Monetary input is validated as decimal text before conversion to double.
-  // This prevents NaN, infinity, exponential notation and sub-ban amounts.
-  int? _expenseAmountBani(String raw) {
-    final normalized = raw.trim().replaceAll(',', '.');
-    if (!RegExp(r'^\d{1,9}(?:\.\d{1,2})?$').hasMatch(normalized)) return null;
-    final parts = normalized.split('.');
-    final lei = int.tryParse(parts.first);
-    if (lei == null) return null;
-    final bani = parts.length == 1 ? 0 : int.parse(parts.last.padRight(2, '0'));
-    final total = lei * 100 + bani;
-    return total > 0 ? total : null;
-  }
-
   Future<Expense?> _expenseDialog({FiscalOcrData? ocr, Uint8List? imageBytes}) async {
     final formKey = GlobalKey<FormState>();
     final prefill = expenseOcrPrefill(ocr, now: DateTime.now());
@@ -1127,12 +1079,12 @@ class _ExpensePageState extends State<ExpensePage> {
     DateTime docDate = prefill.date;
     Uint8List? compressed;
     if(imageBytes!=null){
-      try{compressed=_compressDocumentImage(imageBytes);}catch(e){if(mounted)showErrorMessage(context,'Fotografia nu a putut fi comprimată și nu va fi atașată: $e');}
+      try{compressed=compressExpenseDocumentImage(imageBytes);}catch(e){if(mounted)showErrorMessage(context,'Fotografia nu a putut fi comprimată și nu va fi atașată: $e');}
     }
     // Fotografia este utilizată numai în memorie pentru OCR/previzualizare.
     // În Firestore salvăm doar un fingerprint mic pentru deduplicare.
     const photoBase64 = '';
-    final fingerprint = imageBytes == null ? '' : _fingerprint(imageBytes);
+    final fingerprint = imageBytes == null ? '' : fingerprintExpenseDocumentImage(imageBytes);
 
     final result = await showDialog<Expense>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) => AlertDialog(
       title: Text(ocr == null ? 'Introducere document' : 'Verifică datele citite prin OCR'),
@@ -1151,7 +1103,7 @@ class _ExpensePageState extends State<ExpensePage> {
         const SizedBox(height: 8),
         TextFormField(controller: supplier, decoration: const InputDecoration(labelText: 'Furnizor / comerciant')),
         const SizedBox(height: 8),
-        TextFormField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Sumă', suffixText: 'lei'), validator: (v) => _expenseAmountBani(v ?? '') == null ? 'Introdu o sumă pozitivă, cu maximum 2 zecimale.' : null),
+        TextFormField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Sumă', suffixText: 'lei'), validator: (v) => parseExpenseAmountBani(v ?? '') == null ? 'Introdu o sumă pozitivă, cu maximum 2 zecimale.' : null),
         const SizedBox(height: 8),
         ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event), title: const Text('Data documentului'), subtitle: Text(_shortDate(docDate)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: docDate); if (x != null) setD(() => docDate = x); }, child: const Text('Alege'))),
         DropdownButtonFormField<String>(initialValue: cat, decoration: const InputDecoration(labelText: 'Categorie'), items: const [DropdownMenuItem(value: 'Combustibil', child: Text('Combustibil')), DropdownMenuItem(value: 'Facturi', child: Text('Facturi')), DropdownMenuItem(value: 'Alte cheltuieli', child: Text('Alte cheltuieli'))], onChanged: (v) { if (v != null) setD(() => cat = v); }),
@@ -1171,7 +1123,7 @@ class _ExpensePageState extends State<ExpensePage> {
             ScaffoldMessenger.of(d).showSnackBar(const SnackBar(content: Text('Data documentului nu poate fi în viitor.')));
             return;
           }
-          final bani = _expenseAmountBani(amount.text);
+          final bani = parseExpenseAmountBani(amount.text);
           if (bani == null) return;
           final value = bani / 100.0;
           Navigator.pop(d, Expense(
