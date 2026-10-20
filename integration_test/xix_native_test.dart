@@ -70,12 +70,28 @@ void main() {
       await tester.tap(find.text('Creează grafic'));
       await tester.pumpAndSettle();
       for(final location in graphLocations){
-        await tester.ensureVisible(find.byType(TextField));
-        await tester.enterText(find.byType(TextField),location.name);
+        final search=find.byWidgetPredicate((widget) =>
+          widget is TextField &&
+          widget.decoration.labelText == 'Caută sală / adresă / categorie');
+        expect(search,findsOneWidget,reason:'The Graph picker must expose its location search field');
+        await tester.ensureVisible(search);
+        await tester.enterText(search,location.name);
         await tester.pumpAndSettle();
+        // Scope scrolling to the picker's CustomScrollView. AlertDialog can
+        // contain other scrollables (selected chips/actions); scrolling those
+        // leaves virtualized location rows unbuilt.
+        final pickerList=find.descendant(
+          of:find.byType(CustomScrollView).last,
+          matching:find.byType(Scrollable),
+        ).first;
         final tile=find.widgetWithText(CheckboxListTile,location.name);
-        await tester.scrollUntilVisible(tile,80,scrollable:find.descendant(of:find.byType(AlertDialog),matching:find.byType(Scrollable)).first);
+        await tester.scrollUntilVisible(tile,80,scrollable:pickerList);
         await tester.pumpAndSettle();
+        debugPrint('[xix-native] picker query="${location.name}" '
+          'resultTiles=${tile.evaluate().length} '
+          'listScrollables=${find.descendant(of:find.byType(CustomScrollView).last,matching:find.byType(Scrollable)).evaluate().length}');
+        expect(tile,findsOneWidget,
+          reason:'The open/active fixture location "${location.name}" must remain present after filtering and scrolling the Graph picker');
         await tester.tap(tile);
         await tester.pumpAndSettle();
       }
