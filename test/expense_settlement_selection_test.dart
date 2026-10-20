@@ -16,7 +16,7 @@ String? resolve({
     resolveExpenseSettlementId<_Settlement>(
       orderedSettlements: settlements,
       selectedSettlementId: selected,
-      hasLegacyData: hasLegacyData,
+      hasLegacyData: () => hasLegacyData,
       legacySettlementKey: '__legacy__',
       idOf: (settlement) => settlement.id,
       isClosed: (settlement) => settlement.closed,
@@ -82,6 +82,24 @@ void main() {
       ),
       '__legacy__',
     );
+  });
+
+  test('does not evaluate legacy data when the selected settlement is available', () {
+    var legacyChecks = 0;
+    final selected = resolveExpenseSettlementId<_Settlement>(
+      orderedSettlements: const [_Settlement('open', closed: false)],
+      selectedSettlementId: 'open',
+      hasLegacyData: () {
+        legacyChecks++;
+        return true;
+      },
+      legacySettlementKey: '__legacy__',
+      idOf: (settlement) => settlement.id,
+      isClosed: (settlement) => settlement.closed,
+    );
+
+    expect(selected, 'open');
+    expect(legacyChecks, 0);
   });
 
   test('does not mutate the ordered settlement list', () {

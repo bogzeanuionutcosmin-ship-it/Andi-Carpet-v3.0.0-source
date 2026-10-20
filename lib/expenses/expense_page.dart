@@ -66,7 +66,7 @@ class _ExpensePageState extends State<ExpensePage> {
       resolveExpenseSettlementId<TravelSettlement>(
         orderedSettlements: teamSettlements,
         selectedSettlementId: selectedSettlementId,
-        hasLegacyData: hasLegacyData,
+        hasLegacyData: () => hasLegacyData,
         legacySettlementKey: _legacySettlementKey,
         idOf: (settlement) => settlement.id,
         isClosed: (settlement) => settlement.closed,

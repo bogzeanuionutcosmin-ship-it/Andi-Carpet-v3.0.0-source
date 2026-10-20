@@ -5,7 +5,7 @@
 String? resolveExpenseSettlementId<T>({
   required List<T> orderedSettlements,
   required String? selectedSettlementId,
-  required bool hasLegacyData,
+  required bool Function() hasLegacyData,
   required String legacySettlementKey,
   required String Function(T settlement) idOf,
   required bool Function(T settlement) isClosed,
@@ -16,7 +16,7 @@ String? resolveExpenseSettlementId<T>({
 
   if (selectedSettlementId != null &&
       (availableIds.contains(selectedSettlementId) ||
-          (selectedSettlementId == legacySettlementKey && hasLegacyData))) {
+          (selectedSettlementId == legacySettlementKey && hasLegacyData()))) {
     return selectedSettlementId;
   }
 
@@ -25,6 +25,6 @@ String? resolveExpenseSettlementId<T>({
   }
 
   if (orderedSettlements.isNotEmpty) return idOf(orderedSettlements.first);
-  if (hasLegacyData) return legacySettlementKey;
+  if (hasLegacyData()) return legacySettlementKey;
   return null;
 }
