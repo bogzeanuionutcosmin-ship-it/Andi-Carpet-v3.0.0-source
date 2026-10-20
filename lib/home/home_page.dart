@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     }
   }
 
-  String _pushTokenDocId(String token) => base64UrlEncode(utf8.encode(token)).replaceAll('=', '');
+  String _pushTokenDocId(String token) => pushTokenDocumentId(token);
 
   Future<void> _savePushToken(String token) async {
     if (token.trim().isEmpty) return;
@@ -1157,11 +1157,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _startChatSync(FirebaseFirestore db) {
-    String visibleSenderName(Map<String, dynamic> data) {
-      final senderId = (data['senderId'] ?? '').toString();
-      if (!isAdmin && _hiddenUserIds.contains(senderId)) return 'Sistem';
-      return (data['senderName'] ?? 'un membru').toString();
-    }
+    String visibleSenderName(Map<String, dynamic> data) =>
+        visibleChatSenderName(data, isAdmin: isAdmin, hiddenUserIds: _hiddenUserIds);
 
     bool mandatoryChatAlert(Map<String,dynamic> data) {
       final senderId=(data['senderId']??'').toString();

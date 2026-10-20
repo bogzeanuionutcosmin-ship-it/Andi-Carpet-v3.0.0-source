@@ -1115,15 +1115,16 @@ class _ExpensePageState extends State<ExpensePage> {
 
   Future<Expense?> _expenseDialog({FiscalOcrData? ocr, Uint8List? imageBytes}) async {
     final formKey = GlobalKey<FormState>();
-    final number = TextEditingController(text: ocr?.documentNumber ?? '');
-    final amount = TextEditingController(text: ocr?.amount == null ? '' : ocr!.amount!.toStringAsFixed(2));
-    final supplier = TextEditingController(text: ocr?.supplier ?? '');
+    final prefill = expenseOcrPrefill(ocr, now: DateTime.now());
+    final number = TextEditingController(text: prefill.documentNumber);
+    final amount = TextEditingController(text: prefill.amountText);
+    final supplier = TextEditingController(text: prefill.supplier);
     final desc = TextEditingController();
-    final litersC = TextEditingController(text: ocr?.liters == null ? '' : ocr!.liters!.toStringAsFixed(2));
-    final priceC = TextEditingController(text: ocr?.pricePerLiter == null ? '' : ocr!.pricePerLiter!.toStringAsFixed(2));
-    String cat = ocr?.looksLikeFuel == true ? 'Combustibil' : 'Alte cheltuieli';
-    ExpenseDocumentType docType = (ocr?.rawText.toUpperCase().contains('FACTUR') ?? false) ? ExpenseDocumentType.invoice : ExpenseDocumentType.fiscalReceipt;
-    DateTime docDate = ocr?.date ?? DateTime.now();
+    final litersC = TextEditingController(text: prefill.litersText);
+    final priceC = TextEditingController(text: prefill.pricePerLiterText);
+    String cat = prefill.category;
+    ExpenseDocumentType docType = prefill.documentType;
+    DateTime docDate = prefill.date;
     Uint8List? compressed;
     if(imageBytes!=null){
       try{compressed=_compressDocumentImage(imageBytes);}catch(e){if(mounted)showErrorMessage(context,'Fotografia nu a putut fi comprimată și nu va fi atașată: $e');}
