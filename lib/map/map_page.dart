@@ -190,25 +190,12 @@ class _MapPageState extends State<MapPage> {
 
   Widget _locationMarkerIcon(Location l) {
     final badge = _workBadgeColor(l);
-    return Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
-      Opacity(
-        opacity: l.status == LocationStatus.open ? 1 : .62,
-        child: DecoratedBox(
-          decoration: BoxDecoration(color: _color(l), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: const [BoxShadow(blurRadius: 5, color: Colors.black26)]),
-          child: SizedBox(width: 40, height: 40, child: Icon(l.status == LocationStatus.open ? Icons.location_on : l.status.icon, color: Colors.white)),
-        ),
-      ),
-      if (badge != null)
-        Positioned(
-          right: -2,
-          bottom: -2,
-          child: Container(
-            width: 15,
-            height: 15,
-            decoration: BoxDecoration(color: badge, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-          ),
-        ),
-    ]);
+    return LocationMapMarker(
+      color: _color(l),
+      icon: l.status == LocationStatus.open ? Icons.location_on : l.status.icon,
+      opacity: l.status == LocationStatus.open ? 1 : .62,
+      workBadgeColor: badge,
+    );
   }
 
   List<String> get _activeRouteGraphIds {
