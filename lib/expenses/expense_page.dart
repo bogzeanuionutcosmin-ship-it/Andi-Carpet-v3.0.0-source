@@ -995,37 +995,6 @@ class _ExpensePageState extends State<ExpensePage> {
     } catch (e) { if (mounted) showErrorMessage(context, 'Imaginea nu a putut fi deschisă: $e'); return null; }
   }
 
-  Uint8List _compressDocumentImage(Uint8List bytes) {
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) { if (bytes.length <= 550000) return bytes; throw const FormatException('Imagine prea mare sau format nesuportat.'); }
-    var work = img.bakeOrientation(decoded);
-    int longest = work.width > work.height ? work.width : work.height;
-    if (longest > 1400) {
-      work = work.width >= work.height ? img.copyResize(work, width: 1400) : img.copyResize(work, height: 1400);
-    }
-    var encoded = Uint8List.fromList(img.encodeJpg(work, quality: 68));
-    if (encoded.length > 480000) {
-      work = work.width >= work.height ? img.copyResize(work, width: 1050) : img.copyResize(work, height: 1050);
-      encoded = Uint8List.fromList(img.encodeJpg(work, quality: 56));
-    }
-    if (encoded.length > 480000) {
-      work = work.width >= work.height ? img.copyResize(work, width: 800) : img.copyResize(work, height: 800);
-      encoded = Uint8List.fromList(img.encodeJpg(work, quality: 48));
-    }
-    return encoded;
-  }
-
-  String _fingerprint(Uint8List bytes) {
-    var h = BigInt.parse('cbf29ce484222325', radix: 16);
-    final prime = BigInt.parse('100000001b3', radix: 16);
-    final mask = (BigInt.one << 64) - BigInt.one;
-    for (final b in bytes) {
-      h ^= BigInt.from(b);
-      h = (h * prime) & mask;
-    }
-    return h.toRadixString(16).padLeft(16, '0');
-  }
-
   String _normalizedDocNo(String s) => s.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
 
   Expense? _duplicateOf(Expense candidate) {
@@ -1126,12 +1095,12 @@ class _ExpensePageState extends State<ExpensePage> {
     DateTime docDate = ocr?.date ?? DateTime.now();
     Uint8List? compressed;
     if(imageBytes!=null){
-      try{compressed=_compressDocumentImage(imageBytes);}catch(e){if(mounted)showErrorMessage(context,'Fotografia nu a putut fi comprimată și nu va fi atașată: $e');}
+      try{compressed=compressExpenseDocumentImage(imageBytes);}catch(e){if(mounted)showErrorMessage(context,'Fotografia nu a putut fi comprimată și nu va fi atașată: $e');}
     }
     // Fotografia este utilizată numai în memorie pentru OCR/previzualizare.
     // În Firestore salvăm doar un fingerprint mic pentru deduplicare.
     const photoBase64 = '';
-    final fingerprint = imageBytes == null ? '' : _fingerprint(imageBytes);
+    final fingerprint = imageBytes == null ? '' : fingerprintExpenseDocumentImage(imageBytes);
 
     final result = await showDialog<Expense>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) => AlertDialog(
       title: Text(ocr == null ? 'Introducere document' : 'Verifică datele citite prin OCR'),
