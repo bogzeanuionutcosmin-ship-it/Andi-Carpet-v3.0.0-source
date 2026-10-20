@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:andi_carpet_app/map/active_map_categories.dart';
+import 'package:andi_carpeta/map/active_map_categories.dart';
 
 class _Category {
   const _Category(this.name, this.active);
