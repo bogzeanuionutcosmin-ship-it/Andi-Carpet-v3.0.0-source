@@ -15,6 +15,7 @@ void main() {
   });
 
   test('uses URL-safe alphabet and strips all Base64 padding', () {
+    expect(pushTokenDocumentId('\u083e\u083f'), '4KC-4KC_');
     final id = pushTokenDocumentId('token+/=?');
 
     expect(id, isNot(contains('=')));
