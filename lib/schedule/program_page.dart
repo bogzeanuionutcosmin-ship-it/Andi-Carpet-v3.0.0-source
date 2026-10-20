@@ -848,13 +848,14 @@ class _ProgramPageState extends State<ProgramPage> {
   }
   
   Future<bool> _saveWithFeedback(WorkSchedule s,{required String success,required String auditAction})async{try{await widget.saveSchedules(<WorkSchedule>[s]);if(!mounted)return true;widget.onChanged();widget.log(auditAction,'${team.name} · ${s.graphName} · ${formatDate(s.date)}');widget.notifyTeam(team.id,'Grafic de lucru modificat','${s.graphName} · ${formatDate(s.date)} a fost actualizat.');showSuccessMessage(context,success);return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi salvat: ${scheduleSaveFailureMessage(e)}');return false;}}
-  Future<bool> _applyGraphState({bool? started,bool? closed,bool? paused})async{final items = projectProgramGraphState(
+  Future<bool> _applyGraphState({bool? started,bool? closed,bool? paused})async{try{await saveProgramGraphState(
       schedules: graphSchedules,
       clone: cloneWorkSchedule,
+      save: widget.saveSchedules,
       started: started,
       closed: closed,
       paused: paused,
-    );try{await widget.saveSchedules(items);if(!mounted)return true;widget.onChanged();return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi actualizat: ${scheduleSaveFailureMessage(e)}');return false;}}
+    );if(!mounted)return true;widget.onChanged();return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi actualizat: ${scheduleSaveFailureMessage(e)}');return false;}}
   Future<Map<String,dynamic>?> _geocodeTripPoint(String query) async {
     return RomaniaPlaceGeocoder(
       serverEndpoint: Uri.parse(_geocodeRomaniaPlaceUrl),
