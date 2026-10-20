@@ -3,7 +3,7 @@ import 'package:andi_carpeta/main.dart' as app;
 import 'package:andi_carpeta/ocr_parser.dart';
 
 void main() {
-  const fallbackDate = DateTime(2026, 10, 20);
+  final fallbackDate = DateTime(2026, 10, 20);
 
   test('uses the existing empty OCR defaults for manual entry', () {
     final result = app.expenseOcrPrefill(null, now: fallbackDate);
@@ -21,7 +21,7 @@ void main() {
   test('preserves OCR field formatting, fuel category, invoice type and parsed date', () {
     final parsedDate = DateTime(2026, 10, 19);
     final result = app.expenseOcrPrefill(
-      const FiscalOcrData(
+      FiscalOcrData(
         rawText: 'factură fiscală',
         documentNumber: 'AB-42',
         amount: 1234.5,
