@@ -3,14 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import '../lib/expenses/expense_duplicate_matcher.dart';
 
 class _ExpenseRecord {
-  const _ExpenseRecord({
+  _ExpenseRecord({
     this.team = 'team-a',
     this.settlement,
     this.fingerprint = '',
     this.number = '',
-    this.date = const DateTime(2026, 10, 20),
+    DateTime? date,
     this.amount = 10,
-  });
+  }) : date = date ?? DateTime(2026, 10, 20);
 
   final String team;
   final String? settlement;
@@ -39,17 +39,20 @@ _ExpenseRecord? _find(
 void main() {
   group('legacy expense duplicate matcher', () {
     test('isolates teams and settlements while treating null and empty alike', () {
-      const candidate = _ExpenseRecord(settlement: null, fingerprint: 'same');
-      const otherTeam = _ExpenseRecord(
+      final candidate = _ExpenseRecord(
+        settlement: null,
+        fingerprint: 'same',
+      );
+      final otherTeam = _ExpenseRecord(
         team: 'team-b',
         settlement: null,
         fingerprint: 'same',
       );
-      const otherSettlement = _ExpenseRecord(
+      final otherSettlement = _ExpenseRecord(
         settlement: 'settlement-b',
         fingerprint: 'same',
       );
-      const legacyEmptySettlement = _ExpenseRecord(
+      final legacyEmptySettlement = _ExpenseRecord(
         settlement: '',
         fingerprint: 'same',
       );
@@ -67,15 +70,15 @@ void main() {
     });
 
     test('requires a nonempty candidate fingerprint to match fingerprints', () {
-      const emptyFingerprints = [
+      final emptyFingerprints = [
         _ExpenseRecord(number: 'different'),
       ];
       expect(
-        _find(emptyFingerprints, const _ExpenseRecord(number: 'another')),
+        _find(emptyFingerprints, _ExpenseRecord(number: 'another')),
         isNull,
       );
 
-      const fingerprintMatch = _ExpenseRecord(
+      final fingerprintMatch = _ExpenseRecord(
         fingerprint: 'image-hash',
         number: 'unrelated',
         date: DateTime(2026, 10, 22),
@@ -85,7 +88,7 @@ void main() {
         identical(
           _find(
             [fingerprintMatch],
-            const _ExpenseRecord(fingerprint: 'image-hash'),
+            _ExpenseRecord(fingerprint: 'image-hash'),
           ),
           fingerprintMatch,
         ),
@@ -94,12 +97,12 @@ void main() {
     });
 
     test('normalizes ASCII document numbers and matches the same calendar day', () {
-      const existing = _ExpenseRecord(
+      final existing = _ExpenseRecord(
         number: '  ab 12 ',
         date: DateTime(2026, 10, 20, 8),
         amount: 10,
       );
-      const candidate = _ExpenseRecord(
+      final candidate = _ExpenseRecord(
         number: 'AB-12',
         date: DateTime(2026, 10, 20, 22),
         amount: 10,
@@ -109,11 +112,11 @@ void main() {
     });
 
     test('does not match an otherwise equal document on a different day', () {
-      const existing = _ExpenseRecord(
+      final existing = _ExpenseRecord(
         number: 'AB-12',
         date: DateTime(2026, 10, 20),
       );
-      const candidate = _ExpenseRecord(
+      final candidate = _ExpenseRecord(
         number: 'ab 12',
         date: DateTime(2026, 10, 21),
       );
@@ -122,21 +125,24 @@ void main() {
     });
 
     test('uses the strict amount tolerance of less than two bani', () {
-      const belowBoundary = _ExpenseRecord(
+      final belowBoundary = _ExpenseRecord(
         number: 'DOC-1',
         amount: 0,
       );
-      const belowCandidate = _ExpenseRecord(
+      final belowCandidate = _ExpenseRecord(
         number: 'DOC 1',
         amount: .019,
       );
-      expect(identical(_find([belowBoundary], belowCandidate), belowBoundary), isTrue);
+      expect(
+        identical(_find([belowBoundary], belowCandidate), belowBoundary),
+        isTrue,
+      );
 
-      const atBoundary = _ExpenseRecord(
+      final atBoundary = _ExpenseRecord(
         number: 'DOC-1',
         amount: 0,
       );
-      const boundaryCandidate = _ExpenseRecord(
+      final boundaryCandidate = _ExpenseRecord(
         number: 'DOC 1',
         amount: .02,
       );
@@ -144,14 +150,14 @@ void main() {
     });
 
     test('returns the first matching record in input order', () {
-      const first = _ExpenseRecord(fingerprint: 'same');
-      const second = _ExpenseRecord(fingerprint: 'same');
+      final first = _ExpenseRecord(fingerprint: 'same');
+      final second = _ExpenseRecord(fingerprint: 'same');
 
       expect(
         identical(
           _find(
             [first, second],
-            const _ExpenseRecord(fingerprint: 'same'),
+            _ExpenseRecord(fingerprint: 'same'),
           ),
           first,
         ),
