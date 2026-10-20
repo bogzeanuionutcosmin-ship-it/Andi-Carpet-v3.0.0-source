@@ -50,11 +50,55 @@ def own_crash(log):
     return False
 
 
-def state():
+class UIHierarchyReadError(AssertionError):
+    """The UIAutomator hierarchy stayed empty or malformed through bounded retries."""
+
+
+def parse_ui_hierarchy_with_retry(read_attempt, *, max_attempts=5,
+                                  retry_delay=0.5, sleep=time.sleep,
+                                  diagnostic=print):
+    """Retry only transient empty/malformed XML, then fail with bounded diagnostics."""
+    if max_attempts < 1:
+        raise ValueError('max_attempts must be at least one')
+
+    last_error = None
+    last_dump_output = ''
+    for attempt in range(1, max_attempts + 1):
+        dump_output, raw = read_attempt()
+        if isinstance(dump_output, bytes):
+            last_dump_output = dump_output.decode(errors='replace').strip()
+        else:
+            last_dump_output = str(dump_output).strip()
+        try:
+            return ET.fromstring(raw), raw
+        except ET.ParseError as error:
+            last_error = error
+            kind = 'empty' if not raw.strip() else 'malformed'
+            diagnostic(
+                f'UIAutomator returned {kind} hierarchy XML '
+                f'(attempt {attempt}/{max_attempts}); '
+                f'dump={last_dump_output[:160]!r}'
+            )
+            if attempt < max_attempts:
+                sleep(retry_delay)
+
+    raise UIHierarchyReadError(
+        f'UI hierarchy XML unavailable after {max_attempts} attempts; '
+        f'last error={last_error}; dump={last_dump_output[:160]!r}'
+    ) from last_error
+
+
+def _uiautomator_dump_attempt():
     adb('shell', 'rm', '-f', '/sdcard/xix-window.xml')
-    adb('shell', 'uiautomator', 'dump', '/sdcard/xix-window.xml')
+    dump_output = adb('shell', 'uiautomator', 'dump', '/sdcard/xix-window.xml')
     raw = adb('exec-out', 'cat', '/sdcard/xix-window.xml')
-    return ET.fromstring(raw), raw
+    return dump_output, raw
+
+
+def state(max_attempts=5):
+    return parse_ui_hierarchy_with_retry(
+        _uiautomator_dump_attempt, max_attempts=max_attempts
+    )
 
 
 def foreground():
@@ -95,7 +139,7 @@ def wait_screen(stem, title, alternatives, required=(), attempts=30):
     system_ui_recoveries = 0
     for _ in range(attempts):
         try:
-            root, raw = state()
+            root, raw = state(max_attempts=1)
             (OUT / f'{stem}.xml').write_bytes(raw)
             if app_screen_matches(root, title, alternatives, required):
                 found = True
@@ -106,7 +150,7 @@ def wait_screen(stem, title, alternatives, required=(), attempts=30):
                     evidence.write('Dismissed Android System UI ANR using Wait; app screen must still pass validation.\n')
                 time.sleep(2)
                 continue
-        except (subprocess.CalledProcessError, ET.ParseError, subprocess.TimeoutExpired):
+        except (subprocess.CalledProcessError, ET.ParseError, UIHierarchyReadError, subprocess.TimeoutExpired):
             pass
         time.sleep(1)
     (OUT / f'{stem}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
