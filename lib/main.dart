@@ -169,6 +169,7 @@ part 'auth/account_access_pages.dart';
 part 'home/home_backup_maintenance.dart';
 part 'home/home_permission_maintenance.dart';
 part 'home/home_subscription_registry.dart';
+part 'home/geofence_fix_policy.dart';
 part 'home/home_page.dart';
 part 'home/home_document_codecs.dart';
 part 'home/home_location_seed.dart';

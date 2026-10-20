@@ -513,13 +513,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     // Geofencing-ul nu poate confirma sosirea dintr-o poziție GPS imprecisă,
     // veche sau raportată în timpul deplasării rapide. Nu pornim niciodată
     // o intervenție fără alegerea explicită a utilizatorului.
-    if (!p.latitude.isFinite || !p.longitude.isFinite ||
-        p.latitude < -90 || p.latitude > 90 ||
-        p.longitude < -180 || p.longitude > 180) return;
-    if (!p.accuracy.isFinite || p.accuracy < 0 || p.accuracy > 80) return;
-    if (p.timestamp.isAfter(now.add(const Duration(minutes: 1))) ||
-        now.difference(p.timestamp) > const Duration(minutes: 2)) return;
-    if (p.speed.isFinite && p.speed > 8) return;
+    if (!isUsableGeofencePosition(
+      latitude: p.latitude,
+      longitude: p.longitude,
+      accuracyMeters: p.accuracy,
+      speedMetersPerSecond: p.speed,
+      timestamp: p.timestamp,
+      now: now,
+    )) return;
     if (!hasPermission(FunctionPermission.editProgram)) return;
     final teamId = me.teamId;
     if (teamId == null || teamId.isEmpty || !canEditTeam(teamId)) return;
