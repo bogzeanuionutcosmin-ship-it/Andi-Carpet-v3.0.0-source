@@ -126,3 +126,54 @@ Riscul producției rămâne: toate verificările sunt pe emulator, synthetic tea
 2. Continuă Expenses numai cu teste separate pentru politica legacy; nu adaptează ledgerul pentru a mima soldul legacy.
 3. Păstrează completările de #154–#156 Draft/Open și înregistrează eventualele review-uri fără merge.
 4. Reauditează capetele #134–#156 înainte de un candidat consolidat și menține `production_ready=false`.
+
+## Checkpoint live Misiunea XIX — 20 octombrie 2026, 05:05 UTC
+
+Am verificat starea GitHub înaintea acestei actualizări. PR-urile #145, #146, #148 și #154–#163 sunt Open/Draft, nemergate. Nu s-a făcut merge sau deploy. Rezultatele din tabel sunt legate de SHA/run-urile enumerate.
+
+### Validare exact-head
+
+| PR | HEAD | Validate | Android | Native | Artefacte și concluzie |
+|---|---|---|---|---|---|
+| #154 | dd209555054e247fd907f9b71608ab9cdaed335b | 39363877750 SUCCESS | 39363877801 SUCCESS | 39363877751 SUCCESS | Artifact 12238413393, ZIP SHA-256 31815a16004d56997c16ee913f264109626095e554b577162c4a38c8b54ccbc3; PDF SHA-256 25281c932adc9b80cd0b721a012b621d59f3c74bd5b808b67283f93578fde589. UI, Firestore 11 rânduri și PDF verificate. |
+| #155 | 7b3dd70f6028a827c9bf89faf260d6635059068e | 39362736082 SUCCESS | 39362736225 SUCCESS | 39362736043 SUCCESS | Artifact 12238402379, ZIP SHA-256 7d096652f41cbff395544a9427c5fee4684f1c0f342e6749464512f7af36328b; PDF SHA-256 c51270c89c4eecbca1386f2f48f8a8b2e639962786679022cc6103c20fc160e7. Conectare, două reporniri, 11 rânduri/PDF: SUCCESS. |
+| #156 | 93861efab61b762a5e0b9ee9485232feb578326c | 39369094268 SUCCESS | 39369094283 SUCCESS | 39369094381 SUCCESS | Artifact 12241092689, ZIP SHA-256 e9327e78a37cffd63cafef79f00d0feaaf352008099ec50b03c81831a14c6405; PDF SHA-256 94e875a6c4cfb1604f174c101fce7ee5ff6a701766d3a822bf9052a9947ac417. Web, Android, Native, parser/ledger contract și PDF: SUCCESS. |
+| #157 | 310368920f86be7e5a3a97298c4dd31714c6ee63 | 39368459523 SUCCESS | 39368459549 SUCCESS | 39368459469 SUCCESS | Artifact 12240423292, ZIP SHA-256 62aa1376521800245c2b8d20bc6fe882485a764ebc9b6f008dd87f2330d8b2f2; PDF SHA-256 cf3ccb06c9a8da57c3c442cbb2cd3c11e151fab14cfa7c2d05bb63f8dfb7872b. Projection, connected flow și PDF: SUCCESS. |
+| #158 | 8f77859eb6ab590e3aeafd69a8683be136a5404d | 39369120334 SUCCESS | 39369120287 SUCCESS | 39369120306 SUCCESS | Artifact 12240639885, ZIP SHA-256 7342dae9d06da4da78c0120034c8cc41b36cae6045d8c07fd66ffe0fd2004f73; PDF SHA-256 9f60a1bf740a98d2313e5c8a7bba9448d45e0930ce9941d9518670ccf4ff569b. Stacked peste #156; 11 rânduri, idempotency, stale baseline, izolare echipă și offline denial: SUCCESS. |
+| #159 | 240fc94912ede6b970711ffddb55d724e710767b | 39369245152 SUCCESS | 39369245161 SUCCESS | 39369245054 SUCCESS | Artifact 12240509336, ZIP SHA-256 f4257981471f29988358ba7517396e062d9fb990ab6ad51eda359c9fc4c7f2ca; PDF SHA-256 18e67824a9c3ac25e460ec9c8d5344564710698cdb9df9617a389ba1d80c158d. Dashboard, reload, 11 rânduri/PDF: SUCCESS. |
+| #160 | 32ddacd755ead3bd727c8b2f0e0e1f5fdc717f50 | 39370471019 SUCCESS | 39370471221 SUCCESS | 39370471025 IN PROGRESS | Android artifact 12241257099, ZIP SHA-256 4b4378ea6b0faec7472f39138c3967c11c66eb52469a48389b7fa60ca954b67d. Native la connected flow/restart; PDF/checksum/upload încă pending. |
+| #161 | c30c60794a812991328cb9094d8d1a8ea3b4ff0e | 39371522926 SUCCESS | 39371522913 IN PROGRESS | 39371523027 IN PROGRESS | Validate și teste focalizate trecute. Android debug/Native operational APK în packaging; connected flow/PDF încă pending. |
+| #162 | f408eedd1325b0c45b528f960ce6cec93320d66a | 39371034740 SUCCESS | 39371034683 SUCCESS | 39371034711 IN PROGRESS | Validate artifacts: PDF 12241381697 SHA-256 7f4949800e6ffeb385d901838b35988bcf0f6457babdbf3b85252b011bd4260d; web 12241356925 SHA-256 c1d975daa521b87cc11859a1af4b698b117d6a633006adb43ed201a9079b098e; audit 12240869830 SHA-256 8a6bb7f0897991b4c595d82394c3a747c8dc6ce4d0a8974fd804be448dcc098c. Native compiling release candidate; connected flow/PDF pending. |
+| #163 | f67a3bd9e5bd854b3b76c1622ee026d8a564516c | 39371563027 SUCCESS | 39371563083 IN PROGRESS | 39371563029 IN PROGRESS | Validate, analysis și teste trecute; Android/Native packaging. Connected flow/PDF pending. |
+
+Pentru run-urile active artifactele nu erau publicate, deci nu există încă digest-uri finale de consemnat. Nu au fost observate eșecuri curente la checkpoint.
+
+### Blocajul „Craiova 03” și PDF
+
+Cauza demonstrată la #154 este automatizarea UI: locator global TextField într-un dialog cu mai multe câmpuri și scroll pe primul Scrollable, în locul listei virtualizate din picker. Regresia limitează locatorul după eticheta vizibilă și scroll-ul la CustomScrollView-ul pickerului. Diagnosticul Native raportează un rezultat pentru Craiova 01–11; fluxul a creat graficul, a scris și recitit 11 documente și a trecut validarea PDF. PDF-ul include cele 11 intervenții plus rândul planificat. Nu s-a găsit defect PDF independent, lipsă în fixture, defect de încărcare/ordonare date sau defect de produs.
+
+### Expenses și dependențe
+
+#156 mută parserul pur de bani; #158 extrage politica legacy de sold și este stacked justificat peste #156. Ledgerul din lib/finance/per_diem_ledger.dart rămâne separat; nu a fost introdus al doilea calculator. #162 duplicate matcher este sibling independent și nu schimbă OCR, atașamente, salvare, ledger sau sume. Rămâne necesar contractul automat de compatibilitate între caller-ele Expenses și ledger, păstrând formulele distincte.
+
+### Progresul celor șase module mari
+
+| Modul / fișier dominant | Deja extras | Amestecat încă | Următoarea extragere sigură și teste | Dependențe și risc |
+|---|---|---|---|---|
+| Home — lib/home/home_page.dart (~101.6k caractere) | Backup/permisii, codec, seed/sync; #163 policy pur cadence/eligibility live-location | Auth/session, subscriptions/cache, GPS stream/timer, push, Firestore writes, lifecycle, START/STOP | Caracterizează UID/team ownership și callbacks stale/dispose înainte de orchestration extraction; teste offline, interval/accuracy/threshold/heartbeat | GPS, permissions, Firestore și lifecycle; risc ridicat. #163 nu mută side effects. |
+| Expenses — lib/expenses/expense_page.dart (~76.9k) | #138 amount parser, #156 per-diem parser, #158 legacy balance, #162 duplicate matcher | OCR/attachments, manual save, settlement legacy/v2, PDF | Teste contract pentru amount bounds, confirmed/pending, perechi beneficiar-distribuitor, prag duplicate, OCR fallback; abia apoi adapter/presentation seam | #158 depinde de #156; #162 sibling. OCR/storage async și ledgers diferite; risc ridicat. |
+| Program/Grafic — lib/schedule/program_page.dart (~70.2k) | #137 save-error, #141 route selection, #148 work-date, #154 geocoder | Create/edit UI, state/lifecycle, START/STOP/pause/restart | Teste order/status/open/active, fixture 11 locații, save/reload; separă o proiecție pură eligibility/create după fixture | Models/callback globals; risc mediu-ridicat. Import area comună posibil conflict textual. |
+| Map — lib/map/map_page.dart (~55.4k) | #139–#147 policies; #160 Maps/Waze URI; #161 marker widget | Mapbox/GPS controller, marker actions, sheets, tap/edit, permissions/lifecycle | Parity tests marker; înaintea controller extraction: plugin permission, mounted/dispose și callback tardiv | #160/#161 funcții diferite, dar aceeași pagină/import zone; risc mediu-ridicat. |
+| Dashboard — lib/dashboard/dashboard_page.dart (~40.9k) | #137 errors, #153 city label, #154 geocoder, #159 status presentation | START/STOP writes, create/finish/wait, state coordination | Contract CAS/idempotency/team auth/stale replay înaintea orchestrator extraction | Firestore/finance; risc ridicat. Geocoder/status helpers sunt independenți. |
+| Rapoarte/PDF — lib/reports/pdf_reports.dart (~28.2k) | Filename/format/save helpers; #157 Centralizer PDF projection | Multi-report generation, permissions/download/share, model mapping/PDF IO | DTO rows/totals/order/null status/date; text/hash golden și cancel/save errors; următoarea proiecție pură fără format changes | Financial formatting și lifecycle download; risc mediu-ridicat. |
+
+#158 este singurul stack funcțional din loturile noi; celelalte (#159–#163) sunt siblings pe #137. Mai multe PR-uri adaugă importuri în zone apropiate din main.dart; pot apărea conflicte textuale la integrare fără suprapunere semantică. Nu există încă CI comun pe un candidat cumulativ.
+
+### Blocaje și pași următori
+
+- Rămân IN PROGRESS exact-head: #145 Native rerun 39344436266; #160 Native 39370471025; #161 Android/Native 39371522913/39371523027; #162 Native 39371034711; #163 Android/Native 39371563083/39371563029.
+- #145 HEAD 7da7476dd8fc28f08e6105abfcdcce5d704329f3; Validate 39344436278 și Android 39344436245 SUCCESS. Native fusese anulat și rerun-ul exact-head este în curs de build.
+- Acest document este în PR #148; după actualizare trebuie verificat noul HEAD al raportului și rulate workflows pe commitul documentar exact.
+- Emulatorul și echipa sintetică nu validează configurația Firestore de producție, hardware GPS real, multi-process sau distribuția APK. Nicio schimbare Firebase live, merge, deploy, signing sau distribuire.
+- Următorul pas autonom: finalizarea rundelor active, inspectarea logurilor și artifact SHA-256, actualizarea PR bodies cu rezultate exacte, validarea noului HEAD #148 și continuarea unei extrageri independente cu contracte păstrate.
+- production_ready=false.
