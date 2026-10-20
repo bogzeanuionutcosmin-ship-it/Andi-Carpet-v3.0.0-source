@@ -81,3 +81,48 @@ Acest raport păstrează matricea oficială a tuturor familiilor de module la ch
 5. Investighează separat cache-urile fără cititori și parser-ele `receivedEntries`; fără eliminare/consolidare până când efectele, ordinea și identitatea sunt testate.
 6. Păstrează fluxurile legacy/v2, stickerele, adaptoarele de platformă și datele. Fără merge, deploy, schimbări Firebase de producție, semnare sau distribuire APK.
 7. Modularizarea integrală nu este închisă; `production_ready=false`.
+
+
+## Actualizare live — verificare 20 octombrie 2026, 04:10 UTC
+
+Toate rezultatele de mai jos au fost recitite din GitHub după checkpointul anterior. SHA-urile de cod nu s-au schimbat. #154, #155 și #156 sunt Draft/Open și nemergate. Stările SUCCESS de mai jos se referă strict la SHA-ul menționat.
+
+### CI și probe exact-head
+
+| PR / SHA cod | Validate | Android debug | Native emulator | Artefact Native / hash | Concluzie |
+|---|---|---|---|---|---|
+| #154 `dd209555054e247fd907f9b71608ab9cdaed335b` | `39363877750` SUCCESS | `39363877801` SUCCESS | `39363877751` SUCCESS | Artifact `12238413393`, ZIP SHA-256 `31815a16004d56997c16ee913f264109626095e554b577162c4a38c8b54ccbc3`; PDF SHA-256 `25281c932adc9b80cd0b721a012b621d59f3c74bd5b808b67283f93578fde589` | Scenariul UI conectat, reload, 11 intervenții și PDF: SUCCESS |
+| #155 `7b3dd70f6028a827c9bf89faf260d6635059068e` | `39362736082` SUCCESS | `39362736225` SUCCESS | `39362736043` SUCCESS | Artifact `12238402379`, ZIP SHA-256 `7d096652f41cbff395544a9427c5fee4684f1c0f342e6749464512f7af36328b`; PDF SHA-256 `c51270c89c4eecbca1386f2f48f8a8b2e639962786679022cc6103c20fc160e7` | 11 intervenții recitite, două cold restarts autentificate și navigare: SUCCESS |
+| #156 `93e56b2699dd73b252e691cb220eba6fb40b90d8` | `39364036427` SUCCESS | `39364036351` SUCCESS | `39364036348` SUCCESS | Artifact `12238104506`, ZIP SHA-256 `e7581060f210962eea7c71697e20c8ae7f463439f01fdfb30f8ec188ea0747bb`; PDF SHA-256 `632a54d70c3aa42842685e39220dd5799a819b3832a14876943af6e929b7ec28e` | Web build, unit/widget, Firestore emulator, connected Native și PDF: SUCCESS |
+
+Artefactele native conțin `observations.json`, capturi și ierarhii XML pentru ecranele Grafic/Centralizator/Acasă, textul extras din PDF și `SHA256SUMS`. SHA-ul ZIP este digestul raportat de uploadul GitHub Actions; SHA-ul PDF este din `SHA256SUMS`.
+
+### Analiza blocajului „Craiova 03”
+
+Eșecul inițial a fost în automatizarea UI. Testul folosea `find.byType(TextField)`, deși dialogul conține mai multe câmpuri, și selecta primul `Scrollable` al dialogului, care nu identifica sigur lista virtualizată a selectorului. Regresia restrânge câmpul după eticheta vizibilă și scroll-ul la `CustomScrollView` al selectorului. Logul de rerun raportează `resultTiles=1` pentru fiecare query Craiova 01–11; observațiile confirmă `graphCreatedThroughUi=true`, 11 documente UI/Firestore distincte și `pdfMatchedScheduleItems=11`. PDF-ul nativ a fost generat, extras cu Poppler și verificat după text; include cele 11 intervenții și rândul planificat neexecutat. Nu a fost identificat un defect separat PDF sau o lipsă de locație în fixture. Nu s-au schimbat fixture-ul ori regulile de business.
+
+### Expenses: limita compatibilității financiare
+
+#156 mută verbatim parserul `parsePerDiemBani` și adaugă teste pentru conversie, separator zecimal, zero, limita veche de 100.000.000 lei, precizie și date invalide. Aceasta validează contractul parserului, nu echivalența cu soldurile.
+
+`ExpensePage._perDiemDifferenceBani` păstrează un contract legacy: filtrează perechea beneficiar/distribuitor și doar înregistrările confirmate cu sumă primită; plățile suplimentare reduc datoria și nu creează o nouă diurnă. `lib/finance/per_diem_ledger.dart` folosește entitlements/payments/reversals, perechi distribuitor-beneficiar, idempotency și o limită distinctă de bani. Modelele, unitățile și regulile nu sunt interschimbabile; nu există o migrare sau un adapter sigur demonstrat. Nu se raportează „compatibilitate cu ledgerul”. Următoarea extragere Expenses trebuie să fie separată, să caracterizeze politica legacy (plată exactă/scurtă/excesivă, suplimentară, neconfirmată, perechi izolate) și să țină testele ledgerului independente.
+
+### Progres actualizat pentru cele șase module
+
+| Modul / fișier dominant | Extrageri existente până la #156 | Responsabilități încă amestecate | Următoarea extragere sigură și verificare | Dependențe, risc și conflicte |
+|---|---|---|---|---|
+| Home — `lib/home/home_page.dart`, ~101.611 caractere | Backup/permisii, codec documente, seed de locații și utilitare de sincronizare extrase în loturi anterioare | Lifecycle/subscriptions/cache, push tokens, GPS, START/STOP și scrieri Firestore/navigare | Mai întâi un policy pur pentru starea live-location; caracterizare pentru stări, expirare și uid/team înainte de extragerea orchestration-ului | Cuplare puternică la Auth, permisiuni, timer/stream și Firestore; risc ridicat la scrieri/lifecycle |
+| Expenses — `lib/expenses/expense_page.dart`, ~76.911 caractere | Parser sumă din #138; parser diurnă în Finance din #156 | UI cheltuieli/OCR/atașamente, settlement legacy/v2, sold carryover și PDF | Extrage politica legacy `_perDiemDifferenceBani` ca helper pur numai după teste dedicate; păstrează ledgerul separat | Nu echivalează cu ledgerul: supplementary semantics și amount bounds diferite; nu reutiliza calculul fără decizie |
+| Program/Grafic — `lib/schedule/program_page.dart`, ~70.154 caractere | Save-error #137, route selection #141, work-date selection #148, geocoder comun #154 | UI creare/editare, stare și lifecycle grafic, START/STOP/pause/restart | Următoarea seam: proiecție pură de eligibilitate/create Graph; fixture 11 item-uri și teste ordine/status/active/open | Se bazează pe modele și callback-uri globale; păstrează verificarea Native Craiova și state orchestration neschimbată |
+| Map — `lib/map/map_page.dart`, ~55.407 caractere | #139–#147: cache, puncte, rutare, geocoder invers, badge, programe active, filtre locație și catalog categorii | Controller Mapbox/GPS, markere, sheet-uri, tap/edit/navigation și lifecycle | Extrage un view-model pur de marker după characterization pentru icon/status/tap permissions | Plugin, permisiuni, mounted/dispose și identitatea echipei; risc mediu spre mare, fără schimbare de marker policy implicită |
+| Dashboard — `lib/dashboard/dashboard_page.dart`, ~40.916 caractere | Mesaje salvare #137, city label #153, geocoder #154 | START/STOP și prezentarea stării plus coordonarea create/finish/wait/write | View-state pur pentru etichetă/culoare/icon de status, cu test exhaustiv pe statusuri | Scrierile au lock/CAS/idempotency și izolare de echipă; extragerea writerului are risc ridicat |
+| Rapoarte/PDF — `lib/reports/pdf_reports.dart`, ~28.181 caractere | Filename normalization și utilitare de format/salvare în loturi anterioare | Generarea mai multor PDF-uri în aceeași bibliotecă part; Centralizer projection încă amestecată cu modele globale | Candidați pentru extragere: `centralizerPdfExecutionRows` și DTO autonom, după explicitarea dependențelor; verifica testele projection și PDF text/hash | Depinde de record/status/date/model; schimbarea formatării poate altera PDF-ul. #154–#156 nu ating projection-ul |
+
+Riscul producției rămâne: toate verificările sunt pe emulator, synthetic team și Firebase emulators; nu probează configurația sau datele Firebase de producție. Nu s-a făcut merge, deploy, signing sau distribuire APK. `production_ready=false`.
+
+### Următoarele operațiuni autonome
+
+1. Revizuiește și rulează exact-head CI pentru următorul PR modular de raportare/PDF, pe o ramură independentă bazată pe #137, dacă dependențele projection-ului pot fi făcute explicite fără mutarea modelelor.
+2. Continuă Expenses numai cu teste separate pentru politica legacy; nu adaptează ledgerul pentru a mima soldul legacy.
+3. Păstrează completările de #154–#156 Draft/Open și înregistrează eventualele review-uri fără merge.
+4. Reauditează capetele #134–#156 înainte de un candidat consolidat și menține `production_ready=false`.
