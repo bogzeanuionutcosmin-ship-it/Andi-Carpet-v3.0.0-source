@@ -43,6 +43,8 @@ class StackedPullRequestCiContract(unittest.TestCase):
         for branch in ("main", *STACK_BASES):
             self.assertIn(branch, workflow)
         self.assertIn("github.base_ref == 'codex/xix-pdf-decont-input-selection-20261021'", workflow)
+        self.assertIn("github.base_ref == 'codex/xix-expense-duplicate-decision-20261021'", workflow)
+        self.assertIn("github.head_ref == 'codex/xix-program-graph-state-persistence-20261021'", workflow)
         self.assertIn("flutter test test/decont_financial_input_selection_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_removal_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_creation_test.dart", workflow)
@@ -57,4 +59,3 @@ class StackedPullRequestCiContract(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
