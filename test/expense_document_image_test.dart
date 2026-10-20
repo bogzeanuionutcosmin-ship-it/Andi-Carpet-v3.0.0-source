@@ -24,12 +24,12 @@ void main() {
         ..exif.imageIfd['Orientation'] = 6;
       final input = Uint8List.fromList(img.encodeJpg(source, quality: 95));
       final decodedInput = img.decodeImage(input)!;
-      expect(decodedInput.width, 2);
-      expect(decodedInput.height, 3);
+      expect(decodedInput.exif.imageIfd['Orientation'], isNotNull);
 
       final output = img.decodeImage(compressExpenseDocumentImage(input))!;
-      expect(output.width, 3);
-      expect(output.height, 2);
+      expect(output.width, decodedInput.height);
+      expect(output.height, decodedInput.width);
+      expect(output.exif.imageIfd['Orientation'], isNull);
     });
 
     test('caps the longest output dimension at 1400 and preserves ratio', () {
