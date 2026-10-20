@@ -66,7 +66,7 @@ Future<void> downloadWorkGraphPdf({
   ));
   await deliverPdf(
     buildBytes: doc.save,
-    filename: 'grafic_${_safeFilePart(first.graphName)}.pdf',
+    filename: () => 'grafic_${_safeFilePart(first.graphName)}.pdf',
     download: downloadFile,
   );
 }
@@ -135,7 +135,7 @@ Future<void> downloadCentralizerPdf({
   final filename='centralizator_${_safeFilePart(type.label)}_${now.year}${two(now.month)}${two(now.day)}.pdf';
   await deliverPdf(
     buildBytes: () async => bytes,
-    filename: filename,
+    filename: () => filename,
     download: downloadFile,
   );
 }
@@ -531,7 +531,7 @@ Future<void> downloadDecontPdf({
   final filename = 'decont_${_safeFilePart(team.name)}_${_safeFilePart(titleSuffix)}_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf';
   await deliverPdf(
     buildBytes: () async => bytes,
-    filename: filename,
+    filename: () => filename,
     download: downloadFile,
   );
 }
@@ -561,7 +561,7 @@ Future<void> downloadAuditPdf(List<AuditEntry> audit) async {
   ));
   await deliverPdf(
     buildBytes: doc.save,
-    filename: 'audit_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf',
+    filename: () => 'audit_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf',
     download: downloadFile,
   );
 }
@@ -603,7 +603,7 @@ Future<void> downloadFinancialSummaryPdf({
   ));
   await deliverPdf(
     buildBytes: doc.save,
-    filename: 'raport_financiar_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf',
+    filename: () => 'raport_financiar_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf',
     download: downloadFile,
   );
 }
