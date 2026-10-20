@@ -474,6 +474,10 @@ class RepositoryHygieneTests(unittest.TestCase):
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
         formatters = (ROOT / "lib/utils/date_formatters.dart").read_text(encoding="utf-8")
         self.assertIn("part 'utils/operational_dates.dart';", main)
+        self.assertIn("import 'utils/work_date_policy.dart';", main)
+        self.assertIn("export 'utils/work_date_policy.dart';", main)
+        policy = (ROOT / "lib/utils/work_date_policy.dart").read_text(encoding="utf-8")
+        self.assertNotIn("part of '../main.dart';", policy)
         self.assertIn("import 'utils/date_formatters.dart';", main)
         self.assertIn("export 'utils/date_formatters.dart';", main)
         self.assertIn("part of '../main.dart';", module)
@@ -481,21 +485,26 @@ class RepositoryHygieneTests(unittest.TestCase):
         pure_symbols = ("String two(int n)", "String formatDate(DateTime d)",
                         "String formatMonth(DateTime d)", "String timeText(DateTime? d)",
                         "String durationText(Duration? d)", "bool sameDay(DateTime a, DateTime b)")
-        operational_symbols = ("DateTime operationalWorkDate(DateTime now)",
-                               "DateTime workWindowStart(DateTime workDate)",
-                               "DateTime workWindowEnd(DateTime workDate)",
-                               "bool isInsideWorkWindow(", "bool recordBelongsToWorkDate(",
-                               "DateTime recordEventTime(")
+        policy_symbols = ("DateTime operationalWorkDate(DateTime now)",
+                          "DateTime workWindowStart(DateTime workDate)",
+                          "DateTime workWindowEnd(DateTime workDate)",
+                          "bool isInsideWorkWindow(")
+        operational_symbols = ("bool recordBelongsToWorkDate(", "DateTime recordEventTime(")
         for symbol in pure_symbols:
             self.assertNotIn(symbol, main)
             self.assertNotIn(symbol, module)
             self.assertEqual(formatters.count(symbol), 1)
+        for symbol in policy_symbols:
+            self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, formatters)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(policy.count(symbol), 1)
         for symbol in operational_symbols:
             self.assertNotIn(symbol, main)
             self.assertNotIn(symbol, formatters)
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("Duration(hours: 23, minutes: 30)", module)
-        self.assertIn("DateTime(workDate.year, workDate.month, workDate.day, 9, 30)", module)
+        self.assertIn("Duration(hours: 23, minutes: 30)", policy)
+        self.assertIn("DateTime(workDate.year, workDate.month, workDate.day, 9, 30)", policy)
 
     def test_permission_groups_and_payment_labels_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
