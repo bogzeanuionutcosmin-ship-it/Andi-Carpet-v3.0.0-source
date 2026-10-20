@@ -10,7 +10,7 @@ void main() {
         categoryIdSnapshot: 'categoria-$id',
         order: order,
         transferred: id == 'b',
-        facadePlanned: id == 'c',
+        facadePlanned: id == 'd',
       );
 
   List<String> ids(List<app.ScheduleItem> items) =>
