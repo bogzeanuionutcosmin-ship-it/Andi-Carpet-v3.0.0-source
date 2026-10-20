@@ -21,15 +21,6 @@ class _ProfilePageState extends State<ProfilePage>{
     }catch(e){if(mounted)showErrorMessage(context,'Poza nu a putut fi selectată: $e');return null;}
   }
   DateTime? _dateFromRaw(Object? raw){if(raw is Timestamp)return raw.toDate();if(raw is DateTime)return raw;if(raw is String)return DateTime.tryParse(raw);return null;}
-  int _daysInMonth(int year,int month)=>DateTime(year,month+1,0).day;
-  ({int years,int months,int days,int totalDays}) _employmentParts(DateTime start){
-    final now=DateTime.now();
-    if(start.isAfter(now))return (years:0,months:0,days:0,totalDays:0);
-    var totalMonths=(now.year-start.year)*12+(now.month-start.month);
-    DateTime anchorFor(int months){final y=start.year+((start.month-1+months)~/12);final m=((start.month-1+months)%12)+1;final d=math.min(start.day,_daysInMonth(y,m));return DateTime(y,m,d);}
-    var anchor=anchorFor(totalMonths);if(anchor.isAfter(now)){totalMonths--;anchor=anchorFor(totalMonths);}
-    return (years:totalMonths~/12,months:totalMonths%12,days:now.difference(anchor).inDays,totalDays:now.difference(start).inDays);
-  }
   double _hours(Iterable<CentralizerRecord> rows)=>rows.fold<double>(0,(sum,r)=>sum+(r.duration?.inMinutes??0)/60.0);
   String _hoursText(double v)=>'${v.toStringAsFixed(v>=10?1:2)} h';
   Set<String> _workedDayKeys(Iterable<CentralizerRecord> rows)=>rows.map((r){final d=r.startedAt??r.finishedAt!;return '${d.year}-${two(d.month)}-${two(d.day)}';}).toSet();
@@ -104,7 +95,7 @@ class _ProfilePageState extends State<ProfilePage>{
     stream:FirebaseFirestore.instance.collection('users').doc(widget.user.id).snapshots(),
     builder:(context,snap){
       final d=snap.data?.data()??<String,dynamic>{};final display=_profileDisplayName(d,fallback:widget.user.name);final photo=_photoFromData((d['photoBase64']??'').toString());
-      final hire=_dateFromRaw(d['hireDate']);final employment=hire==null?null:_employmentParts(hire);
+      final hire=_dateFromRaw(d['hireDate']);final employment=hire==null?null:calculateEmploymentParts(hire, now: DateTime.now());
       final teamId=widget.user.teamId;final completed=widget.records.where((r)=>teamId!=null&&r.teamId==teamId&&r.completed).toList();final now=DateTime.now();
       final today=completed.where((r){final x=r.startedAt??r.finishedAt;return x!=null&&sameDay(x,now);}).toList();
       final month=completed.where((r){final x=r.startedAt??r.finishedAt;return x!=null&&x.year==now.year&&x.month==now.month;}).toList();

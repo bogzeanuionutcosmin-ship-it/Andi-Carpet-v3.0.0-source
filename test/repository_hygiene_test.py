@@ -1173,5 +1173,21 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertNotIn("for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }", source)
 
 
+    def test_profile_employment_tenure_is_standalone_and_directly_tested(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        profile = (ROOT / "lib/profile/profile_page.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/profile/employment_tenure.dart").read_text(encoding="utf-8")
+        test = (ROOT / "test/employment_tenure_test.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'profile/employment_tenure.dart';", main)
+        self.assertIn("export 'profile/employment_tenure.dart';", main)
+        self.assertIn("calculateEmploymentParts(hire, now: DateTime.now())", profile)
+        self.assertNotIn("_employmentParts(", profile)
+        self.assertIn("if (start.isAfter(now))", module)
+        self.assertIn("DateTime anchorFor(int months)", module)
+        for path in ("end-of-month", "leap-year", "future hire date"):
+            self.assertIn(path, test)
+
+
+
 if __name__ == "__main__":
     unittest.main()
