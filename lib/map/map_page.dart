@@ -33,7 +33,8 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> {
   final MapController mapController = MapController();
-  StreamSubscription<Position>? _positionSubscription;
+  final MapLocationTrackingController _locationTracker =
+      MapLocationTrackingController();
   Position? _myPosition;
   String? _gpsError;
   bool _locating = false;
@@ -71,7 +72,7 @@ class _MapPageState extends State<MapPage> {
 
   @override
   void dispose() {
-    _positionSubscription?.cancel();
+    unawaited(_locationTracker.stop());
     super.dispose();
   }
 
@@ -255,33 +256,41 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _startLocationTracking() async {
     if (_locating) return;
-    setState(() { _locating = true; _gpsError = null; });
+    setState(() {
+      _locating = true;
+      _gpsError = null;
+    });
     try {
-      final enabled = await Geolocator.isLocationServiceEnabled();
-      if (!enabled) {
-        if (mounted) setState(() => _gpsError = 'Serviciile de localizare sunt oprite pe dispozitiv.');
-        return;
+      final result = await _locationTracker.start(
+        onPosition: (position) {
+          if (mounted) setState(() => _myPosition = position);
+        },
+        onError: (error) {
+          if (mounted) setState(() => _gpsError = 'GPS: $error');
+        },
+      );
+      if (!mounted) return;
+      switch (result.status) {
+        case MapLocationTrackingStatus.serviceDisabled:
+          setState(() =>
+              _gpsError = 'Serviciile de localizare sunt oprite pe dispozitiv.');
+          break;
+        case MapLocationTrackingStatus.permissionDenied:
+          setState(() => _gpsError =
+              'Permisiunea de localizare nu a fost acordată.');
+          break;
+        case MapLocationTrackingStatus.permissionDeniedForever:
+          setState(() => _gpsError =
+              'Permisiunea de localizare este blocată. Activeaz-o din setările browserului/dispozitivului.');
+          break;
+        case MapLocationTrackingStatus.failed:
+          setState(() => _gpsError = 'Nu am putut citi locația: ${result.error}');
+          break;
+        case MapLocationTrackingStatus.started:
+        case MapLocationTrackingStatus.cancelled:
+        case MapLocationTrackingStatus.alreadyStarting:
+          break;
       }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-        if (mounted) setState(() => _gpsError = permission == LocationPermission.deniedForever
-            ? 'Permisiunea de localizare este blocată. Activeaz-o din setările browserului/dispozitivului.'
-            : 'Permisiunea de localizare nu a fost acordată.');
-        return;
-      }
-      final p = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high));
-      if (mounted) setState(() => _myPosition = p);
-      await _positionSubscription?.cancel();
-      _positionSubscription = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5),
-      ).listen((position) {
-        if (mounted) setState(() => _myPosition = position);
-      }, onError: (Object e) {
-        if (mounted) setState(() => _gpsError = 'GPS: $e');
-      });
-    } catch (e) {
-      if (mounted) setState(() => _gpsError = 'Nu am putut citi locația: $e');
     } finally {
       if (mounted) setState(() => _locating = false);
     }
