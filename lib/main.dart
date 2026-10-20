@@ -56,6 +56,7 @@ import 'schedule/program_graph_id_ordering.dart';
 import 'ocr_parser.dart';
 export 'models/default_categories_functions.dart';
 import 'models/default_categories_functions.dart';
+import 'home/home_financial_sync_scope.dart';
 import 'home/live_location_share_policy.dart';
 import 'home/live_locality_cache_policy.dart';
 import 'notifications/push_token_document_id.dart';
