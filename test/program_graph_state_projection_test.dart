@@ -86,6 +86,24 @@ void main() {
     expect(source.paused, isTrue);
   });
 
+  test('start, close, and resume flags update only the projected schedules', () {
+    final source = schedule('1', paused: true);
+    final projected = app.projectProgramGraphState(
+      schedules: [source],
+      clone: cloneForTest,
+      started: true,
+      closed: true,
+      paused: false,
+    );
+
+    expect(projected.single.started, isTrue);
+    expect(projected.single.closed, isTrue);
+    expect(projected.single.paused, isFalse);
+    expect(source.started, isFalse);
+    expect(source.closed, isFalse);
+    expect(source.paused, isTrue);
+  });
+
   test('empty graph produces an empty snapshot', () {
     expect(
       app.projectProgramGraphState(
