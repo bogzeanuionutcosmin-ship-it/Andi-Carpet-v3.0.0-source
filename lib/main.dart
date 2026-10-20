@@ -49,6 +49,8 @@ export 'ui/font_choice_normalization.dart';
 export 'ui/section_accent_palette.dart';
 import 'models/app_enums_permissions.dart';
 export 'models/app_enums_permissions.dart';
+import 'models/permission_status_labels.dart';
+export 'models/permission_status_labels.dart';
 import 'ui/section_asset_catalog.dart';
 export 'ui/section_asset_catalog.dart';
 
@@ -67,7 +69,6 @@ part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
 part 'models/app_data_models.dart';
-part 'models/permission_status_labels.dart';
 part 'learning/duration_estimates.dart';
 part 'ui/section_visual_helpers.dart';
 part 'ui/app_backdrop.dart';
