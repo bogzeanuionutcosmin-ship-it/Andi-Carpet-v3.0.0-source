@@ -427,9 +427,16 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
       // Preferința personală poate fi live / economic / offline. În timpul programului
       // modul offline este ridicat automat la economic, ca detectarea operațională să aibă date.
-      var effectiveMode = _personalLocationMode;
-      if (inWork && effectiveMode == 'offline') effectiveMode = 'economic';
-      if (!inWork && effectiveMode == 'offline') {
+      final locationPolicy = liveLocationSharePolicy(
+        personalMode: _personalLocationMode,
+        inWork: inWork,
+        nativeLocationProximityBoost: _nativeLocationProximityBoost,
+        preferredIntervalMinutes: _personalLocationIntervalMinutes,
+        now: now,
+        lastSharedAt: _lastSharedAt,
+      );
+      final effectiveMode = locationPolicy.effectiveMode;
+      if (locationPolicy.clearWhenOutsideWork) {
         if (!_offlineLocationCleared) {
           await FirebaseFirestore.instance.collection('liveLocations').doc(currentUserId).delete();
           _offlineLocationCleared = true;
@@ -440,24 +447,22 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       }
       _offlineLocationCleared = false;
 
-      final configured = _personalLocationIntervalMinutes.clamp(1, 60).toInt();
-      final minGap = _nativeLocationProximityBoost && inWork
-          ? const Duration(seconds: 20)
-          : effectiveMode == 'live'
-              ? const Duration(minutes: 1)
-              : Duration(minutes: inWork ? configured.clamp(1, 3).toInt() : configured);
-      if (_lastSharedAt != null && now.difference(_lastSharedAt!) < minGap) return;
+      if (_lastSharedAt != null &&
+          now.difference(_lastSharedAt!) < locationPolicy.minimumInterval) {
+        return;
+      }
 
-      final accuracy = effectiveMode == 'live' || inWork ? LocationAccuracy.high : LocationAccuracy.medium;
+      final accuracy = locationPolicy.useHighAccuracy
+          ? LocationAccuracy.high
+          : LocationAccuracy.medium;
       final p = suppliedPosition ?? await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: accuracy));
       _updateNativeLocationProximityBoost(p, workDate);
       var moved = true;
       if (_lastSharedPosition != null) {
         final meters = Geolocator.distanceBetween(_lastSharedPosition!.latitude, _lastSharedPosition!.longitude, p.latitude, p.longitude);
-        final threshold = effectiveMode == 'live' ? 10.0 : (inWork ? 25.0 : 150.0);
-        moved = meters >= threshold;
+        moved = meters >= locationPolicy.movementThresholdMeters;
       }
-      final heartbeatDue = _lastSharedAt == null || inWork || (effectiveMode == 'live' && now.difference(_lastSharedAt!) >= const Duration(minutes: 5));
+      final heartbeatDue = locationPolicy.heartbeatDue;
       if (!moved && !heartbeatDue) return;
       final myTeam = me.teamId;
       final localityLabel = await _resolveLiveLocality(p);
