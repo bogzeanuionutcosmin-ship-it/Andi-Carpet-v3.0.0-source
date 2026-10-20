@@ -660,7 +660,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     final now = DateTime.now();
     final existing = _homeLatestRecord(teamId, item.locationId, workDate);
     // Dacă între timp colegul a stabilit deja starea, nu dublăm execuția.
-    if (existing?.status == WorkAttemptStatus.running || existing?.status == WorkAttemptStatus.waitingAccess || existing?.completed == true) return;
+    if (!canWriteHomeArrivalChoice(existing)) return;
     final started = CentralizerRecord(
       id: existing?.id ?? idNow(), writeBaseline: existing?.writeBaseline, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
       locationNameSnapshot: item.locationNameSnapshot, addressSnapshot: item.addressSnapshot,
@@ -683,7 +683,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     final teamId = schedule.teamId;
     final now = DateTime.now();
     final existing = _homeLatestRecord(teamId, item.locationId, workDate);
-    if (existing?.status == WorkAttemptStatus.running || existing?.status == WorkAttemptStatus.waitingAccess || existing?.completed == true) return;
+    if (!canWriteHomeArrivalChoice(existing)) return;
     final waiting = CentralizerRecord(
       id: existing?.id ?? idNow(), writeBaseline: existing?.writeBaseline, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
       locationNameSnapshot: item.locationNameSnapshot, addressSnapshot: item.addressSnapshot,
