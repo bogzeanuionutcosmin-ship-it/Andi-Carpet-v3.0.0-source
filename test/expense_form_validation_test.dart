@@ -3,14 +3,26 @@ import 'package:andi_carpeta/main.dart' as app;
 
 void main() {
   test('document number remains required after trimming', () {
-    expect(app.expenseDocumentNumberValidationError(null), isNotNull);
-    expect(app.expenseDocumentNumberValidationError(''), isNotNull);
-    expect(app.expenseDocumentNumberValidationError('   '), isNotNull);
+    expect(
+      app.expenseDocumentNumberValidationError(null),
+      'Numărul documentului este obligatoriu.',
+    );
+    expect(
+      app.expenseDocumentNumberValidationError(''),
+      'Numărul documentului este obligatoriu.',
+    );
+    expect(
+      app.expenseDocumentNumberValidationError('   '),
+      'Numărul documentului este obligatoriu.',
+    );
     expect(app.expenseDocumentNumberValidationError(' INV-1 '), isNull);
   });
 
   test('amount validation accepts only a parsed positive bani value', () {
-    expect(app.expenseAmountValidationError(null), isNotNull);
+    expect(
+      app.expenseAmountValidationError(null),
+      'Introdu o sumă pozitivă, cu maximum 2 zecimale.',
+    );
     expect(app.expenseAmountValidationError(1), isNull);
   });
 
