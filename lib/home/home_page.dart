@@ -359,12 +359,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         if (meters < nearest) nearest = meters;
       }
     }
-    final shouldBoost = nearest <= 3000;
-    final shouldRelax = nearest > 5000 || nearest == double.infinity;
-    if (shouldBoost && !_nativeLocationProximityBoost) {
+    final action = homeLocationProximityAction(
+      isBoosted: _nativeLocationProximityBoost,
+      nearestMeters: nearest,
+    );
+    if (action == HomeLocationProximityAction.boost) {
       _nativeLocationProximityBoost = true;
       Future<void>.delayed(const Duration(milliseconds: 250), () => _startNativeBackgroundLocationStream());
-    } else if (shouldRelax && _nativeLocationProximityBoost) {
+    } else if (action == HomeLocationProximityAction.relax) {
       _nativeLocationProximityBoost = false;
       Future<void>.delayed(const Duration(milliseconds: 250), () => _startNativeBackgroundLocationStream());
     }

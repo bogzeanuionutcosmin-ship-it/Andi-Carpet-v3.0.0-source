@@ -190,6 +190,7 @@ part 'home/home_subscription_registry.dart';
 part 'home/home_team_membership_projection.dart';
 part 'home/geofence_fix_policy.dart';
 part 'home/home_arrival_record_policy.dart';
+part 'home/home_location_proximity_policy.dart';
 part 'home/home_page.dart';
 part 'home/home_document_codecs.dart';
 part 'home/home_location_seed.dart';
