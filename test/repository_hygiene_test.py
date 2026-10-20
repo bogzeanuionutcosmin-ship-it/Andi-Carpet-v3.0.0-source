@@ -905,7 +905,10 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertNotIn(".snapshots()", core)
         sync = home.split("  void _startAuditSync(", 1)[1].split("  Future<void> _writeLearningEvent(", 1)[0]
         self.assertEqual(sync.count("_coreSubscriptions.add("), 15)
-        self.assertIn("for (final sub in _coreSubscriptions) { sub.cancel(); }", home)
+        self.assertIn("final _coreSubscriptions = HomeSubscriptionRegistry();", home)
+        self.assertIn("unawaited(_coreSubscriptions.dispose());", home)
+        self.assertIn("unawaited(_financialSubscriptions.dispose());", home)
+        self.assertIn("unawaited(_financialSubscriptions.cancelAll());", home)
         self.assertIn("if (isAdmin) {\n      _startAuditSync(db);", core)
         self.assertIn("_startFinancialSync();", core)
 
