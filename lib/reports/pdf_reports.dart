@@ -8,7 +8,13 @@ Future<void> downloadWorkGraphPdf({
 }) async {
   if (days.isEmpty) return;
   final theme = await _buildPdfTheme();
-  final orderedDays = [...days]..sort((a, b) => a.date.compareTo(b.date));
+  final dayProjections = projectWorkGraphPdfDays<WorkSchedule, ScheduleItem>(
+    days: days,
+    dateOf: (day) => day.date,
+    itemsOf: (day) => day.items,
+    orderOf: (item) => item.order,
+  );
+  final orderedDays = dayProjections.map((projection) => projection.day).toList();
   final first = orderedDays.first;
   final roadKm = await estimateGraphRoadDistanceKm(orderedDays, locations);
   final km = roadKm ?? estimateGraphDistanceKm(orderedDays, locations);
@@ -36,10 +42,11 @@ Future<void> downloadWorkGraphPdf({
         if (fuelCost > 0) pw.Text('Cost carburant estimat: ${fuelCost.toStringAsFixed(2)} lei'),
       ]),
       pw.SizedBox(height: 14),
-      ...orderedDays.asMap().entries.expand((entry) {
+      ...dayProjections.asMap().entries.expand((entry) {
         final dayIndex = entry.key;
-        final day = entry.value;
-        final orderedItems = [...day.items]..sort((a, b) => a.order.compareTo(b.order));
+        final dayProjection = entry.value;
+        final day = dayProjection.day;
+        final orderedItems = dayProjection.items;
         return <pw.Widget>[
           pw.Container(
             margin: const pw.EdgeInsets.only(top: 10, bottom: 4),
