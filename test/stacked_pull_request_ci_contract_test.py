@@ -9,6 +9,7 @@ STACK_BASES = (
     "codex/xix-pdf-decont-input-selection-20261021",
     "codex/xix-program-schedule-item-removal-20261021",
     "codex/xix-program-schedule-item-addition-20261021",
+    "codex/xix-home-team-membership-projection-20261021",
 )
 
 
@@ -28,6 +29,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("flutter test test/decont_financial_input_selection_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_removal_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_creation_test.dart", workflow)
+        self.assertIn("flutter test test/home_team_membership_projection_test.dart", workflow)
         self.assertIn("retention-days: 7", workflow)
 
     def test_native_workflow_runs_contract_without_live_permissions(self):
@@ -38,6 +40,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("flutter test test/decont_financial_input_selection_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_removal_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_creation_test.dart", workflow)
+        self.assertIn("flutter test test/home_team_membership_projection_test.dart", workflow)
         self.assertIn("permissions:", workflow)
         self.assertIn("contents: read", workflow)
         self.assertNotIn("firebase deploy", workflow)

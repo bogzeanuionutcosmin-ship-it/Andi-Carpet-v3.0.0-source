@@ -751,15 +751,12 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   String? coreSyncError;
 
   void _applyTeamMembership() {
-    for (final u in users) {
-      String? found;
-      for (final t in teams) {
-        if (t.members.contains(u.id)) {
-          found = t.id;
-          break;
-        }
-      }
-      u.teamId = found;
+    final teamIds = projectHomeTeamMembership(
+      userIds: users.map((user) => user.id),
+      teams: teams,
+    );
+    for (var index = 0; index < users.length; index++) {
+      users[index].teamId = teamIds[index];
     }
   }
 

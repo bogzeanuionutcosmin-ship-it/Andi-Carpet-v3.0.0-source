@@ -184,6 +184,7 @@ part 'auth/account_access_pages.dart';
 part 'home/home_backup_maintenance.dart';
 part 'home/home_permission_maintenance.dart';
 part 'home/home_subscription_registry.dart';
+part 'home/home_team_membership_projection.dart';
 part 'home/geofence_fix_policy.dart';
 part 'home/home_arrival_record_policy.dart';
 part 'home/home_page.dart';
