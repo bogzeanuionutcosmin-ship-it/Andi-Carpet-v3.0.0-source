@@ -73,7 +73,7 @@ void main() {
         post: (uri, {headers, body}) async => http.Response('{}', 200),
         isWeb: false,
         includeName: true,
-        log: logs.add,
+        log: (_) {},
       );
 
       final result = await geocoder.geocode('Brăila');
@@ -105,10 +105,11 @@ void main() {
         },
         isWeb: false,
         includeName: true,
-        log: (_) {},
+        log: logs.add,
       );
 
-      expect(await geocoder.geocode('Brăila'), {
+      final result = await geocoder.geocode('Brăila');
+      expect(result, {
         'name': 'Brăila, România',
         'lat': 45.26,
         'lon': 27.97,
