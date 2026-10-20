@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
+import 'chat/visible_chat_sender_policy.dart';
 import 'download_file.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
