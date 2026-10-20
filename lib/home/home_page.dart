@@ -372,10 +372,17 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
   Future<String> _resolveLiveLocality(Position p) async {
     final now = DateTime.now();
-    if (_lastLiveLocalityLabel.isNotEmpty && _lastLiveLocalityResolvedAt != null && _lastLiveLocalityPosition != null) {
-      final moved = Geolocator.distanceBetween(_lastLiveLocalityPosition!.latitude, _lastLiveLocalityPosition!.longitude, p.latitude, p.longitude);
-      if (moved < 5000 && now.difference(_lastLiveLocalityResolvedAt!) < const Duration(minutes: 30)) return _lastLiveLocalityLabel;
-    }
+    final resolvedAt = _lastLiveLocalityResolvedAt;
+    final lastPosition = _lastLiveLocalityPosition;
+    final movedMeters = _lastLiveLocalityLabel.isNotEmpty && resolvedAt != null && lastPosition != null
+        ? Geolocator.distanceBetween(lastPosition.latitude, lastPosition.longitude, p.latitude, p.longitude)
+        : null;
+    if (shouldReuseLiveLocalityCache(
+      label: _lastLiveLocalityLabel,
+      resolvedAt: resolvedAt,
+      distanceMovedMeters: movedMeters,
+      now: now,
+    )) return _lastLiveLocalityLabel;
     try {
       final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
         'format': 'jsonv2',

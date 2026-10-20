@@ -20,6 +20,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/xix-native-candidate.yml").read_text(encoding="utf-8")
         self.assertIn("branches: [main, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020]", workflow)
         self.assertIn("github.base_ref == 'mission-xix/modular-integration' || github.base_ref == 'codex/xix-integrated-home-manual-lifecycle-20261019' || github.base_ref == 'codex/xix-manual-entry-midnight-date-20261019' || github.base_ref == 'codex/xix-schedule-save-errors-20261020' || github.base_ref == 'codex/xix-native-selector-scroll-20261020'", workflow)
+        self.assertIn("github.head_ref == 'codex/xix-consolidated-integration-wip-20261020'", workflow)
         self.assertIn("permissions:\n  contents: read", workflow)
         self.assertNotIn("firebase deploy", workflow)
         self.assertNotIn("id-token: write", workflow)
