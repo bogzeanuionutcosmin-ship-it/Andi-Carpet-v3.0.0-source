@@ -35,17 +35,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Duration? _averageDuration(String locationId) => learnedAverageDuration(widget.records, locationId, widget.settings);
 
-  WorkSchedule _copySchedule(WorkSchedule s) => WorkSchedule(
-    id:s.id, teamId:s.teamId, graphId:s.graphId, graphName:s.graphName, date:s.date,
-    items:s.items.map((i)=>ScheduleItem(locationId:i.locationId,locationNameSnapshot:i.locationNameSnapshot,addressSnapshot:i.addressSnapshot,typeSnapshot:i.typeSnapshot,categoryIdSnapshot:i.categoryIdSnapshot,order:i.order,transferred:i.transferred,facadePlanned:i.facadePlanned)).toList(),
-    active:s.active, closed:s.closed, started:s.started, paused:s.paused, postponed:s.postponed, autoProposed:s.autoProposed,
-    planAlertAt:s.planAlertAt, planAlertReason:s.planAlertReason, lastRecalculatedAt:s.lastRecalculatedAt, recalculationCount:s.recalculationCount,
-    learningExplanation:s.learningExplanation, learningConfidence:s.learningConfidence, learningSamples:s.learningSamples,
-    departureName:s.departureName, departureLatitude:s.departureLatitude, departureLongitude:s.departureLongitude, returnName:s.returnName, returnLatitude:s.returnLatitude, returnLongitude:s.returnLongitude,
-    updatedAt:s.updatedAt,
-    persisted:s.persisted,writeToken:s.writeToken,
-  );
-
   Future<Map<String,dynamic>?> _dashboardGeocodeTripPoint(String query) async {
     final clean=query.trim();
     if(clean.isEmpty)return null;
@@ -123,21 +112,23 @@ class _DashboardPageState extends State<DashboardPage> {
       final startPoint=await _dashboardGeocodeTripPoint(departureText);
       final endPoint=departureText.toLowerCase()==returnText.toLowerCase()?startPoint:await _dashboardGeocodeTripPoint(returnText);
       if(startPoint==null||endPoint==null){if(mounted)showErrorMessage(context,'Nu am putut identifica una dintre localități. Scrie localitatea mai explicit.');return;}
-      final sameGraph=widget.schedules.where((s)=>s.graphId==schedule.graphId&&s.teamId==schedule.teamId).map(_copySchedule).toList();
-      for(final x in sameGraph){
-        x.started=true;x.paused=false;x.closed=false;
-        x.departureName=departureText;x.departureLatitude=startPoint['lat'] as double;x.departureLongitude=startPoint['lon'] as double;
-        x.returnName=returnText;x.returnLatitude=endPoint['lat'] as double;x.returnLongitude=endPoint['lon'] as double;
-      }
+      final sameGraph = dashboardSchedulesForGraphStart(
+        schedules: widget.schedules,
+        selectedSchedule: schedule,
+        departureName: departureText,
+        departureLatitude: startPoint['lat'] as double,
+        departureLongitude: startPoint['lon'] as double,
+        returnName: returnText,
+        returnLatitude: endPoint['lat'] as double,
+        returnLongitude: endPoint['lon'] as double,
+      );
       try { await widget.saveSchedules(sameGraph); } catch(e) { if(mounted)showErrorMessage(context,'Programul nu a putut fi pornit: ${scheduleSaveFailureMessage(e)}'); return; }
       widget.onChanged();
       widget.log('START program din Acasă','${team.name} · ${schedule.graphName} · $departureText → $returnText');
       if(mounted)showSuccessMessage(context,'Programul echipei a fost pornit cu traseul complet.');
       return;
     }
-    final updated=_copySchedule(schedule);
-    updated.started=false;
-    updated.paused=false;
+    final updated = dashboardScheduleForGraphStop(schedule);
     await widget.saveSchedule(updated);
     widget.log('STOP program din Acasă','${team.name} · ${updated.graphName} · ${formatDate(updated.date)}');
     if(mounted)showSuccessMessage(context,'Programul echipei a fost oprit.');
