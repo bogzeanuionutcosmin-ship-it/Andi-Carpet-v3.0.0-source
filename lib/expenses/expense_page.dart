@@ -983,17 +983,26 @@ class _ExpensePageState extends State<ExpensePage> {
     catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva diurna: $e'); }
   }
 
-  Future<XFile?> _pickDocumentImage({bool allowNoImage = false}) async {
-    final source = await showModalBottomSheet<String>(context: context, builder: (c) => SafeArea(child: Wrap(children: [
-      ListTile(leading: const Icon(Icons.photo_camera_outlined), title: const Text('Fotografiază acum'), onTap: () => Navigator.pop(c, 'camera')),
-      ListTile(leading: const Icon(Icons.photo_library_outlined), title: const Text('Alege din galerie'), onTap: () => Navigator.pop(c, 'gallery')),
-      if (allowNoImage) ListTile(leading: const Icon(Icons.edit_note), title: const Text('Fără fotografie'), onTap: () => Navigator.pop(c, 'none')),
-    ])));
-    if (source == null || source == 'none') return null;
-    try {
-      return await _imagePicker.pickImage(source: source == 'camera' ? ImageSource.camera : ImageSource.gallery, imageQuality: 92, maxWidth: 2400, maxHeight: 2400);
-    } catch (e) { if (mounted) showErrorMessage(context, 'Imaginea nu a putut fi deschisă: $e'); return null; }
-  }
+  Future<XFile?> _pickDocumentImage({bool allowNoImage = false}) =>
+      pickExpenseDocumentImage(
+        context: context,
+        allowNoImage: allowNoImage,
+        requestImage: (source, {
+          required imageQuality,
+          required maxWidth,
+          required maxHeight,
+        }) => _imagePicker.pickImage(
+          source: source,
+          imageQuality: imageQuality,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+        ),
+        onError: (error) {
+          if (mounted) {
+            showErrorMessage(context, 'Imaginea nu a putut fi deschisă: $error');
+          }
+        },
+      );
 
   Uint8List _compressDocumentImage(Uint8List bytes) {
     final decoded = img.decodeImage(bytes);
