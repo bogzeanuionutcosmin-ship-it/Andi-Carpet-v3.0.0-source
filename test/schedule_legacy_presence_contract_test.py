@@ -5,7 +5,7 @@ class LegacyPresence(unittest.TestCase):
     def test_loaded_legacy_schedule_has_presence_independent_of_revision(self):
         codec = (ROOT/'lib/home/home_document_codecs.dart').read_text()
         self.assertIn('persisted: true', codec)
-        for name in ['lib/schedule/program_page.dart', 'lib/dashboard/dashboard_page.dart']:
+        for name in ['lib/schedule/program_schedule_clone.dart', 'lib/dashboard/dashboard_page.dart']:
             self.assertIn('persisted:s.persisted', (ROOT/name).read_text())
     def test_transaction_checks_presence_before_writing(self):
         home = (ROOT/'lib/home/home_page.dart').read_text()
