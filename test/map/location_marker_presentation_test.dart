@@ -34,7 +34,11 @@ void main() {
     expect(markerDecoration.boxShadow!.single.blurRadius, 5);
     expect(markerDecoration.boxShadow!.single.color, Colors.black26);
 
-    final markerSize = tester.widget<SizedBox>(find.byType(SizedBox));
+    final markerSizeFinder = find.descendant(
+      of: find.byType(DecoratedBox),
+      matching: find.byType(SizedBox),
+    );
+    final markerSize = tester.widget<SizedBox>(markerSizeFinder);
     expect(markerSize.width, 40);
     expect(markerSize.height, 40);
 
