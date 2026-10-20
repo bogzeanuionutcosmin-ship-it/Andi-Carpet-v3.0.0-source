@@ -99,20 +99,15 @@ class _ProgramPageState extends State<ProgramPage> {
   DateTime? _estimatedEndForDay(WorkSchedule day, DateTime now) {
     final workDate = operationalWorkDate(now);
     final pending = _pendingItemsForDay(day, workDate);
-    if (pending.isEmpty) return now;
-    var seconds = 0;
-    for (final item in pending) {
-      final avg = _averageDurationForLocation(item.locationId);
-      if (avg == null) return null;
-      final r = _latestRecordForItem(item, workDate);
-      if (r?.status == WorkAttemptStatus.running && r?.startedAt != null) {
-        final elapsed = now.difference(r!.startedAt!).inSeconds;
-        seconds += (avg.inSeconds - elapsed).clamp(0, avg.inSeconds).toInt();
-      } else {
-        seconds += avg.inSeconds;
-      }
-    }
-    return now.add(Duration(seconds: seconds));
+    return estimateProgramFinish<ScheduleItem, CentralizerRecord>(
+      now: now,
+      pendingItems: pending,
+      averageDurationForItem: (item) =>
+          _averageDurationForLocation(item.locationId),
+      latestRecordForItem: (item) => _latestRecordForItem(item, workDate),
+      isRunning: (record) => record?.status == WorkAttemptStatus.running,
+      startedAt: (record) => record?.startedAt,
+    );
   }
 
   String? _planRiskReason(WorkSchedule day, DateTime now) {
