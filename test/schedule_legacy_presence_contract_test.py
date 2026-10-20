@@ -5,8 +5,14 @@ class LegacyPresence(unittest.TestCase):
     def test_loaded_legacy_schedule_has_presence_independent_of_revision(self):
         codec = (ROOT/'lib/home/home_document_codecs.dart').read_text()
         self.assertIn('persisted: true', codec)
-        for name in ['lib/schedule/program_page.dart', 'lib/dashboard/dashboard_page.dart']:
-            self.assertIn('persisted:s.persisted', (ROOT/name).read_text())
+        # Dashboard's immutable copy now lives in its extracted transition module.
+        expectations = {
+            'lib/schedule/program_page.dart': 'persisted:s.persisted',
+            'lib/dashboard/dashboard_program_transition.dart': 'persisted:schedule.persisted',
+        }
+        for name, expression in expectations.items():
+            source = (ROOT/name).read_text().replace(' ', '')
+            self.assertIn(expression, source)
     def test_transaction_checks_presence_before_writing(self):
         home = (ROOT/'lib/home/home_page.dart').read_text()
         writer = home[home.index('Future<void> _saveSchedulesDirect'):home.index('Future<void> _saveRecordDirect')]

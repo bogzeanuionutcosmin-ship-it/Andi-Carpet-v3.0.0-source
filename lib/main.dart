@@ -135,6 +135,7 @@ part 'settings/settings_page.dart';
 part 'profile/profile_page.dart';
 part 'centralizer/centralizer_page.dart';
 part 'dashboard/dashboard_page.dart';
+part 'dashboard/dashboard_program_transition.dart';
 part 'dashboard/dashboard_record_selection.dart';
 part 'map/map_page.dart';
 part 'expenses/expense_page.dart';
