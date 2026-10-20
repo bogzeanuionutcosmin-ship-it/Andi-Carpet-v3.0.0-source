@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:andi_carpeta/main.dart' as app;
+import 'package:andi_carpeta/ocr_parser.dart';
 
 void main() {
   test('forwards image bytes and local path, parses text, and reports success', () async {
@@ -9,7 +10,7 @@ void main() {
     Uint8List? receivedBytes;
     String? receivedPath;
     var parsedText = '';
-    final reported = <app.FiscalOcrData>[];
+    final reported = <FiscalOcrData>[];
 
     final result = await app.scanExpenseDocumentOcr(
       bytes,
@@ -21,7 +22,7 @@ void main() {
       },
       parse: (text) {
         parsedText = text;
-        return const app.FiscalOcrData(rawText: 'recognized receipt', confidence: 0.8);
+        return const FiscalOcrData(rawText: 'recognized receipt', confidence: 0.8);
       },
       onSuccess: reported.add,
     );
@@ -32,7 +33,7 @@ void main() {
     expect(result.data.rawText, 'recognized receipt');
     expect(result.data.confidence, 0.8);
     expect(result.error, isNull);
-    expect(reported, <app.FiscalOcrData>[result.data]);
+    expect(reported, <FiscalOcrData>[result.data]);
     expect(bytes, <int>[1, 2, 3]);
   });
 
@@ -47,7 +48,7 @@ void main() {
       recognize: (_, {String? path}) async => throw failure,
       parse: (_) {
         parseCalls++;
-        return const app.FiscalOcrData(rawText: 'unexpected');
+        return const FiscalOcrData(rawText: 'unexpected');
       },
       onSuccess: (_) => successCalls++,
     );
@@ -75,7 +76,7 @@ void main() {
       Uint8List.fromList(<int>[6]),
       path: '/tmp/receipt.jpg',
       recognize: (_, {String? path}) async => 'text',
-      parse: (text) => app.FiscalOcrData(rawText: text, confidence: 1),
+      parse: (text) => FiscalOcrData(rawText: text, confidence: 1),
       onSuccess: (_) => throw callbackFailure,
     );
     expect(callbackResult.data.rawText, isEmpty);
