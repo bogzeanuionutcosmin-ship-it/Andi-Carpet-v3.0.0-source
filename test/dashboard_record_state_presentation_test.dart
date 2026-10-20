@@ -122,6 +122,20 @@ void main() {
         ),
         'Așteptare acces din --:--',
       );
+      expect(
+        dashboardRecordStateText(
+          status: WorkAttemptStatus.running,
+          waitingDuration: const Duration(seconds: 59),
+        ),
+        'Pe sală din --:-- · așteptare 0h 00 min',
+      );
+      expect(
+        dashboardRecordStateText(
+          status: WorkAttemptStatus.completed,
+          duration: const Duration(minutes: -1),
+        ),
+        'Finalizată · 0h 01 min · --:--–--:--',
+      );
     });
 
     test('omits blank reasons and preserves the raw nonblank reason', () {
