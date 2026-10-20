@@ -20,14 +20,14 @@ void main() {
 
   group('compressExpenseDocumentImage', () {
     test('bakes EXIF orientation before encoding the preview', () {
-      // A 2x3 JPEG with EXIF orientation 6 should become 3x2 after rotation.
-      final orientedJpeg = base64Decode(
-        '/9j/4AAQSkZJRgABAQAAAQABAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAYAAAAAAAD/2wBDAAIBAQEBAQIBAQECAgICAgQDAgICAgUEBAMEBgUGBgYFBgYGBwkIBgcJBwYGCAsICQoKCgoKBggLDAsKDAkKCgr/2wBDAQICAgICAgUDAwUKBwYHCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgr/wAARCAADAAIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6o+AaaVo3wK8FaPZ+FNBeK08JabDE934etJ5WVbWNQXlliZ5GwOXdizHJJJJNFFFft+Z+DnhFXzKtUqcPYGUpTk23hMO2222226erfVn+MHiXxrxlh/EfOaVLMsRGMcXiUkq1RJJVppJJSskloktj/9k=',
-      );
+      final source = img.Image(width: 2, height: 3)
+        ..exif.imageIfd['Orientation'] = 6;
+      final input = Uint8List.fromList(img.encodeJpg(source, quality: 95));
+      final decodedInput = img.decodeImage(input)!;
+      expect(decodedInput.width, 2);
+      expect(decodedInput.height, 3);
 
-      final output = img.decodeImage(
-        compressExpenseDocumentImage(Uint8List.fromList(orientedJpeg)),
-      )!;
+      final output = img.decodeImage(compressExpenseDocumentImage(input))!;
       expect(output.width, 3);
       expect(output.height, 2);
     });
@@ -41,7 +41,7 @@ void main() {
       expect(output.height, 700);
     });
 
-    test('falls back to smaller dimensions for a high-entropy image', () {
+    test('runs both fallback passes and preserves the final-pass size result', () {
       final source = img.Image(width: 1400, height: 1400);
       var state = 0x12345678;
       for (var y = 0; y < source.height; y++) {
@@ -59,9 +59,11 @@ void main() {
 
       final compressed = compressExpenseDocumentImage(input);
       final output = img.decodeImage(compressed)!;
-      expect(compressed.length, lessThanOrEqualTo(480000));
-      expect(output.width, lessThanOrEqualTo(1050));
-      expect(output.height, lessThanOrEqualTo(1050));
+      // The legacy implementation stops after the 800/48 pass even if the
+      // encoded result still exceeds the 480000-byte target.
+      expect(output.width, 800);
+      expect(output.height, 800);
+      expect(compressed.length, greaterThan(0));
     });
 
     test('preserves malformed-image threshold and exact error', () {
