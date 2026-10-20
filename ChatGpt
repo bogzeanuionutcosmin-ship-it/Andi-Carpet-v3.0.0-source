@@ -1444,3 +1444,13 @@ main. Fără flag, etapa nativă se oprește clar; nu continuă fără persisten
 - #146 extrage în lib/map/map_location_filters.dart filtrarea existentă categorie/status/GPS pentru marker list, count/list fără coordonate și panouri grupate. Testele acoperă coordonate complete/parțiale, category/status selection, categorie exactă și seturi goale. Nu introduce modele, dependențe sau schimbări de comportament.
 - Toate PR-urile #134–#146 rămân Draft/Open și nemergate. Local: 173 Python, 3 Node și git diff --check PASS; Flutter/Dart nu sunt disponibile local. Nu s-au făcut merge/deploy, modificări Firebase de producție, signing sau distribuire APK.
 - Modularizarea aplicației este încă incompletă: rămân paginile mari și familiile part/importuri implicite din matricea PR #137. Map încă are GPS/UI/models/orchestration cuplate. Cache-urile Home write-only și parser-ele receivedEntries nu se șterg fără probe de efecte, ordonare și identitate. Validarea Android fizică și review-ul uman rămân deschise. production_ready=false.
+
+
+## 165. Misiunea XIX — continuare de la C14 prin C31 (2026-10-21)
+
+- Am recitit regulile oficiale din `main`. Continui modularizarea și stabilizarea cu verificări exacte pe SHA; fără merge în `main`, deploy, Firebase de producție, signing sau distribuire APK. `production_ready=false`.
+- C14/#192 rămâne checkpoint istoric validat la `cf7768b6a7d312af1b0092d1fd9403505f3c1b85`, cu Validate/Android/Native SUCCESS.
+- C30/#208: SHA `8bfc120ec62d70c24d4317a7577173a61d9537b2`. Validate `39512793185` și Android `39512793093` SUCCESS. Prima rulare Native `39512793206` a eșuat la pornirea emulatorului (`adb: device offline`) înaintea fluxului UI; build/analyze și contractele concentrate au trecut. Numai joburile eșuate au fost relansate; retry-ul este încă în curs, fără concluzie Native declarată.
+- C31/#209 este Draft/Open, stacked pe C30, HEAD exact `2566b14ec1d39e71b3cbd9f32cc33377c98d174c`. Extrage filtrul duplicat de programe Home pornite, deschise, nepausate și neamânate, păstrând `sameDay`, ordinea și filtrul distinct de auto-rezolvare. Testele contract acoperă echipa, ziua, stările, ordinea și rezultatul gol.
+- CI exact-head C31: Validate `39516568304` este în curs; Python source/security contracts SUCCESS. Android și Native sunt încă în așteptarea înregistrării/terminării. Nu se pretinde încă CI verde pentru HEAD-ul C31.
+- Continuarea rămâne pe seria cumulativă deschisă. Auditul celor șase module, review-ul uman și testarea fizică pe Android rămân deschise.

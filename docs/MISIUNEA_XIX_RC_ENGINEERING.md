@@ -134,3 +134,13 @@ La SHA exact, toate trei workflow-urile sunt SUCCESS pentru codul #141 (39f3506d
 PR Draft #146 [Extract Map location filter policy](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/146) scoate filtrarea generică categorie/status/poziționare GPS într-un helper fără dependență de modele/UI și reutilizează filtrul în marker list, locații fără GPS și panourile categorice. Testele dedicate verifică seturi selectate, coordonate parțiale și categoria exactă pentru panou. Filtrele de branch CI și testul-contract sunt extinse numai pentru a permite executarea workflow-urilor standard pe copilul #145; pașii și politicile lor rămân neschimbate.
 
 #141–#146 rămân Draft/Open, fără merge. Validările locale: 173 Python, 3 Node și git diff --check PASS; Flutter/Dart lipsesc local. Obligatii încă deschise: modularizarea paginilor și familiilor rămase din matricea PR #137; verificarea prudentă a cache-urilor Home write-only și a parserelor receivedEntries; decuplarea GPS/UI/models/orchestration din Map; review uman și Android fizic. Fără merge, deploy, Firebase de producție, semnare sau distribuire APK; production_ready=false.
+
+
+## Continuare C14 → C30/C31 — 21 octombrie 2026
+
+Checkpointul C14/#192 (`cf7768b6a7d312af1b0092d1fd9403505f3c1b85`) este validat istoric pe toate cele trei fluxuri. Seria cumulativă a continuat până la C30/#208 și C31/#209.
+
+- C30/#208 HEAD `8bfc120ec62d70c24d4317a7577173a61d9537b2`: Validate `39512793185` SUCCESS; Android `39512793093` SUCCESS. Native `39512793206` a întâmpinat `adb: device offline` înainte de testul UI. Retry-ul jobului eșuat rulează; până la terminalizarea lui, Native rămâne nevalidat.
+- C31/#209 Draft/Open, bazat pe C30, HEAD `2566b14ec1d39e71b3cbd9f32cc33377c98d174c`. Policy pură pentru selecția programelor Home active în două call-site-uri duplicate; păstrează filtrul diferit pentru auto-rezolvare. Contractele verifică echipa/data/stările, ordinea și lista nouă goală.
+- C31: Validate run `39516568304` este în curs. Python source/security contracts au SUCCESS; Android/Native nu au încă rezultat terminal pe acest SHA.
+- Limite neschimbate: fără merge, deploy, Firebase de producție, signing ori distribuire APK; `production_ready=false`. Auditul complet, review-ul uman și testarea Android fizică rămân deschise.
