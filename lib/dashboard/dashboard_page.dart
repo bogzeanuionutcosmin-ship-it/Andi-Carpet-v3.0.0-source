@@ -143,26 +143,6 @@ class _DashboardPageState extends State<DashboardPage> {
     if(mounted)showSuccessMessage(context,'Programul echipei a fost oprit.');
   }
 
-  // Orașul este preluat din denumirea locației sau din ultimul segment al
-  // adresei, nu din numele străzii (primul segment al adresei).
-  String _locationCityLabel(Location l) {
-    final name = l.name.trim().replaceFirst(
-      RegExp(r'^(million|magic)\s+', caseSensitive: false), '',
-    ).trim();
-    final parts = l.address.split(',').map((s) => s.trim())
-        .where((s) => s.isNotEmpty).toList();
-    if (parts.length >= 2) {
-      final candidate = parts.last.replaceFirst(
-        RegExp(r'^(jud\.?|județul|municipiul|orașul)\s+', caseSensitive: false), '',
-      ).trim();
-      if (candidate.isNotEmpty &&
-          !RegExp(r'^(românia|romania|rom|\d{5,6})$', caseSensitive: false).hasMatch(candidate)) {
-        return candidate;
-      }
-    }
-    return name.split(RegExp(r'[-–]')).first.trim();
-  }
-
   String _memberLocationLabel(String userId, Map<String, Map<String,dynamic>> live, String teamId) {
     final d = live[userId];
     if (d == null) return 'Locație live indisponibilă';
@@ -200,7 +180,10 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     }
     if (currentSite != null) {
-      final city = _locationCityLabel(currentSite);
+      final city = dashboardLocationCityLabel(
+        name: currentSite.name,
+        address: currentSite.address,
+      );
       return city.isEmpty ? '${currentSite.name}$age' : '${currentSite.name} · $city$age';
     }
     if (locality.isNotEmpty) return '$locality$age';
