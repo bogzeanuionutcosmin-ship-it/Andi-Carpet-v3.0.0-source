@@ -72,7 +72,7 @@ void main() {
       for(final location in graphLocations){
         final search=find.byWidgetPredicate((widget) =>
           widget is TextField &&
-          widget.decoration.labelText == 'Caută sală / adresă / categorie');
+          widget.decoration?.labelText == 'Caută sală / adresă / categorie');
         expect(search,findsOneWidget,reason:'The Graph picker must expose its location search field');
         await tester.ensureVisible(search);
         await tester.enterText(search,location.name);
