@@ -721,8 +721,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     }
   }
 
-  final List<StreamSubscription<dynamic>> _coreSubscriptions = [];
-  final List<StreamSubscription<dynamic>> _financialSubscriptions = [];
+  final _coreSubscriptions = HomeSubscriptionRegistry();
+  final _financialSubscriptions = HomeSubscriptionRegistry();
   String? _financialTeamScope;
   final Map<String, String> _locationCache = {};
   final Map<String, String> _categoryCache = {};
@@ -755,8 +755,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     final scope = canViewAll ? '*' : me.teamId;
     if (_financialTeamScope == scope) return;
     _financialTeamScope = scope;
-    for (final sub in _financialSubscriptions) { sub.cancel(); }
-    _financialSubscriptions.clear();
+    unawaited(_financialSubscriptions.cancelAll());
     expenses.clear(); perDiems.clear(); finances.clear(); settlements.clear();
     if (scope == null || scope.isEmpty) {
       if (mounted) setState(() {});
@@ -1744,8 +1743,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
   @override
   void dispose() {
-    for (final sub in _coreSubscriptions) { sub.cancel(); }
-    for (final sub in _financialSubscriptions) { sub.cancel(); }
+    unawaited(_coreSubscriptions.dispose());
+    unawaited(_financialSubscriptions.dispose());
     _liveLocationTimer?.cancel();
     _backgroundLocationSubscription?.cancel();
     super.dispose();
