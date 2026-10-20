@@ -244,3 +244,40 @@ PR #168 extrage selecția câmpurilor audit în `lib/reports/audit_pdf_projectio
 Expenses #166 este acum SUCCESS pe SHA exact. Nu se declară Expenses consolidat: #162 și #166 rămân siblings pe baza #137 cu editări separate în aceeași pagină/importuri; integrarea lor trebuie reconciliată înaintea următorului seam de salvare/UI. Ledgerul și politica legacy continuă să fie surse distincte.
 
 Toate PR-urile menționate rămân Draft/Open și nemergate. Nu s-a făcut deploy, modificare Firebase de producție, semnare sau distribuire APK. CI-ul raportului #148 este încă în verificare din cauza unei erori de infrastructură apt, cu rerun pe același SHA în lucru. `production_ready=false`.
+
+
+## Checkpoint continuare — 20 octombrie 2026, rezultate PR #148, #168 și #169
+
+Stările de mai jos sunt legate de SHA-urile indicate; statusul Draft/Open și nemergat este păstrat.
+
+### PR #148 — raport curent
+- SHA raport verificat: `6fde4d3badddcc45c3a093e2053c00f657ada2fc`.
+- Validate `39381430552`: **SUCCESS**.
+- Android `39381430576`: **SUCCESS**; artifact `12245489602`, ZIP SHA-256 `9ceb05d8a01d173c2d25e20fabf137f47d0b46015a6e8e51d95decfc8dd72739`.
+- Native `39381430592`: **SUCCESS**. Conectarea, două reporniri autentificate la rece, navigarea Grafic/Centralizator/Acasă, PDF-ul și checksum-ul au trecut. Artifact `12246107772`, ZIP SHA-256 `12620019b56636632d01a7a3db33e593b01f8f5d66c5d46e45da214631852fbb`.
+- Validate artifacts: PDF `12245821177`, SHA-256 `33c592c854def86aa4c1ba89a00a096df3dd571781993187afee33e0e5078c1f`; web `12245354305`, SHA-256 `69f7ce16a66b74bfabd22d103aa33e4951faacfeb0c64cb62adf8bec3a23f9e9`; audit `12245665824`, SHA-256 `b06af704a6b1e574557e7d7b2c7b4da3efae943f23d741d9bb141bcde5b1b697`.
+- Run-ul Validate anterior `39381155407` a întâlnit HTTP 403 la indexul Microsoft packages după 121 teste Flutter trecute; acesta era pe SHA raport superseded. Validate-ul actual pe SHA-ul de mai sus este SUCCESS, fără relaxarea testelor.
+
+### PR #168 — proiecție PDF audit
+- HEAD: `8749c0049587274c13c433b9be428f59d2ca386b`.
+- Validate `39381349375`: **SUCCESS**; PDF artifact `12245023041`, SHA-256 `a3f2a8ec27d2108b5b910ef9330cf79a7486e7b549d68ebaf09010b6454c6588`; web artifact `12244923820`, SHA-256 `19b3fc7b128604dd1aae2565e7ef2c93408a47cd276f42d701c6e9e40732ab6e`.
+- Android `39381349463`: **SUCCESS**; artifact `12245309662`, SHA-256 `99ab7e279dab541df1a72d3ad7c21e8327277aa721ab2435a1564292d5d545d7`.
+- Native `39381349430`, prima încercare: **FAILED** în testul de restart după ce scenariul connected UI a trecut: grafic Craiova, 11 intervenții Firestore/Centralizator și validarea PDF au trecut. Eșecul exact a fost `uiautomator dump` → `ERROR: null root node returned by UiTestAutomationBridge`, apoi `ElementTree.ParseError` în scriptul de restart, linia 57. Nu este eroare de selector Craiova și nu indică un defect PDF.
+- Verificarea PDF/checksum și upload-ul au trecut chiar în tentativa eșuată; artifact Native `12245844426`, ZIP SHA-256 `8cce0aa68bc423e63674f9302b11a6252c0288757bb850135f47013b35d5891a`.
+- A pornit rerun-ul failed job pe **același SHA**, fără schimbări de cod. Rerun-ul este **IN PROGRESS**, job nou `118497488632`, în instalarea Flutter. #148 conține deja implementarea/testul de retry pentru XML-ul UIAutomator gol; nu copiez acel patch în #168 cât timp rerun-ul poate confirma tranziența.
+
+### PR #169 — Home push-token document ID
+- HEAD: `f87fa25cda94bdb023bbc3ac51d6d6320e33c359).
+- Validate `39382431652`: **SUCCESS**; PDF `12246366017`, SHA-256 `9d34ddcdc82f25b30554062f51aa0a21e4a0e7bd37e6f42dbf6b0f98149e3947`; web `12245723378`, SHA-256 `dd4e8b04e0fd984f081ab5a87a2ed09dd891fb3bd1095fc8b3ea3001b724c556`; audit `12246315776`, SHA-256 `5487f60dd5483c42bb8bcee51525db05a77ee1d7d08b41663ff3e241f8819ea7`.
+- Android `39382431530`: **SUCCESS**, artifact `12246023304`, ZIP SHA-256 `0cb562f77aff495215a05d41f9c91c54f01ce2ed2cade68c320b9c34259d34ab`.
+- Native `39382431545`: **IN PROGRESS**, în scenariul conectat/restart, job `118494423191`. Codarea ID-ului și testele unitare nu schimbă schema ori scrierile Firebase.
+
+### Modularizarea — delta și obligații rămase
+- Home: #169 izolează ID-ul tokenului; #163 și #167 păstrează politicile live-location/alertă. Rămân lifecycle, subscriptions/cache, GPS, permisiuni și sincronizările.
+- Expenses: parserele și helper-ele #138/#156/#158/#162/#166 sunt separate; OCR/picker, persistarea și settlement legacy/v2 rămân cuplate la pagina mare. OCR parserul existent din `lib/ocr_parser.dart` nu se dublează.
+- Program/Grafic: selecții, erori, geocoder și ordonare ID sunt extrase; START/STOP, editare, lifecycle și persistență rămân.
+- Map: politici geografice, URI-uri și marker widget sunt extrase; controller Mapbox/GPS, permisiuni și lifecycle rămân.
+- Dashboard: prezentarea statusului și geocoderul sunt separate; orchestration START/STOP, tranzacțiile/idempotenta și izolarea echipei rămân.
+- Rapoarte/PDF: proiecțiile Centralizator, Work Graph și audit sunt separate; maparea financiară, randarea/layout-ul și I/O rămân.
+- Nu există încă un SHA cumulativ al acestor PR-uri care să fi trecut CI complet. Testarea emulator nu certifică Firebase de producție sau hardware GPS real. Nicio schimbare live, merge, deploy ori distribuire APK. `production_ready=false`.
+
