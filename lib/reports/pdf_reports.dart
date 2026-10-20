@@ -575,14 +575,18 @@ Future<void> downloadFinancialSummaryPdf({
 }) async {
   final theme = await _buildPdfTheme();
   final doc = pw.Document();
-  TeamFinance financeFor(String teamId) => finances.firstWhere((f) => f.teamId == teamId, orElse: () => TeamFinance(teamId: teamId));
   pw.Widget financeRow(Team team) {
-    final ex = expenses.where((e) => e.teamId == team.id && e.confirmed).fold<double>(0, (a,b)=>a+b.amount);
-    final di = perDiems.where((d) => d.teamId == team.id && d.status == PerDiemStatus.confirmed && d.received == true && d.actualReceivedAmount != null).fold<double>(0, (a,b)=>a+b.actualReceivedAmount!);
-    final f = financeFor(team.id);
-    final tripReceived = settlements.where((x) => x.teamId == team.id).fold<double>(0, (a,b) => a + b.totalReceived);
-    final totalReceived = f.totalReceived + tripReceived;
-    return pw.Text('Primit ${totalReceived.toStringAsFixed(2)} lei · Cheltuieli ${(ex+di).toStringAsFixed(2)} lei · Sold ${(totalReceived-ex-di).toStringAsFixed(2)} lei · ${settlements.where((x)=>x.teamId==team.id).length} deplasări', style: const pw.TextStyle(fontSize: 9));
+    final projection = projectFinancialSummaryRow(
+      team: team,
+      expenses: expenses,
+      perDiems: perDiems,
+      finances: finances,
+      settlements: settlements,
+    );
+    return pw.Text(
+      'Primit ${projection.totalReceived.toStringAsFixed(2)} lei · Cheltuieli ${(projection.expenseTotal + projection.perDiemTotal).toStringAsFixed(2)} lei · Sold ${projection.balance.toStringAsFixed(2)} lei · ${projection.settlementCount} deplasări',
+      style: const pw.TextStyle(fontSize: 9),
+    );
   }
   doc.addPage(pw.MultiPage(
     pageFormat: PdfPageFormat.a4,
