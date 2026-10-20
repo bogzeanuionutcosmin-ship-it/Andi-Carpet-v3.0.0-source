@@ -96,6 +96,7 @@ void main() {
       final nearby = site('site-1', 'Near Site', 1);
       expect(
         resolve(
+          payload: live(),
           records: const [],
           locations: [nearby],
           distanceBySiteLatitude: {1: 1},
@@ -121,6 +122,7 @@ void main() {
       ];
       expect(
         resolve(
+          payload: live(),
           records: records,
           locations: locations,
           distanceBySiteLatitude: {1: 100, 2: 20, 3: 1, 4: 1, 5: 1},
@@ -133,11 +135,11 @@ void main() {
       final active = record(id: 'r1', locationId: 'site-1');
       final location = site('site-1', 'Boundary', 1);
       expect(
-        resolve(records: [active], locations: [location], distanceBySiteLatitude: {1: 150}),
+        resolve(payload: live(), records: [active], locations: [location], distanceBySiteLatitude: {1: 150}),
         'Boundary · City:Boundary · actualizat 12:00',
       );
       expect(
-        resolve(records: [active], locations: [location], distanceBySiteLatitude: {1: 150.001}),
+        resolve(payload: live(), records: [active], locations: [location], distanceBySiteLatitude: {1: 150.001}),
         'Craiova · actualizat 12:00',
       );
     });
