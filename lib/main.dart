@@ -95,6 +95,7 @@ part 'settings/settings_page.dart';
 part 'profile/profile_page.dart';
 part 'centralizer/centralizer_page.dart';
 part 'dashboard/dashboard_page.dart';
+part 'map/map_route_geometry_cache.dart';
 part 'map/map_page.dart';
 part 'expenses/expense_page.dart';
 part 'admin/admin_navigation_catalog.dart';

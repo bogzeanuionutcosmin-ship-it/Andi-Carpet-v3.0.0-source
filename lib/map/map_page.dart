@@ -44,23 +44,11 @@ class _MapPageState extends State<MapPage> {
   final Set<LocationStatus> _selectedStatuses = <LocationStatus>{...LocationStatus.values};
   bool _showGraphRoute = true;
   String? _routeGraphId;
-  String? _roadGeometryKey;
-  Future<List<List<double>>?>? _roadGeometryFuture;
-  DateTime? _roadGeometryRequestedAt;
+  late final MapRouteGeometryCache _roadGeometryCache =
+      MapRouteGeometryCache(loadGeometry: _mapboxServices.drivingGeometry);
 
-  Future<List<List<double>>?> _loadRoadGeometry(List<LatLng> points) {
-    final key = points.map((p) => '${p.latitude.toStringAsFixed(6)},${p.longitude.toStringAsFixed(6)}').join('|');
-    final stale = _roadGeometryRequestedAt == null ||
-        DateTime.now().difference(_roadGeometryRequestedAt!) > const Duration(minutes: 5);
-    if (_roadGeometryKey != key || _roadGeometryFuture == null || stale) {
-      _roadGeometryKey = key;
-      _roadGeometryRequestedAt = DateTime.now();
-      _roadGeometryFuture = _mapboxServices.drivingGeometry(
-        points.map((p) => <double>[p.latitude, p.longitude]).toList(),
-      );
-    }
-    return _roadGeometryFuture!;
-  }
+  Future<List<List<double>>?> _loadRoadGeometry(List<LatLng> points) =>
+      _roadGeometryCache.load(points);
 
   @override
   void initState() {
