@@ -24,7 +24,7 @@ void main() {
       final jpeg = Uint8List.fromList(img.encodeJpg(source, quality: 95));
       final input = _withExifOrientation(jpeg, 6);
       final decodedInput = img.decodeImage(input)!;
-      expect(decodedInput.exif.imageIfd['Orientation'], 6);
+      expect(decodedInput.exif.imageIfd['Orientation']?.toInt(), 6);
 
       final output = img.decodeImage(compressExpenseDocumentImage(input))!;
       expect(output.width, decodedInput.height);
