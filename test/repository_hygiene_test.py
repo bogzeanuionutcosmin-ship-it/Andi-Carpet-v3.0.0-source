@@ -500,8 +500,9 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_permission_groups_and_payment_labels_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/permission_status_labels.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/permission_status_labels.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/permission_status_labels.dart';", main)
+        self.assertIn("export 'models/permission_status_labels.dart';", main)
+        self.assertIn("import 'app_enums_permissions.dart';", module)
         for symbol in ("String functionPermissionGroup(FunctionPermission permission)",
                        "extension PerDiemStatusX on PerDiemStatus",
                        "extension PaymentMethodX on PerDiemPaymentMethod"):
