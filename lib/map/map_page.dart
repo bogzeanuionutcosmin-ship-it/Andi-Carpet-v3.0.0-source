@@ -140,10 +140,14 @@ class _MapPageState extends State<MapPage> {
 
   List<CentralizerRecord> _todayRecordsFor(String locationId, String teamId) {
     final workDate = operationalWorkDate(DateTime.now());
-    return widget.records.where((r) =>
-      r.teamId == teamId && r.locationId == locationId &&
-      recordBelongsToWorkDate(r, workDate)
-    ).toList();
+    return selectWorkDateRecords(
+      widget.records,
+      teamId: teamId,
+      locationId: locationId,
+      teamIdOf: (record) => record.teamId,
+      locationIdOf: (record) => record.locationId,
+      belongsToWorkDate: (record) => recordBelongsToWorkDate(record, workDate),
+    );
   }
 
   Color? _workBadgeColor(Location l) {

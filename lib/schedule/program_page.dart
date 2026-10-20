@@ -72,9 +72,14 @@ class _ProgramPageState extends State<ProgramPage> {
   }
 
   CentralizerRecord? _latestRecordForItem(ScheduleItem item, DateTime workDate) {
-    final rs = widget.records.where((r) =>
-      r.teamId == team.id && r.locationId == item.locationId && recordBelongsToWorkDate(r, workDate)
-    ).toList()..sort((a,b)=>recordEventTime(a).compareTo(recordEventTime(b)));
+    final rs = selectWorkDateRecords(
+      widget.records,
+      teamId: team.id,
+      locationId: item.locationId,
+      teamIdOf: (record) => record.teamId,
+      locationIdOf: (record) => record.locationId,
+      belongsToWorkDate: (record) => recordBelongsToWorkDate(record, workDate),
+    )..sort((a,b)=>recordEventTime(a).compareTo(recordEventTime(b)));
     return rs.isEmpty ? null : rs.last;
   }
 
