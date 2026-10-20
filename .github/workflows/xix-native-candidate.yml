@@ -1,7 +1,7 @@
 name: XIX operational candidate and native emulator validation
 on:
   pull_request:
-    branches: [main, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021, codex/xix-map-road-geometry-controller-20261021]
+    branches: [main, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021, codex/xix-map-road-geometry-controller-20261021, codex/xix-home-financial-scope-20261021]
 permissions:
   contents: read
 concurrency:
@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   native:
-    if: github.head_ref == 'mission-xix/release-candidate' || github.head_ref == 'mission-xix/modular-integration' || github.base_ref == 'mission-xix/modular-integration' || github.base_ref == 'codex/xix-integrated-home-manual-lifecycle-20261019' || github.base_ref == 'codex/xix-manual-entry-midnight-date-20261019' || github.base_ref == 'codex/xix-schedule-save-errors-20261020' || github.base_ref == 'codex/xix-native-selector-scroll-20261020' || github.base_ref == 'codex/xix-dashboard-live-label-20261020' || github.base_ref == 'codex/xix-pdf-delivery-adapter-20261020' || github.base_ref == 'codex/xix-expense-settlement-selection-20261021' || github.base_ref == 'codex/xix-program-pending-items-20261021' || github.base_ref == 'codex/xix-program-finish-estimate-20261021' || github.base_ref == 'codex/xix-map-road-geometry-controller-20261021' || github.head_ref == 'codex/xix-consolidated-integration-wip-20261020' || github.head_ref == 'codex/xix-consolidated-geofence-contract-20261020' || github.head_ref == 'codex/xix-home-arrival-idempotence-20261020' || github.head_ref == 'codex/xix-dashboard-live-label-20261020' || github.head_ref == 'codex/xix-pdf-delivery-adapter-20261020' || github.head_ref == 'codex/xix-expense-settlement-selection-20261021' || github.head_ref == 'codex/xix-program-pending-items-20261021'
+    if: github.head_ref == 'mission-xix/release-candidate' || github.head_ref == 'mission-xix/modular-integration' || github.base_ref == 'mission-xix/modular-integration' || github.base_ref == 'codex/xix-integrated-home-manual-lifecycle-20261019' || github.base_ref == 'codex/xix-manual-entry-midnight-date-20261019' || github.base_ref == 'codex/xix-schedule-save-errors-20261020' || github.base_ref == 'codex/xix-native-selector-scroll-20261020' || github.base_ref == 'codex/xix-dashboard-live-label-20261020' || github.base_ref == 'codex/xix-pdf-delivery-adapter-20261020' || github.base_ref == 'codex/xix-expense-settlement-selection-20261021' || github.base_ref == 'codex/xix-program-pending-items-20261021' || github.base_ref == 'codex/xix-program-finish-estimate-20261021' || github.base_ref == 'codex/xix-map-road-geometry-controller-20261021' || github.base_ref == 'codex/xix-home-financial-scope-20261021' || github.head_ref == 'codex/xix-consolidated-integration-wip-20261020' || github.head_ref == 'codex/xix-consolidated-geofence-contract-20261020' || github.head_ref == 'codex/xix-home-arrival-idempotence-20261020' || github.head_ref == 'codex/xix-dashboard-live-label-20261020' || github.head_ref == 'codex/xix-pdf-delivery-adapter-20261020' || github.head_ref == 'codex/xix-expense-settlement-selection-20261021' || github.head_ref == 'codex/xix-program-pending-items-20261021'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -30,6 +30,8 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: Test Expenses OCR scan contract
+        run: flutter test test/expense_ocr_scan_test.dart
       - name: Test Home financial subscription scope contract
         run: flutter test test/home_financial_sync_scope_test.dart
       - name: Test Mapbox road geometry controller contract
