@@ -16,7 +16,7 @@ ExpenseDuplicateDecision<T> decideExpenseDuplicate<T>({
   required T? Function() findDuplicate,
 }) {
   if (!conflictsEnabled) {
-    return const ExpenseDuplicateDecision<T>._(
+    return ExpenseDuplicateDecision<T>._(
       ExpenseDuplicateDecisionKind.allow,
       null,
     );
@@ -24,7 +24,7 @@ ExpenseDuplicateDecision<T> decideExpenseDuplicate<T>({
 
   final duplicate = findDuplicate();
   if (duplicate == null) {
-    return const ExpenseDuplicateDecision<T>._(
+    return ExpenseDuplicateDecision<T>._(
       ExpenseDuplicateDecisionKind.allow,
       null,
     );
