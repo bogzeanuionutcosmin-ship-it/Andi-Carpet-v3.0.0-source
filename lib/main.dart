@@ -51,6 +51,8 @@ import 'models/app_enums_permissions.dart';
 export 'models/app_enums_permissions.dart';
 import 'ui/section_asset_catalog.dart';
 export 'ui/section_asset_catalog.dart';
+import 'profile/employment_tenure.dart';
+export 'profile/employment_tenure.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
