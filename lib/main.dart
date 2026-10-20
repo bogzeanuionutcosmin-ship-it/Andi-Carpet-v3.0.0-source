@@ -176,6 +176,7 @@ part 'schedule/program_start_snapshot.dart';
 part 'schedule/program_page.dart';
 part 'schedule/program_schedule_edits.dart';
 part 'schedule/program_schedule_item_removal.dart';
+part 'schedule/program_schedule_item_creation.dart';
 part 'auth/firebase_user_profile.dart';
 part 'auth/auth_gate.dart';
 part 'auth/login_registration_page.dart';

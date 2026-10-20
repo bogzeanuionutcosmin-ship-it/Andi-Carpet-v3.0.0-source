@@ -843,8 +843,7 @@ class _ProgramPageState extends State<ProgramPage> {
       ],
     )));
     if(accepted!=true||!mounted)return;
-    final updated=cloneWorkSchedule(s);var order=updated.items.length+1;
-    for(final l in additions){updated.items.add(ScheduleItem(locationId:l.id,locationNameSnapshot:l.name,addressSnapshot:l.address,typeSnapshot:l.type,categoryIdSnapshot:l.categoryId,order:order++,facadePlanned:facadeIds.contains(l.id)));}
+    final updated=cloneWorkSchedule(s);updated.items.addAll(createProgramScheduleItems(locations:additions,firstOrder:updated.items.length+1,facadePlannedLocationIds:facadeIds));
     await _saveWithFeedback(updated,success:'Locațiile au fost adăugate în ziua selectată.',auditAction:'Locații adăugate în Grafic');
   }
   
