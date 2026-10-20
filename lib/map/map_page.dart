@@ -45,22 +45,8 @@ class _MapPageState extends State<MapPage> {
   final Set<LocationStatus> _selectedStatuses = <LocationStatus>{...LocationStatus.values};
   bool _showGraphRoute = true;
   String? _routeGraphId;
-  String? _roadGeometryKey;
-  Future<List<List<double>>?>? _roadGeometryFuture;
-  DateTime? _roadGeometryRequestedAt;
-
-  Future<List<List<double>>?> _loadRoadGeometry(List<LatLng> points) {
-    final key = mapRoadGeometryCacheKey(points);
-    final stale = isMapRoadGeometryStale(_roadGeometryRequestedAt, DateTime.now());
-    if (_roadGeometryKey != key || _roadGeometryFuture == null || stale) {
-      _roadGeometryKey = key;
-      _roadGeometryRequestedAt = DateTime.now();
-      _roadGeometryFuture = _mapboxServices.drivingGeometry(
-        points.map((p) => <double>[p.latitude, p.longitude]).toList(),
-      );
-    }
-    return _roadGeometryFuture!;
-  }
+  late final MapRoadGeometryController _roadGeometryController =
+      MapRoadGeometryController(loadGeometry: _mapboxServices.drivingGeometry);
 
   @override
   void initState() {
@@ -512,7 +498,9 @@ class _MapPageState extends State<MapPage> {
                 if (_showGraphRoute &&
                     graphRoutePoints(_routeDays, widget.locations).points.length >= 2)
                   FutureBuilder<List<List<double>>?>(
-                    future: _loadRoadGeometry(graphRoutePoints(_routeDays, widget.locations).points),
+                    future: _roadGeometryController.load(
+                      graphRoutePoints(_routeDays, widget.locations).points,
+                    ),
                     builder: (context, snapshot) {
                       final coords = snapshot.data;
                       final hasRoadGeometry = coords != null && coords.length >= 2;
