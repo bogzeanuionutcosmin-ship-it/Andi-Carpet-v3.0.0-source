@@ -1,0 +1,80 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:andicarpet/map/location_marker_presentation.dart';
+
+void main() {
+  testWidgets('preserves marker shape, icon, color, and disabled opacity', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Center(
+          child: LocationMapMarker(
+            color: Colors.blue,
+            icon: Icons.store,
+            opacity: .62,
+            workBadgeColor: null,
+          ),
+        ),
+      ),
+    );
+
+    final stack = tester.widget<Stack>(find.byType(Stack));
+    expect(stack.clipBehavior, Clip.none);
+    expect(stack.alignment, Alignment.center);
+    expect(stack.children, hasLength(1));
+
+    final opacity = tester.widget<Opacity>(find.byType(Opacity));
+    expect(opacity.opacity, .62);
+
+    final markerBox = tester.widget<DecoratedBox>(find.byType(DecoratedBox));
+    final markerDecoration = markerBox.decoration as BoxDecoration;
+    expect(markerDecoration.color, Colors.blue);
+    expect(markerDecoration.shape, BoxShape.circle);
+    expect((markerDecoration.border as Border).top.width, 3);
+    expect(markerDecoration.boxShadow, hasLength(1));
+    expect(markerDecoration.boxShadow!.single.blurRadius, 5);
+    expect(markerDecoration.boxShadow!.single.color, Colors.black26);
+
+    final markerSize = tester.widget<SizedBox>(find.byType(SizedBox));
+    expect(markerSize.width, 40);
+    expect(markerSize.height, 40);
+
+    final icon = tester.widget<Icon>(find.byType(Icon));
+    expect(icon.icon, Icons.store);
+    expect(icon.color, Colors.white);
+    expect(find.byType(Positioned), findsNothing);
+  });
+
+  testWidgets('renders the work badge at the existing size and offset', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Center(
+          child: LocationMapMarker(
+            color: Colors.teal,
+            icon: Icons.location_on,
+            opacity: 1,
+            workBadgeColor: Colors.orange,
+          ),
+        ),
+      ),
+    );
+
+    final stack = tester.widget<Stack>(find.byType(Stack));
+    expect(stack.children, hasLength(2));
+
+    final positioned = tester.widget<Positioned>(find.byType(Positioned));
+    expect(positioned.right, -2);
+    expect(positioned.bottom, -2);
+
+    final badge = tester.widget<Container>(
+      find.byWidgetPredicate(
+        (widget) => widget is Container && widget.width == 15 && widget.height == 15,
+      ),
+    );
+    expect(badge.width, 15);
+    expect(badge.height, 15);
+    final decoration = badge.decoration as BoxDecoration;
+    expect(decoration.color, Colors.orange);
+    expect(decoration.shape, BoxShape.circle);
+    expect((decoration.border as Border).top.width, 2);
+  });
+}
