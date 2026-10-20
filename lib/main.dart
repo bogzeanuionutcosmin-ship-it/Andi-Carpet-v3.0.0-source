@@ -112,6 +112,7 @@ part 'admin/admin_function_rights_actions.dart';
 part 'admin/admin_settings_actions.dart';
 part 'admin/admin_backup_panel_actions.dart';
 part 'admin/admin_panel_page.dart';
+part 'schedule/program_graph_state.dart';
 part 'schedule/program_page.dart';
 part 'auth/firebase_user_profile.dart';
 part 'auth/auth_gate.dart';

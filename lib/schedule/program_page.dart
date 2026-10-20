@@ -847,7 +847,13 @@ class _ProgramPageState extends State<ProgramPage> {
   }
   WorkSchedule _cloneSchedule(WorkSchedule s)=>WorkSchedule(id:s.id,teamId:s.teamId,graphId:s.graphId,graphName:s.graphName,date:s.date,items:s.items.map((i)=>ScheduleItem(locationId:i.locationId,locationNameSnapshot:i.locationNameSnapshot,addressSnapshot:i.addressSnapshot,typeSnapshot:i.typeSnapshot,categoryIdSnapshot:i.categoryIdSnapshot,order:i.order,transferred:i.transferred,facadePlanned:i.facadePlanned)).toList(),active:s.active,closed:s.closed,started:s.started,paused:s.paused,postponed:s.postponed,autoProposed:s.autoProposed,planAlertAt:s.planAlertAt,planAlertReason:s.planAlertReason,lastRecalculatedAt:s.lastRecalculatedAt,recalculationCount:s.recalculationCount,learningExplanation:s.learningExplanation,learningConfidence:s.learningConfidence,learningSamples:s.learningSamples,departureName:s.departureName,departureLatitude:s.departureLatitude,departureLongitude:s.departureLongitude,returnName:s.returnName,returnLatitude:s.returnLatitude,returnLongitude:s.returnLongitude,updatedAt:s.updatedAt,persisted:s.persisted,writeToken:s.writeToken);
   Future<bool> _saveWithFeedback(WorkSchedule s,{required String success,required String auditAction})async{try{await widget.saveSchedules(<WorkSchedule>[s]);if(!mounted)return true;widget.onChanged();widget.log(auditAction,'${team.name} · ${s.graphName} · ${formatDate(s.date)}');widget.notifyTeam(team.id,'Grafic de lucru modificat','${s.graphName} · ${formatDate(s.date)} a fost actualizat.');showSuccessMessage(context,success);return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi salvat: ${scheduleSaveFailureMessage(e)}');return false;}}
-  Future<bool> _applyGraphState({bool? started,bool? closed,bool? paused})async{final items=graphSchedules.map(_cloneSchedule).toList();for(final x in items){if(started!=null)x.started=started;if(closed!=null)x.closed=closed;if(paused!=null)x.paused=paused;}try{await widget.saveSchedules(items);if(!mounted)return true;widget.onChanged();return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi actualizat: ${scheduleSaveFailureMessage(e)}');return false;}}
+  Future<bool> _applyGraphState({bool? started,bool? closed,bool? paused})async{final items = projectProgramGraphState(
+      schedules: graphSchedules,
+      clone: _cloneSchedule,
+      started: started,
+      closed: closed,
+      paused: paused,
+    );try{await widget.saveSchedules(items);if(!mounted)return true;widget.onChanged();return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi actualizat: ${scheduleSaveFailureMessage(e)}');return false;}}
   Future<Map<String,dynamic>?> _geocodeTripPoint(String query) async {
     final clean=query.trim();
     if(clean.isEmpty)return null;
