@@ -146,46 +146,40 @@ class _MapPageState extends State<MapPage> {
     ).toList();
   }
 
-  Color? _workBadgeColor(Location l) {
+  MapWorkBadgeState? _workBadgeState(Location l) {
     final schedules = _todayOperationalSchedules;
     if (schedules.isEmpty) return null;
-    var assignments = 0;
-    var finishedAssignments = 0;
-    var nextOrRunning = false;
-    for (final day in schedules) {
-      final ordered = [...day.items]..sort((a, b) => a.order.compareTo(b.order));
-      ScheduleItem? nextItem;
-      for (final item in ordered) {
-        final records = _todayRecordsFor(item.locationId, day.teamId);
-        final done = records.any((r) => r.completed);
-        final running = records.any((r) =>
-          r.status == WorkAttemptStatus.running ||
-          r.status == WorkAttemptStatus.waitingAccess);
-        final cancelled = records.isNotEmpty && records.every((r) =>
-          r.status == WorkAttemptStatus.refused ||
-          r.status == WorkAttemptStatus.notCompleted);
-        if (item.locationId == l.id) {
-          assignments++;
-          if (done) finishedAssignments++;
-          if (!done && running) nextOrRunning = true;
-        }
-        if (nextItem == null && !done && !cancelled) nextItem = item;
-      }
-      if (nextItem?.locationId == l.id) nextOrRunning = true;
+    return mapWorkBadgeState(
+      schedules: schedules,
+      locationId: l.id,
+      recordsForLocation: _todayRecordsFor,
+    );
+  }
+
+  Color? _workBadgeColor(Location l) {
+    switch (_workBadgeState(l)) {
+      case MapWorkBadgeState.completed:
+        return Colors.green;
+      case MapWorkBadgeState.nextOrRunning:
+        return Colors.orange;
+      case MapWorkBadgeState.notCompleted:
+        return Colors.red;
+      case null:
+        return null;
     }
-    if (assignments == 0) return null;
-    // Nu afișăm verde dacă aceeași locație mai are o intervenție restantă.
-    if (finishedAssignments == assignments) return Colors.green;
-    if (nextOrRunning) return Colors.orange;
-    return Colors.red;
   }
 
   String _workBadgeText(Location l) {
-    final color = _workBadgeColor(l);
-    if (color == Colors.green) return ' · făcută';
-    if (color == Colors.orange) return ' · urmează / în lucru';
-    if (color == Colors.red) return ' · nefăcută';
-    return '';
+    switch (_workBadgeState(l)) {
+      case MapWorkBadgeState.completed:
+        return ' · făcută';
+      case MapWorkBadgeState.nextOrRunning:
+        return ' · urmează / în lucru';
+      case MapWorkBadgeState.notCompleted:
+        return ' · nefăcută';
+      case null:
+        return '';
+    }
   }
 
   Widget _locationMarkerIcon(Location l) {

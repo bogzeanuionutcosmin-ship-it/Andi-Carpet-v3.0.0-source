@@ -62,6 +62,7 @@ part 'bootstrap/firebase_bootstrap_error_app.dart';
 part 'utils/operational_dates.dart';
 part 'map/verified_location_fix.dart';
 part 'map/graph_route_calculations.dart';
+part 'map/map_work_badge_state.dart';
 part 'map/location_adjust_page.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
