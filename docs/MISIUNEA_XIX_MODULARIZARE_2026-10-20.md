@@ -281,3 +281,32 @@ Stările de mai jos sunt legate de SHA-urile indicate; statusul Draft/Open și n
 - Rapoarte/PDF: proiecțiile Centralizator, Work Graph și audit sunt separate; maparea financiară, randarea/layout-ul și I/O rămân.
 - Nu există încă un SHA cumulativ al acestor PR-uri care să fi trecut CI complet. Testarea emulator nu certifică Firebase de producție sau hardware GPS real. Nicio schimbare live, merge, deploy ori distribuire APK. `production_ready=false`.
 
+
+
+## Checkpoint live — Mission XIX, rezultate GitHub exacte (21 octombrie 2026)
+
+Acest checkpoint supersedează stările istorice precedente pentru PR-urile enumerate. Toate SHA-urile rămân izolate în PR-uri Draft/Open; nu s-a făcut merge sau deploy.
+
+### Candidate exact-head CI
+
+| PR | HEAD | Validate | Android | Native | Stare curentă |
+|---|---|---|---|---|---|
+| #148 | `a17381952c9c827d57e434ddcfbab73b26d4da0b` | `39393321575` SUCCESS | `39393321665` SUCCESS | `39393321556` SUCCESS | Toate trei verificate pe HEAD-ul curent |
+| #168 | `0bd596b112945f63d3e4b65e4b742d14ebc5e902` | `39393323359` SUCCESS | `39393323351` SUCCESS | `39393323380` SUCCESS | Toate trei SUCCESS după retargetarea pe fixul comun de selector |
+| #169 | `6de718eb57c9a639c545549ac8fd141db27d3377` | `39393332489` SUCCESS | `39393332478` SUCCESS | `39393332523` SUCCESS | Toate trei SUCCESS; flux conectat, restart, PDF/checksum și artifact verificate |
+| #188 / C10 | `4a368f39c3d1194464f53336e62ce8d4c814f4c0` | `39410292976` SUCCESS | `39410292939` SUCCESS | `39410292996` SUCCESS | Candidat combinat Home/Dashboard, nemergat |
+| #189 / C11 | `5b198eef4fad133d9c2c6edc6257c0706e2c902e` | `39411636005` SUCCESS | `39411635443` SUCCESS | `39411635719` SUCCESS | Adaptor de livrare PDF, nemergat |
+| #190 / C12 | `e09b66a35593bd117d295e5667b990524632aed2` | `39498671728` SUCCESS | `39498671751` IN PROGRESS | `39498671698` IN PROGRESS | Selecția decontului Expenses; Validate include testul de evaluare leneșă |
+| #191 / C13 | `93553cb7bd687e7b9419a4d5322dcfdbe8f0a444` | `39499003734` SUCCESS | `39499003634` IN PROGRESS | `39499003676` IN PROGRESS | Filtrarea pură a intervențiilor Program; Validate include toate testele noului helper |
+
+#187 / C9 are Validate și Android SUCCESS pe SHA-ul propriu; Native a fost SKIPPED de gate-ul inițial. C9 este inclus o dată în candidatul combinat #188, al cărui Native exact-head este SUCCESS. Nu se declară Native SUCCESS pe SHA-ul individual #187.
+
+### Artefacte și limite
+
+- #148 Native artifact `12251876439`, SHA-256 `25dccc2a3f509fc58f3e4490335708b75dd97e42b9c9b561266418bbdfc6d1c9`.
+- #168 Native artifact `12250669840`, SHA-256 `cd5b0a52c60deb40c726d3418807beb77b745037d9dfc54c66138020fac6d6e9`.
+- #169 Native artifact `12250898436`, SHA-256 `77abd91ef2a82e0ece36e39cfdea996d32283b85bf4514befefda01747209d9f`.
+- #190 Validate artifacts: PDF `12298893271` / `1c558229c76391408d6dc7583c6f1eeed7b93daad84f1808aaac1b9380390ca9`, audit `12298966853` / `7f85d6d6d5895416e0fb9cc3673c5218c9b3b20b2ef168ebe459aa8992f8d677`, web `12299281745` / `ebf74f8f3d428a78a045c8e60f25085de157051aa773895b985786e5bee1d2f8`.
+- #191 Validate artifacts: PDF `12299316850` / `8acb31c0d48710bc0a88dd384b00c7f05bcd83b80d5341a9c0d429a6cce2f6ca`, audit `12299425804` / `0b804803d62b1a74c0c92a84042b7458cb7917e8b8431a50e5240c1523c1ff1c`, web `12298769237` / `46929b99b843f89fff5f5bac8d8b82f98cba1da9fe760b39980b4fd3b194d366`.
+
+CI-ul documentului din această revizie trebuie verificat pe noul HEAD înainte ca raportul să fie considerat validat. Emulatoarele și echipa sintetică nu certifică Firebase de producție sau hardware GPS real. Fără modificări Firebase live, deploy, signing sau distribuire APK; `production_ready=false`.
