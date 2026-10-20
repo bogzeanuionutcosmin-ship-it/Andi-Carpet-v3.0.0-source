@@ -764,9 +764,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _startFinancialSync() {
-    final canViewAll = isAdmin || hasPermission(FunctionPermission.viewOtherDecont);
-    final scope = canViewAll ? '*' : me.teamId;
-    if (_financialTeamScope == scope) return;
+    final canViewOtherDeconts = hasPermission(FunctionPermission.viewOtherDecont);
+    final canViewAll = isAdmin || canViewOtherDeconts;
+    final scope = homeFinancialSyncScope(
+      isAdmin: isAdmin,
+      canViewOtherDeconts: canViewOtherDeconts,
+      teamId: me.teamId,
+    );
+    if (!shouldRestartHomeFinancialSync(_financialTeamScope, scope)) return;
     _financialTeamScope = scope;
     unawaited(_financialSubscriptions.cancelAll());
     expenses.clear(); perDiems.clear(); finances.clear(); settlements.clear();
