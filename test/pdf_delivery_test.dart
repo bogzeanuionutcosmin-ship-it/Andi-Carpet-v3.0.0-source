@@ -8,6 +8,7 @@ void main() {
     final bytes = Uint8List.fromList([0x25, 0x50, 0x44, 0x46]);
     var saveCalls = 0;
     var downloadCalls = 0;
+    var saved = false;
     Uint8List? receivedBytes;
     String? receivedFilename;
     String? receivedMimeType;
@@ -15,9 +16,13 @@ void main() {
     await deliverPdf(
       buildBytes: () async {
         saveCalls++;
+        saved = true;
         return bytes;
       },
-      filename: 'raport_test.pdf',
+      filename: () {
+        expect(saved, isTrue);
+        return 'raport_test.pdf';
+      },
       download: (savedBytes, filename, {String mimeType = ''}) async {
         downloadCalls++;
         receivedBytes = savedBytes;
@@ -35,11 +40,15 @@ void main() {
 
   test('does not download when document serialization fails', () async {
     var downloadCalls = 0;
+    var filenameCalls = 0;
 
     await expectLater(
       deliverPdf(
         buildBytes: () async => throw StateError('save failed'),
-        filename: 'raport_test.pdf',
+        filename: () {
+          filenameCalls++;
+          return 'raport_test.pdf';
+        },
         download: (_, __, {String mimeType = ''}) async {
           downloadCalls++;
         },
@@ -48,6 +57,7 @@ void main() {
     );
 
     expect(downloadCalls, 0);
+    expect(filenameCalls, 0);
   });
 
   test('propagates download failures', () async {
@@ -56,7 +66,7 @@ void main() {
     await expectLater(
       deliverPdf(
         buildBytes: () async => bytes,
-        filename: 'raport_test.pdf',
+        filename: () => 'raport_test.pdf',
         download: (_, __, {String mimeType = ''}) async {
           throw StateError('download failed');
         },
