@@ -49,6 +49,8 @@ export 'ui/font_choice_normalization.dart';
 export 'ui/section_accent_palette.dart';
 import 'models/app_enums_permissions.dart';
 export 'models/app_enums_permissions.dart';
+import 'models/location_status_and_functions.dart';
+export 'models/location_status_and_functions.dart';
 import 'ui/section_asset_catalog.dart';
 export 'ui/section_asset_catalog.dart';
 
@@ -75,7 +77,6 @@ part 'ui/icon_badge_catalog.dart';
 part 'ui/interactive_member_badges.dart';
 part 'models/location_category_helpers.dart';
 part 'models/default_categories_functions.dart';
-part 'models/location_status_and_functions.dart';
 part 'reports/pdf_format_helpers.dart';
 part 'ui/app_root_theme.dart';
 part 'ui/app_information_page.dart';
