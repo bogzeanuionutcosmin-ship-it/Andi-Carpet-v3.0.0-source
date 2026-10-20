@@ -215,44 +215,21 @@ class _DashboardPageState extends State<DashboardPage> {
     return 'inițială';
   }
 
-  String _recordStateText(CentralizerRecord? r) {
-    if (r == null) return 'Neîncepută';
-    switch (r.status) {
-      case WorkAttemptStatus.completed:
-        return 'Finalizată · ${durationText(r.duration)} · ${timeText(r.startedAt)}–${timeText(r.finishedAt)}';
-      case WorkAttemptStatus.running:
-        final wait = r.waitingDuration;
-        return 'Pe sală din ${timeText(r.startedAt)}${wait == null ? '' : ' · așteptare ${durationText(wait)}'}';
-      case WorkAttemptStatus.waitingAccess:
-        return 'Așteptare acces din ${timeText(r.waitingStartedAt)}';
-      case WorkAttemptStatus.refused:
-        return 'Refuzată${(r.refusalReason ?? '').trim().isEmpty ? '' : ' · ${r.refusalReason}'}';
-      case WorkAttemptStatus.notCompleted:
-        return 'Nerealizată${(r.refusalReason ?? '').trim().isEmpty ? '' : ' · ${r.refusalReason}'}';
-    }
-  }
+  String _recordStateText(CentralizerRecord? r) => dashboardRecordStateText(
+    status: r?.status,
+    refusalReason: r?.refusalReason,
+    duration: r?.duration,
+    startedAt: r?.startedAt,
+    finishedAt: r?.finishedAt,
+    waitingStartedAt: r?.waitingStartedAt,
+    waitingDuration: r?.waitingDuration,
+  );
 
-  Color _recordStateColor(CentralizerRecord? r) {
-    if (r == null) return Colors.blueGrey;
-    return switch (r.status) {
-      WorkAttemptStatus.completed => Colors.green,
-      WorkAttemptStatus.running => Colors.blue,
-      WorkAttemptStatus.waitingAccess => Colors.orange,
-      WorkAttemptStatus.refused => Colors.red,
-      WorkAttemptStatus.notCompleted => Colors.deepOrange,
-    };
-  }
+  Color _recordStateColor(CentralizerRecord? r) =>
+      dashboardRecordStateColor(r?.status);
 
-  IconData _recordStateIcon(CentralizerRecord? r) {
-    if (r == null) return Icons.radio_button_unchecked;
-    return switch (r.status) {
-      WorkAttemptStatus.completed => Icons.check,
-      WorkAttemptStatus.running => Icons.cleaning_services,
-      WorkAttemptStatus.waitingAccess => Icons.hourglass_top,
-      WorkAttemptStatus.refused => Icons.block,
-      WorkAttemptStatus.notCompleted => Icons.warning_amber_rounded,
-    };
-  }
+  IconData _recordStateIcon(CentralizerRecord? r) =>
+      dashboardRecordStateIcon(r?.status);
 
   @override
   Widget build(BuildContext context) {
