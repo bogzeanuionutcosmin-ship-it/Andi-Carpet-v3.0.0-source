@@ -347,7 +347,18 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (kIsWeb || _personalLocationMode != 'economic') return;
     final teamId = me.teamId;
     if (teamId == null || teamId.isEmpty) return;
-    final active = schedules.where((s) => s.teamId == teamId && sameDay(s.date, workDate) && s.started && !s.closed && !s.paused && !s.postponed).toList();
+    final active = homeActiveSchedulesForWorkDate<WorkSchedule>(
+      schedules: schedules,
+      teamId: teamId,
+      workDate: workDate,
+      teamIdOf: (schedule) => schedule.teamId,
+      dateOf: (schedule) => schedule.date,
+      isStarted: (schedule) => schedule.started,
+      isClosed: (schedule) => schedule.closed,
+      isPaused: (schedule) => schedule.paused,
+      isPostponed: (schedule) => schedule.postponed,
+      sameDay: sameDay,
+    );
     var nearest = double.infinity;
     for (final schedule in active) {
       for (final item in schedule.items) {
@@ -529,7 +540,18 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
     await _maybeAutoCloseResolvedSchedules(workDate);
 
-    final active = schedules.where((s) => s.teamId == teamId && sameDay(s.date, workDate) && s.started && !s.closed && !s.paused && !s.postponed).toList();
+    final active = homeActiveSchedulesForWorkDate<WorkSchedule>(
+      schedules: schedules,
+      teamId: teamId,
+      workDate: workDate,
+      teamIdOf: (schedule) => schedule.teamId,
+      dateOf: (schedule) => schedule.date,
+      isStarted: (schedule) => schedule.started,
+      isClosed: (schedule) => schedule.closed,
+      isPaused: (schedule) => schedule.paused,
+      isPostponed: (schedule) => schedule.postponed,
+      sameDay: sameDay,
+    );
     if (active.isEmpty) return;
     if (active.length > 1) {
       _automationNotifyOnce('multi_${teamId}_${workDate.toIso8601String().substring(0,10)}', 'Automatizare suspendată', 'Sunt mai multe grafice pornite pentru aceeași echipă. Alege manual locația pentru INTRĂ/IEȘI.');

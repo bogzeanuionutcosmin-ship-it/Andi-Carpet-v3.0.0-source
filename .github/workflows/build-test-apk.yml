@@ -4,7 +4,7 @@ on:
   push:
     branches: [fix/grafic-end-to-end-xiv-20261017, fix/application-delivery-xv-20261017]
   pull_request:
-    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021, codex/xix-map-road-geometry-controller-20261021, codex/xix-home-financial-scope-20261021, codex/xix-expense-ocr-scan-20261021, codex/xix-dashboard-pending-operation-20261021, codex/xix-pdf-summary-row-20261021, codex/xix-program-postpone-policy-20261021, codex/xix-program-start-snapshot-20261021, codex/xix-pdf-decont-input-selection-20261021, codex/xix-program-schedule-item-removal-20261021, codex/xix-program-schedule-item-addition-20261021, codex/xix-home-team-membership-projection-20261021, codex/xix-program-start-location-resolution-20261021, codex/xix-expense-duplicate-decision-20261021, codex/xix-program-graph-state-persistence-20261021, codex/xix-dashboard-start-record-policy-20261021, codex/xix-home-location-proximity-policy-20261021]
+    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021, codex/xix-map-road-geometry-controller-20261021, codex/xix-home-financial-scope-20261021, codex/xix-expense-ocr-scan-20261021, codex/xix-dashboard-pending-operation-20261021, codex/xix-pdf-summary-row-20261021, codex/xix-program-postpone-policy-20261021, codex/xix-program-start-snapshot-20261021, codex/xix-pdf-decont-input-selection-20261021, codex/xix-program-schedule-item-removal-20261021, codex/xix-program-schedule-item-addition-20261021, codex/xix-home-team-membership-projection-20261021, codex/xix-program-start-location-resolution-20261021, codex/xix-expense-duplicate-decision-20261021, codex/xix-program-graph-state-persistence-20261021, codex/xix-dashboard-start-record-policy-20261021, codex/xix-home-location-proximity-policy-20261021, codex/xix-home-active-schedule-policy-20261021]
   workflow_dispatch:
 
 permissions:
@@ -63,6 +63,7 @@ jobs:
         run: flutter test test/dashboard_start_record_policy_test.dart
       - name: Test Home location proximity contract
         run: flutter test test/home_location_proximity_policy_test.dart
+        run: flutter test test/home_active_schedule_policy_test.dart
       - name: Test Expenses duplicate decision contract
         run: flutter test test/expense_duplicate_decision_test.dart
       - name: Analyze application

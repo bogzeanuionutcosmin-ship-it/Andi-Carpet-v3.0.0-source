@@ -9,6 +9,8 @@ class HomeLocationProximityPolicySourceContract(unittest.TestCase):
     def test_home_delegates_precision_hysteresis_decision(self):
         page = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
         self.assertIn("homeLocationProximityAction(", page)
+        self.assertEqual(page.count("homeActiveSchedulesForWorkDate<WorkSchedule>("), 2)
+        self.assertNotIn("schedules.where((s) => s.teamId == teamId && sameDay(s.date, workDate) && s.started && !s.closed && !s.paused && !s.postponed).toList()", page)
         self.assertNotIn("nearest <= 3000", page)
         self.assertNotIn("nearest > 5000", page)
         self.assertIn("_startNativeBackgroundLocationStream()", page)
@@ -24,6 +26,10 @@ class HomeLocationProximityPolicySourceContract(unittest.TestCase):
         self.assertIn("enum HomeLocationProximityAction", policy)
         self.assertIn("nearestMeters <= 3000", policy)
         self.assertIn("nearestMeters > 5000", policy)
+        active_policy = (ROOT / "lib/home/home_active_schedule_policy.dart").read_text(encoding="utf-8")
+        self.assertIn("homeActiveSchedulesForWorkDate", active_policy)
+        self.assertIn("!isPaused(schedule)", active_policy)
+        self.assertIn("!isPostponed(schedule)", active_policy)
 
 
 if __name__ == "__main__":
