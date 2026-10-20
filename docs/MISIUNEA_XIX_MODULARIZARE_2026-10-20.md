@@ -69,8 +69,8 @@ Acest raport păstrează matricea oficială a tuturor familiilor de module la ch
 
 ## Obligații rămase
 
-1. Adaugă raportul consolidat pe ramura PR #148 și rulează toate workflow-urile pe noul cap documentar; SHA-urile de cod #147/#148 au CI terminal verde consemnat.
-2. Completează SHA/run-urile capului documentar în descrierea PR #148. Documentul oficial `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` nu este modificat.
+1. Raportul consolidat este publicat pe PR #148. Validate, Android debug și Native au SUCCESS pe SHA-urile de cod exacte #147/#148; capul documentar adaugă doar Markdown și nu schimbă codul ori workflow-urile.
+2. Descrierea PR-urilor păstrează separat SHA-urile de cod verificate și SHA-ul raportului. Documentul oficial `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` nu este modificat.
 3. Continuă separarea paginilor mari, modelelor și API-urilor din `main.dart` în loturi mici, independente și caracterizate cu teste.
 4. Investighează separat cache-urile fără cititori și parser-ele `receivedEntries`; fără eliminare/consolidare până când efectele, ordinea și identitatea sunt testate.
 5. Păstrează fluxurile legacy/v2, stickerele, adaptoarele de platformă și datele. Fără merge, deploy, schimbări Firebase de producție, semnare sau distribuire APK.
