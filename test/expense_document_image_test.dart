@@ -21,7 +21,7 @@ void main() {
   group('compressExpenseDocumentImage', () {
     test('bakes EXIF orientation before encoding the preview', () {
       final source = img.Image(width: 2, height: 3)
-        ..exif.imageIfd['Orientation'] = 6;
+        ..exif.imageIfd[0x0112] = img.IfdValueShort(6);
       final input = Uint8List.fromList(img.encodeJpg(source, quality: 95));
       final decodedInput = img.decodeImage(input)!;
       expect(decodedInput.exif.imageIfd['Orientation'], isNotNull);
