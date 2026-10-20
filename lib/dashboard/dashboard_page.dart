@@ -47,58 +47,16 @@ class _DashboardPageState extends State<DashboardPage> {
   );
 
   Future<Map<String,dynamic>?> _dashboardGeocodeTripPoint(String query) async {
-    final clean=query.trim();
-    if(clean.isEmpty)return null;
-
-    Map<String,dynamic>? parsePoint(Object? raw){
-      if(raw is! Map)return null;
-      final lat=double.tryParse((raw['lat']??'').toString());
-      final lon=double.tryParse((raw['lon']??'').toString());
-      if(lat==null||lon==null)return null;
-      return {'lat':lat,'lon':lon};
-    }
-
-    Future<Map<String,dynamic>?> viaServer() async {
-      try{
-        final token=await FirebaseAuth.instance.currentUser?.getIdToken();
-        if(token==null||token.isEmpty)return null;
-        final response=await http.post(
-          Uri.parse(_geocodeRomaniaPlaceUrl),
-          headers:{'Content-Type':'application/json','Authorization':'Bearer $token'},
-          body:jsonEncode({'query':clean}),
-        ).timeout(const Duration(seconds:12));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        return parsePoint(jsonDecode(response.body));
-      }catch(e){debugPrint('[geocode] Dashboard server fallback: $e');return null;}
-    }
-
-    Future<Map<String,dynamic>?> viaNominatim(String value) async {
-      try{
-        final uri=Uri.https('nominatim.openstreetmap.org','/search',{
-          'format':'jsonv2','q':value,'limit':'1','countrycodes':'ro','accept-language':'ro','addressdetails':'1'
-        });
-        final headers=<String,String>{'Accept':'application/json','Accept-Language':'ro'};
-        if(!kIsWeb)headers['User-Agent']='AndiCarpeta/2.0.8 (internal operations app)';
-        final response=await http.get(uri,headers:headers).timeout(const Duration(seconds:10));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        final decoded=jsonDecode(response.body);
-        if(decoded is! List||decoded.isEmpty)return null;
-        return parsePoint(decoded.first);
-      }catch(e){debugPrint('[geocode] Dashboard Nominatim $value: $e');return null;}
-    }
-
-    if(kIsWeb){
-      final server=await viaServer();
-      if(server!=null)return server;
-    }
-    final candidates=<String>[clean];
-    if(!clean.toLowerCase().contains('românia')&&!clean.toLowerCase().contains('romania'))candidates.add('$clean, România');
-    for(final candidate in candidates){
-      final direct=await viaNominatim(candidate);
-      if(direct!=null)return direct;
-    }
-    if(!kIsWeb)return viaServer();
-    return null;
+    return RomaniaPlaceGeocoder(
+      serverEndpoint: Uri.parse(_geocodeRomaniaPlaceUrl),
+      getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
+      get: (uri, {headers}) => http.get(uri, headers: headers),
+      post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),
+      isWeb: kIsWeb,
+      includeName: false,
+      logPrefix: 'Dashboard',
+      log: (message) => debugPrint(message),
+    ).geocode(query);
   }
 
   Future<void> _toggleProgram(WorkSchedule schedule) async {
