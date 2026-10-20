@@ -20,11 +20,11 @@ void main() {
 
   group('compressExpenseDocumentImage', () {
     test('bakes EXIF orientation before encoding the preview', () {
-      final source = img.Image(width: 2, height: 3)
-        ..exif.imageIfd[0x0112] = img.IfdValueShort(6);
-      final input = Uint8List.fromList(img.encodeJpg(source, quality: 95));
+      final source = img.Image(width: 2, height: 3);
+      final jpeg = Uint8List.fromList(img.encodeJpg(source, quality: 95));
+      final input = _withExifOrientation(jpeg, 6);
       final decodedInput = img.decodeImage(input)!;
-      expect(decodedInput.exif.imageIfd['Orientation'], isNotNull);
+      expect(decodedInput.exif.imageIfd['Orientation'], 6);
 
       final output = img.decodeImage(compressExpenseDocumentImage(input))!;
       expect(output.width, decodedInput.height);
@@ -84,4 +84,25 @@ void main() {
       );
     });
   });
+}
+
+/// Inserts a valid, little-endian EXIF APP1 block into an encoded JPEG.
+Uint8List _withExifOrientation(Uint8List jpeg, int orientation) {
+  final exifSegment = <int>[
+    0xff, 0xe1, 0x00, 0x22,
+    0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // Exif\0\0
+    0x49, 0x49, 0x2a, 0x00, // little-endian TIFF header
+    0x08, 0x00, 0x00, 0x00, // IFD0 offset
+    0x01, 0x00, // one IFD entry
+    0x12, 0x01, // Orientation tag
+    0x03, 0x00, // SHORT
+    0x01, 0x00, 0x00, 0x00, // one value
+    orientation, 0x00, 0x00, 0x00, // inline SHORT value + padding
+    0x00, 0x00, 0x00, 0x00, // next IFD offset
+  ];
+  return Uint8List.fromList([
+    ...jpeg.sublist(0, 2),
+    ...exifSegment,
+    ...jpeg.sublist(2),
+  ]);
 }
