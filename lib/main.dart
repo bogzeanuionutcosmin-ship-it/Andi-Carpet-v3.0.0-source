@@ -61,6 +61,7 @@ import 'notifications/push_token_document_id.dart';
 import 'map/location_marker_presentation.dart';
 import 'expenses/expense_amount_parser.dart';
 import 'expenses/expense_settlement_selection.dart';
+import 'schedule/program_pending_items.dart';
 import 'mapbox_services.dart';
 import 'centralizer/correction_writer.dart';
 import 'centralizer/manual_execution_defaults.dart';

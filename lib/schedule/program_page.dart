@@ -82,12 +82,18 @@ class _ProgramPageState extends State<ProgramPage> {
   Duration? _averageDurationForLocation(String locationId) => learnedAverageDuration(widget.records, locationId, widget.settings);
 
   List<ScheduleItem> _pendingItemsForDay(WorkSchedule day, DateTime workDate, {bool includeActive = true}) {
-    return day.items.where((item){
-      final r = _latestRecordForItem(item, workDate);
-      if (r?.status == WorkAttemptStatus.completed || r?.status == WorkAttemptStatus.refused || r?.status == WorkAttemptStatus.notCompleted) return false;
-      if (!includeActive && (r?.status == WorkAttemptStatus.running || r?.status == WorkAttemptStatus.waitingAccess)) return false;
-      return true;
-    }).toList();
+    return pendingProgramItems<ScheduleItem, CentralizerRecord>(
+      items: day.items,
+      latestRecordForItem: (item) => _latestRecordForItem(item, workDate),
+      isTerminal: (record) =>
+          record?.status == WorkAttemptStatus.completed ||
+          record?.status == WorkAttemptStatus.refused ||
+          record?.status == WorkAttemptStatus.notCompleted,
+      isActive: (record) =>
+          record?.status == WorkAttemptStatus.running ||
+          record?.status == WorkAttemptStatus.waitingAccess,
+      includeActive: includeActive,
+    );
   }
 
   DateTime? _estimatedEndForDay(WorkSchedule day, DateTime now) {
