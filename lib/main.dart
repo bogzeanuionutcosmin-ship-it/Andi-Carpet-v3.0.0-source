@@ -98,6 +98,7 @@ part 'dashboard/dashboard_page.dart';
 part 'map/map_page.dart';
 part 'expenses/expense_page.dart';
 part 'expenses/expense_document_picker.dart';
+part 'expenses/expense_form_validation.dart';
 part 'admin/admin_navigation_catalog.dart';
 part 'admin/backup_codec.dart';
 part 'admin/admin_backup_actions.dart';
