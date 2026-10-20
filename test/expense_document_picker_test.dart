@@ -46,7 +46,7 @@ void main() {
     }) async {
       source = picked; quality = imageQuality; width = maxWidth; height = maxHeight;
       return XFile('receipt.jpg');
-    }, onError: fail);
+    }, onError: (error) => fail('$error'));
     expect(find.text('Fără fotografie'), findsNothing);
     await tester.tap(find.text('Alege din galerie'));
     await tester.pumpAndSettle();
@@ -62,7 +62,7 @@ void main() {
     var calls = 0;
     final result = await openPicker(tester, allowNoImage: true, requestImage: (picked, {
       required imageQuality, required maxWidth, required maxHeight,
-    }) async { source = picked; calls++; return XFile('camera.jpg'); }, onError: fail);
+    }) async { source = picked; calls++; return XFile('camera.jpg'); }, onError: (error) => fail('$error'));
     expect(find.text('Fără fotografie'), findsOneWidget);
     await tester.tap(find.text('Fotografiază acum'));
     await tester.pumpAndSettle();
@@ -75,7 +75,7 @@ void main() {
     var calls = 0;
     final result = await openPicker(tester, allowNoImage: true, requestImage: (source, {
       required imageQuality, required maxWidth, required maxHeight,
-    }) async { calls++; return null; }, onError: fail);
+    }) async { calls++; return null; }, onError: (error) => fail('$error'));
     await tester.tap(find.text('Fără fotografie'));
     await tester.pumpAndSettle();
     expect(await result.future, isNull);
@@ -98,7 +98,7 @@ void main() {
     var calls = 0;
     final result = await openPicker(tester, allowNoImage: false, requestImage: (source, {
       required imageQuality, required maxWidth, required maxHeight,
-    }) async { calls++; return null; }, onError: fail);
+    }) async { calls++; return null; }, onError: (error) => fail('$error'));
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(await result.future, isNull);
