@@ -49,10 +49,10 @@ export 'ui/font_choice_normalization.dart';
 export 'ui/section_accent_palette.dart';
 import 'models/app_enums_permissions.dart';
 export 'models/app_enums_permissions.dart';
-import 'models/location_status_and_functions.dart';
-export 'models/location_status_and_functions.dart';
 import 'ui/section_asset_catalog.dart';
 export 'ui/section_asset_catalog.dart';
+import 'models/location_status_and_functions.dart';
+export 'models/location_status_and_functions.dart';
 
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
