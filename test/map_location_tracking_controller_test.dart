@@ -22,9 +22,8 @@ class FakeMapLocationPlatform implements app.MapLocationPlatform {
   LocationPermission permission = LocationPermission.whileInUse;
   LocationPermission requestedPermission = LocationPermission.whileInUse;
   final calls = <String>[];
-  final stream = StreamController<Position>();
-
-  Completer<Position>? currentPosition;
+  final stream = StreamController<Position>.broadcast();
+  Object? currentPositionError;
 
   @override
   Future<bool> isLocationServiceEnabled() async {
@@ -47,7 +46,9 @@ class FakeMapLocationPlatform implements app.MapLocationPlatform {
   @override
   Future<Position> getCurrentPosition() {
     calls.add('current');
-    return currentPosition?.future ?? Future.value(position(44));
+    final error = currentPositionError;
+    if (error != null) return Future<Position>.error(error);
+    return Future.value(position(44));
   }
 
   @override
@@ -134,13 +135,11 @@ void main() {
 
   test('current-position failures are returned to the caller', () async {
     final platform = FakeMapLocationPlatform()
-      ..currentPosition = Completer<Position>()
+      ..currentPositionError = StateError('location failure')
       ..permission = LocationPermission.always;
     final tracker = app.MapLocationTrackingController(platform: platform);
-    final pending = platform.currentPosition!;
-    final started = tracker.start(onPosition: (_) {}, onError: (_) {});
-    pending.completeError(StateError('location failure'));
-    final result = await started;
+
+    final result = await tracker.start(onPosition: (_) {}, onError: (_) {});
 
     expect(result.status, app.MapLocationTrackingStatus.failed);
     expect(result.error.toString(), contains('location failure'));
