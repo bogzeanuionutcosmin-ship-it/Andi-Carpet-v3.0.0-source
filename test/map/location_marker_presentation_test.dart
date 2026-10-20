@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:andicarpet/map/location_marker_presentation.dart';
+import 'package:andi_carpeta/map/location_marker_presentation.dart';
 
 void main() {
   testWidgets('preserves marker shape, icon, color, and disabled opacity', (tester) async {
@@ -65,13 +65,9 @@ void main() {
     expect(positioned.right, -2);
     expect(positioned.bottom, -2);
 
-    final badge = tester.widget<Container>(
-      find.byWidgetPredicate(
-        (widget) => widget is Container && widget.width == 15 && widget.height == 15,
-      ),
-    );
-    expect(badge.width, 15);
-    expect(badge.height, 15);
+    final badgeFinder = find.byType(Container);
+    final badge = tester.widget<Container>(badgeFinder);
+    expect(tester.getSize(badgeFinder), const Size(15, 15));
     final decoration = badge.decoration as BoxDecoration;
     expect(decoration.color, Colors.orange);
     expect(decoration.shape, BoxShape.circle);
