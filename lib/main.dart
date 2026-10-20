@@ -50,6 +50,7 @@ export 'ui/section_accent_palette.dart';
 import 'models/app_enums_permissions.dart';
 export 'models/app_enums_permissions.dart';
 import 'ui/section_asset_catalog.dart';
+import 'schedule/program_graph_id_ordering.dart';
 export 'ui/section_asset_catalog.dart';
 
 part 'ui/dashboard_map_components.dart';

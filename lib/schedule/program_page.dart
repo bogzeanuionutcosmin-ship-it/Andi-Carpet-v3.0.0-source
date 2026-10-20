@@ -54,15 +54,11 @@ class _ProgramPageState extends State<ProgramPage> {
     if (id == null) return <WorkSchedule>[];
     return teamSchedules.where((s) => s.graphId == id).toList()..sort((a,b)=>a.date.compareTo(b.date));
   }
-  List<String> get graphIds {
-    final out = <String>[];
-    for (final s in teamSchedules) { if (!out.contains(s.graphId)) out.add(s.graphId); }
-    out.sort((a,b) {
-      DateTime first(String id) => teamSchedules.where((s)=>s.graphId==id).map((s)=>s.date).reduce((x,y)=>y.isBefore(x)?y:x);
-      return first(b).compareTo(first(a));
-    });
-    return out;
-  }
+  List<String> get graphIds => orderedProgramGraphIds<WorkSchedule>(
+    schedules: teamSchedules,
+    graphIdOf: (schedule) => schedule.graphId,
+    dateOf: (schedule) => schedule.date,
+  );
   WorkSchedule? get graphHead => graphSchedules.isEmpty ? null : graphSchedules.first;
   Car? get assignedCar {
     final id = team.carId;
