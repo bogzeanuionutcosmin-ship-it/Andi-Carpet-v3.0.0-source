@@ -64,7 +64,11 @@ Future<void> downloadWorkGraphPdf({
       pw.Text('Nota: traseul include plecarea, toate locatiile si intoarcerea. Cand rutarea nu este disponibila, distanta este in linie dreapta si consumul/costul sunt doar valori minime orientative.', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
     ],
   ));
-  await downloadFile(await doc.save(), 'grafic_${_safeFilePart(first.graphName)}.pdf', mimeType: 'application/pdf');
+  await deliverPdf(
+    buildBytes: doc.save,
+    filename: 'grafic_${_safeFilePart(first.graphName)}.pdf',
+    download: downloadFile,
+  );
 }
 
 class CentralizerPdfExecutionRow {
@@ -129,7 +133,11 @@ Future<void> downloadCentralizerPdf({
   );
   final now = DateTime.now();
   final filename='centralizator_${_safeFilePart(type.label)}_${now.year}${two(now.month)}${two(now.day)}.pdf';
-  await downloadFile(bytes,filename,mimeType:'application/pdf');
+  await deliverPdf(
+    buildBytes: () async => bytes,
+    filename: filename,
+    download: downloadFile,
+  );
 }
 
 Future<Uint8List> buildCentralizerPdf({
@@ -521,7 +529,11 @@ Future<void> downloadDecontPdf({
   ));
   final bytes = await doc.save();
   final filename = 'decont_${_safeFilePart(team.name)}_${_safeFilePart(titleSuffix)}_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf';
-  await downloadFile(bytes, filename, mimeType: 'application/pdf');
+  await deliverPdf(
+    buildBytes: () async => bytes,
+    filename: filename,
+    download: downloadFile,
+  );
 }
 
 Future<void> downloadAuditPdf(List<AuditEntry> audit) async {
@@ -547,7 +559,11 @@ Future<void> downloadAuditPdf(List<AuditEntry> audit) async {
         pw.Padding(padding: const pw.EdgeInsets.only(bottom: 5), child: pw.Text('${formatDate(row.at)} ${timeText(row.at)} · ${row.actor} · ${row.action} · ${row.target}', style: const pw.TextStyle(fontSize: 8))),
     ],
   ));
-  await downloadFile(await doc.save(), 'audit_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf', mimeType: 'application/pdf');
+  await deliverPdf(
+    buildBytes: doc.save,
+    filename: 'audit_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf',
+    download: downloadFile,
+  );
 }
 
 Future<void> downloadFinancialSummaryPdf({
@@ -585,6 +601,10 @@ Future<void> downloadFinancialSummaryPdf({
       ],
     ],
   ));
-  await downloadFile(await doc.save(), 'raport_financiar_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf', mimeType: 'application/pdf');
+  await deliverPdf(
+    buildBytes: doc.save,
+    filename: 'raport_financiar_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf',
+    download: downloadFile,
+  );
 }
 
