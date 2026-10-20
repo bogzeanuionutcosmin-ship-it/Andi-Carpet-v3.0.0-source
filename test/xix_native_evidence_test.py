@@ -229,7 +229,9 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIn("\'closed\':entry.closed", source)
         self.assertIn("find.text('Creează grafic')", source)
         self.assertIn("find.widgetWithText(CheckboxListTile,location.name)", source)
-        self.assertIn("tester.enterText(find.byType(TextField),location.name)", source)
+        self.assertIn("tester.enterText(search,location.name)", source)
+        self.assertIn("of:find.byType(CustomScrollView).last", source)
+        self.assertIn("expect(tile,findsOneWidget", source)
         self.assertLess(source.index("await graphPage();"), source.index("await dashboard();"))
 
     def test_release_test_apk_compiles_for_pull_request_validation(self):

@@ -938,11 +938,12 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _openNavigationForLocation(Location l, String app) async {
-    final useGps = l.latitude != null && l.longitude != null;
-    final destination = useGps ? '${l.latitude},${l.longitude}' : l.address;
-    final uri = app == 'maps'
-        ? Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(destination)}')
-        : Uri.parse(useGps ? 'https://www.waze.com/ul?ll=${l.latitude},${l.longitude}&navigate=yes' : 'https://www.waze.com/ul?q=${Uri.encodeComponent(l.address)}&navigate=yes');
+    final uri = mapNavigationUri(
+      app: app,
+      latitude: l.latitude,
+      longitude: l.longitude,
+      address: l.address,
+    );
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) showErrorMessage(context, 'Nu am putut deschide navigația.');
   }
 
