@@ -1014,10 +1014,15 @@ class _ExpensePageState extends State<ExpensePage> {
 
   Future<bool> _duplicateAllowed(Expense candidate) async {
     final learning = widget.settings.learning['conflicts'];
-    if (learning?.enabled != true) return true;
-    final duplicate = _duplicateOf(candidate);
-    if (duplicate == null) return true;
-    if (learning!.mode == LearningMode.automatic) {
+    final decision = decideExpenseDuplicate<Expense>(
+      conflictsEnabled: learning?.enabled == true,
+      automatic: learning?.mode == LearningMode.automatic,
+      findDuplicate: () => _duplicateOf(candidate),
+    );
+    if (decision.kind == ExpenseDuplicateDecisionKind.allow) return true;
+
+    final duplicate = decision.duplicate!;
+    if (decision.kind == ExpenseDuplicateDecisionKind.block) {
       if (mounted) showErrorMessage(context, 'Document duplicat blocat automat: ${duplicate.documentNumber.isEmpty ? duplicate.description : duplicate.documentNumber}.');
       widget.log('Duplicat financiar blocat', candidate.documentNumber);
       return false;
