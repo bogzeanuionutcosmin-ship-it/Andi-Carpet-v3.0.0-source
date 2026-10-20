@@ -1057,14 +1057,22 @@ class _ExpensePageState extends State<ExpensePage> {
     final raw = await picked.readAsBytes();
     if (raw.isEmpty) return;
     setState(() => scanning = true);
-    FiscalOcrData parsed;
+    late final FiscalOcrData parsed;
     try {
-      final text = await recognizeTextFromImage(raw, path: picked.path);
-      parsed = parseFiscalOcr(text);
-      widget.log('OCR document procesat', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
-    } catch (e) {
-      parsed = const FiscalOcrData(rawText: '');
-      if (mounted) showErrorMessage(context, 'OCR-ul nu a putut citi documentul. Poți completa manual; fotografia nu se salvează în baza de date. Detalii: $e');
+      final result = await scanExpenseDocumentOcr(
+        raw,
+        path: picked.path,
+        recognize: recognizeTextFromImage,
+        parse: parseFiscalOcr,
+        onSuccess: (data) => widget.log(
+          'OCR document procesat',
+          '${team.name} · încredere ${(data.confidence * 100).round()}%',
+        ),
+      );
+      parsed = result.data;
+      if (result.error != null && mounted) {
+        showErrorMessage(context, 'OCR-ul nu a putut citi documentul. Poți completa manual; fotografia nu se salvează în baza de date. Detalii: ${result.error}');
+      }
     } finally {
       if (mounted) setState(() => scanning = false);
     }
