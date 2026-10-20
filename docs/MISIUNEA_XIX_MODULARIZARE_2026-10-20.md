@@ -1,0 +1,77 @@
+# Misiunea XIX — inventar modularizare și loturile Map
+
+**Data verificării:** 20 octombrie 2026 UTC  
+**Reguli `main`:** blob `ddbdc55128c285337b006958f86ef323ff6be7c5`; SHA `main` `8452159475ff187867002425fa9c3b8c7e8006aa`.  
+**Audit oficial folosit:** `AUDIT_MODULARIZARE_2026-10-12.md`, versiunea revizuită în PR #146; inventarul complet la SHA #136 `0c9cbc6e1090c295db2c867826ca58447e738df9`.  
+**Stare:** PR-urile #134–#148 rămân Draft/Open și nemergate; `production_ready=false`.
+
+La verificarea GitHub curentă, PR #136 este încă Draft/Open, dar `head_sha` raportat este `611373f5f40fab34754a9629d5249d55c457c825`; SHA checkpointului inițial furnizat era `0c9cbc6e1090c295db2c867826ca58447e738df9`. PR #137 are baza `611373f5...` și capul `b49512b...`; loturile #147/#148 sunt bazate pe #137, astfel încât nu repetă modificările validate anterioare.
+
+Acest raport păstrează matricea oficială a tuturor familiilor de module la checkpointul #136 și adaugă diferențele inspectate în codul actual, pentru a nu prezenta stările istorice ca rezultate curente. Rândurile fără delta nouă rămân cuplate conform acelui inventar; lipsa unui test focalizat nu înseamnă lipsa oricărei acoperiri indirecte.
+
+## Matricea verificabilă a modulelor aplicației
+
+| Modul | Structură și cuplare observată la #136 | Dependențe, duplicări sau cod nefolosit | Teste identificate |
+|---|---|---|---|
+| Intrare/adaptoare (`lib/` root) | 11 fișiere autonome; majoritatea ecranelor sunt `part` în `main.dart`; OCR/download au adaptoare condiționale | Flutter/Firebase/pluginuri externe; auditul nu a găsit duplicate Dart exacte | `ocr_parser_test.dart`, `widget_test.dart`, build/web și native CI |
+| Admin | 15/15 `part`, 132,693 B | Modele, Firebase și UI implicite din `main.dart`; cuplare transversală | Contracte APK URL/privacy/security și teste repository/CI |
+| Auth | 5/5 `part` | Stare globală și Firebase Auth implicite | `admin_security_integration_contract_test.py`, `widget_test.dart`; fără test focalizat pentru fiecare ecran |
+| Bootstrap | 2/2 `part` | Inițializare Firebase și eroare de pornire în biblioteca principală | Verificare pornire CI; fără unitate dedicată identificată |
+| Centralizer | Pagină `part`, 3 utilitare independente | Writer cu Firestore și snapshot checker; comparație pe câmpurile existente | `centralizer_*_test.dart`, `manual_execution_defaults_test.dart`, native/PDF |
+| Chat | 2/2 `part` | UI, identitate și Firestore împart starea globală; duplicate exacte neidentificate | Fără test Dart focalizat pentru ecranele identificate |
+| Contacts | 1/1 `part` | Modele/helperi globali impliciți | Fără test focalizat identificat |
+| Dashboard | 1/1 `part`, 41,144 B | START/STOP și program prin callback-uri globale; formatterul comun de erori este deja separat de Schedule | `program_graph_creation_test.dart`, contracte Craiova/learning și native CI |
+| Documents | 1/1 `part` | UI legat de permisiuni și starea Home | Fără test focalizat identificat |
+| Expenses | 1/1 `part`, 77,425 B | Cheltuieli, OCR, diurne legacy/v2, settlements și PDF; legacy/v2 rămân distincte | 6 teste Flutter `per_diem_*`; test adiacent în `lib/finance/` nu intră în `flutter test test/` |
+| Feedback | 1/1 `part` | Cuplare implicită prin `main.dart` | Fără test focalizat identificat |
+| Finance | 14 fișiere independente | Ledger/adaptoare/settlements/reconciliation/payment plan; repository-urile folosesc Firebase; legacy/v2 nu se unifică | 6 teste Flutter `per_diem_*`; un test adiacent în `lib/` |
+| Home/sincronizări | 5/5 `part`; HomePage 101,935 B | Auth/subscriptions/cache/serializare/operații/permisiuni transversale; 7 cache-uri au doar scrieri în `lib/`, dar nu se șterg: expresiile `_encoded(...)` pot avea efecte la date invalide | Contracte Python/security/repository și coverage CI; fără unități pentru fiecare subscription |
+| Learning | 1/1 `part` | Modele și `AppSettings` globale | `grafic_learning_notifications_contract_test.py`; verificări indirecte în testele de program |
+| Map | 4/4 `part`; MapPage 55,655 B | GPS/pluginuri/HTTP/Mapbox/stare globală; UI și orchestration încă împreună; duplicate exacte Dart neidentificate | Teste integrate/web și contracte conexe; fără test MapPage dedicat la #136 |
+| Members | 2/2 `part` | Identitate, permisiuni și Firestore globale | `member_directory_minimization_test.py`, `member_directory_projection.test.js`, deploy gate manual |
+| Models | 5 `part` + 2 independente | Două fișiere independente importă Flutter Material; modelele de bază nu sunt încă un API autonom | `app_enums_permissions_test.dart`, `location_function_models_test.dart` |
+| Notifications | 2/2 `part` | Push diagnostics/SMS folosesc auth/settings globale | Contract notificări/learning și native CI; fără test Dart focalizat pentru fiecare ecran |
+| Operations | 2/2 independente | `atomic_restore` și `record_writer` folosesc Firestore, fără UI | `atomic_restore_preflight_test.dart`, `record_writer_test.dart`, recovery authority |
+| Profile | 1/1 `part` | Date/setări/permisiuni împărțite implicit | Fără test focalizat identificat |
+| Reports/PDF | 2 `part` + 1 independent | Normalizarea numelui e independentă; randarea PDF încă folosește modele globale | `pdf_filename_normalization_test.dart`, `centralizer_pdf_*_test.dart`, `xix_pdf_text_test.py` |
+| Schedule | 2/2 `part`; ProgramPage 71,716 B | UI și modele globale implicite; formatterul de eșec comun cu Dashboard a fost extras în #137 | `program_graph_creation_test.dart`, `program_team_selection_test.dart`, `schedule_save_failure_test.dart`, contracte/native |
+| Settings | 1/1 `part` | Configurare/admin/persistare în biblioteca comună | Fără test focalizat identificat |
+| Teams | 1/1 `part` | Selector UI pe modele globale | `program_team_selection_test.dart` acoperă selecția ProgramPage |
+| Testing harness | 1 fișier autonom | Importă intenționat `main.dart` pentru flux sintetic offline | Rulat în workflow-ul de validare; fără backend de producție |
+| UI shared | 13 `part` + 5 independente | Catalogurile sunt pure sau Flutter; helpers de temă/UI rămân `part` | Teste badge/branding/font/palette/section assets/install link |
+| Utils | 1 `part` + 1 independent | Formatarea pură e independentă; date operaționale rămân `part` | `date_formatters_test.dart`, teste Centralizer pentru date |
+
+**Metodă și limite:** numărătorile structurale provin din matricea auditului oficial la SHA #136, nu au fost recalculate ca proprietăți ale `main` din 20 octombrie. Comparația din audit confirmă la #136: Home 101,935 B; Expense 77,425 B; Program 71,716 B; Map 55,655 B; Dashboard 41,144 B. `scripts/audit_repository.py` a găsit 12 grupuri identice de assets/configurări de platformă; ele nu sunt duplicări logice demonstrabile și nu au fost șterse. Pentru lotul #148 auditul a găsit 459 fișiere urmărite și aceleași 12 grupe.
+
+## Comparație cu constatările istorice
+
+- **Încă valabil structural:** ecranele Home/Expense/Program/Map/Dashboard sunt mari și cuplate ca `part`-uri; modelele și multe ecrane încă depind implicit de `main.dart`.
+- **Actualizat și izolat treptat în loturi existente:** Map are helpers independenți pentru route selection, reverse-geocode parsing/transport, badge state, programe operaționale și filtre locații (#141–#146). Fiecare PR are regresii și exact-head CI verde, consemnate în auditul oficial din PR #146.
+- **Nedemonstrat drept cod mort:** cele 7 cache-uri write-only și parse-urile repetate `receivedEntries`; evaluări, ordine și efectele de eroare nu sunt suficient caracterizate. Nu se elimină în acest lot.
+- **Nu s-au copiat ca actuale probleme istorice:** tabelul principal rămâne snapshotul #136, iar toate schimbările ulterioare se notează distinct mai jos. Cele 12 identități de conținut nu justifică ștergerea resurselor platformei.
+
+## Loturi curente
+
+| PR | Delta independentă | SHA cod | Verificare/regresii |
+|---|---|---|---|
+| #137 | `lib/schedule/schedule_save_failure.dart`: mesaje comune pentru erori de salvare Schedule/Dashboard extrase fără schimbarea textelor/ramurilor | `b49512b382e1731fd0158149b5b527a163780185` | Test focalizat `schedule_save_failure_test.dart`; Validate `39329182964`, Android `39329183035`, Native `39329183078` SUCCESS pe acest SHA |
+| #138 | Parserul sumelor întregi bani reutilizat în Expense input; legacy/v2 și settlement neatinse | cod `9d80d35a0e9b8a1b134a20afe52d8dc71b6669a0`; cap documentar `a995ea7ad3adf1377a3fb60807b1158f18bf42f6` | Validate `39329350464`, Android `39329350579`, Native `39329350418` SUCCESS pe cod; Validate `39332702567`, Android `39332702487`, Native `39332702591` SUCCESS și pe capul documentar |
+| #139 | `lib/map/map_geometry_cache.dart`: cheie geometrie cu ordine coordonate/precizie 6 zecimale/expirare >5min scoase din MapPage | `d4c5325f3ef7ae9831ff2b99c7a8a10ad257b551` | Test direct pentru cheie, expirare strictă și ceas înapoi; Validate `39330028546`, Android `39330028582`, Native `39330028636` SUCCESS |
+| #140 | `lib/map/map_point_validation.dart`: regulă pură finită și limite inclusive, cu (0,0) respins | `adc1484ae579ad17372e7f70609a231ff4f40451` | Test direct pentru limite și valori invalide; Validate `39330296822`, Android `39330296806`, Native `39330296765` SUCCESS |
+| #141 | `lib/map/map_route_selection.dart`: dedupe ID-uri graf, alegere grafic și zile | `39f3506df19d9a53cd2060f646f57a0df567f7e6` | `map_route_selection_test.dart`; Validate `39341558517`, Android `39341558484`, Native `39341558511` attempt 3 SUCCESS |
+| #142 | `lib/map/reverse_geocode_address.dart`: parser pur Nominatim | `43690da9808830c3ac2f71d06ca778a09fd910eb` | `reverse_geocode_address_test.dart`; Validate `39341819031`, Android `39341819032`, Native `39341819051` SUCCESS |
+| #143 | `lib/map/map_reverse_geocoder.dart`: transport HTTP injectabil, cu parserul din #142 | `97b9f9198a8e739957fe1b4ab9d1b9ffa20e11b3` | `map_reverse_geocoder_test.dart` cu transport fals; Validate `39341822453`, Android `39341822515`, Native `39341822442` SUCCESS |
+| #144 | `lib/map/map_work_badge_state.dart`: stare generică completed/next/running | `fd551da6163e014aad901c40e9b7975e1a29f0e9` | `map_work_badge_state_test.dart`; Validate `39342521773`, Android `39342521800`, Native `39342521775` SUCCESS |
+| #145 | `lib/map/map_operational_schedules.dart`: filtru programe active pe zi operațională | `817489db98f1a47140ba5c07fd7bc175d1081e79` | `map_operational_schedules_test.dart`; Validate `39342732825`, Android `39342732850`, Native `39342732906` rerun SUCCESS |
+| #146 | `lib/map/map_location_filters.dart`: filtrare comună categorie/status/GPS | `913d9a2ed34aeff46514acead45c054f105a67e8` | `map_location_filters_test.dart`; Validate `39344765440`, Android `39344765436`, Native `39344765414` SUCCESS |
+| #147 | `lib/map/active_map_categories.dart`: o singură politică generică pentru filtrare/sortare categorii active, folosită la inițializare și în `visibleCategories`; MapPage rămâne `part` | `1a1067a9c19b382e0cb238f283b86e80d2c0471f` | `active_map_categories_test.dart`; local 173 Python, 3 Node, audit 461 tracked/12 identități. Validate `39351271898` SUCCESS, Android `39351271925` SUCCESS, Native `39351271885` attempt 2 SUCCESS. Attempt 1 a eșuat tranzitoriu în emulator la găsirea checkbox-ului „Craiova 02”; rerun-ul exact-head a trecut connected flow/restart, PDF/checksum și artifact upload. |
+| #148 | `lib/operations/work_date_record_selection.dart`: filtrele echipă/locație/zi, identice în Map și Schedule, mutate într-o bibliotecă generică fără model; caller-ele păstrează calculul datei, predicatele și sortarea existente | `bd9d073aa2557a6bfbaf92b630507d8d41ff1ed9` | `work_date_record_selection_test.dart`; local 173 Python, 3 Node, audit 459 tracked/12 identități, `git diff --check` PASS. Validate `39352901504`, Android `39352901666`, Native `39352901576` toate SUCCESS pe SHA exact, inclusiv PDF/checksum și artifact. |
+
+## Obligații rămase
+
+1. Adaugă raportul consolidat pe ramura PR #148 și rulează toate workflow-urile pe noul cap documentar; SHA-urile de cod #147/#148 au CI terminal verde consemnat.
+2. Completează SHA/run-urile capului documentar în descrierea PR #148. Documentul oficial `REGULI_DEZVOLTARE_SI_FUNCTIONARE_ChatGPT.md` nu este modificat.
+3. Continuă separarea paginilor mari, modelelor și API-urilor din `main.dart` în loturi mici, independente și caracterizate cu teste.
+4. Investighează separat cache-urile fără cititori și parser-ele `receivedEntries`; fără eliminare/consolidare până când efectele, ordinea și identitatea sunt testate.
+5. Păstrează fluxurile legacy/v2, stickerele, adaptoarele de platformă și datele. Fără merge, deploy, schimbări Firebase de producție, semnare sau distribuire APK.
+6. Modularizarea integrală nu este închisă; `production_ready=false`.
