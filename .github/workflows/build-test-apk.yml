@@ -4,7 +4,7 @@ on:
   push:
     branches: [fix/grafic-end-to-end-xiv-20261017, fix/application-delivery-xv-20261017]
   pull_request:
-    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021]
+    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021]
   workflow_dispatch:
 
 permissions:
@@ -33,6 +33,8 @@ jobs:
           cache: true
       - name: Install dependencies
         run: flutter pub get
+      - name: Test Mapbox road geometry controller contract
+        run: flutter test test/map_road_geometry_controller_test.dart
       - name: Analyze application
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Test schedule team selection
