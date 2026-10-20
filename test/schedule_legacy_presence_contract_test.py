@@ -7,7 +7,7 @@ class LegacyPresence(unittest.TestCase):
         self.assertIn('persisted: true', codec)
         # Dashboard's immutable copy now lives in its extracted transition module.
         expectations = {
-            'lib/schedule/program_page.dart': 'persisted:s.persisted',
+            'lib/schedule/program_schedule_clone.dart': 'persisted:s.persisted',
             'lib/dashboard/dashboard_program_transition.dart': 'persisted:schedule.persisted',
         }
         for name, expression in expectations.items():
