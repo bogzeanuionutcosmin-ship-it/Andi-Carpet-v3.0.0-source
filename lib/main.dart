@@ -32,6 +32,7 @@ import 'centralizer/correction_writer.dart';
 import 'centralizer/manual_execution_defaults.dart';
 import 'schedule/schedule_save_failure.dart';
 import 'operations/record_writer.dart';
+import 'operations/work_date_record_selection.dart';
 import 'operations/atomic_restore.dart';
 import 'utils/date_formatters.dart';
 export 'utils/date_formatters.dart';
