@@ -80,6 +80,7 @@ import 'ui/section_accent_palette.dart';
 import 'ui/font_choice_normalization.dart';
 import 'models/location_category_and_function_definition.dart';
 import 'reports/pdf_filename_normalization.dart';
+import 'reports/pdf_delivery.dart';
 import 'reports/audit_pdf_projection.dart';
 import 'ui/branding_asset_catalog.dart';
 export 'ui/branding_asset_catalog.dart';
