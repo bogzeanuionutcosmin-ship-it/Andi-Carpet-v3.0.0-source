@@ -385,16 +385,24 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _startLocationOnce(ScheduleItem item) async {
     final now = DateTime.now();
     final workDate = operationalWorkDate(now);
-    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.finishedAt == null).toList();
-    if (running.isNotEmpty && running.first.locationId != item.locationId) {
-      if (mounted) showErrorMessage(context, 'Echipa este deja pe sală la ${running.first.locationNameSnapshot}. Apasă IEȘI înainte de a intra în altă locație.');
+    final decision = dashboardStartRecordDecision<CentralizerRecord>(
+      records: widget.records,
+      teamId: team.id,
+      locationId: item.locationId,
+      teamIdOf: (record) => record.teamId,
+      locationIdOf: (record) => record.locationId,
+      statusOf: (record) => record.status,
+      isRunning: WorkAttemptStatus.running,
+      finishedAtOf: (record) => record.finishedAt,
+      eventTimeOf: recordEventTime,
+    );
+    if (decision.action == DashboardStartRecordAction.blockedByOtherLocation) {
+      final running = decision.activeRecord!;
+      if (mounted) showErrorMessage(context, 'Echipa este deja pe sală la ${running.locationNameSnapshot}. Apasă IEȘI înainte de a intra în altă locație.');
       return;
     }
-    if (running.isNotEmpty && running.first.locationId == item.locationId) return;
-
-    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null).toList()
-      ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
-    final base = existing.isEmpty ? null : existing.last;
+    if (decision.action == DashboardStartRecordAction.alreadyRunning) return;
+    final base = decision.baseRecord;
     final r = CentralizerRecord(
       id: base?.id ?? idNow(),
       writeBaseline: base?.writeBaseline,

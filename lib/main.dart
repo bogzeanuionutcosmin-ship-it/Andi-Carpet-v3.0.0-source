@@ -146,6 +146,7 @@ part 'profile/profile_page.dart';
 part 'centralizer/centralizer_page.dart';
 part 'dashboard/dashboard_page.dart';
 part 'dashboard/dashboard_program_transition.dart';
+part 'dashboard/dashboard_start_record_policy.dart';
 part 'dashboard/dashboard_record_selection.dart';
 part 'dashboard/dashboard_live_location_label.dart';
 part 'map/map_location_tracking_controller.dart';
