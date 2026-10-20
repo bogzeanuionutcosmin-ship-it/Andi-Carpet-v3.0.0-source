@@ -376,10 +376,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final Set<String> _pendingStarts = {};
 
-  Future<void> _startLocation(ScheduleItem item) async {
-    if (!_pendingStarts.add(item.locationId)) return;
-    try { await _startLocationOnce(item); } finally { _pendingStarts.remove(item.locationId); }
-  }
+  Future<void> _startLocation(ScheduleItem item) => runDashboardPendingOperation(
+        pending: _pendingStarts,
+        key: item.locationId,
+        action: () => _startLocationOnce(item),
+      );
 
   Future<void> _startLocationOnce(ScheduleItem item) async {
     final now = DateTime.now();
@@ -422,10 +423,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final Set<String> _pendingFinishes = {};
 
-  Future<void> _finishLocation(CentralizerRecord source) async {
-    if (!_pendingFinishes.add(source.id)) return;
-    try { await _finishLocationOnce(source); } finally { _pendingFinishes.remove(source.id); }
-  }
+  Future<void> _finishLocation(CentralizerRecord source) => runDashboardPendingOperation(
+        pending: _pendingFinishes,
+        key: source.id,
+        action: () => _finishLocationOnce(source),
+      );
 
   Future<void> _finishLocationOnce(CentralizerRecord source) async {
     final facadeDone = await showDialog<bool>(
