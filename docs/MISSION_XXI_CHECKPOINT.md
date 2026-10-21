@@ -155,3 +155,32 @@ attempt1failed dependency resolution from Gradle Plugin Portal before packaging;
 attempt2is compiling. The final server-state follow-up changes rules/closure
 logic/tests only; run all3again on its new exactHEAD. Do not claim a Native PASS
 or stage/physical validation from the intermediate APK.
+
+## Durable STOP follow-up and latest validation
+
+Candidate31ac615be3e0b99afe697891d07081415ccb5727passed Validate39677718957
+(472Flutter,206Python,44Firestore) and Android39677718911. Android artifact
+12382584953archive SHA256f399db73d3835c1e71ae2bb759d5dd08fc286fcb725efd44e318ac6328caa47c.
+Native39677719006compiled debug/release successfully but failed BEFORE emulator
+boot: sdkmanager could not unpack the Android36Google APIs system-image ZIP
+(unknown archive). No connected assertions ran; artifact12383127906is partial
+compilation evidence only. The next code commit triggers a fresh runner for all
+three workflows. Do not count this Native result as acceptance.
+
+Home official graph STOP now journals its exact request in secure storage before
+dispatch, scoped by project/UID/team/graph. Reconstructed instances replay original
+revisions after uncertain ACK/process loss. Confirmed receipt or explicit server
+rejection retires intent; storage failure blocks dispatch, corrupt data fails
+closed. HTTP checks current session after token lookup and before every retry.
+New tests cover reconstructed instances, scope isolation, rejection versus unknown
+ACK, failed storage, corruption, concurrency and session replacement. Native adds
+actual Android storage plus a real server receipt with deliberately injected lost
+ACK, followed by reconstruction and receipt replay. This is NOT physical crash
+proof or a complete START/FINAL/financial/background journal.
+
+Content review additionally verified and closed redundant PR184andPR185, keeping
+branches. Original clone/projection regressions are byte-identical in31ac; consuming
+Program paths preserve and extend their behavior. Total closures68. PR33still
+awaits Native acceptance. Record final exact HEAD/CI in PR217metadata after the
+next run. Continue fixing the first real Native failure; do not confuse partial
+artifacts or build success with application validation.

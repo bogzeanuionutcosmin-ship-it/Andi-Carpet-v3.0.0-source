@@ -77,3 +77,22 @@ Content inventory of all 115 non-ancestor open PRs is recorded separately in
 call sites and exact helper/test files; no closure was made from file equality
 alone. Older Finance/Vision alternatives contain material absent from the current
 candidate and require semantic reconciliation, not blind cherry-picking.
+
+## Durable graph STOP intent
+
+Home stores the exact request ID and day revisions in Android secure storage
+before HTTP dispatch, scoped by Firebase project, authenticated UID, team and
+graph. Re-entering STOP after process loss replays that saved body; refreshed UI
+revisions cannot silently replace it. Concurrent STOP for that scope is rejected.
+Transport errors, invalid ACKs and session replacement retain the intent; only
+a confirmed receipt or explicit server rejection retires it. A corrupt journal
+fails closed for reconciliation. Session ownership is checked after token lookup
+and before every HTTP attempt. Authoritative schedule subscriptions remain the
+source of UI state after a crash. This is not a background outbox dispatcher or
+complete durable START/FINAL/financial journaling.
+
+Regression coverage reconstructs the journal across instances, tests storage
+failure, scope isolation, concurrency and rejection/uncertainty. Native adds real
+Android secure storage and an actual Functions-emulator receipt followed by an
+injected lost ACK; the reconstructed journal must recover the original receipt.
+This deliberately injected failure is not a physical crash validation.

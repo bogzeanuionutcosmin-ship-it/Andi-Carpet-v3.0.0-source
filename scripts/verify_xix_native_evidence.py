@@ -35,6 +35,8 @@ def verify(root: Path) -> None:
     if result.get("stableStartReplay") is not True or result.get("stableFinishReplay") is not True:
         raise AssertionError("Stable START/FINAL replay with preserved server times was not demonstrated")
     stop = result.get("atomicGraphStopThroughHome")
+    if result.get("durableStopReplay") is not True:
+        raise AssertionError("Durable STOP replay from Android storage and real server receipt was not demonstrated")
     if not isinstance(stop, dict) or stop.get("serverPersisted") is not True or stop.get("receiptReplay") is not True or stop.get("interventions") != 11:
         raise AssertionError("Atomic graph STOP through Home and receipt replay were not demonstrated")
 

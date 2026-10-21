@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 typedef GraphClosurePost = Future<http.Response> Function(Uri uri,
     {Map<String, String>? headers, Object? body});
 
+class GraphClosureRejected extends StateError {
+  GraphClosureRejected(super.message);
+}
+
 /// Retries the exact same operation after transport/ACK uncertainty. A rejected
 /// server precondition is never retried or replaced with a local schedule save.
 Future<String> requestGraphClosure({
@@ -12,12 +16,20 @@ Future<String> requestGraphClosure({
   required Future<String?> Function() getIdToken,
   required GraphClosurePost post,
   required Map<String, dynamic> operation,
+  bool Function()? canContinue,
   Duration timeout = const Duration(seconds: 25),
 }) async {
   final body = jsonEncode(operation);
+  void requireSession() {
+    if (canContinue != null && !canContinue()) {
+      throw StateError('Sesiunea s-a schimbat. Reia STOP după autentificare.');
+    }
+  }
+  requireSession();
   final token = await getIdToken();
   if (token == null || token.isEmpty) throw StateError('Autentifică-te înainte de STOP.');
   for (var attempt = 0; attempt < 2; attempt++) {
+    requireSession();
     try {
       final response = await post(endpoint,
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
@@ -31,8 +43,12 @@ Future<String> requestGraphClosure({
       catch (_) { throw StateError('Răspuns STOP invalid. Reîncarcă pentru verificare.'); }
       if (response.statusCode != 200 || data['closed'] != true ||
           data['receiptId'] is! String || (data['receiptId'] as String).isEmpty) {
-        throw StateError(data['message'] is String ? data['message'] as String :
-          'STOP respins de server. Reîncarcă graficul.');
+        final message = data['message'] is String ? data['message'] as String :
+          'STOP respins de server. Reîncarcă graficul.';
+        if ([400, 401, 403, 409, 412].contains(response.statusCode)) {
+          throw GraphClosureRejected(message);
+        }
+        throw StateError(message);
       }
       return data['receiptId'] as String;
     } on TimeoutException {

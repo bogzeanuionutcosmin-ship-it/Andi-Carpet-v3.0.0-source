@@ -1547,14 +1547,25 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       throw StateError('Nu ai dreptul să închizi acest grafic.');
     }
     final endpoint = _backendFunction('closeProgramGraph');
-    await requestGraphClosure(endpoint: endpoint,
-      getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
-      post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),
+    const storage = FlutterSecureStorage();
+    final journal = GraphClosureJournal(
+      read: (key) => storage.read(key: key),
+      write: (key, value) => storage.write(key: key, value: value),
+      remove: (key) => storage.delete(key: key));
+    await journal.close(
+      projectId: Firebase.app().options.projectId,
+      userId: currentUserId,
       operation: {
         'teamId': head.teamId, 'graphId': head.graphId,
         'requestId': '${idNow()}-${newInterventionId()}',
         'days': [for (final day in days) {'id': day.id, 'writeToken': day.writeToken}],
-      });
+      },
+      send: (operation) => requestGraphClosure(endpoint: endpoint,
+        getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
+        canContinue: () => _sessionActive && FirebaseAuth.instance.currentUser?.uid == currentUserId,
+        post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),
+        operation: operation));
+    _requireCurrentSession();
     // Publish only authoritative server snapshots, including the new revisions.
     final snapshot = await FirebaseFirestore.instance.collection('schedules')
       .where('teamId', isEqualTo: head.teamId).get(const GetOptions(source: Source.server));

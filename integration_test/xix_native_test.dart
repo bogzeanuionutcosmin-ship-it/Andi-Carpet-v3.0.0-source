@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -10,7 +11,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:andi_carpeta/operations/graph_closure_client.dart';
+import 'package:andi_carpeta/operations/graph_closure_journal.dart';
 import 'package:andi_carpeta/home/function_migration_guard.dart';
 import 'package:andi_carpeta/main.dart' as app;
 import 'package:andi_carpeta/operations/record_writer.dart';
@@ -827,13 +830,36 @@ void main() {
     final receiptId=closedDay.data()!['closeReceiptId'];
     final receiptDoc=await db.collection('graphClosures').doc(receiptId as String).get(const GetOptions(source:Source.server));
     expect(receiptDoc.data()!['interventionCount'],11);
-    final closureReplay=await requestGraphClosure(
+    final replayOperation=<String,dynamic>{'teamId':'craiova','graphId':schedule.graphId,
+      'requestId':receiptDoc.data()!['requestId'],
+      'days':[{'id':schedule.id,'writeToken':schedule.writeToken}]};
+    Future<String> sendClosure(Map<String,dynamic> operation) => requestGraphClosure(
       endpoint:Uri.parse('http://10.0.2.2:5001/demo-andi-xix/europe-central2/closeProgramGraph'),
       getIdToken:() async=>auth.currentUser?.getIdToken(),
       post:(uri,{headers,body})=>http.post(uri,headers:headers,body:body),
-      operation:{'teamId':'craiova','graphId':schedule.graphId,'requestId':receiptDoc.data()!['requestId'],
-        'days':[{'id':schedule.id,'writeToken':schedule.writeToken}]});
+      operation:operation);
+    // Persist to actual Android secure storage, lose the ACK after a real
+    // Functions receipt, then reconstruct the journal as after process loss.
+    const stopStorage=FlutterSecureStorage();
+    GraphClosureJournal newJournal()=>GraphClosureJournal(
+      read:(key)=>stopStorage.read(key:key),
+      write:(key,value)=>stopStorage.write(key:key,value:value),
+      remove:(key)=>stopStorage.delete(key:key));
+    String? persistedStopKey;
+    await expectLater(newJournal().close(projectId:Firebase.app().options.projectId,
+      userId:uid,operation:replayOperation,send:(operation) async {
+        expect(await sendClosure(operation),receiptId);
+        final saved=await stopStorage.readAll();
+        persistedStopKey=saved.keys.singleWhere((key)=>key.startsWith('graph-stop-v1-'));
+        throw TimeoutException('Injected ACK loss after actual server receipt');
+      }),throwsA(isA<TimeoutException>()));
+    final closureReplay=await newJournal().close(projectId:Firebase.app().options.projectId,
+      userId:uid,operation:{...replayOperation,'requestId':'must-not-replace-original',
+        'days':[{'id':schedule.id,'writeToken':closedDay.data()!['writeToken']}]},
+      send:sendClosure);
     expect(closureReplay,receiptId);
+    expect(await stopStorage.read(key:persistedStopKey!),isNull);
+    evidence['durableStopReplay']=true;
     evidence['atomicGraphStopThroughHome']={'serverPersisted':true,'receiptReplay':true,'interventions':11};
     await otherDb.doc('users/$uid').update({'functionIds':['worker']});
     await otherDb.doc('functions/xix-ui-editor').delete();

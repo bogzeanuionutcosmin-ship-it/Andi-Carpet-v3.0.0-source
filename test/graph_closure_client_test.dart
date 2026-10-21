@@ -28,6 +28,13 @@ void main() {
     await expectLater(requestGraphClosure(endpoint:endpoint,getIdToken:() async=>null,operation:operation,
       post:(_,{headers,body}) async {fail('unauthenticated network write');}),throwsA(isA<StateError>()));
   });
+  test('session replacement during token lookup prevents network writes', () async {
+    var active = true;
+    await expectLater(requestGraphClosure(endpoint: endpoint,
+      getIdToken: () async { active = false; return 'other-user-token'; },
+      canContinue: () => active, operation: operation,
+      post: (_, {headers, body}) async { fail('replaced session sent STOP'); }), throwsStateError);
+  });
   test('malformed or unconfirmed success response cannot confirm STOP', () async {
     for(final responseBody in ['not json','{"closed":false}','{"closed":true}']) {
       await expectLater(requestGraphClosure(endpoint:endpoint,getIdToken:() async=>'token',operation:operation,

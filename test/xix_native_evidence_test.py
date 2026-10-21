@@ -27,6 +27,7 @@ class NativeEvidenceTest(unittest.TestCase):
             "nonDestructiveFunctionMigration": True,
             "stableStartReplay": True,
             "stableFinishReplay": True,
+            "durableStopReplay": True,
             "atomicGraphStopThroughHome": {"serverPersisted": True, "receiptReplay": True, "interventions": 11},
             "graphCreatedThroughUi": True,
             "programStartThroughUi": {
@@ -86,7 +87,7 @@ class NativeEvidenceTest(unittest.TestCase):
         module.verify(self.root)
 
     def test_missing_stable_replay_or_server_stop_fails(self):
-        for key in ("stableStartReplay", "stableFinishReplay", "atomicGraphStopThroughHome"):
+        for key in ("stableStartReplay", "stableFinishReplay", "atomicGraphStopThroughHome", "durableStopReplay"):
             with self.subTest(key=key):
                 original = self.observation.pop(key)
                 self.save()

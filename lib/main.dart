@@ -80,6 +80,7 @@ import 'centralizer/manual_execution_defaults.dart';
 import 'schedule/schedule_save_failure.dart';
 import 'operations/record_writer.dart';
 import 'operations/graph_closure_client.dart';
+import 'operations/graph_closure_journal.dart';
 export 'profile/employment_tenure.dart';
 import 'profile/employment_tenure.dart';
 import 'operations/work_date_record_selection.dart';
