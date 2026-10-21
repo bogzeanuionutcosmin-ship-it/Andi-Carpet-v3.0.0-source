@@ -275,6 +275,7 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIn("tester.enterText(search,'Craiova')", source)
         self.assertIn("controller.text,'Craiova'", source)
         self.assertIn("tile.hitTestable()", source)
+        self.assertIn("await tester.drag(pickerList,const Offset(0,-120))", source)
         self.assertIn("Every selected location must remain visible in order", source)
         self.assertIn("height:MediaQuery.sizeOf(c).height*.58", program_page)
         self.assertIn("of:find.byType(CustomScrollView).last", source)

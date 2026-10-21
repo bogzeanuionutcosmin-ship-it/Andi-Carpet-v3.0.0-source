@@ -111,6 +111,13 @@ void main() {
         // viewport; the bottom action bar can still cover the row. Align the
         // target to the top of the picker before tapping.
         await tester.ensureVisible(tile);
+        for(var attempt=0;attempt<4&&tile.hitTestable().evaluate().isEmpty;attempt++){
+          // A partially visible sliver child can satisfy ensureVisible while
+          // its center remains beneath the dialog actions. Move the list until
+          // the actual tap point is inside the unobscured picker viewport.
+          await tester.drag(pickerList,const Offset(0,-120));
+          await tester.pumpAndSettle();
+        }
         await tester.pumpAndSettle();
         debugPrint('[xix-native] picker query="Craiova" '
           'resultTiles=${tile.evaluate().length} '
