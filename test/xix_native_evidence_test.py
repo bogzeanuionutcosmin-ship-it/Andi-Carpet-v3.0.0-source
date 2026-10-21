@@ -292,6 +292,11 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIn("expect(tile,findsOneWidget", source)
         self.assertLess(source.index("await graphPage();"), source.index("await dashboard();"))
 
+    def test_cumulative_candidate_keeps_native_gate_when_retargeted_to_main(self):
+        workflow = (ROOT / '.github/workflows/xix-native-candidate.yml').read_text()
+        native_job = workflow.split('  native:', 1)[1].split('    steps:', 1)[0]
+        self.assertIn("github.head_ref == 'codex/xix-home-locality-label-20261021'", native_job)
+
     def test_release_test_apk_compiles_for_pull_request_validation(self):
         workflow = (ROOT / ".github/workflows/xix-native-candidate.yml").read_text()
         step = re.search(
