@@ -131,3 +131,27 @@ API-signature-only adapter to the historical writer during the RED experiment.
 The historical function bodies remain unchanged and all four named behavioral
 failures are still mandatory, followed by restoration and GREEN rerun. This is
 not a native application success/failure and produces no application evidence.
+
+
+## Final server state regressions
+
+Linked START now requires the server schedule to be started, unpaused and not
+postponed. A new emulator regression denies all three stale UI states without
+creating either a record or lock, then verifies a valid START/FINAL pair.
+Official graph STOP still accepts fully resolved interventions after Dashboard's
+separate program STOP sets started=false; closing readiness is based on actual
+final linked results, not an invented all-days-started requirement. Added a
+server transaction regression for that preserved UI behavior.
+
+Nine more content-reviewed PRs were closed, retaining branches:105,122,138,139,
+148,154,174,177,183. Total previous+this continuation closures66;107PRs remained
+open including217at that observation (106other PRs). PR33is integrated but still
+open pending final Native acceptance. No app-release package closure is implied.
+
+Verified intermediate head7deaab921143ecb911294e93ae75aac7fe04f8f3:
+Validate39676136019SUCCESS(472Flutter,206Python,42Firestore); Android39676135799
+SUCCESS with APK metadata checked and artifact uploaded. Native39676136043
+attempt1failed dependency resolution from Gradle Plugin Portal before packaging;
+attempt2is compiling. The final server-state follow-up changes rules/closure
+logic/tests only; run all3again on its new exactHEAD. Do not claim a Native PASS
+or stage/physical validation from the intermediate APK.

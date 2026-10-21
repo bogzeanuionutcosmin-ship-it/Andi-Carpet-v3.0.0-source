@@ -2,7 +2,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, runTransaction, setDoc, deleteDoc } = require('firebase/firestore');
+const { doc, getDoc, runTransaction, setDoc, deleteDoc, writeBatch } = require('firebase/firestore');
 
 let env;
 const db = (uid) => env.authenticatedContext(uid).firestore();
@@ -96,4 +96,34 @@ test('an authorized member cannot forge a reservation for a missing or finished 
     teamId: 'team-empty', recordId: 'finished-reservation-target', locationId: 'room',
   }));
   assert.equal((await assertSucceeds(getDoc(lock))).exists(), false);
+});
+
+test('linked START revalidates graph started, paused and postponed state on server', async () => {
+  const editor=db('editor-a');
+  const scheduleId='scope-start-day', graphId='scope-graph', interventionId='scope-visit';
+  const record=recordRef(editor,'scoped-start');
+  const lock=lockRef(editor,'team-empty');
+  const attempt=()=>{
+    const batch=writeBatch(editor);
+    batch.set(record,{teamId:'team-empty',graphId,scheduleId,interventionId,locationId:'room',type:'magic',
+      status:'running',startedAt:new Date(),finishedAt:null});
+    batch.set(lock,{teamId:'team-empty',graphId,scheduleId,interventionId,recordId:'scoped-start',locationId:'room'});
+    return batch.commit();
+  };
+  for(const flags of [{started:false},{started:true,paused:true},{started:true,postponed:true}]){
+    await env.withSecurityRulesDisabled(async ctx=>setDoc(doc(ctx.firestore(),`schedules/${scheduleId}`),{
+      teamId:'team-empty',graphId,closed:false,paused:false,postponed:false,
+      interventionLocations:{[interventionId]:'room'},...flags}));
+    await assertFails(attempt());
+    assert.equal((await getDoc(record)).exists(),false);assert.equal((await getDoc(lock)).exists(),false);
+  }
+  await env.withSecurityRulesDisabled(async ctx=>setDoc(doc(ctx.firestore(),`schedules/${scheduleId}`),{
+    teamId:'team-empty',graphId,closed:false,started:true,paused:false,postponed:false,
+    interventionLocations:{[interventionId]:'room'}}));
+  await assertSucceeds(attempt());
+  assert.equal((await getDoc(record)).data().interventionId,interventionId);
+  await assertSucceeds(runTransaction(editor,async tx=>{
+    await tx.get(record);await tx.get(lock);
+    tx.update(record,{status:'completed',finishedAt:new Date()});tx.delete(lock);
+  }));
 });

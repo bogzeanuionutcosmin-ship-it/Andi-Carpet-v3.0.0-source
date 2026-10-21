@@ -128,3 +128,11 @@ test('concurrent new day and STOP cannot leave a partially closed graph', async 
   const closed=(await f.schedules[0].get()).data().closed, exists=(await getDoc(late)).exists();
   assert.ok(!(closed && exists)); assert.ok(stop.status==='rejected' || add.status==='rejected');
 });
+
+test('Dashboard program STOP does not prevent official closure of fully resolved visits', async () => {
+  const f=await fixture();
+  await f.schedules[0].update({started:false});
+  const result=await invoke(f);
+  assert.equal(result.closed,true);
+  for(const day of f.schedules)assert.equal((await day.get()).data().closed,true);
+});

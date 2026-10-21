@@ -255,7 +255,10 @@ service cloud.firestore {
         : exists(path) && get(path).data.teamId == data.teamId
           && get(path).data.graphId == data.graphId
           && get(path).data.get('interventionLocations', {}).get(data.interventionId, '') == data.locationId
-          && ((get(path).data.get('closed', false) != true && graphOpenAfter(data)) || correctingClosed);
+          && ((get(path).data.get('closed', false) != true && graphOpenAfter(data)) || correctingClosed)
+          && (!isRunningRecord(data) || (get(path).data.get('started', false) == true
+            && get(path).data.get('paused', false) != true
+            && get(path).data.get('postponed', false) != true));
     }
 
     // Receipts are written by the authenticated server transaction only.

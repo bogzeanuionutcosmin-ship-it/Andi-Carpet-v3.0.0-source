@@ -60,8 +60,8 @@ async function closeGraph(db, uid, input, { timestamp } = {}) {
       fail('failed-precondition', 'Echipa are o intervenție activă, inclusiv din versiunea veche.');
     }
     if (lock.exists) fail('failed-precondition', 'Echipa are o rezervare START activă.');
-    if (graph.some(d => d.data().closed === true || d.data().started !== true)) {
-      fail('failed-precondition', 'Graficul nu este integral pornit sau este deja închis. Reîncarcă.');
+    if (graph.some(d => d.data().closed === true)) {
+      fail('failed-precondition', 'Graficul este deja închis sau are zile închise separat. Reîncarcă.');
     }
     const seen = new Set();
     for (const day of graph) {
