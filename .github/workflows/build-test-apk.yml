@@ -63,6 +63,7 @@ jobs:
         run: flutter test test/dashboard_start_record_policy_test.dart
       - name: Test Home location proximity contract
         run: flutter test test/home_location_proximity_policy_test.dart
+      - name: Test Home active schedule policy contract
         run: flutter test test/home_active_schedule_policy_test.dart
       - name: Test Home arrival candidate policy contract
         run: flutter test test/home_arrival_candidate_policy_test.dart
