@@ -431,6 +431,7 @@ class _CentralizerPageState extends State<CentralizerPage> {
     }
     final updated=CentralizerRecord(
       id:r.id,teamId:r.teamId,locationId:r.locationId,type:r.type,
+      graphId:r.graphId,scheduleId:r.scheduleId,interventionId:r.interventionId,
       locationNameSnapshot:r.locationNameSnapshot,addressSnapshot:r.addressSnapshot,
       waitingStartedAt:r.waitingStartedAt,waitingEndedAt:r.waitingEndedAt,
       startedAt:newStart,finishedAt:newFinish,status:r.status,

@@ -84,6 +84,7 @@ class Location {
 }
 
 class ScheduleItem {
+  final String interventionId;
   final String locationId;
   final String locationNameSnapshot;
   final String addressSnapshot;
@@ -92,7 +93,7 @@ class ScheduleItem {
   int order;
   bool transferred;
   bool facadePlanned;
-  ScheduleItem({required this.locationId, required this.locationNameSnapshot, required this.addressSnapshot, required this.typeSnapshot, String? categoryIdSnapshot, required this.order, this.transferred = false, this.facadePlanned = false}) : categoryIdSnapshot = categoryIdSnapshot ?? defaultCategoryIdForType(typeSnapshot);
+  ScheduleItem({this.interventionId = '', required this.locationId, required this.locationNameSnapshot, required this.addressSnapshot, required this.typeSnapshot, String? categoryIdSnapshot, required this.order, this.transferred = false, this.facadePlanned = false}) : categoryIdSnapshot = categoryIdSnapshot ?? defaultCategoryIdForType(typeSnapshot);
 }
 
 class WorkSchedule {
@@ -136,6 +137,9 @@ class CentralizerRecord {
   final String id;
   final String teamId;
   final String locationId;
+  final String graphId;
+  final String scheduleId;
+  final String interventionId;
   final LocationType type;
   String locationNameSnapshot;
   String addressSnapshot;
@@ -152,6 +156,9 @@ class CentralizerRecord {
     required this.id,
     required this.teamId,
     required this.locationId,
+    this.graphId = '',
+    this.scheduleId = '',
+    this.interventionId = '',
     required this.type,
     required this.locationNameSnapshot,
     required this.addressSnapshot,

@@ -803,3 +803,27 @@ exports.syncMemberDirectory = onDocumentWritten(
     });
   }
 );
+
+// Official graph STOP is a server transaction; direct client closure is denied.
+const { closeGraph, GraphClosureError } = require('./graph_closure');
+exports.closeProgramGraph = onRequest({ region: REGION, cors: true }, async (req, res) => {
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'method-not-allowed' });
+  try {
+    const actor = await requireActiveFirebaseUser(req);
+    const result = await closeGraph(db, actor.uid, req.body, {
+      timestamp: () => require('firebase-admin/firestore').Timestamp.now(),
+    });
+    return res.status(200).json(result);
+  } catch (error) {
+    if (error instanceof GraphClosureError) {
+      const status = error.code === 'permission-denied' ? 403 : error.code === 'invalid-argument' ? 400 : 409;
+      return res.status(status).json({ error: error.code, message: error.message });
+    }
+    if (['unauthorized', 'inactive'].includes(error.message) || String(error.code || '').startsWith('auth/')) {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+    console.error('[program] STOP failed', { code: String(error.code || 'internal') });
+    return res.status(503).json({ error: 'unavailable', message: 'STOP neconfirmat. Reîncarcă și verifică starea serverului.' });
+  }
+});

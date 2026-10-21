@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 const _defaults = <String, dynamic>{
+  'graphId': '', 'scheduleId': '', 'interventionId': '',
   'waitingStartedAt': null, 'waitingEndedAt': null, 'startedAt': null,
   'finishedAt': null, 'status': 'waitingAccess', 'refusalReason': null,
   'keptForLearning': true, 'facadePlanned': false, 'facadeDone': false,
@@ -35,6 +36,32 @@ bool _isRunningRecord(Map<String, dynamic> data) =>
 
 bool _lockMatches(Map<String, dynamic>? data, String recordId) =>
     data != null && data['recordId'] == recordId;
+
+/// Recognize the same stable operation after a lost acknowledgement. Only
+/// server-assigned operation times may differ; outcomes and all business data
+/// must agree. Corrections use ordinary compare-and-swap, never this path.
+bool recordOperationReplayMatches(Map<String, dynamic> current,
+    Map<String, dynamic> desired, Map<String, dynamic>? expected) {
+  if ((desired['interventionId'] ?? '').toString().isEmpty) return false;
+  final ignored = <String>{'updatedAt'};
+  if (_isRunningRecord(current) && _isRunningRecord(desired) &&
+      (expected == null || expected['status'] == 'waitingAccess')) {
+    ignored.addAll({'startedAt', 'waitingEndedAt'});
+  } else if (current['status'] == 'waitingAccess' && desired['status'] == 'waitingAccess' && expected == null) {
+    ignored.add('waitingStartedAt');
+  } else if (expected?['status'] == 'running' &&
+      current['status'] == desired['status'] &&
+      ['completed', 'refused', 'notCompleted'].contains(desired['status'])) {
+    ignored.add('finishedAt');
+  } else {
+    return false;
+  }
+  final normalized = Map<String, dynamic>.from(desired);
+  for (final key in ignored) {
+    normalized[key] = current[key];
+  }
+  return recordPayloadMatches(current, normalized);
+}
 
 Future<void> saveRecordCompared(FirebaseFirestore db, String id,
     Map<String, dynamic> desired, {Map<String, dynamic>? expected}) async {
@@ -80,6 +107,9 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
         throw StateError('Echipa are deja o intervenție pornită pe alt dispozitiv. Reîncarcă înainte de retry.');
       }
 
+      if (current != null && recordOperationReplayMatches(current, desired, expected)) {
+        desired.addAll(current);
+      }
       final samePayload = current != null && recordPayloadMatches(current, desired);
       if (!samePayload) {
         if (expected == null) {
@@ -98,14 +128,16 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
         if (lockSnapshot?.exists != true) {
           tx.set(lockRef!, {
             'teamId': teamId,
+            'graphId': desired['graphId'] ?? '',
+            'scheduleId': desired['scheduleId'] ?? '',
+            'interventionId': desired['interventionId'] ?? '',
             'recordId': id,
             'locationId': desired['locationId'],
             'startedAt': desired['startedAt'],
             'updatedAt': FieldValue.serverTimestamp(),
           });
         }
-      } else if (current != null && _isRunningRecord(current) &&
-          _lockMatches(lock, id)) {
+      } else if (_lockMatches(lock, id)) {
         tx.delete(lockRef!);
       }
     });
@@ -129,7 +161,9 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
         }
       }
       if (current != null && recordPayloadMatches(current, desired)) {
-        if (!_isRunningRecord(desired) || await _serverLockMatches(lockRef, id)) return;
+        if (_isRunningRecord(desired)
+            ? await _serverLockMatches(lockRef, id)
+            : !await _serverLockMatches(lockRef, id)) return;
       }
       if (expected == null && observed.exists) {
         throw StateError('ID ocupat. Reîncarcă înainte de salvare.');
@@ -153,7 +187,9 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
   final confirmed = await ref.get(const GetOptions(source: Source.server));
   if (confirmed.metadata.isFromCache || confirmed.metadata.hasPendingWrites ||
       !confirmed.exists || !recordPayloadMatches(confirmed.data()!, desired) ||
-      (_isRunningRecord(desired) && !await _serverLockMatches(lockRef, id))) {
+      (_isRunningRecord(desired)
+        ? !await _serverLockMatches(lockRef, id)
+        : await _serverLockMatches(lockRef, id))) {
     throw StateError('Salvarea nu a putut fi confirmată. Reîncarcă înainte de retry.');
   }
 }

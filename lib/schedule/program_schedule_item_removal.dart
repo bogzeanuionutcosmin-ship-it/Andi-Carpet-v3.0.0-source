@@ -13,6 +13,7 @@ List<ScheduleItem> removeProgramScheduleItem(
       .where((item) => item.locationId != locationId || item.order != order)
       .map(
         (item) => ScheduleItem(
+          interventionId: item.interventionId,
           locationId: item.locationId,
           locationNameSnapshot: item.locationNameSnapshot,
           addressSnapshot: item.addressSnapshot,

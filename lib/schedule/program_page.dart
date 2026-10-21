@@ -23,8 +23,8 @@ int preferredProgramTeamIndex({
 }
 
 class ProgramPage extends StatefulWidget {
-  final AppUser currentUser; final List<Team> teams; final List<Car> cars; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final bool Function(String) canEditTeam; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final void Function(String,String,String) notifyTeam; final void Function(String,String) log; final Future<void> Function(List<WorkSchedule>) saveSchedules; final Future<Map<String,dynamic>?> Function(String query)? geocodeTripPoint;
-  const ProgramPage({super.key, required this.currentUser, required this.teams, required this.cars, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.canEditTeam, required this.canEditProgram, required this.userName, required this.onChanged, required this.notifyTeam, required this.log, required this.saveSchedules, this.geocodeTripPoint});
+  final AppUser currentUser; final List<Team> teams; final List<Car> cars; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final bool Function(String) canEditTeam; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final void Function(String,String,String) notifyTeam; final void Function(String,String) log; final Future<void> Function(List<WorkSchedule>) saveSchedules; final Future<Map<String,dynamic>?> Function(String query)? geocodeTripPoint; final Future<void> Function(List<WorkSchedule>)? closeGraph;
+  const ProgramPage({super.key, required this.currentUser, required this.teams, required this.cars, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.canEditTeam, required this.canEditProgram, required this.userName, required this.onChanged, required this.notifyTeam, required this.log, required this.saveSchedules, this.geocodeTripPoint, this.closeGraph});
   @override State<ProgramPage> createState() => _ProgramPageState();
 }
 class _ProgramPageState extends State<ProgramPage> {
@@ -509,7 +509,7 @@ class _ProgramPageState extends State<ProgramPage> {
     final next = existingNext==null
       ? WorkSchedule(id:idNow(),teamId:day.teamId,graphId:day.graphId,graphName:day.graphName,date:nextDate,items:<ScheduleItem>[],active:true,started:day.started)
       : cloneWorkSchedule(existingNext);
-    final moved = transferable.map((e)=>ScheduleItem(locationId:e.locationId,locationNameSnapshot:e.locationNameSnapshot,addressSnapshot:e.addressSnapshot,typeSnapshot:e.typeSnapshot,categoryIdSnapshot:e.categoryIdSnapshot,order:0,transferred:true,facadePlanned:e.facadePlanned)).toList();
+    final moved = transferable.map((e)=>ScheduleItem(interventionId:e.interventionId,locationId:e.locationId,locationNameSnapshot:e.locationNameSnapshot,addressSnapshot:e.addressSnapshot,typeSnapshot:e.typeSnapshot,categoryIdSnapshot:e.categoryIdSnapshot,order:0,transferred:true,facadePlanned:e.facadePlanned)).toList();
     next.items = <ScheduleItem>[...moved,...next.items.where((x)=>!ids.contains(x.locationId))];
     for(var i=0;i<next.items.length;i++)next.items[i].order=i+1;
     try { await widget.saveSchedules(<WorkSchedule>[current, next]); } catch (e) { if (mounted) showErrorMessage(context, 'Transferul nu a putut fi salvat: ${scheduleSaveFailureMessage(e)}'); return; }
@@ -860,7 +860,7 @@ class _ProgramPageState extends State<ProgramPage> {
         final date=DateTime(start.year,start.month,start.day).add(Duration(days:d));
         final ids=drafted[d];
         final items=<ScheduleItem>[];
-        for(var i=0;i<ids.length;i++){final l=available.firstWhere((x)=>x.id==ids[i]);items.add(ScheduleItem(locationId:l.id,locationNameSnapshot:l.name,addressSnapshot:l.address,typeSnapshot:l.type,categoryIdSnapshot:l.categoryId,order:i+1,facadePlanned:facadePlanKeys.contains('$d:${l.id}')));}
+        for(var i=0;i<ids.length;i++){final l=available.firstWhere((x)=>x.id==ids[i]);items.add(ScheduleItem(interventionId:newInterventionId(),locationId:l.id,locationNameSnapshot:l.name,addressSnapshot:l.address,typeSnapshot:l.type,categoryIdSnapshot:l.categoryId,order:i+1,facadePlanned:facadePlanKeys.contains('$d:${l.id}')));}
         created.add(WorkSchedule(id:idNow(),teamId:team.id,graphId:graphId,graphName:graphName,date:date,items:items));
       }
       await widget.saveSchedules(created);
@@ -978,7 +978,15 @@ class _ProgramPageState extends State<ProgramPage> {
       actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('STOP'))],
     ))??false;
     if(!ok)return;
-    if(!await _applyGraphState(closed:true,paused:false))return;
+    try {
+      final close = widget.closeGraph;
+      if (close == null) throw StateError('Serviciul de închidere verificată nu este disponibil.');
+      await close(graphSchedules.toList());
+    } catch (error) {
+      if(mounted)showErrorMessage(context,'STOP nu a fost confirmat: $error');
+      return;
+    }
+    widget.onChanged();
     widget.log('Grafic închis','${team.name} · ${graphHead?.graphName??''}');
     if(mounted)showSuccessMessage(context,'Graficul a fost închis.');
   }

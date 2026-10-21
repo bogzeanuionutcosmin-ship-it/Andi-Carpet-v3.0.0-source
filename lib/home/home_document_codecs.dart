@@ -203,7 +203,9 @@ mixin _HomeDocumentCodecs {
     'returnName': s.returnName,
     'returnLatitude': s.returnLatitude,
     'returnLongitude': s.returnLongitude,
+    'interventionLocations': {for (final i in s.items) if(i.interventionId.isNotEmpty) i.interventionId: i.locationId},
     'items': s.items.map((i) => {
+      'interventionId': i.interventionId,
       'locationId': i.locationId,
       'locationNameSnapshot': i.locationNameSnapshot,
       'addressSnapshot': i.addressSnapshot,
@@ -230,6 +232,7 @@ mixin _HomeDocumentCodecs {
           if (value.name == typeText) type = value;
         }
         items.add(ScheduleItem(
+          interventionId: (raw['interventionId'] ?? '').toString(),
           locationId: (raw['locationId'] ?? '').toString(),
           locationNameSnapshot: (raw['locationNameSnapshot'] ?? '').toString(),
           addressSnapshot: (raw['addressSnapshot'] ?? '').toString(),
@@ -503,6 +506,9 @@ mixin _HomeDocumentCodecs {
 }
 
 Map<String, dynamic> recordDocumentData(CentralizerRecord r) => {
+    'graphId': r.graphId,
+    'scheduleId': r.scheduleId,
+    'interventionId': r.interventionId,
     'teamId': r.teamId,
     'locationId': r.locationId,
     'type': r.type.name,
@@ -533,6 +539,9 @@ CentralizerRecord centralizerRecordFromData(String id, Map<String, dynamic> d) {
     return CentralizerRecord(
       id: id,
       writeBaseline: Map<String, dynamic>.from(d),
+      graphId: (d['graphId'] ?? '').toString(),
+      scheduleId: (d['scheduleId'] ?? '').toString(),
+      interventionId: (d['interventionId'] ?? '').toString(),
       teamId: (d['teamId'] ?? '').toString(),
       locationId: (d['locationId'] ?? '').toString(),
       type: type,

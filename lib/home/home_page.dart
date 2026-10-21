@@ -365,7 +365,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     var nearest = double.infinity;
     for (final schedule in active) {
       for (final item in schedule.items) {
-        final r = _homeLatestRecord(teamId, item.locationId, workDate);
+        final r = _homeLatestRecord(teamId, item.locationId, workDate, interventionId: item.interventionId);
         if (r?.status == WorkAttemptStatus.completed || r?.status == WorkAttemptStatus.refused || r?.status == WorkAttemptStatus.notCompleted) continue;
         final loc = _homeLocationById(item.locationId);
         if (loc?.latitude == null || loc?.longitude == null) continue;
@@ -506,8 +506,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     return null;
   }
 
-  CentralizerRecord? _homeLatestRecord(String teamId, String locationId, DateTime workDate) {
-    final list = records.where((r) => r.teamId == teamId && r.locationId == locationId && (recordHasOpenAttempt(r) || recordBelongsToWorkDate(r, workDate))).toList()
+  CentralizerRecord? _homeLatestRecord(String teamId, String locationId, DateTime workDate, {String interventionId = ''}) {
+    final list = records.where((r) => r.teamId == teamId && r.locationId == locationId && r.interventionId == interventionId && (interventionId.isNotEmpty || recordHasOpenAttempt(r) || recordBelongsToWorkDate(r, workDate))).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     return list.isEmpty ? null : list.last;
   }
@@ -588,7 +588,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     // pentru că GPS-ul spune că telefonul este în apropiere.
     final candidates = <HomeArrivalCandidate<(ScheduleItem, Location)>>[];
     for (final item in schedule.items) {
-      final r = _homeLatestRecord(teamId, item.locationId, workDate);
+      final r = _homeLatestRecord(teamId, item.locationId, workDate, interventionId: item.interventionId);
       if (r?.status == WorkAttemptStatus.completed ||
           r?.status == WorkAttemptStatus.refused ||
           r?.status == WorkAttemptStatus.notCompleted ||
@@ -677,11 +677,17 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   Future<void> _saveArrivalStart(WorkSchedule schedule, ScheduleItem item, DateTime workDate) async {
     final teamId = schedule.teamId;
     final now = DateTime.now();
-    final existing = _homeLatestRecord(teamId, item.locationId, workDate);
+    final attempts = records.where((r) => r.teamId == teamId && recordMatchesIntervention(r, item) &&
+      (item.interventionId.isNotEmpty || recordBelongsToWorkDate(r, workDate))).toList()
+      ..sort((a,b) => recordEventTime(a).compareTo(recordEventTime(b)));
+    final existing = attempts.isEmpty ? null : attempts.last;
     // Dacă între timp colegul a stabilit deja starea, nu dublăm execuția.
     if (!canWriteHomeArrivalChoice(existing)) return;
     final started = CentralizerRecord(
-      id: existing?.id ?? idNow(), writeBaseline: existing?.writeBaseline, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
+      id: existing?.finishedAt == null && existing != null ? existing.id : nextInterventionRecordId(item, records),
+      graphId: item.interventionId.isEmpty ? '' : schedule.graphId,
+      scheduleId: item.interventionId.isEmpty ? '' : schedule.id, interventionId: item.interventionId,
+      writeBaseline: existing?.finishedAt == null ? existing?.writeBaseline : null, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
       locationNameSnapshot: item.locationNameSnapshot, addressSnapshot: item.addressSnapshot,
       waitingStartedAt: existing?.waitingStartedAt,
       waitingEndedAt: existing?.waitingStartedAt != null && existing?.waitingEndedAt == null ? now : existing?.waitingEndedAt,
@@ -701,10 +707,16 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   Future<void> _saveArrivalWaiting(WorkSchedule schedule, ScheduleItem item, DateTime workDate) async {
     final teamId = schedule.teamId;
     final now = DateTime.now();
-    final existing = _homeLatestRecord(teamId, item.locationId, workDate);
+    final attempts = records.where((r) => r.teamId == teamId && recordMatchesIntervention(r, item) &&
+      (item.interventionId.isNotEmpty || recordBelongsToWorkDate(r, workDate))).toList()
+      ..sort((a,b) => recordEventTime(a).compareTo(recordEventTime(b)));
+    final existing = attempts.isEmpty ? null : attempts.last;
     if (!canWriteHomeArrivalChoice(existing)) return;
     final waiting = CentralizerRecord(
-      id: existing?.id ?? idNow(), writeBaseline: existing?.writeBaseline, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
+      id: existing?.finishedAt == null && existing != null ? existing.id : nextInterventionRecordId(item, records),
+      graphId: item.interventionId.isEmpty ? '' : schedule.graphId,
+      scheduleId: item.interventionId.isEmpty ? '' : schedule.id, interventionId: item.interventionId,
+      writeBaseline: existing?.finishedAt == null ? existing?.writeBaseline : null, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
       locationNameSnapshot: item.locationNameSnapshot, addressSnapshot: item.addressSnapshot,
       waitingStartedAt: existing?.waitingStartedAt ?? now, waitingEndedAt: null,
       startedAt: null, finishedAt: null, status: WorkAttemptStatus.waitingAccess,
@@ -1491,6 +1503,43 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     });
   }
 
+  Future<void> _closeProgramGraphDirect(List<WorkSchedule> days) async {
+    if (days.isEmpty) throw StateError('Grafic fără zile.');
+    final head = days.first;
+    if (!canEditTeam(head.teamId) || !hasPermission(FunctionPermission.editProgram)) {
+      throw StateError('Nu ai dreptul să închizi acest grafic.');
+    }
+    final project = Firebase.app().options.projectId;
+    const emulatorHost = String.fromEnvironment('ANDICARPET_EMULATOR_HOST');
+    final endpoint = emulatorHost.isNotEmpty
+      ? Uri.parse('http://$emulatorHost:5001/$project/europe-central2/closeProgramGraph')
+      : Uri.https('europe-central2-$project.cloudfunctions.net', '/closeProgramGraph');
+    await requestGraphClosure(endpoint: endpoint,
+      getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
+      post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),
+      operation: {
+        'teamId': head.teamId, 'graphId': head.graphId,
+        'requestId': '${idNow()}-${newInterventionId()}',
+        'days': [for (final day in days) {'id': day.id, 'writeToken': day.writeToken}],
+      });
+    // Publish only authoritative server snapshots, including the new revisions.
+    final snapshot = await FirebaseFirestore.instance.collection('schedules')
+      .where('teamId', isEqualTo: head.teamId).get(const GetOptions(source: Source.server));
+    if (snapshot.metadata.isFromCache || snapshot.metadata.hasPendingWrites) {
+      throw StateError('STOP acceptat, dar reîncărcarea nu este confirmată. Reîncarcă graficul.');
+    }
+    final saved = snapshot.docs.where((d) => d.data()['graphId'] == head.graphId)
+      .map(_scheduleFromDoc).toList();
+    if (saved.isEmpty || saved.any((d) => !d.closed)) {
+      throw StateError('Starea graficului s-a schimbat după STOP. Reîncarcă.');
+    }
+    if (!mounted) return;
+    setState(() {
+      schedules.removeWhere((d) => d.teamId == head.teamId && d.graphId == head.graphId);
+      schedules.addAll(saved);
+    });
+  }
+
   Future<void> _saveRecordDirect(CentralizerRecord record) async {
     final canWriteRecord = hasPermission(FunctionPermission.editProgram) || hasPermission(FunctionPermission.editCentralizer);
     if (!canEditTeam(record.teamId) || !canWriteRecord) {
@@ -1507,6 +1556,10 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       }
     }
     await saveRecordCompared(FirebaseFirestore.instance, record.id, data, expected: record.writeBaseline);
+    // A replay may adopt the already committed server times.
+    record.startedAt = _recordDateFrom(data['startedAt']);
+    record.waitingEndedAt = _recordDateFrom(data['waitingEndedAt']);
+    record.finishedAt = _recordDateFrom(data['finishedAt']);
     record.writeBaseline = Map<String, dynamic>.from(data)..remove('updatedAt');
     unawaited(_writeLearningEvent(category: 'duration', event: 'execution_${record.status.name}', teamId: record.teamId, locationId: record.locationId, data: {
       'startedAt': record.startedAt?.toIso8601String(), 'finishedAt': record.finishedAt?.toIso8601String(),
@@ -1975,7 +2028,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       DashboardPage(teams: teams, users: users, functionDefinitions: functionDefinitions, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, currentUser: me, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, saveRecord: _saveRecordDirect, saveSchedule: _saveScheduleDirect, saveSchedules: _saveSchedulesDirect, log: log),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_dashboard.png', size: 24, accent: homeColor), selectedIcon: appAssetIcon('assets/ui/tab_dashboard.png', size: 27, accent: homeColor, selected: true), label: 'Acasă'), homeColor);
     addPage(hasPermission(FunctionPermission.viewProgram),
-      ProgramPage(currentUser: me, teams: teams, cars: cars, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, canEditTeam: canEditTeam, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, notifyTeam: notifyTeam, log: log, saveSchedules: _saveSchedulesDirect),
+      ProgramPage(currentUser: me, teams: teams, cars: cars, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, canEditTeam: canEditTeam, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, notifyTeam: notifyTeam, log: log, saveSchedules: _saveSchedulesDirect, closeGraph: _closeProgramGraphDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_grafic.png', size: 24, accent: programColor), selectedIcon: appAssetIcon('assets/ui/tab_grafic.png', size: 27, accent: programColor, selected: true), label: 'Grafic'), programColor);
     addPage(hasPermission(FunctionPermission.viewMap),
       MapPage(currentUser: me, users: users, teams: teams, schedules: schedules, records: records, locations: locations, categories: categories, isAdmin: isAdmin, hiddenUserIds: _hiddenUserIds, onChanged: refresh, log: log, saveLocation: _saveLocationDirect),

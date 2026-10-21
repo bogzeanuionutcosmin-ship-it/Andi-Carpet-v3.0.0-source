@@ -22,6 +22,9 @@ class NativeEvidenceTest(unittest.TestCase):
         (self.root / "decont-flow.pdf").write_bytes(b"%PDF-1.4\n%%EOF\n")
         self.observation = {
             "completed": True,
+            "stableStartReplay": True,
+            "stableFinishReplay": True,
+            "atomicGraphStopThroughHome": {"serverPersisted": True, "receiptReplay": True, "interventions": 11},
             "graphCreatedThroughUi": True,
             "programStartThroughUi": {
                 "geocodeQueries": ["Punct plecare test", "Punct final test"],
@@ -78,6 +81,15 @@ class NativeEvidenceTest(unittest.TestCase):
 
     def test_complete_evidence_passes(self):
         module.verify(self.root)
+
+    def test_missing_stable_replay_or_server_stop_fails(self):
+        for key in ("stableStartReplay", "stableFinishReplay", "atomicGraphStopThroughHome"):
+            with self.subTest(key=key):
+                original = self.observation.pop(key)
+                self.save()
+                with self.assertRaises(AssertionError):
+                    module.verify(self.root)
+                self.observation[key] = original
 
     def test_missing_ui_graph_evidence_fails(self):
         self.observation.pop("graphCreatedThroughUi")

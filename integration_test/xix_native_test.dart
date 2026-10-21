@@ -9,6 +9,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:andi_carpeta/operations/graph_closure_client.dart';
 import 'package:andi_carpeta/main.dart' as app;
 import 'package:andi_carpeta/operations/record_writer.dart';
 import 'package:andi_carpeta/centralizer/correction_writer.dart';
@@ -54,7 +56,8 @@ void main() {
           'departureName':entry.departureName,'departureLatitude':entry.departureLatitude,
           'departureLongitude':entry.departureLongitude,'returnName':entry.returnName,
           'returnLatitude':entry.returnLatitude,'returnLongitude':entry.returnLongitude,
-          'items':entry.items.map((item)=>{'locationId':item.locationId}).toList(),
+          'interventionLocations':{for(final item in entry.items) item.interventionId:item.locationId},
+          'items':entry.items.map((item)=>{'locationId':item.locationId,'interventionId':item.interventionId}).toList(),
         });
       }
       schedules..clear()..addAll(updated);
@@ -240,12 +243,35 @@ void main() {
       await tester.ensureVisible(start);await tester.tap(start);await tester.tap(start,warnIfMissed:false);
       for(var n=0;n<60&&!records.any((r)=>r.locationId==item.locationId&&r.status==app.WorkAttemptStatus.running);n++){await tester.pump(const Duration(milliseconds:200));}
       expect(records.where((r)=>r.locationId==item.locationId&&r.status==app.WorkAttemptStatus.running),hasLength(1));
+      if(item == items.first) {
+        final startedRecord=records.singleWhere((r)=>r.locationId==item.locationId);
+        final current=(await db.collection('records').doc(startedRecord.id).get(const GetOptions(source:Source.server))).data()!;
+        final replay={...current,'startedAt':Timestamp.fromDate(DateTime.now().add(const Duration(seconds:3)))};
+        await saveRecordCompared(otherDb,startedRecord.id,replay);
+        expect(replay['startedAt'],current['startedAt']);
+        expect((await db.collection('activeRecordLocks').doc('craiova').get(const GetOptions(source:Source.server))).data()!['interventionId'],item.interventionId);
+        evidence['stableStartReplay']=true;
+      }
       await dashboard();
       final stop=find.byTooltip('Stop / ieși din locație');await tester.ensureVisible(stop);
+      final finishSource=Map<String,dynamic>.from(records.singleWhere((r)=>r.locationId==item.locationId).writeBaseline!);
       await tester.tap(stop);await tester.tap(stop,warnIfMissed:false);await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog),findsOneWidget);await tester.tap(find.text('DA'));
+      if(item.facadePlanned){
+        expect(find.byType(AlertDialog),findsOneWidget);await tester.tap(find.text('DA'));
+      }else{
+        expect(find.byType(AlertDialog),findsNothing);
+      }
       for(var n=0;n<60&&!records.any((r)=>r.locationId==item.locationId&&r.completed);n++){await tester.pump(const Duration(milliseconds:200));}
       expect(records.singleWhere((r)=>r.locationId==item.locationId).completed,true);
+      if(item == items.first) {
+        final finished=records.singleWhere((r)=>r.locationId==item.locationId);
+        final current=(await db.collection('records').doc(finished.id).get(const GetOptions(source:Source.server))).data()!;
+        final replay={...current,'finishedAt':Timestamp.fromDate(DateTime.now().add(const Duration(seconds:3)))};
+        await saveRecordCompared(otherDb,finished.id,replay,expected:finishSource);
+        expect(replay['finishedAt'],current['finishedAt']);
+        expect((await db.collection('activeRecordLocks').doc('craiova').get(const GetOptions(source:Source.server))).exists,false);
+        evidence['stableFinishReplay']=true;
+      }
     }
     expect(records,hasLength(11));
     // Reproject the 11 UI-created Firestore records onto the reported two-day
@@ -290,10 +316,20 @@ void main() {
     expect((await db.collection('records').get()).size,countBeforeRace);
     evidence['twoNativeClients']={'accepted':race,'loser':'StateError stale baseline','serverWinner':'race-${race.indexOf(true)}','documentCount':countBeforeRace};
     await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
-    await otherDb.collection('records').doc('legacy-active-without-lock').set({
-      'teamId':'craiova','locationId':'legacy-active-room','locationNameSnapshot':'Sală activă din versiunea veche',
-      'type':'magic','status':'running','startedAt':Timestamp.fromDate(DateTime.now()),'finishedAt':null,
-    });
+    // Deliberately malformed legacy fixture uses the emulator owner API;
+    // even Admin clients must now obey the reservation integrity rules.
+    final legacySeed=await http.post(Uri.parse('http://10.0.2.2:8080/v1/projects/demo-andi-xix/databases/(default)/documents:commit'),
+      headers:{'Authorization':'Bearer owner','Content-Type':'application/json'},
+      body:jsonEncode({'writes':[{'update':{
+        'name':'projects/demo-andi-xix/databases/(default)/documents/records/legacy-active-without-lock',
+        'fields':{
+          'teamId':{'stringValue':'craiova'},'locationId':{'stringValue':'legacy-active-room'},
+          'locationNameSnapshot':{'stringValue':'Sală activă din versiunea veche'},
+          'type':{'stringValue':'magic'},'status':{'stringValue':'running'},
+          'startedAt':{'timestampValue':DateTime.now().toUtc().toIso8601String()},'finishedAt':{'nullValue':null},
+        },
+      }}]}));
+    expect(legacySeed.statusCode,200);
     await otherAuth.signInWithEmailAndPassword(email:'editor@andi.test',password:'synthetic-only-123');
     await expectLater(saveRecordCompared(db,'must-not-start-over-legacy-active',{
       'teamId':'craiova','locationId':'new-room','type':'magic','status':'running',
@@ -747,6 +783,32 @@ void main() {
     await tester.ensureVisible(reloadedReceipt);
     expect(find.descendant(of:reloadedReceipt,matching:find.textContaining('150.25 lei')),
       findsOneWidget,reason:'The real HomePage Decont must display the reloaded corrected receipt amount');
+    final programNav=find.text('Grafic de lucru');
+    final shortProgramNav=find.text('Grafic');
+    await tester.tap(shortProgramNav.evaluate().isNotEmpty?shortProgramNav:programNav.first);
+    await pumpUntil(()=>find.byType(app.ProgramPage).evaluate().isNotEmpty,'Home Program must load');
+    await tester.pumpAndSettle();
+    final programPage=tester.widget<app.ProgramPage>(find.byType(app.ProgramPage));
+    expect(programPage.closeGraph,isNotNull);
+    final stopGraph=find.text('STOP GRAFIC');
+    await tester.ensureVisible(stopGraph);await tester.tap(stopGraph);await tester.pumpAndSettle();
+    expect(find.text('STOP Grafic de lucru'),findsOneWidget);
+    await tester.tap(find.text('STOP'));await tester.pumpAndSettle();
+    await pumpUntil(()=>tester.widget<app.ProgramPage>(find.byType(app.ProgramPage)).schedules
+      .where((d)=>d.graphId==schedule.graphId).every((d)=>d.closed),'Server STOP must reach the Home subscription');
+    final closedDay=await db.collection('schedules').doc(schedule.id).get(const GetOptions(source:Source.server));
+    expect(closedDay.data()!['closed'],true);
+    final receiptId=closedDay.data()!['closeReceiptId'];
+    final receiptDoc=await db.collection('graphClosures').doc(receiptId as String).get(const GetOptions(source:Source.server));
+    expect(receiptDoc.data()!['interventionCount'],11);
+    final closureReplay=await requestGraphClosure(
+      endpoint:Uri.parse('http://10.0.2.2:5001/demo-andi-xix/europe-central2/closeProgramGraph'),
+      getIdToken:() async=>auth.currentUser?.getIdToken(),
+      post:(uri,{headers,body})=>http.post(uri,headers:headers,body:body),
+      operation:{'teamId':'craiova','graphId':schedule.graphId,'requestId':receiptDoc.data()!['requestId'],
+        'days':[{'id':schedule.id,'writeToken':schedule.writeToken}]});
+    expect(closureReplay,receiptId);
+    evidence['atomicGraphStopThroughHome']={'serverPersisted':true,'receiptReplay':true,'interventions':11};
     await otherDb.doc('users/$uid').update({'functionIds':['worker']});
     await otherDb.doc('functions/xix-ui-editor').delete();
     evidence['homeCorrectionThroughUi']='actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal';

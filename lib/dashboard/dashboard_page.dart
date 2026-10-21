@@ -11,6 +11,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Team get team => widget.teams[teamIndex.clamp(0, widget.teams.length - 1)];
 
+  WorkSchedule? _scheduleForItem(ScheduleItem item) {
+    final matches = widget.schedules.where((s) => s.teamId == team.id &&
+      s.graphId == selectedGraphId && s.items.any((i) => identical(i, item) ||
+        (item.interventionId.isNotEmpty && i.interventionId == item.interventionId)));
+    return matches.length == 1 ? matches.single : null;
+  }
+
   List<CentralizerRecord> _recordsForItem(ScheduleItem item, DateTime workDate) =>
       dashboardRecordsForItem(widget.records, teamId: team.id, item: item, workDate: workDate);
 
@@ -416,6 +423,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final workDate = operationalWorkDate(now);
     final decision = dashboardStartRecordDecision<CentralizerRecord>(
       records: widget.records,
+      belongsToIntervention: (r) => recordMatchesIntervention(r, item),
       teamId: team.id,
       locationId: item.locationId,
       teamIdOf: (record) => record.teamId,
@@ -433,7 +441,10 @@ class _DashboardPageState extends State<DashboardPage> {
     if (decision.action == DashboardStartRecordAction.alreadyRunning) return;
     final base = decision.baseRecord;
     final r = CentralizerRecord(
-      id: base?.id ?? idNow(),
+      id: base?.id ?? nextInterventionRecordId(item, widget.records),
+      graphId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.graphId ?? '',
+      scheduleId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.id ?? '',
+      interventionId: item.interventionId,
       writeBaseline: base?.writeBaseline,
       teamId: team.id,
       locationId: item.locationId,
@@ -467,7 +478,7 @@ class _DashboardPageState extends State<DashboardPage> {
       );
 
   Future<void> _finishLocationOnce(CentralizerRecord source) async {
-    final facadeDone = await showDialog<bool>(
+    final facadeDone = !source.facadePlanned ? source.facadeDone : await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (c) => AlertDialog(
@@ -482,6 +493,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (facadeDone == null) return;
     final r = CentralizerRecord(
       id: source.id,
+      graphId: source.graphId, scheduleId: source.scheduleId, interventionId: source.interventionId,
       writeBaseline: source.writeBaseline,
       teamId: source.teamId,
       locationId: source.locationId,
@@ -502,17 +514,7 @@ class _DashboardPageState extends State<DashboardPage> {
       await widget.saveRecord(r);
       widget.log('IEȘI de pe sală', '${team.name} · ${r.locationNameSnapshot} · ${durationText(r.duration)}');
       if (mounted) {
-        if(widget.settings.allowUndo){
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content:Text('Ieșire salvată: ${r.locationNameSnapshot} · ${timeText(r.finishedAt)} · ${durationText(r.duration)}'),
-            action:SnackBarAction(label:'ANULEAZĂ',onPressed:()async{
-              try{source.writeBaseline = r.writeBaseline;await widget.saveRecord(source);widget.log('Undo IEȘI','${team.name} · ${source.locationNameSnapshot}');if(mounted)showSuccessMessage(context,'FINAL a fost anulat; locația este din nou în lucru.');}
-              catch(e){if(mounted)showErrorMessage(context,'Undo nu a reușit: $e');}
-            }),
-          ));
-        }else{
-          showSuccessMessage(context, 'Ieșire salvată: ${r.locationNameSnapshot} · ${timeText(r.finishedAt)} · ${durationText(r.duration)}');
-        }
+        showSuccessMessage(context, 'Ieșire salvată: ${r.locationNameSnapshot} · ${timeText(r.finishedAt)} · ${durationText(r.duration)}');
       }
     } catch (e) {
       if (mounted) showErrorMessage(context, 'Ieșirea nu a putut fi salvată: $e');
@@ -527,11 +529,14 @@ class _DashboardPageState extends State<DashboardPage> {
       if (mounted) showErrorMessage(context, 'Există deja o locație în lucru. Închide întâi intervenția curentă.');
       return;
     }
-    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null).toList()
+    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && recordMatchesIntervention(r, item) && r.finishedAt == null).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     final base = existing.isEmpty ? null : existing.last;
     final r = CentralizerRecord(
-      id: base?.id ?? idNow(),
+      id: base?.id ?? nextInterventionRecordId(item, widget.records),
+      graphId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.graphId ?? '',
+      scheduleId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.id ?? '',
+      interventionId: item.interventionId,
       writeBaseline: base?.writeBaseline,
       teamId: team.id,
       locationId: item.locationId,
@@ -587,11 +592,14 @@ class _DashboardPageState extends State<DashboardPage> {
     if (reason == null) return;
     final now = DateTime.now();
     final workDate = operationalWorkDate(now);
-    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null).toList()
+    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && recordMatchesIntervention(r, item) && r.finishedAt == null).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     final base = existing.isEmpty ? null : existing.last;
     final r = CentralizerRecord(
-      id: base?.id ?? idNow(),
+      id: base?.id ?? nextInterventionRecordId(item, widget.records),
+      graphId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.graphId ?? '',
+      scheduleId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.id ?? '',
+      interventionId: item.interventionId,
       writeBaseline: base?.writeBaseline,
       teamId: team.id,
       locationId: item.locationId,

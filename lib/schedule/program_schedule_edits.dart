@@ -20,6 +20,7 @@ List<ScheduleItem>? reorderScheduleItems(
   final reordered = sourceItems
       .map(
         (item) => ScheduleItem(
+          interventionId: item.interventionId,
           locationId: item.locationId,
           locationNameSnapshot: item.locationNameSnapshot,
           addressSnapshot: item.addressSnapshot,

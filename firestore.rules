@@ -151,23 +151,38 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    function graphOpenAfter(data) {
+      let path = /databases/$(database)/documents/graphStates/$(data.teamId)/graphs/$(data.get('graphId', '_'));
+      return !existsAfter(path) || getAfter(path).data.closed != true;
+    }
+
+    match /graphStates/{teamId}/graphs/{graphId} {
+      allow read: if isActive();
+      allow write: if false;
+    }
+
     // Graficul este vizibil intern, dar modificarea lui cere explicit dreptul editProgram.
     match /schedules/{scheduleId} {
       allow read: if isActive();
-      allow create: if isAdmin()
-        || (hasPermission('editProgram') && isTeamMember(request.resource.data.teamId));
-      allow update: if isAdmin()
+      allow create: if graphOpenAfter(request.resource.data)
+        && request.resource.data.get('closed', false) != true
+        && (isAdmin() || (hasPermission('editProgram') && isTeamMember(request.resource.data.teamId)));
+      allow update: if request.resource.data.teamId == resource.data.teamId
+        && request.resource.data.get('graphId', '') == resource.data.get('graphId', '')
+        && graphOpenAfter(request.resource.data)
+        && !(resource.data.get('closed', false) != true && request.resource.data.get('closed', false) == true)
+        && (isAdmin()
         || (hasPermission('editProgram')
           && isTeamMember(resource.data.teamId)
           && isTeamMember(request.resource.data.teamId)
           && resource.data.closed != true
-          && request.resource.data.get('paused', false) == resource.data.get('paused', false));
+          && request.resource.data.get('paused', false) == resource.data.get('paused', false)));
       allow delete: if isAdmin()
         || (hasPermission('editProgram') && isTeamMember(resource.data.teamId));
     }
 
     function isRunningRecord(data) {
-      return data.status == 'running' && data.finishedAt == null;
+      return data.get('status', 'waitingAccess') == 'running' && data.get('finishedAt', null) == null;
     }
 
     function activeRecordLockPath(teamId) {
@@ -199,7 +214,8 @@ service cloud.firestore {
       allow read: if isAdmin() || (isActive() && isTeamMember(teamId));
       allow create: if canWriteTeamRecords(teamId)
         && request.resource.data.keys().hasOnly([
-          'teamId', 'recordId', 'locationId', 'startedAt', 'updatedAt'
+          'teamId', 'recordId', 'locationId', 'startedAt', 'updatedAt',
+          'graphId', 'scheduleId', 'interventionId'
         ])
         && request.resource.data.keys().hasAll(['teamId', 'recordId', 'locationId'])
         && request.resource.data.teamId == teamId
@@ -209,6 +225,9 @@ service cloud.firestore {
         && existsAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId))
         && getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.teamId == teamId
         && getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.locationId == request.resource.data.locationId
+        && request.resource.data.get('graphId', '') == getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.get('graphId', '')
+        && request.resource.data.get('scheduleId', '') == getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.get('scheduleId', '')
+        && request.resource.data.get('interventionId', '') == getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.get('interventionId', '')
         && isRunningRecord(getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data);
       // The application never retargets an existing reservation: it creates
       // a new lock only after the previous one has been removed on FINAL.
@@ -220,12 +239,42 @@ service cloud.firestore {
           || !isRunningRecord(getAfter(/databases/$(database)/documents/records/$(resource.data.recordId)).data));
     }
 
+    function sameRecordIdentity(a, b) {
+      return a.teamId == b.teamId && a.locationId == b.locationId
+        && a.get('type', '') == b.get('type', '')
+        && a.get('graphId', '') == b.get('graphId', '')
+        && a.get('scheduleId', '') == b.get('scheduleId', '')
+        && a.get('interventionId', '') == b.get('interventionId', '');
+    }
+
+    function validLinkedRecord(data, correctingClosed) {
+      let linked = data.get('interventionId', '') != '';
+      let path = /databases/$(database)/documents/schedules/$(data.get('scheduleId', '_'));
+      return !linked
+        ? data.get('graphId', '') == '' && data.get('scheduleId', '') == ''
+        : exists(path) && get(path).data.teamId == data.teamId
+          && get(path).data.graphId == data.graphId
+          && get(path).data.get('interventionLocations', {}).get(data.interventionId, '') == data.locationId
+          && ((get(path).data.get('closed', false) != true && graphOpenAfter(data)) || correctingClosed);
+    }
+
+    // Receipts are written by the authenticated server transaction only.
+    match /graphClosures/{receiptId} {
+      allow read: if isAdmin() || (isActive() && resource.data.actorId == request.auth.uid);
+      allow write: if false;
+    }
+
     // START/FINAL cer editProgram; corecțiile din Centralizator pot folosi editCentralizer.
     match /records/{recordId} {
       allow read: if isActive();
       allow create: if canWriteTeamRecords(request.resource.data.teamId)
+        && validLinkedRecord(request.resource.data, false)
         && validRecordLockTransition(request.resource.data.teamId, recordId, request.resource.data, false);
       allow update: if canWriteTeamRecords(resource.data.teamId)
+        && sameRecordIdentity(resource.data, request.resource.data)
+        && validLinkedRecord(request.resource.data,
+          resource.data.status == 'completed' && request.resource.data.status == 'completed'
+            && request.resource.data.finishedAt != null && request.resource.data.startedAt != null)
         && (isAdmin() || isTeamMember(request.resource.data.teamId))
         && validRecordLockTransition(request.resource.data.teamId, recordId, request.resource.data,
           isRunningRecord(resource.data));
@@ -687,8 +736,12 @@ service cloud.firestore {
       }
     }
 
-    match /{document=**} {
-      allow read, write: if isAdmin();
+    // Operational integrity also applies to administrators. An overlapping
+    // catch-all must never bypass the reservations or official STOP service.
+    match /{collection}/{document=**} {
+      allow read, write: if isAdmin() && !(collection in [
+        'schedules', 'records', 'activeRecordLocks', 'graphStates', 'graphClosures'
+      ]);
     }
   }
 }

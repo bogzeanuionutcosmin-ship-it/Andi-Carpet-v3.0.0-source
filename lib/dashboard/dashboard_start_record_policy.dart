@@ -21,6 +21,7 @@ class DashboardStartRecordDecision<T> {
 /// Preserves Dashboard's team-running guard and unfinished-record reuse order.
 DashboardStartRecordDecision<T> dashboardStartRecordDecision<T>({
   required Iterable<T> records,
+  bool Function(T)? belongsToIntervention,
   required String teamId,
   required String locationId,
   required String Function(T) teamIdOf,
@@ -39,7 +40,7 @@ DashboardStartRecordDecision<T> dashboardStartRecordDecision<T>({
   if (running.isNotEmpty) {
     final active = running.first;
     return DashboardStartRecordDecision<T>(
-      action: locationIdOf(active) == locationId
+      action: locationIdOf(active) == locationId && (belongsToIntervention?.call(active) ?? true)
           ? DashboardStartRecordAction.alreadyRunning
           : DashboardStartRecordAction.blockedByOtherLocation,
       activeRecord: active,
@@ -50,6 +51,7 @@ DashboardStartRecordDecision<T> dashboardStartRecordDecision<T>({
       .where((record) =>
           teamIdOf(record) == teamId &&
           locationIdOf(record) == locationId &&
+          (belongsToIntervention?.call(record) ?? true) &&
           finishedAtOf(record) == null)
       .toList()
     ..sort((a, b) => eventTimeOf(a).compareTo(eventTimeOf(b)));

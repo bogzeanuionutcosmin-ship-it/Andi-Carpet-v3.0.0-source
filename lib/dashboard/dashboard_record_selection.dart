@@ -10,7 +10,7 @@ List<CentralizerRecord> dashboardRecordsForItem(
 }) {
   final out = records.where((r) =>
     r.teamId == teamId &&
-    r.locationId == item.locationId &&
+    r.locationId == item.locationId && recordMatchesIntervention(r, item) &&
     (recordHasOpenAttempt(r) || recordBelongsToWorkDate(r, workDate))
   ).toList();
   out.sort((a, b) {

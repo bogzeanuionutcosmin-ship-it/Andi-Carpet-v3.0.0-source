@@ -49,6 +49,7 @@ WorkSchedule _copyDashboardSchedule(WorkSchedule schedule) => WorkSchedule(
   date: schedule.date,
   items: schedule.items
       .map((item) => ScheduleItem(
+            interventionId: item.interventionId,
             locationId: item.locationId,
             locationNameSnapshot: item.locationNameSnapshot,
             addressSnapshot: item.addressSnapshot,

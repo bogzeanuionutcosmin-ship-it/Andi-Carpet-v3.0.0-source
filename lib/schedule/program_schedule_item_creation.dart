@@ -13,6 +13,7 @@ List<ScheduleItem> createProgramScheduleItems({
   return locations
       .map(
         (location) => ScheduleItem(
+          interventionId: newInterventionId(),
           locationId: location.id,
           locationNameSnapshot: location.name,
           addressSnapshot: location.address,

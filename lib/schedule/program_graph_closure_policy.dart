@@ -22,7 +22,10 @@ ProgramGraphClosureReadiness programGraphClosureReadiness({
       final matching = allRecords.where((record) =>
         record.teamId == schedule.teamId &&
         record.locationId == item.locationId &&
-        recordBelongsToWorkDate(record, schedule.date));
+        (item.interventionId.isNotEmpty
+          ? record.graphId == schedule.graphId && record.scheduleId == schedule.id &&
+            record.interventionId == item.interventionId
+          : record.interventionId.isEmpty && recordBelongsToWorkDate(record, schedule.date)));
       final attempts = matching.toList()
         ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
       final latest = attempts.isEmpty ? null : attempts.last;
