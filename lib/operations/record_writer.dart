@@ -163,7 +163,7 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
       if (current != null && recordPayloadMatches(current, desired)) {
         if (_isRunningRecord(desired)
             ? await _serverLockMatches(lockRef, id)
-            : !await _serverLockMatches(lockRef, id)) return;
+            : await _serverLockReleased(lockRef, id)) return;
       }
       if (expected == null && observed.exists) {
         throw StateError('ID ocupat. Reîncarcă înainte de salvare.');
@@ -189,7 +189,7 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
       !confirmed.exists || !recordPayloadMatches(confirmed.data()!, desired) ||
       (_isRunningRecord(desired)
         ? !await _serverLockMatches(lockRef, id)
-        : await _serverLockMatches(lockRef, id))) {
+        : !await _serverLockReleased(lockRef, id))) {
     throw StateError('Salvarea nu a putut fi confirmată. Reîncarcă înainte de retry.');
   }
 }
@@ -200,4 +200,12 @@ Future<bool> _serverLockMatches(DocumentReference<Map<String, dynamic>>? lockRef
   final snapshot = await lockRef.get(const GetOptions(source: Source.server));
   return !snapshot.metadata.isFromCache && !snapshot.metadata.hasPendingWrites &&
       _lockMatches(snapshot.data(), recordId);
+}
+
+Future<bool> _serverLockReleased(DocumentReference<Map<String, dynamic>>? lockRef,
+    String recordId) async {
+  if (lockRef == null) return false;
+  final snapshot = await lockRef.get(const GetOptions(source: Source.server));
+  return !snapshot.metadata.isFromCache && !snapshot.metadata.hasPendingWrites &&
+      (snapshot.data()?['recordId'] != recordId);
 }
