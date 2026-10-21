@@ -870,20 +870,19 @@ class _ProgramPageState extends State<ProgramPage> {
 
   Future<void> _startGraph()async{
     final head=graphHead;if(head==null)return;
-    final departure=TextEditingController(text:head.departureName);
-    final destination=TextEditingController(text:head.returnName);
+    var departureInput=head.departureName;
+    var destinationInput=head.returnName;
     final choice=await showDialog<Map<String,String>>(context:context,barrierDismissible:false,builder:(c)=>AlertDialog(
       title:const Text('Pornește Graficul de lucru'),
       content:SizedBox(width:560,child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
         const Text('Alege punctul real de plecare și punctul în care se termină deplasarea. Acestea sunt folosite numai pentru traseu, kilometri și consum; nu apar în Centralizator.'),
         const SizedBox(height:14),
-        TextField(controller:departure,decoration:const InputDecoration(labelText:'Plecare',hintText:'Ex: Brăila')),
+        TextFormField(initialValue:departureInput,decoration:const InputDecoration(labelText:'Plecare',hintText:'Ex: Brăila'),onChanged:(value)=>departureInput=value),
         const SizedBox(height:10),
-        TextField(controller:destination,decoration:const InputDecoration(labelText:'Întoarcere / destinație finală',hintText:'Ex: Brăila')),
+        TextFormField(initialValue:destinationInput,decoration:const InputDecoration(labelText:'Întoarcere / destinație finală',hintText:'Ex: Brăila'),onChanged:(value)=>destinationInput=value),
       ])),
-      actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,{'departure':departure.text.trim(),'return':destination.text.trim()}),child:const Text('START'))],
+      actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,{'departure':departureInput.trim(),'return':destinationInput.trim()}),child:const Text('START'))],
     ));
-    departure.dispose();destination.dispose();
     if(choice==null)return;
     final departureText=(choice['departure']??'').trim();final returnText=(choice['return']??'').trim();
     if(departureText.isEmpty||returnText.isEmpty){if(mounted)showErrorMessage(context,'Completează atât plecarea, cât și punctul final.');return;}
