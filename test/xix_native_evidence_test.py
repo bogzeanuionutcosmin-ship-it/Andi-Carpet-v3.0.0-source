@@ -259,6 +259,7 @@ class NativeEvidenceTest(unittest.TestCase):
 class NativeWorkflowContractTest(unittest.TestCase):
     def test_native_scenario_opens_active_graph_before_dashboard_execution(self):
         source = (ROOT / "integration_test/xix_native_test.dart").read_text()
+        program_page = (ROOT / "lib/schedule/program_page.dart").read_text()
         self.assertIn("app.ProgramPage(", source)
         self.assertIn("expect(schedule.graphName,'Craiova XIX')", source)
         self.assertIn("final graphLocations=List<app.Location>.generate(11", source)
@@ -275,6 +276,7 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIn("controller.text,'Craiova'", source)
         self.assertIn("tile.hitTestable()", source)
         self.assertIn("Every selected location must remain visible in order", source)
+        self.assertIn("height:MediaQuery.sizeOf(c).height*.58", program_page)
         self.assertIn("of:find.byType(CustomScrollView).last", source)
         self.assertIn("expect(tile,findsOneWidget", source)
         self.assertLess(source.index("await graphPage();"), source.index("await dashboard();"))

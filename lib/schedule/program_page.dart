@@ -728,7 +728,10 @@ class _ProgramPageState extends State<ProgramPage> {
       return AlertDialog(
         insetPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
         title:Text('Creează grafic · Ziua ${dayIndex+1}'),
-        content:SizedBox(width:760,height:MediaQuery.sizeOf(c).height*.72,child:CustomScrollView(slivers:[SliverToBoxAdapter(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        // Reserve enough vertical space for AlertDialog's title and fixed
+        // actions on short phones; a .72 viewport let the bottom action row
+        // cover the last selectable location rows on the Android emulator.
+        content:SizedBox(width:760,height:MediaQuery.sizeOf(c).height*.58,child:CustomScrollView(slivers:[SliverToBoxAdapter(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
           Wrap(spacing:6,runSpacing:6,children:days.asMap().entries.map((e)=>ChoiceChip(label:Text('Ziua ${e.key+1} · ${e.value.length}'),selected:e.key==dayIndex,onSelected:(_)=>setD((){dayIndex=e.key;query='';}))).toList()),
           const SizedBox(height:8),
           if(selected.isNotEmpty) ConstrainedBox(constraints:const BoxConstraints(maxHeight:160),child:SingleChildScrollView(child:Container(width:double.infinity,padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Theme.of(c).colorScheme.primaryContainer.withValues(alpha:.45),borderRadius:BorderRadius.circular(12)),child:Wrap(spacing:6,runSpacing:6,children:selected.asMap().entries.map((e){final l=available.firstWhere((x)=>x.id==e.value);return Chip(label:Text('${e.key+1}. ${l.name}'),onDeleted:()=>setD(()=>selected.remove(e.value)));}).toList())))),
