@@ -920,6 +920,7 @@ class _ProgramPageState extends State<ProgramPage> {
     var destinationInput=head.returnName;
     final choice=await showDialog<Map<String,String>>(context:context,barrierDismissible:false,builder:(c)=>AlertDialog(
       title:const Text('Pornește Graficul de lucru'),
+      scrollable:true,
       content:SizedBox(width:560,child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
         const Text('Alege punctul real de plecare și punctul în care se termină deplasarea. Acestea sunt folosite numai pentru traseu, kilometri și consum; nu apar în Centralizator.'),
         const SizedBox(height:14),

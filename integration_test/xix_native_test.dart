@@ -177,6 +177,8 @@ void main() {
       await tester.enterText(endpointFields.at(0),'Punct plecare test');
       await tester.enterText(endpointFields.at(1),'Punct final test');
       await tester.pumpAndSettle();
+      expect(tester.takeException(),isNull,
+        reason:'Program START endpoint inputs must remain scrollable above the keyboard');
       await tester.tap(find.text('START'));
       await tester.pumpAndSettle();
       expect(find.byType(AlertDialog),findsNothing,
