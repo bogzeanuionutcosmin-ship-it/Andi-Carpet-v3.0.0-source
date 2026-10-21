@@ -150,16 +150,17 @@ class _DashboardPageState extends State<DashboardPage> {
     final scheduleMatches = candidates.where((s) => s.graphId == selectedGraphId).toList();
     final schedule = scheduleMatches.isEmpty ? null : scheduleMatches.first;
     final items = schedule?.items ?? <ScheduleItem>[];
-    final todaysRecords = widget.records.where((r) => r.teamId == team.id && recordBelongsToWorkDate(r, workDate)).toList();
     final done = items.where((i) => _latestRecord(i, workDate)?.completed == true).length;
     final failed = items.where((i) {
       final r = _latestRecord(i, workDate);
       return r?.status == WorkAttemptStatus.refused || r?.status == WorkAttemptStatus.notCompleted;
     }).length;
-    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.startedAt != null && r.finishedAt == null).toList()
-      ..sort((a, b) => recordEventTime(b).compareTo(recordEventTime(a)));
-    final waiting = todaysRecords.where((r) => r.status == WorkAttemptStatus.waitingAccess && r.waitingStartedAt != null && r.waitingEndedAt == null).toList()
-      ..sort((a, b) => recordEventTime(b).compareTo(recordEventTime(a)));
+    final running = dashboardRunningRecords(widget.records, teamId: team.id);
+    final waiting = dashboardWaitingRecords(
+      widget.records,
+      teamId: team.id,
+      workDate: workDate,
+    );
     final inWindow = isInsideWorkWindow(now, workDate);
 
     final operationalStatus = dashboardTeamOperationalStatus(
