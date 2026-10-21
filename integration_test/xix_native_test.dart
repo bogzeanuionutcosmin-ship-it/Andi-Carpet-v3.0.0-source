@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -619,10 +620,11 @@ void main() {
     await tester.tap(find.text('Scanează bon / factură'));
     await tester.pumpAndSettle();
     expect(find.text('Verifică datele citite prin OCR'),findsOneWidget);
-    final correctedAmount=find.byWidgetPredicate((widget)=>
-      widget is TextFormField&&widget.decoration?.labelText=='Sumă');
-    expect(correctedAmount,findsOneWidget);
-    await tester.enterText(correctedAmount,'150,25');
+    final receiptFields=find.descendant(
+      of:find.byType(AlertDialog),matching:find.byType(TextFormField),
+    );
+    expect(receiptFields,findsNWidgets(3),reason:'OCR review must expose document number, supplier, and amount fields');
+    await tester.enterText(receiptFields.at(2),'150,25');
     await tester.tap(find.text('Confirmă'));
     await tester.pumpAndSettle();
     expect(expensePageExpenses,hasLength(1));
