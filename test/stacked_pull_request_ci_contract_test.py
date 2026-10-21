@@ -20,6 +20,7 @@ STACK_BASES = (
     "codex/xix-home-gps-sampling-profile-20261021",
     "codex/xix-dashboard-operational-status-20261021",
     "codex/xix-expense-optional-ocr-prefill-20261021",
+    "codex/xix-home-live-location-resources-20261021",
 )
 
 
@@ -124,6 +125,39 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("imageBytes.isNotEmpty && enabled && automaticMode", scan)
         self.assertIn("scanExpenseDocumentOcr(", scan)
         self.assertIn("if (e != null) await _saveNewExpense(e);", page)
+
+
+    def test_home_live_location_resources_own_only_timer_and_stream_lifecycle(self):
+        page = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        resources = (ROOT / "lib/home/home_live_location_resources.dart").read_text(
+            encoding="utf-8"
+        )
+        android = (ROOT / ".github/workflows/build-test-apk.yml").read_text(
+            encoding="utf-8"
+        )
+        native = (ROOT / ".github/workflows/xix-native-candidate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("_liveLocationTimer", page)
+        self.assertNotIn("_backgroundLocationSubscription", page)
+        self.assertIn("_liveLocationResources.stop()", page)
+        self.assertIn("_liveLocationResources.startPeriodicPolling(", page)
+        self.assertIn("_liveLocationResources.clearPositionSubscription()", page)
+        self.assertIn("_liveLocationResources.replacePositionSubscription(", page)
+        self.assertIn("_liveLocationResources.dispose()", page)
+        self.assertEqual(main.count("part 'home/home_live_location_resources.dart';"), 1)
+        self.assertIn("Timer.periodic(interval, (_) => onTick())", resources)
+        self.assertIn("await previous?.cancel();", resources)
+        self.assertIn("if (_disposed) return;", resources)
+        self.assertIn(
+            "flutter test test/home_live_location_resources_test.dart",
+            android,
+        )
+        self.assertIn(
+            "flutter test test/home_live_location_resources_test.dart",
+            native,
+        )
 
 
 if __name__ == "__main__":

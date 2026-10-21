@@ -27,8 +27,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   final notifications = <AppNotification>[];
   final audit = <AuditEntry>[];
   final Set<String> _hiddenUserIds = <String>{};
-  Timer? _liveLocationTimer;
-  StreamSubscription<Position>? _backgroundLocationSubscription;
+  final HomeLiveLocationResources _liveLocationResources = HomeLiveLocationResources();
   Position? _lastSharedPosition;
   DateTime? _lastSharedAt;
   String _personalLocationMode = 'economic';
@@ -280,15 +279,15 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
   void _startAdaptiveLiveLocation() {
     if (usesLocalFirebaseEmulators) return;
-    _liveLocationTimer?.cancel();
-    _liveLocationTimer = null;
-    _backgroundLocationSubscription?.cancel();
-    _backgroundLocationSubscription = null;
+    unawaited(_liveLocationResources.stop());
     unawaited(_shareLiveLocationIfAllowed());
     if (kIsWeb) {
       // Browserele/PWA pot suspenda complet execuția când aplicația este închisă.
       // Cât timp pagina rulează folosim intervalul adaptiv de mai jos.
-      _liveLocationTimer = Timer.periodic(const Duration(minutes: 1), (_) => unawaited(_shareLiveLocationIfAllowed()));
+      _liveLocationResources.startPeriodicPolling(
+        interval: const Duration(minutes: 1),
+        onTick: () => unawaited(_shareLiveLocationIfAllowed()),
+      );
       return;
     }
     unawaited(_startNativeBackgroundLocationStream());
@@ -301,8 +300,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
 
-      await _backgroundLocationSubscription?.cancel();
-      _backgroundLocationSubscription = null;
+      await _liveLocationResources.clearPositionSubscription();
 
       // Mod economic: cât timp suntem departe de următoarea sală folosim mai puține
       // actualizări. La apropierea de traseul activ activăm temporar precizia ridicată.
@@ -337,9 +335,11 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           distanceFilter: economical ? 60 : 10,
         );
       }
-      _backgroundLocationSubscription = Geolocator.getPositionStream(locationSettings: settings).listen(
-        (position) => unawaited(_shareLiveLocationIfAllowed(position)),
-        onError: (Object e) => debugPrint('[location] Background stream: $e'),
+      await _liveLocationResources.replacePositionSubscription(
+        Geolocator.getPositionStream(locationSettings: settings).listen(
+          (position) => unawaited(_shareLiveLocationIfAllowed(position)),
+          onError: (Object e) => debugPrint('[location] Background stream: $e'),
+        ),
       );
     } catch (e) {
       debugPrint('[location] Nu am putut porni tracking-ul nativ în background: $e');
@@ -1785,8 +1785,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void dispose() {
     unawaited(_coreSubscriptions.dispose());
     unawaited(_financialSubscriptions.dispose());
-    _liveLocationTimer?.cancel();
-    _backgroundLocationSubscription?.cancel();
+    unawaited(_liveLocationResources.dispose());
     super.dispose();
   }
 
