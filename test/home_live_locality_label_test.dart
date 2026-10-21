@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:andi_carpeta/main.dart' as app;
+import '../lib/home/home_locality_label.dart';
 
 void main() {
   group('liveLocalityLabelFromAddress', () {
     test('uses the first available city field in the existing priority order', () {
       expect(
-        app.liveLocalityLabelFromAddress({
+        liveLocalityLabelFromAddress({
           'city': ' ',
           'town': ' Oradea ',
           'municipality': 'Municipality',
