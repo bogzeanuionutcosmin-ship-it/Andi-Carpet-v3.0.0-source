@@ -102,7 +102,11 @@ class StackedPullRequestCiContract(unittest.TestCase):
         )
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         self.assertIn("dashboardTeamOperationalStatus(", page)
-        self.assertNotIn("if (running.isNotEmpty)", page)
+        status_start = page.index("    String stateText;")
+        status_end = page.index("    final pendingForEstimate", status_start)
+        status_block = page[status_start:status_end]
+        self.assertIn("switch (operationalStatus)", status_block)
+        self.assertNotIn("if (running.isNotEmpty)", status_block)
         self.assertEqual(main.count("part 'dashboard/dashboard_operational_status.dart';"), 1)
         self.assertIn("DashboardOperationalStatus.running", policy)
         self.assertIn("insideWorkWindow", policy)
