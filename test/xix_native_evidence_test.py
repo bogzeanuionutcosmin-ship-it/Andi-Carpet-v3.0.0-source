@@ -63,7 +63,7 @@ class NativeEvidenceTest(unittest.TestCase):
             },
             "unauthorizedTeam": "permission-denied",
             "legacyAndDeletion": "legacy update passed; deleted baseline rejected",
-            "offlineBeforeStart": "native transaction rejected; reconnect has no queued record",
+            "offlineBeforeStart": "offline write rejected without queue; explicit server-backed retry after reconnect persisted once and released its lock on completion",
             "revokedProfile": "cached Auth identity cannot write after server profile deactivation",
             "restore": "admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records",
             "pdf": "11 Firestore-reloaded Craiova records rendered; planned row retained",

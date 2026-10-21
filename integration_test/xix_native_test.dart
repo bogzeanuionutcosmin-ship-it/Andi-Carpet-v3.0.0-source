@@ -147,7 +147,7 @@ void main() {
       await tester.tap(startGraphButton);
       await tester.pumpAndSettle();
       final endpointFields=find.descendant(of:find.byType(AlertDialog),matching:find.byType(TextField));
-      expect(endpointFields,hasLength(2));
+      expect(endpointFields,findsNWidgets(2));
       await tester.enterText(endpointFields.at(0),'Punct plecare test');
       await tester.enterText(endpointFields.at(1),'Punct final test');
       await tester.pumpAndSettle();
@@ -401,14 +401,29 @@ void main() {
       'finishedAt':Timestamp.fromDate(DateTime(2026,10,16,1,20))});
     expect((await db.doc('records/second-legitimate').get()).exists,true);
     evidence['distinctLegitimateAttempt']='a distinct completed attempt retains a distinct ID';
+    final offlineDesired=<String,dynamic>{
+      'teamId':'craiova','locationId':'offline','status':'running',
+      'startedAt':Timestamp.fromDate(DateTime(2026,10,16,2)),
+      'finishedAt':null,
+    };
     await db.disableNetwork();
     try {
-      await expectLater(saveRecordCompared(db,'offline-attempt',{'teamId':'craiova','locationId':'offline','status':'running'}),throwsA(isA<FirebaseException>()));
+      await expectLater(saveRecordCompared(db,'offline-attempt',offlineDesired),throwsA(isA<FirebaseException>()));
     } finally {
       await db.enableNetwork();
     }
     expect((await db.doc('records/offline-attempt').get(const GetOptions(source:Source.server))).exists,false);
-    evidence['offlineBeforeStart']='native transaction rejected; reconnect has no queued record';
+    await saveRecordCompared(db,'offline-attempt',offlineDesired);
+    final reconnected=await db.doc('records/offline-attempt').get(const GetOptions(source:Source.server));
+    expect(reconnected.exists,true);
+    expect(reconnected.metadata.isFromCache,false);
+    expect(reconnected.metadata.hasPendingWrites,false);
+    expect(reconnected.data()!['status'],'running');
+    final completedOffline={...reconnected.data()!,'status':'completed',
+      'finishedAt':Timestamp.fromDate(DateTime(2026,10,16,2,25))};
+    await saveRecordCompared(db,'offline-attempt',completedOffline,expected:reconnected.data());
+    expect((await db.doc('activeRecordLocks/craiova').get(const GetOptions(source:Source.server))).exists,false);
+    evidence['offlineBeforeStart']='offline write rejected without queue; explicit server-backed retry after reconnect persisted once and released its lock on completion';
     final finalScenarioRecords=<app.CentralizerRecord>[];
     for(final item in items){
       final record=records.singleWhere((r)=>r.locationId==item.locationId);

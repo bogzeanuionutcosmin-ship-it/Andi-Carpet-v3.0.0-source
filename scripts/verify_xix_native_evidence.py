@@ -114,8 +114,8 @@ def verify(root: Path) -> None:
         raise AssertionError("Unauthorized team write was not denied")
     if result["legacyAndDeletion"] != "legacy update passed; deleted baseline rejected":
         raise AssertionError("Legacy update and deleted-document rejection were not demonstrated")
-    if result["offlineBeforeStart"] != "native transaction rejected; reconnect has no queued record":
-        raise AssertionError("Offline fail-closed write was not demonstrated")
+    if result["offlineBeforeStart"] != "offline write rejected without queue; explicit server-backed retry after reconnect persisted once and released its lock on completion":
+        raise AssertionError("Offline fail-closed behavior and explicit reconnect retry were not demonstrated")
     if result["revokedProfile"] != "cached Auth identity cannot write after server profile deactivation":
         raise AssertionError("Revoked profile rejection was not demonstrated")
     if result["restore"] != "admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records":
