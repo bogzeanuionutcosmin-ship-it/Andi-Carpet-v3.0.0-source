@@ -138,7 +138,13 @@ void main() {
         graphLocations.map((location)=>location.id).toList());
       evidence['graphCreatedThroughUi']=true;
       pendingScheduleWrite=null;
-      await tester.tap(find.text('START GRAFIC'));
+      final startGraphButton=find.text('START GRAFIC');
+      expect(startGraphButton,findsOneWidget);
+      await tester.ensureVisible(startGraphButton);
+      await tester.pumpAndSettle();
+      expect(startGraphButton.hitTestable(),findsOneWidget,
+        reason:'START GRAFIC must be visible before the native test taps it');
+      await tester.tap(startGraphButton);
       await tester.pumpAndSettle();
       final endpointFields=find.descendant(of:find.byType(AlertDialog),matching:find.byType(TextField));
       expect(endpointFields,hasLength(2));
