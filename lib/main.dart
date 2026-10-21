@@ -191,6 +191,7 @@ part 'home/home_team_membership_projection.dart';
 part 'home/geofence_fix_policy.dart';
 part 'home/home_arrival_record_policy.dart';
 part 'home/home_arrival_candidate_policy.dart';
+part 'home/home_location_sampling_profile.dart';
 part 'home/home_location_proximity_policy.dart';
 part 'home/home_active_schedule_policy.dart';
 part 'home/home_page.dart';

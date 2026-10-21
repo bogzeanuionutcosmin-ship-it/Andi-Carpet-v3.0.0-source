@@ -306,7 +306,10 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
       // Mod economic: cât timp suntem departe de următoarea sală folosim mai puține
       // actualizări. La apropierea de traseul activ activăm temporar precizia ridicată.
-      final economical = _personalLocationMode == 'economic' && !_nativeLocationProximityBoost;
+      final economical = homeUsesEconomicalLocationTracking(
+        locationMode: _personalLocationMode,
+        proximityBoost: _nativeLocationProximityBoost,
+      );
       LocationSettings settings;
       if (defaultTargetPlatform == TargetPlatform.android) {
         settings = AndroidSettings(
