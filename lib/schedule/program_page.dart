@@ -728,24 +728,58 @@ class _ProgramPageState extends State<ProgramPage> {
       return AlertDialog(
         insetPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
         title:Text('Creează grafic · Ziua ${dayIndex+1}'),
-        // Reserve enough vertical space for AlertDialog's title and fixed
-        // actions on short phones; a .72 viewport let the bottom action row
-        // cover the last selectable location rows on the Android emulator.
-        content:SizedBox(width:760,height:MediaQuery.sizeOf(c).height*.58,child:CustomScrollView(keyboardDismissBehavior:ScrollViewKeyboardDismissBehavior.onDrag,slivers:[SliverToBoxAdapter(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Wrap(spacing:6,runSpacing:6,children:days.asMap().entries.map((e)=>ChoiceChip(label:Text('Ziua ${e.key+1} · ${e.value.length}'),selected:e.key==dayIndex,onSelected:(_)=>setD((){dayIndex=e.key;query='';}))).toList()),
-          const SizedBox(height:8),
-          if(selected.isNotEmpty) ConstrainedBox(constraints:const BoxConstraints(maxHeight:160),child:SingleChildScrollView(child:Container(width:double.infinity,padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Theme.of(c).colorScheme.primaryContainer.withValues(alpha:.45),borderRadius:BorderRadius.circular(12)),child:Wrap(spacing:6,runSpacing:6,children:selected.asMap().entries.map((e){final l=available.firstWhere((x)=>x.id==e.value);return Chip(label:Text('${e.key+1}. ${l.name}'),onDeleted:()=>setD(()=>selected.remove(e.value)));}).toList())))),
-          const SizedBox(height:8),
-          TextField(decoration:const InputDecoration(prefixIcon:Icon(Icons.search),labelText:'Caută sală / adresă / categorie'),onTapOutside:(_)=>FocusScope.of(c).unfocus(),onChanged:(v)=>setD(()=>query=v)),
-          const SizedBox(height:8),
-        ])),
-          SliverList(delegate:SliverChildListDelegate(filtered.map((l)=>CheckboxListTile(
-            value:selected.contains(l.id),
-            secondary: categoryBrandWidget(l.categoryId, size: 28, fallbackColor: categoryColor(widget.categories,l.categoryId,fallbackType:l.type)),
-            title:Text(l.name),subtitle:Text('${categoryName(widget.categories,l.categoryId,fallbackType:l.type)} · ${l.address}'),
-            onChanged:(v){FocusScope.of(c).unfocus();setD((){if(v==true){if(!selected.contains(l.id))selected.add(l.id);}else{selected.remove(l.id);}});},
-          )).toList())),
-        ])),
+        // Keep the search and day controls outside the virtualized list.
+        // Growing selection chips must not move location rows underneath the
+        // fixed dialog actions or hide the search on keyboard-sized screens.
+        content:SizedBox(width:760,height:MediaQuery.sizeOf(c).height*.58,
+          child:LayoutBuilder(builder:(c,constraints)=>Column(
+            crossAxisAlignment:CrossAxisAlignment.start,
+            children:[
+              SizedBox(height:48,child:SingleChildScrollView(
+                scrollDirection:Axis.horizontal,
+                child:Row(children:days.asMap().entries.map((e)=>Padding(
+                  padding:const EdgeInsets.only(right:6),
+                  child:ChoiceChip(label:Text('Ziua ${e.key+1} · ${e.value.length}'),
+                    selected:e.key==dayIndex,
+                    onSelected:(_)=>setD((){dayIndex=e.key;query='';})),
+                )).toList()),
+              )),
+              if(selected.isNotEmpty) ConstrainedBox(
+                constraints:BoxConstraints(maxHeight:constraints.maxHeight*.22),
+                child:SingleChildScrollView(child:Container(
+                  width:double.infinity,padding:const EdgeInsets.all(6),
+                  decoration:BoxDecoration(color:Theme.of(c).colorScheme.primaryContainer.withValues(alpha:.45),borderRadius:BorderRadius.circular(12)),
+                  child:Wrap(spacing:6,runSpacing:6,children:selected.asMap().entries.map((e){
+                    final l=available.firstWhere((x)=>x.id==e.value);
+                    return Chip(label:Text('${e.key+1}. ${l.name}'),
+                      onDeleted:()=>setD(()=>selected.remove(e.value)));
+                  }).toList()),
+                )),
+              ),
+              TextField(
+                decoration:const InputDecoration(prefixIcon:Icon(Icons.search),labelText:'Caută sală / adresă / categorie'),
+                onTapOutside:(_)=>FocusScope.of(c).unfocus(),
+                onChanged:(v)=>setD(()=>query=v),
+              ),
+              const SizedBox(height:8),
+              Expanded(child:CustomScrollView(
+                key:const ValueKey('program-location-picker-list'),
+                keyboardDismissBehavior:ScrollViewKeyboardDismissBehavior.onDrag,
+                slivers:[SliverList(delegate:SliverChildListDelegate(
+                  filtered.map((l)=>CheckboxListTile(
+                    value:selected.contains(l.id),
+                    secondary:categoryBrandWidget(l.categoryId,size:28,fallbackColor:categoryColor(widget.categories,l.categoryId,fallbackType:l.type)),
+                    title:Text(l.name),subtitle:Text('${categoryName(widget.categories,l.categoryId,fallbackType:l.type)} · ${l.address}'),
+                    onChanged:(v){
+                      FocusScope.of(c).unfocus();
+                      setD((){if(v==true){if(!selected.contains(l.id))selected.add(l.id);}else{selected.remove(l.id);}});
+                    },
+                  )).toList(),
+                ))],
+              )),
+            ],
+          )),
+        ),
         actions:[Wrap(alignment:WrapAlignment.end,spacing:8,runSpacing:8,children:[
           TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),
           if(dayIndex>0) OutlinedButton.icon(onPressed:()=>setD((){dayIndex--;query='';}),icon:const Icon(Icons.arrow_back),label:const Text('Ziua anterioară')),
