@@ -75,3 +75,18 @@ No staging project JSON/approved ID was supplied, so the conditional staging job
 is expected to skip. Do not label an emulator build a staging phone APK.
 See docs/release/STAGING_ANDROID_BUILD.md. Test physical/backend rollout remains
 external; do not ask for credentials while other work remains executable.
+
+
+## Legacy permission safety and unused retention
+
+Static review reconfirmed that the old automatic badge migration deleted all
+function definitions and reset member assignments when badge_v2 was absent.
+Replaced with a server-read-only migration guard and a visible Admin message;
+permission snapshot recalculation also waits for the verified marker. No legacy
+role or grant is silently cleared, no completion marker is fabricated. Unit tests
+exercise denied mutation/cache/pending paths; Native verifies real emulator
+profiles and definitions remain equal before/after the production guard call.
+Seven write-only Home string caches and their duplicate decode/encode loops
+were removed after repository-wide use inspection; active core persistence
+comparison caches and permission serializers remain. No measured memory-saving
+number or completion of all Home modularization is claimed.

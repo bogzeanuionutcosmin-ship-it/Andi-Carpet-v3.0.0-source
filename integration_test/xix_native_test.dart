@@ -11,6 +11,7 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:andi_carpeta/operations/graph_closure_client.dart';
+import 'package:andi_carpeta/home/function_migration_guard.dart';
 import 'package:andi_carpeta/main.dart' as app;
 import 'package:andi_carpeta/operations/record_writer.dart';
 import 'package:andi_carpeta/centralizer/correction_writer.dart';
@@ -601,6 +602,15 @@ void main() {
     // Mount the real application and let HomePage supply the correction
     // callback and permission result. Grants exist only in the demo emulator.
     final uiPermissions=['viewDashboard','viewProgram','editProgram','viewCentralizer','editCentralizer','viewOwnDecont'];
+    // The former login migration deleted definitions and cleared every member
+    // assignment when a marker was missing. Exercise the production guard
+    // against authoritative emulator state without altering those assignments.
+    final migrationProfileBefore=(await otherDb.doc('users/$uid').get(const GetOptions(source:Source.server))).data()!;
+    final migrationFunctionsBefore={for(final d in (await otherDb.collection('functions').get(const GetOptions(source:Source.server))).docs)d.id:d.data()};
+    expect(await functionBadgeMigrationReady(otherDb),false);
+    expect((await otherDb.doc('users/$uid').get(const GetOptions(source:Source.server))).data(),migrationProfileBefore);
+    expect({for(final d in (await otherDb.collection('functions').get(const GetOptions(source:Source.server))).docs)d.id:d.data()},migrationFunctionsBefore);
+    evidence['nonDestructiveFunctionMigration']=true;
     await otherDb.doc('functions/xix-ui-editor').set({
       'name':'Synthetic UI editor','active':true,'permissions':uiPermissions,
     });

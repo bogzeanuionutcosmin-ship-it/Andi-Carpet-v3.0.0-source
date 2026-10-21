@@ -754,15 +754,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   final _financialSubscriptions = HomeSubscriptionRegistry();
   String? _financialTeamScope;
   final Map<String, String> _locationCache = {};
-  final Map<String, String> _categoryCache = {};
-  final Map<String, String> _functionCache = {};
   final Map<String, String> _teamCache = {};
   final Map<String, String> _carCache = {};
-  final Map<String, String> _scheduleCache = {};
-  final Map<String, String> _recordCache = {};
-  final Map<String, String> _expenseCache = {};
-  final Map<String, String> _perDiemCache = {};
-  final Map<String, String> _financeCache = {};
   final Map<String, String?> _userTeamCache = {};
   String? coreSyncError;
 
@@ -875,10 +868,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           return;
         }
         final list = snap.docs.map(_categoryFromDoc).toList()..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        for (final doc in snap.docs) {
-          final item = _categoryFromDoc(doc);
-          _categoryCache[item.id] = _encoded(_categoryMap(item));
-        }
         if (!mounted) return;
         setState(() { categories..clear()..addAll(list); });
       }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Categorii: $e'); }),
@@ -907,10 +896,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           return;
         }
         final list = snap.docs.map(_functionFromDoc).toList()..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        for (final doc in snap.docs) {
-          final item = _functionFromDoc(doc);
-          _functionCache[item.id] = _encoded(_functionMap(item));
-        }
         if (!mounted) return;
         setState(() { functionDefinitions..clear()..addAll(list); });
         _startFinancialSync();
@@ -1101,10 +1086,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       db.collection('schedules').snapshots().listen((snap) {
         final list = snap.docs.map(_scheduleFromDoc).toList()
           ..sort((a, b) => a.date.compareTo(b.date));
-        for (final doc in snap.docs) {
-          final item = _scheduleFromDoc(doc);
-          _scheduleCache[doc.id] = _encoded(_scheduleMap(item));
-        }
         if (!mounted) return;
         setState(() {
           schedules
@@ -1120,10 +1101,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       db.collection('records').snapshots().listen((snap) {
         final list = snap.docs.map(_recordFromDoc).toList()
           ..sort((a, b) => (a.startedAt ?? DateTime(2000)).compareTo(b.startedAt ?? DateTime(2000)));
-        for (final doc in snap.docs) {
-          final item = _recordFromDoc(doc);
-          _recordCache[doc.id] = _encoded(_recordMap(item));
-        }
         if (!mounted) return;
         setState(() {
           records
@@ -1482,8 +1459,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       schedule.persisted = true;
       schedule.updatedAt = committedAt;
       schedule.writeToken = writeTokens[schedule.id];
-      final data = _scheduleMap(schedule);
-      _scheduleCache[schedule.id] = _encoded(data);
       unawaited(_writeLearningEvent(category: 'program', event: 'schedule_saved', teamId: schedule.teamId, scheduleId: schedule.id, data: {
         'date': schedule.date.toIso8601String(), 'started': schedule.started, 'closed': schedule.closed,
         'paused': schedule.paused, 'postponed': schedule.postponed, 'order': schedule.items.map((e) => e.locationId).toList(),
@@ -1562,7 +1537,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       'durationSeconds': record.duration?.inSeconds, 'waitingSeconds': record.waitingDuration?.inSeconds,
       'refusalReason': record.refusalReason ?? '', 'keptForLearning': record.keptForLearning,
     }));
-    _recordCache[record.id] = _encoded(data);
     if (!mounted) return;
     setState(() {
       final index = records.indexWhere((x) => x.id == record.id);
@@ -1625,7 +1599,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       'category': expense.category, 'amount': expense.amount, 'documentType': expense.documentType.name,
       'ocrConfidence': expense.ocrConfidence, 'confirmed': expense.confirmed, 'hasImage': expense.hasImage,
     }));
-    _expenseCache[expense.id] = _encoded(data);
   }
 
   Future<void> _savePerDiemDirect(PerDiemEntry entry) async {
@@ -1715,7 +1688,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     unawaited(_writeLearningEvent(category: 'finance', event: 'per_diem_saved', teamId: entry.teamId, data: {
       'memberId': entry.memberId, 'amount': entry.amount, 'status': entry.status.name, 'method': entry.method?.name ?? '',
     }));
-    _perDiemCache[entry.id] = _encoded(data);
   }
 
   Future<void> _saveSettlementDirect(TravelSettlement settlement) async {
@@ -1737,7 +1709,6 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     unawaited(_writeLearningEvent(category: 'finance', event: 'team_finance_saved', teamId: finance.teamId, data: {
       'receivedDeparture': finance.receivedDeparture, 'receivedDuring': finance.receivedDuring, 'perDiemRate': finance.perDiemRate,
     }));
-    _financeCache[finance.teamId] = _encoded(data);
   }
 
   Future<void> _writeAuditRemote(String action, String target) async {

@@ -985,7 +985,9 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, permissions)
         self.assertNotIn("Future<void> _migrateFunctionBadgeSystemIfNeeded()", home)
         self.assertIn("'effectivePermissions'", permissions)
-        self.assertIn("'functionSystemVersion'", permissions)
+        guard = (ROOT / "lib/home/function_migration_guard.dart").read_text(encoding="utf-8")
+        self.assertIn("'functionSystemVersion'", guard)
+        self.assertIn("functionBadgeMigrationReady(", permissions)
         self.assertIn("Set<String> _effectivePermissionsForIds(Iterable<String> ids)", permissions)
         self.assertNotIn("Set<String> _effectivePermissionsForIds(", home)
 

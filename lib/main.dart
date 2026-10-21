@@ -10,6 +10,7 @@ import 'package:flutter/rendering.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home/personal_alert_policy.dart';
+import 'home/function_migration_guard.dart';
 import 'home/home_locality_label.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';

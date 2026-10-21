@@ -25,6 +25,8 @@ def verify(root: Path) -> None:
     if result.get("graphCreatedThroughUi") is not True:
         raise AssertionError("Graph creation through UI and server reload were not demonstrated")
 
+    if result.get("nonDestructiveFunctionMigration") is not True:
+        raise AssertionError("Non-destructive function migration guard was not demonstrated")
     if result.get("stableStartReplay") is not True or result.get("stableFinishReplay") is not True:
         raise AssertionError("Stable START/FINAL replay with preserved server times was not demonstrated")
     stop = result.get("atomicGraphStopThroughHome")
