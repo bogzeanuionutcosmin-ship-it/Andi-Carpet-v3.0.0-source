@@ -22,6 +22,7 @@ class NativeEvidenceTest(unittest.TestCase):
         (self.root / "decont-flow.pdf").write_bytes(b"%PDF-1.4\n%%EOF\n")
         self.observation = {
             "completed": True,
+            "authUidIsolationThroughMain": True,
             "nonDestructiveFunctionMigration": True,
             "stableStartReplay": True,
             "stableFinishReplay": True,

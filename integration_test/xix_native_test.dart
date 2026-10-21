@@ -822,6 +822,24 @@ void main() {
     await otherDb.doc('users/$uid').update({'functionIds':['worker']});
     await otherDb.doc('functions/xix-ui-editor').delete();
     evidence['homeCorrectionThroughUi']='actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal';
+    // Switch the actual default Auth instance under the actual application
+    // navigator, including a mounted private route owned by the editor.
+    final editorUid=auth.currentUser!.uid;
+    final homeContext=tester.element(find.byType(app.HomePage));
+    Navigator.of(homeContext).push(MaterialPageRoute<void>(builder:(_)=>
+      Scaffold(body:Text('Private editor route $editorUid'))));
+    await tester.pumpAndSettle();expect(find.text('Private editor route $editorUid'),findsOneWidget);
+    final outsiderSession=await auth.signInWithEmailAndPassword(email:'outsider@andi.test',password:'synthetic-only-123');
+    await pumpUntil(()=>find.text('Private editor route $editorUid').evaluate().isEmpty &&
+      find.byType(app.HomePage).evaluate().isNotEmpty &&
+      tester.widget<app.HomePage>(find.byType(app.HomePage)).profile.uid==outsiderSession.user!.uid,
+      'Actual Firebase Auth UID switch must remove the editor private route and profile');
+    await auth.signInWithEmailAndPassword(email:'editor@andi.test',password:'synthetic-only-123');
+    await pumpUntil(()=>find.byType(app.HomePage).evaluate().isNotEmpty &&
+      tester.widget<app.HomePage>(find.byType(app.HomePage)).profile.uid==editorUid,
+      'Editor UID must return with a fresh Home scope');
+    expect(find.text('Private editor route $editorUid'),findsNothing);
+    evidence['authUidIsolationThroughMain']=true;
     evidence['completed']=true;
     File('${out.path}/observations.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(evidence));
     // Wait for the host to confirm that every native artifact was copied.

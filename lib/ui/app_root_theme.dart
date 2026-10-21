@@ -1,23 +1,53 @@
 part of '../main.dart';
 
 class AndiCarpetaApp extends StatefulWidget {
-  const AndiCarpetaApp({super.key});
+  final FirebaseAuth? auth;
+  final FirebaseFirestore? firestore;
+  final AppSettings? settings;
+  final Widget Function(Key, FirebaseUserProfile, bool Function())? homeBuilder;
+  const AndiCarpetaApp({super.key, this.auth, this.firestore, this.settings, this.homeBuilder});
   @override State<AndiCarpetaApp> createState() => _AndiCarpetaAppState();
 }
 
 class _AndiCarpetaAppState extends State<AndiCarpetaApp> {
-  final settings = AppSettings();
+  final _defaultSettings = AppSettings();
+  AppSettings get settings => widget.settings ?? _defaultSettings;
+  GlobalKey<NavigatorState> _sessionNavigatorKey = GlobalKey<NavigatorState>();
+  GlobalKey<ScaffoldMessengerState> _sessionMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  String? _navigationUid;
+
+  @override
+  void initState() {
+    super.initState();
+    _navigationUid = (widget.auth ?? FirebaseAuth.instance).currentUser?.uid;
+  }
+
+  // Replace the ROOT navigator: imperative routes, dialogs and modal sheets
+  // all belong to the old UID, including showDialog's default root routes.
+  bool _replaceSessionNavigator(String? uid) {
+    if (_navigationUid == uid) return false;
+    setState(() {
+      _navigationUid = uid;
+      _sessionNavigatorKey = GlobalKey<NavigatorState>();
+      _sessionMessengerKey = GlobalKey<ScaffoldMessengerState>();
+    });
+    return true;
+  }
   @override
   Widget build(BuildContext context) {
     _activeAppSettingsForBranding = settings;
     final mode = switch (settings.theme) { AppThemeChoice.light => ThemeMode.light, AppThemeChoice.dark => ThemeMode.dark, AppThemeChoice.system => ThemeMode.system };
     return MaterialApp(
+      navigatorKey: _sessionNavigatorKey,
+      scaffoldMessengerKey: _sessionMessengerKey,
       title: 'Andi Carpetă',
       debugShowCheckedModeBanner: false,
       themeMode: mode,
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
-      home: AuthGate(settings: settings, onSettingsChanged: () => setState(() {})),
+      home: AuthGate(settings: settings, onSettingsChanged: () => setState(() {}),
+        auth: widget.auth, firestore: widget.firestore, homeBuilder: widget.homeBuilder,
+        onSessionChanged: _replaceSessionNavigator),
     );
   }
   ThemeData _theme(Brightness b) {
@@ -109,5 +139,3 @@ class _AndiCarpetaAppState extends State<AndiCarpetaApp> {
     );
   }
 }
-
-

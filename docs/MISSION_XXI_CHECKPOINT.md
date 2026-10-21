@@ -90,3 +90,19 @@ Seven write-only Home string caches and their duplicate decode/encode loops
 were removed after repository-wide use inspection; active core persistence
 comparison caches and permission serializers remain. No measured memory-saving
 number or completion of all Home modularization is claimed.
+
+
+## Necessary non-ancestor integration: AuthGate PR33
+
+Compared source PR33 at a5f43ef9ce0bfedaf59766aafe18732fef7f8f47 against its
+base377f1fd5e73ae78a0df5cab58b09770c873cd167. Its UID/generation/profile and
+root-navigator isolation was missing from the candidate. Imported AuthGate/root
+changes and the actual-Home injected lifecycle regression fixtures. Reconciled
+nine Home conflicts manually, preserving emulator platform-effect suppression,
+HomeLiveLocationResources, transactional schedule/record writers, stable IDs,
+server STOP and removed write-only caches. Added session ownership guards to
+new persistence entry points and record transaction retries. Tests use real
+production widgets with injected SDK fixtures; new Native acceptance also switches
+the actual Firebase Auth default user editor->outsider->editor while a private
+root route is mounted. Historical PR33 report is labelled as historical.
+No PR33 closure until current candidate gates and a fresh head check.

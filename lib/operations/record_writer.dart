@@ -64,13 +64,18 @@ bool recordOperationReplayMatches(Map<String, dynamic> current,
 }
 
 Future<void> saveRecordCompared(FirebaseFirestore db, String id,
-    Map<String, dynamic> desired, {Map<String, dynamic>? expected}) async {
+    Map<String, dynamic> desired, {Map<String, dynamic>? expected, bool Function()? canContinue}) async {
+  void requireSession() {
+    if (canContinue != null && !canContinue()) throw StateError('Sesiunea s-a schimbat. Reîncarcă înainte de retry.');
+  }
+  requireSession();
   final ref = db.collection('records').doc(id);
   final teamId = (desired['teamId'] ?? expected?['teamId'] ?? '').toString();
   final lockRef = teamId.isEmpty ? null : db.collection('activeRecordLocks').doc(teamId);
   // A native offline transaction completion is not a server acknowledgement.
   // Fail closed before preparing a write and confirm authoritative state after it.
   final available = await ref.get(const GetOptions(source: Source.server));
+  requireSession();
   if (available.metadata.isFromCache || available.metadata.hasPendingWrites) {
     throw StateError('Există o salvare neconfirmată. Reconectează și reîncarcă înainte de retry.');
   }
@@ -84,6 +89,7 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
     if (activeRecords.metadata.isFromCache || activeRecords.metadata.hasPendingWrites) {
       throw StateError('Starea activă a echipei nu a putut fi verificată pe server. Reconectează și reîncarcă.');
     }
+    requireSession();
     final otherActive = activeRecords.docs.where((snapshot) => snapshot.id != id &&
         snapshot.data()['finishedAt'] == null);
     if (otherActive.isNotEmpty) {
@@ -92,10 +98,12 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
   }
   try {
     await db.runTransaction((tx) async {
+      requireSession();
       final snap = await tx.get(ref);
       final current = snap.data();
       final lockSnapshot = lockRef == null ? null : await tx.get(lockRef);
       final lock = lockSnapshot?.data();
+      requireSession();
       final wantsRunning = _isRunningRecord(desired);
       if (wantsRunning && lockRef == null) {
         throw StateError('Intervenția nu are o echipă validă pentru rezervarea START.');
