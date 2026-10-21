@@ -158,8 +158,17 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('START'));
       await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog),findsNothing,
+        reason:'Program START must dismiss its endpoint dialog before persistence completes');
+      expect(tester.takeException(),isNull,
+        reason:'Program START must not overflow while resolving the route endpoints');
       expect(pendingScheduleWrite,isNotNull,reason:'Program START must persist after both endpoints geocode');
       await pendingScheduleWrite!.timeout(const Duration(seconds:30));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog),findsNothing,
+        reason:'Persisting Program START must not leave a modal dialog over the graph');
+      expect(tester.takeException(),isNull,
+        reason:'Persisted Program START must leave a valid graph layout');
       schedule=schedules.single;
       items=schedule.items;
       expect(geocodedProgramQueries,['Punct plecare test','Punct final test']);
