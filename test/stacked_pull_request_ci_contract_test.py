@@ -18,6 +18,7 @@ STACK_BASES = (
     "codex/xix-home-active-schedule-policy-20261021",
     "codex/xix-home-arrival-candidate-policy-20261021",
     "codex/xix-home-gps-sampling-profile-20261021",
+    "codex/xix-dashboard-operational-status-20261021",
 )
 
 
@@ -43,6 +44,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("flutter test test/dashboard_start_record_policy_test.dart", workflow)
         self.assertIn("flutter test test/home_location_proximity_policy_test.dart", workflow)
         self.assertIn("flutter test test/home_location_sampling_profile_test.dart", workflow)
+        self.assertIn("flutter test test/dashboard_operational_status_test.dart", workflow)
         self.assertIn("- name: Test Home active schedule policy contract", workflow)
         self.assertIn("flutter test test/home_arrival_candidate_policy_test.dart", workflow)
         self.assertIn("flutter test test/home_location_sampling_profile_test.dart", workflow)
@@ -69,6 +71,8 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("flutter test test/program_graph_state_persistence_test.dart", workflow)
         self.assertIn("flutter test test/dashboard_start_record_policy_test.dart", workflow)
         self.assertIn("flutter test test/home_location_proximity_policy_test.dart", workflow)
+        self.assertIn("github.base_ref == 'codex/xix-dashboard-operational-status-20261021'", workflow)
+        self.assertIn("flutter test test/dashboard_operational_status_test.dart", workflow)
         self.assertIn("flutter test test/home_team_membership_projection_test.dart", workflow)
         self.assertIn("permissions:", workflow)
         self.assertIn("contents: read", workflow)
@@ -89,6 +93,19 @@ class StackedPullRequestCiContract(unittest.TestCase):
             "locationMode == 'economic' && !proximityBoost",
             policy,
         )
+
+
+    def test_dashboard_delegates_operational_status_priority(self):
+        page = (ROOT / "lib/dashboard/dashboard_page.dart").read_text(encoding="utf-8")
+        policy = (ROOT / "lib/dashboard/dashboard_operational_status.dart").read_text(
+            encoding="utf-8"
+        )
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        self.assertIn("dashboardTeamOperationalStatus(", page)
+        self.assertNotIn("if (running.isNotEmpty)", page)
+        self.assertEqual(main.count("part 'dashboard/dashboard_operational_status.dart';"), 1)
+        self.assertIn("DashboardOperationalStatus.running", policy)
+        self.assertIn("insideWorkWindow", policy)
 
 
 if __name__ == "__main__":

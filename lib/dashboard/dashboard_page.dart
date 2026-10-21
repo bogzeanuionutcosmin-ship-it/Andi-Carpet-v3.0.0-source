@@ -162,21 +162,49 @@ class _DashboardPageState extends State<DashboardPage> {
       ..sort((a, b) => recordEventTime(b).compareTo(recordEventTime(a)));
     final inWindow = isInsideWorkWindow(now, workDate);
 
+    final operationalStatus = dashboardTeamOperationalStatus(
+      hasRunningRecord: running.isNotEmpty,
+      waitingForAccess: waiting.isNotEmpty,
+      schedulePaused: schedule?.paused == true,
+      schedulePostponed: schedule?.postponed == true,
+      scheduleStarted: schedule?.started == true,
+      insideWorkWindow: inWindow,
+    );
+
     String stateText;
     IconData stateIcon;
     Color stateColor;
-    if (running.isNotEmpty) {
-      stateText = 'PE SALĂ · ${running.first.locationNameSnapshot}'; stateIcon = Icons.location_on; stateColor = Colors.green;
-    } else if (waiting.isNotEmpty) {
-      stateText = 'AȘTEPTARE ACCES · ${waiting.first.locationNameSnapshot}'; stateIcon = Icons.hourglass_top; stateColor = Colors.orange;
-    } else if (schedule?.paused == true) {
-      stateText = 'ÎN PAUZĂ'; stateIcon = Icons.pause_circle; stateColor = Colors.orange;
-    } else if (schedule?.postponed == true) {
-      stateText = 'PROGRAM AMÂNAT'; stateIcon = Icons.event_busy; stateColor = Colors.deepOrange;
-    } else if (schedule != null && schedule.started && inWindow) {
-      stateText = 'ÎN TIMPUL PROGRAMULUI'; stateIcon = Icons.nightlight_round; stateColor = Colors.blue;
-    } else {
-      stateText = 'ÎN AFARA PROGRAMULUI'; stateIcon = Icons.schedule; stateColor = Colors.blueGrey;
+    switch (operationalStatus) {
+      case DashboardOperationalStatus.running:
+        stateText = 'PE SALĂ · ${running.first.locationNameSnapshot}';
+        stateIcon = Icons.location_on;
+        stateColor = Colors.green;
+        break;
+      case DashboardOperationalStatus.waitingAccess:
+        stateText = 'AȘTEPTARE ACCES · ${waiting.first.locationNameSnapshot}';
+        stateIcon = Icons.hourglass_top;
+        stateColor = Colors.orange;
+        break;
+      case DashboardOperationalStatus.paused:
+        stateText = 'ÎN PAUZĂ';
+        stateIcon = Icons.pause_circle;
+        stateColor = Colors.orange;
+        break;
+      case DashboardOperationalStatus.postponed:
+        stateText = 'PROGRAM AMÂNAT';
+        stateIcon = Icons.event_busy;
+        stateColor = Colors.deepOrange;
+        break;
+      case DashboardOperationalStatus.duringWorkWindow:
+        stateText = 'ÎN TIMPUL PROGRAMULUI';
+        stateIcon = Icons.nightlight_round;
+        stateColor = Colors.blue;
+        break;
+      case DashboardOperationalStatus.outsideWorkWindow:
+        stateText = 'ÎN AFARA PROGRAMULUI';
+        stateIcon = Icons.schedule;
+        stateColor = Colors.blueGrey;
+        break;
     }
 
     final pendingForEstimate = items.where((item) {
