@@ -43,6 +43,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("flutter test test/dashboard_start_record_policy_test.dart", workflow)
         self.assertIn("flutter test test/home_location_proximity_policy_test.dart", workflow)
         self.assertIn("flutter test test/home_location_sampling_profile_test.dart", workflow)
+        self.assertIn("- name: Test Home active schedule policy contract", workflow)
         self.assertIn("flutter test test/home_arrival_candidate_policy_test.dart", workflow)
         self.assertIn("flutter test test/home_location_sampling_profile_test.dart", workflow)
         self.assertIn("flutter test test/home_active_schedule_policy_test.dart", workflow)
