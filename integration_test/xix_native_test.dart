@@ -95,6 +95,9 @@ void main() {
       await tester.ensureVisible(search);
       await tester.enterText(search,'Craiova');
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Creează grafic · Ziua 1'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<EditableText>(find.byType(EditableText).first).focusNode.hasFocus,false);
       expect(tester.widget<EditableText>(find.byType(EditableText).first).controller.text,'Craiova',
         reason:'The active Graph filter must stay visible while locations are selected');
       for(final location in graphLocations){

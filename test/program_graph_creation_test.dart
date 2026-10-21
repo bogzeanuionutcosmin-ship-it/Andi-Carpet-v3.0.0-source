@@ -34,6 +34,11 @@ void main() {
       await tester.ensureVisible(find.byType(TextField));
       await tester.enterText(find.byType(TextField), broadFilter ? 'Sala' : location.name);
       await tester.pumpAndSettle();
+      // Use the actual outside-tap behavior to dismiss editing handles before
+      // dragging a list whose viewport may be smaller than a selection handle.
+      await tester.tap(find.text('Creează grafic · Ziua 1'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, false);
       final tile = find.widgetWithText(CheckboxListTile, location.name);
       final pickerList = find.descendant(
         of: find.byType(CustomScrollView).last,
