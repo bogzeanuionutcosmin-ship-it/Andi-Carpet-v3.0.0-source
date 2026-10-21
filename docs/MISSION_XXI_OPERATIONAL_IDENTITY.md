@@ -61,3 +61,19 @@ Firebase demo emulators are separate from staging. Live provider, physical GPS,
 background, camera/OCR, signing and upgrade acceptance remain external gates.
 Deploying this protocol requires coordinated Functions/rules/application rollout,
 legacy reconciliation and a rollback plan. Nothing here authorizes deployment.
+
+## Independent model boundary
+
+The 17 application data models now import explicit enum/category/date APIs and
+are exported from `main.dart` for compatibility. They no longer belong to the
+main application library, so repositories and tests can import their definitions
+without importing app bootstrap or Home UI. A direct-import regression verifies
+legacy defaults and mutable-list isolation. This closes this extraction only;
+it does not certify completion of all module boundaries.
+
+Content inventory of all 115 non-ancestor open PRs is recorded separately in
+`mission_xxi_nonancestor_content_review.json`. Nine comparisons hit the API's
+300-file limit and remain explicitly incomplete. Seven small PRs have reviewed
+call sites and exact helper/test files; no closure was made from file equality
+alone. Older Finance/Vision alternatives contain material absent from the current
+candidate and require semantic reconciliation, not blind cherry-picking.

@@ -620,8 +620,11 @@ class RepositoryHygieneTests(unittest.TestCase):
         module = (ROOT / "lib/models/location_category_helpers.dart").read_text(encoding="utf-8")
         self.assertIn("part 'models/location_category_helpers.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("String defaultCategoryIdForType(",
-                       "LocationType legacyTypeForCategory(",
+        identity = (ROOT / "lib/models/category_identity.dart").read_text(encoding="utf-8")
+        self.assertNotIn("part of", identity)
+        self.assertEqual(identity.count("String defaultCategoryIdForType("), 1)
+        self.assertNotIn("String defaultCategoryIdForType(", module)
+        for symbol in ("LocationType legacyTypeForCategory(",
                        "Color categoryColor(", "String categoryName("):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
@@ -810,8 +813,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_core_models_extracted_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         models = (ROOT / "lib/models/app_data_models.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/app_data_models.dart';", main)
-        self.assertIn("part of '../main.dart';", models)
+        self.assertEqual(main.count("import 'models/app_data_models.dart';"), 1)
+        self.assertEqual(main.count("export 'models/app_data_models.dart';"), 1)
+        self.assertNotIn("part of", models)
+        self.assertNotIn("main.dart", models)
         names = ("AppUser", "Team", "Car", "LocationContact", "Location",
                  "ScheduleItem", "WorkSchedule", "CentralizerRecord", "Expense",
                  "PerDiemEntry", "ReceivedMoneyEntry", "TravelSettlement",

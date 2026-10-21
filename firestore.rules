@@ -273,7 +273,7 @@ service cloud.firestore {
       allow update: if canWriteTeamRecords(resource.data.teamId)
         && sameRecordIdentity(resource.data, request.resource.data)
         && validLinkedRecord(request.resource.data,
-          resource.data.status == 'completed' && request.resource.data.status == 'completed'
+          resource.data.get('status', '') == 'completed' && request.resource.data.get('status', '') == 'completed'
             && request.resource.data.finishedAt != null && request.resource.data.startedAt != null)
         && (isAdmin() || isTeamMember(request.resource.data.teamId))
         && validRecordLockTransition(request.resource.data.teamId, recordId, request.resource.data,

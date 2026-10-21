@@ -16,7 +16,7 @@ const finalResult = r => (r.status === 'completed' && millis(r.startedAt) !== nu
 
 /// All queries are transaction reads, including membership, authorization and
 /// the complete team schedule/record sets. No UI readiness result is trusted.
-async function closeGraph(db, uid, input, { timestamp, beforeWrite } = {}) {
+async function closeGraph(db, uid, input, { timestamp } = {}) {
   const { teamId, graphId, requestId, days } = input || {};
   if (![teamId, graphId, requestId, uid].every(validId) || !Array.isArray(days) ||
       !days.length || days.length > 400 || days.some(d => !validId(d.id) ||
@@ -83,7 +83,6 @@ async function closeGraph(db, uid, input, { timestamp, beforeWrite } = {}) {
       }
     }
     if (!seen.size) fail('failed-precondition', 'Graficul nu are intervenții.');
-    if (beforeWrite) await beforeWrite(); // Emulator concurrency barrier; never supplied by HTTP.
     const closedAt = timestamp();
     for (const day of graph) tx.update(day.ref, {
       closed: true, paused: false, active: false, updatedAt: closedAt,

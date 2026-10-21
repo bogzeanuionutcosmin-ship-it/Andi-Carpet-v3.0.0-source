@@ -164,6 +164,7 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
         if (_isRunningRecord(desired)
             ? await _serverLockMatches(lockRef, id)
             : await _serverLockReleased(lockRef, id)) return;
+        Error.throwWithStackTrace(error, stackTrace);
       }
       if (expected == null && observed.exists) {
         throw StateError('ID ocupat. Reîncarcă înainte de salvare.');

@@ -65,9 +65,9 @@ class RecoverySnapshot implements DocumentSnapshot<Map<String, dynamic>> {
       : metadata = RecoveryMetadata(pending, cached);
   @override
   final SnapshotMetadata metadata;
-  @override
   final bool absent;
   final String? lockOwner;
+  @override
   bool get exists => !absent;
   @override
   Map<String, dynamic> data() => lockOwner == null ? {'teamId': 'team', 'locationId': 'room'} : {'recordId':lockOwner};

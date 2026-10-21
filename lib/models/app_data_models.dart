@@ -1,4 +1,6 @@
-part of '../main.dart';
+import 'app_enums_permissions.dart';
+import 'category_identity.dart';
+import '../utils/date_formatters.dart' show graphDefaultName;
 
 class AppUser {
   final String id;

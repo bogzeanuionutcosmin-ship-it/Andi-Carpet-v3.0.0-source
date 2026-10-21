@@ -51,7 +51,7 @@ test('server STOP persists every day and one immutable receipt; identical retry 
   await assertFails(setDoc(doc(client,`graphClosures/${first.receiptId}`),{actorId:f.uid}));
   await assertFails(setDoc(doc(client,`schedules/${f.teamId}-late-day`),{teamId:f.teamId,graphId:f.graphId,closed:false,items:[]}));
   const original=(await f.records[0].get()).data();
-  await assertFails(setDoc(doc(client,`records/${f.teamId}-late-attempt`),{...original,status:'notCompleted',refusalReason:'retry'}));
+  await assertFails(setDoc(doc(client,`records/${f.teamId}-late-attempt`),{...original,startedAt:original.startedAt.toDate(),finishedAt:original.finishedAt.toDate(),status:'notCompleted',refusalReason:'retry'}));
   await assertSucceeds(updateDoc(doc(client,f.records[0].path),{facadeDone:true}));
 });
 

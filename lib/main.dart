@@ -107,6 +107,10 @@ export 'models/permission_status_labels.dart';
 import 'ui/section_asset_catalog.dart';
 export 'ui/section_asset_catalog.dart';
 
+import 'models/app_data_models.dart';
+export 'models/app_data_models.dart';
+import 'models/category_identity.dart';
+export 'models/category_identity.dart';
 part 'ui/dashboard_map_components.dart';
 part 'ui/auth_status_components.dart';
 part 'auth/quick_accounts.dart';
@@ -122,7 +126,6 @@ part 'reports/financial_summary_row_projection.dart';
 part 'reports/pdf_reports.dart';
 part 'documents/documents_page.dart';
 part 'contacts/location_contacts_page.dart';
-part 'models/app_data_models.dart';
 part 'learning/duration_estimates.dart';
 part 'ui/section_visual_helpers.dart';
 part 'ui/app_backdrop.dart';
@@ -232,7 +235,6 @@ Future<void> main() async {
 // PDF-urile, funcțiile dinamice și administrarea sunt integrate aici.
 // ============================================================
 
-String graphDefaultName(DateTime d) => 'Grafic ${d.month.toString().padLeft(2, '0')}/${d.year}';
 
 String idNow() => DateTime.now().microsecondsSinceEpoch.toString();
 

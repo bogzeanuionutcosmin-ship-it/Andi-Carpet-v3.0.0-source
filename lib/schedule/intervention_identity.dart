@@ -2,8 +2,11 @@ part of '../main.dart';
 
 /// Generated once when a new planned visit is created. Order, date and team
 /// transfers never regenerate this identity. Legacy visits remain explicit.
-String newInterventionId() => base64Url.encode(List<int>.generate(
-  16, (_) => math.Random.secure().nextInt(256))).replaceAll('=', '');
+String newInterventionId() {
+  final random = math.Random.secure();
+  return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)))
+    .replaceAll('=', '');
+}
 
 bool recordMatchesIntervention(CentralizerRecord record, ScheduleItem item) =>
   item.interventionId.isNotEmpty

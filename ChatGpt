@@ -1504,3 +1504,14 @@ Remaining acceptance gaps include stable graph/intervention identity, atomic ser
 Exact candidate `fa37aca3addd76d16de92a628fa174503f32c69e` passed Validate run 39575331267 (426 Flutter tests; 199 Python; 32 Firestore emulator tests), Android 39575331359 and Native 39575331257. Native completed the real UI graph/START/STOP/correction/Home-expense/PDF flow and operational restart. Native evidence archive 12333859330 has SHA-256 c143f9512ca8084d637c808be17839fe1c6252cf5f211f2024577416054b91a1. Android archive 12333518891 has SHA-256 7e464944884a6859b6b254f78a81b10f5d803f957da07f209062674f77cd74a7. All of this is emulator evidence, not staging, live Mapbox/OCR, physical hardware or production signing.
 
 Next integration step keeps PR #217 as the single cumulative candidate and retargets its base to main. The Native job must explicitly allow the selected candidate head so retargeting cannot silently skip the job. Historical open PRs may be closed as superseded only after verifying their exact head is an ancestor of the cumulative candidate. Do not infer inclusion from similar titles or cherry-picked code; preserve any non-ancestor or unclear work for review. Main is not merged or deployed by this cleanup.
+
+## Mission XXI — operational identity and server STOP continuation (21 October 2026)
+
+PR217 remains the cumulative Draft/Open candidate against main. Read live HEAD;
+this session published7379c56d then5ccda329 and is preparing the model-boundary/
+regression follow-up. Complete checkpoint and exact next action are in
+`docs/MISSION_XXI_CHECKPOINT.md`; protocol in
+`docs/MISSION_XXI_OPERATIONAL_IDENTITY.md`;115non-ancestor content comparisons in
+`docs/mission_xxi_nonancestor_content_review.json`. CI is NOT yet all green for
+these changes. Preserve the historical5944943d baseline as superseded evidence.
+No main merge, production Firebase change/deploy, signing or distribution.
