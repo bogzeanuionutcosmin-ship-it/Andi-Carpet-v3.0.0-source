@@ -14,6 +14,24 @@ void main() {
         }),
         'Oradea · Bihor',
       );
+      expect(
+        liveLocalityLabelFromAddress({
+          'city': 'Oradea',
+          'town': 'Alternate',
+          'municipality': 'Municipality',
+          'village': 'Village',
+          'county': 'Bihor',
+        }),
+        'Oradea · Bihor',
+      );
+      expect(
+        liveLocalityLabelFromAddress({
+          'municipality': 'Municipality',
+          'village': 'Village',
+          'county': 'Bihor',
+        }),
+        'Municipality · Bihor',
+      );
     });
 
     test('uses county before state and combines distinct locality names', () {
