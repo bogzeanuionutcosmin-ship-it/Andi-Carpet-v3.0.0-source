@@ -47,6 +47,22 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
   if (available.metadata.isFromCache || available.metadata.hasPendingWrites) {
     throw StateError('Există o salvare neconfirmată. Reconectează și reîncarcă înainte de retry.');
   }
+  if (_isRunningRecord(desired) && lockRef != null) {
+    // Older app versions did not maintain the reservation document. Reconcile
+    // existing active work once from the server before claiming the new lock.
+    final activeRecords = await db.collection('records')
+        .where('teamId', isEqualTo: teamId)
+        .where('status', isEqualTo: 'running')
+        .get(const GetOptions(source: Source.server));
+    if (activeRecords.metadata.isFromCache || activeRecords.metadata.hasPendingWrites) {
+      throw StateError('Starea activă a echipei nu a putut fi verificată pe server. Reconectează și reîncarcă.');
+    }
+    final otherActive = activeRecords.docs.where((snapshot) => snapshot.id != id &&
+        snapshot.data()['finishedAt'] == null);
+    if (otherActive.isNotEmpty) {
+      throw StateError('Echipa are deja o intervenție pornită la ${(otherActive.first.data()['locationNameSnapshot'] ?? otherActive.first.data()['locationId'] ?? 'o altă locație')}. Reîncarcă înainte de retry.');
+    }
+  }
   try {
     await db.runTransaction((tx) async {
       final snap = await tx.get(ref);

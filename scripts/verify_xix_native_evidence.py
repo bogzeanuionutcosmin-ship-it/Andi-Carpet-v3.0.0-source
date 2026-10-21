@@ -21,6 +21,15 @@ def verify(root: Path) -> None:
     if result.get("graphCreatedThroughUi") is not True:
         raise AssertionError("Graph creation through UI and server reload were not demonstrated")
 
+    program_start = result.get("programStartThroughUi")
+    if (
+        not isinstance(program_start, dict)
+        or program_start.get("geocodeQueries") != ["Punct plecare test", "Punct final test"]
+        or program_start.get("serverPersistedEndpoints") is not True
+        or program_start.get("started") is not True
+    ):
+        raise AssertionError("Program START geocoding and server-persisted endpoint evidence was not demonstrated")
+
     if result.get("correctionThroughUi") is not True:
         raise AssertionError("Centralizator correction through UI was not demonstrated")
 

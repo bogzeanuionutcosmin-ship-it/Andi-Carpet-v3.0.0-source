@@ -35,6 +35,7 @@ void main() {
     });
     final records=<app.CentralizerRecord>[];
     Future<void>? pendingScheduleWrite;
+    final geocodedProgramQueries=<String>[];
     Future<void> save(app.CentralizerRecord record) async {
       final data=app.recordDocumentData(record);
       await saveRecordCompared(db,record.id,data,expected:record.writeBaseline);
@@ -47,6 +48,9 @@ void main() {
           'teamId':entry.teamId,'graphId':entry.graphId,'graphName':entry.graphName,
           'date':Timestamp.fromDate(entry.date),'started':entry.started,
           'closed':entry.closed,'active':entry.active,'paused':entry.paused,
+          'departureName':entry.departureName,'departureLatitude':entry.departureLatitude,
+          'departureLongitude':entry.departureLongitude,'returnName':entry.returnName,
+          'returnLatitude':entry.returnLatitude,'returnLongitude':entry.returnLongitude,
           'items':entry.items.map((item)=>{'locationId':item.locationId}).toList(),
         });
       }
@@ -58,7 +62,14 @@ void main() {
         teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],cars:[],locations:graphLocations,categories:[],
         schedules:schedules,records:records,settings:app.AppSettings(),
         canEditTeam:(_)=>true,canEditProgram:true,userName:(_)=>'Editor',
-        onChanged:(){},notifyTeam:(_,__,___){},log:(_,__) {},saveSchedules:(updated){
+        onChanged:(){},notifyTeam:(_,__,___){},log:(_,__) {},
+        geocodeTripPoint:(query) async {
+          geocodedProgramQueries.add(query);
+          return query.toLowerCase().contains('plecare')
+            ? {'lat':44.31,'lon':23.80}
+            : {'lat':44.32,'lon':23.81};
+        },
+        saveSchedules:(updated){
           final pending=persistSchedules(updated);pendingScheduleWrite=pending;return pending;
         },
       ))));
@@ -123,10 +134,37 @@ void main() {
       expect((savedGraph.data()!['items'] as List).map((item)=>item['locationId']).toList(),
         graphLocations.map((location)=>location.id).toList());
       evidence['graphCreatedThroughUi']=true;
-      // START intentionally remains outside this smoke: it geocodes real trip
-      // endpoints. Mark the emulator fixture active after UI creation instead.
-      schedule.started=true;
-      await persistSchedules([schedule]);
+      pendingScheduleWrite=null;
+      await tester.tap(find.text('START GRAFIC'));
+      await tester.pumpAndSettle();
+      final endpointFields=find.descendant(of:find.byType(AlertDialog),matching:find.byType(TextField));
+      expect(endpointFields,hasLength(2));
+      await tester.enterText(endpointFields.at(0),'Punct plecare test');
+      await tester.enterText(endpointFields.at(1),'Punct final test');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('START'));
+      await tester.pumpAndSettle();
+      expect(pendingScheduleWrite,isNotNull,reason:'Program START must persist after both endpoints geocode');
+      await pendingScheduleWrite!.timeout(const Duration(seconds:30));
+      schedule=schedules.single;
+      items=schedule.items;
+      expect(geocodedProgramQueries,['Punct plecare test','Punct final test']);
+      expect(schedule.started,true);
+      expect(schedule.departureLatitude,44.31);
+      expect(schedule.returnLongitude,23.81);
+      final startedGraph=await db.collection('schedules').doc(schedule.id).get(const GetOptions(source:Source.server));
+      expect(startedGraph.metadata.isFromCache,false);
+      expect(startedGraph.metadata.hasPendingWrites,false);
+      expect(startedGraph.data()!['started'],true);
+      expect(startedGraph.data()!['departureName'],'Punct plecare test');
+      expect(startedGraph.data()!['departureLatitude'],44.31);
+      expect(startedGraph.data()!['returnName'],'Punct final test');
+      expect(startedGraph.data()!['returnLongitude'],23.81);
+      evidence['programStartThroughUi']={
+        'geocodeQueries':geocodedProgramQueries,
+        'serverPersistedEndpoints':true,
+        'started':startedGraph.data()!['started'],
+      };
     }
     Future<void> graphPage() async {
       await openProgramPage();
@@ -205,6 +243,20 @@ void main() {
     expect((await ref.get(const GetOptions(source:Source.server))).data()!['addressSnapshot'],'race-${race.indexOf(true)}');
     expect((await db.collection('records').get()).size,countBeforeRace);
     evidence['twoNativeClients']={'accepted':race,'loser':'StateError stale baseline','serverWinner':'race-${race.indexOf(true)}','documentCount':countBeforeRace};
+    await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
+    await otherDb.collection('records').doc('legacy-active-without-lock').set({
+      'teamId':'craiova','locationId':'legacy-active-room','locationNameSnapshot':'Sală activă din versiunea veche',
+      'type':'magic','status':'running','startedAt':Timestamp.fromDate(DateTime.now()),'finishedAt':null,
+    });
+    await otherAuth.signInWithEmailAndPassword(email:'editor@andi.test',password:'synthetic-only-123');
+    await expectLater(saveRecordCompared(db,'must-not-start-over-legacy-active',{
+      'teamId':'craiova','locationId':'new-room','type':'magic','status':'running',
+      'startedAt':Timestamp.fromDate(DateTime.now()),'finishedAt':null,
+    }),throwsA(isA<StateError>().having((error)=>error.message,'message',contains('deja o intervenție pornită'))));
+    await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
+    await otherDb.collection('records').doc('legacy-active-without-lock').delete();
+    await otherAuth.signInWithEmailAndPassword(email:'editor@andi.test',password:'synthetic-only-123');
+    evidence['legacyActiveRecordWithoutLock']='server query rejected a new START before lock migration';
     final crossDeviceStarts = List.generate(2, (index) => <String, dynamic>{
       'teamId':'craiova','locationId':'cross-device-$index','type':'magic',
       'status':'running','startedAt':Timestamp.fromDate(DateTime.now()),'finishedAt':null,

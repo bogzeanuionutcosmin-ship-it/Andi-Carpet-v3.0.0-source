@@ -9,7 +9,8 @@ class ProgramStartLocationResolutionSourceContract(unittest.TestCase):
     def test_program_page_delegates_endpoint_resolution(self):
         page = (ROOT / "lib/schedule/program_page.dart").read_text(encoding="utf-8")
         self.assertIn("resolveProgramStartLocations(", page)
-        self.assertIn("geocode:_geocodeTripPoint", page)
+        self.assertIn("geocode:widget.geocodeTripPoint ?? _geocodeTripPoint", page)
+        self.assertIn("this.geocodeTripPoint", page)
         self.assertNotIn("departureText.toLowerCase()==returnText.toLowerCase()", page)
 
     def test_resolver_is_registered_as_a_program_part(self):

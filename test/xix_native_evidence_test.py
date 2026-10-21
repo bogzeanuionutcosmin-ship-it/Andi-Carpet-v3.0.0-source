@@ -22,6 +22,11 @@ class NativeEvidenceTest(unittest.TestCase):
         self.observation = {
             "completed": True,
             "graphCreatedThroughUi": True,
+            "programStartThroughUi": {
+                "geocodeQueries": ["Punct plecare test", "Punct final test"],
+                "serverPersistedEndpoints": True,
+                "started": True,
+            },
             "correctionThroughUi": True,
             "homeCorrectionThroughUi": 'actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal',
             "productionCorrectionWriter": 'UI adapter uses HomePage persistence; stale, deleted, unauthorized and offline corrections rejected',
@@ -78,6 +83,18 @@ class NativeEvidenceTest(unittest.TestCase):
                 self.save()
                 with self.assertRaisesRegex(AssertionError, "UI"):
                     module.verify(self.root)
+
+    def test_program_start_requires_controlled_geocode_and_server_persistence(self):
+        self.observation.pop("programStartThroughUi")
+        self.save()
+        with self.assertRaisesRegex(AssertionError, "Program START"):
+            module.verify(self.root)
+
+    def test_program_start_rejects_missing_server_persistence(self):
+        self.observation["programStartThroughUi"]["serverPersistedEndpoints"] = False
+        self.save()
+        with self.assertRaisesRegex(AssertionError, "Program START"):
+            module.verify(self.root)
 
     def test_missing_correction_ui_evidence_fails(self):
         self.observation.pop("correctionThroughUi")
