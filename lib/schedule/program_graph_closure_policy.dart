@@ -46,3 +46,29 @@ ProgramGraphClosureReadiness programGraphClosureReadiness({
   }
   return ProgramGraphClosureReadiness(List.unmodifiable(blockers));
 }
+
+/// Identifies complete graphs for a reminder, without mutating or persisting
+/// schedules. The current work day anchors the reminder; readiness covers all
+/// days of the same team's graph, including future or postponed interventions.
+List<WorkSchedule> programGraphsReadyForOfficialStop({
+  required Iterable<WorkSchedule> schedules,
+  required Iterable<CentralizerRecord> records,
+  required String teamId,
+  required DateTime workDate,
+}) {
+  final teamSchedules=schedules.where((day)=>day.teamId==teamId).toList();
+  final allRecords=records.toList();
+  final candidates=teamSchedules.where((day)=>
+    day.started && !day.closed && sameDay(day.date,workDate));
+  final seen=<String>{};
+  final ready=<WorkSchedule>[];
+  for(final candidate in candidates){
+    if(!seen.add(candidate.graphId))continue;
+    final graphDays=teamSchedules.where((day)=>day.graphId==candidate.graphId).toList();
+    if(!graphDays.any((day)=>day.items.isNotEmpty))continue;
+    if(programGraphClosureReadiness(schedules:graphDays,records:allRecords).canClose){
+      ready.add(candidate);
+    }
+  }
+  return List.unmodifiable(ready);
+}

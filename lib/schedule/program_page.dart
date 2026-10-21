@@ -735,6 +735,11 @@ class _ProgramPageState extends State<ProgramPage> {
           child:LayoutBuilder(builder:(c,constraints)=>Column(
             crossAxisAlignment:CrossAxisAlignment.start,
             children:[
+              ConstrainedBox(
+                constraints:BoxConstraints(maxHeight:constraints.maxHeight*.55),
+                child:SingleChildScrollView(child:Column(
+                  crossAxisAlignment:CrossAxisAlignment.start,
+                  children:[
               SizedBox(height:48,child:SingleChildScrollView(
                 scrollDirection:Axis.horizontal,
                 child:Row(children:days.asMap().entries.map((e)=>Padding(
@@ -762,6 +767,9 @@ class _ProgramPageState extends State<ProgramPage> {
                 onChanged:(v)=>setD(()=>query=v),
               ),
               const SizedBox(height:8),
+                  ],
+                )),
+              ),
               Expanded(child:CustomScrollView(
                 key:const ValueKey('program-location-picker-list'),
                 keyboardDismissBehavior:ScrollViewKeyboardDismissBehavior.onDrag,

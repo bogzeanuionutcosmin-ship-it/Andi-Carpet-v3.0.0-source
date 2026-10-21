@@ -559,7 +559,7 @@ void main() {
     evidence['restore']='admin complete/repeat passed; readable inventory followed by denied mixed batch rolled back allowed update and deletions; oversized restore changed no records';
     // Mount the real application and let HomePage supply the correction
     // callback and permission result. Grants exist only in the demo emulator.
-    final uiPermissions=['viewDashboard','viewProgram','editProgram','viewCentralizer','editCentralizer'];
+    final uiPermissions=['viewDashboard','viewProgram','editProgram','viewCentralizer','editCentralizer','viewOwnDecont'];
     await otherDb.doc('functions/xix-ui-editor').set({
       'name':'Synthetic UI editor','active':true,'permissions':uiPermissions,
     });
@@ -637,17 +637,37 @@ void main() {
     });
     final expenseSettings=app.AppSettings()..learning['ocr']!.enabled=true;
     final receiptBytes=Uint8List.fromList(img.encodePng(img.Image(width:2,height:2)));
-    final expensePageExpenses=<app.Expense>[];
-    await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.ExpensePage(
-      currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),
-      teams:[app.Team(id:'craiova',name:'Craiova',members:[uid],financialManagerId:uid)],
-      users:[app.AppUser(id:uid,name:'Editor',role:app.UserRole.member)],
-      expenses:expensePageExpenses,perDiems:[],
-      finances:[app.TeamFinance(teamId:'craiova',managerId:uid)],
-      settlements:[receiptSettlement],settings:expenseSettings,
-      canEditTeam:(teamId)=>teamId=='craiova',isAdmin:false,
-      canEditOwnDecont:true,canViewOtherDecont:false,onChanged:(){},
-      notifyUser:(_,__,___){},log:(_,__) {},
+    // Keep HomePage mounted: its real financial listener and production
+    // persistence callback own the receipt round trip. Only media/OCR inputs
+    // are controlled; there is no parallel test implementation of saving.
+    final decontNav=find.byWidgetPredicate((widget)=>
+      widget is NavigationDestination && widget.label=='Decont');
+    expect(decontNav,findsOneWidget);
+    await tester.tap(decontNav);
+    await tester.pumpAndSettle();
+    final homeExpenseFinder=find.byType(app.ExpensePage);
+    await pumpUntil(()=>homeExpenseFinder.evaluate().isNotEmpty &&
+      tester.widget<app.ExpensePage>(homeExpenseFinder).settlements
+        .any((entry)=>entry.id==receiptSettlement.id),
+      'HomePage must load the selected settlement from its financial subscription');
+    final homeExpense=tester.widget<app.ExpensePage>(homeExpenseFinder);
+    expect(homeExpense.canEditOwnDecont,true);
+    expect(homeExpense.canEditTeam('craiova'),true);
+    final expensePageExpenses=homeExpense.expenses;
+    expect(expensePageExpenses,isEmpty);
+    final expenseNavigator=Navigator.of(tester.element(homeExpenseFinder));
+    final expenseRoute=expenseNavigator.push<void>(MaterialPageRoute(builder:(_)=>
+      Scaffold(body:app.ExpensePage(
+      currentUser:homeExpense.currentUser,
+      teams:homeExpense.teams,users:homeExpense.users,
+      expenses:expensePageExpenses,perDiems:homeExpense.perDiems,
+      finances:homeExpense.finances,
+      settlements:homeExpense.settlements,settings:expenseSettings,
+      canEditTeam:homeExpense.canEditTeam,isAdmin:homeExpense.isAdmin,
+      canEditOwnDecont:homeExpense.canEditOwnDecont,
+      canViewOtherDecont:homeExpense.canViewOtherDecont,
+      onChanged:homeExpense.onChanged,
+      notifyUser:homeExpense.notifyUser,log:homeExpense.log,
       pickDocumentImage:({allowNoImage=false}) async => XFile.fromData(
         receiptBytes,name:'synthetic-receipt.png',path:'synthetic-receipt.png',
       ),
@@ -655,23 +675,10 @@ void main() {
         expect(bytes,isNotEmpty);
         return 'SC EXEMPLU SRL\nBON FISCAL NR 12345\nDATA 05.10.2026\nTOTAL 148,75 LEI';
       },
-      saveExpense:(expense) async {
-        final data={
-          'teamId':expense.teamId,'settlementId':expense.settlementId,
-          'category':expense.category,'description':expense.description,
-          'amount':expense.amount,'date':Timestamp.fromDate(expense.date),
-          'documentType':expense.documentType.name,
-          'documentNumber':expense.documentNumber,'supplier':expense.supplier,
-          'liters':expense.liters,'pricePerLiter':expense.pricePerLiter,
-          'documentImageBase64':expense.documentImageBase64,
-          'imageFingerprint':expense.imageFingerprint,
-          'ocrRawText':expense.ocrRawText,'ocrConfidence':expense.ocrConfidence,
-          'confirmed':expense.confirmed,'updatedAt':FieldValue.serverTimestamp(),
-        };
-        await db.collection('expenses').doc(expense.id).set(data);
-        expensePageExpenses.add(expense);
-      },
-      savePerDiem:(_) async {},saveFinance:(_) async {},saveSettlement:(_) async {},
+      saveExpense:homeExpense.saveExpense,
+      savePerDiem:homeExpense.savePerDiem,
+      saveFinance:homeExpense.saveFinance,
+      saveSettlement:homeExpense.saveSettlement,
     ))));
     await tester.pumpAndSettle();
     final scanReceipt=find.text('Scanează bon / factură');
@@ -688,6 +695,8 @@ void main() {
     await tester.enterText(receiptFields.at(2),'150,25');
     await tester.tap(find.text('Confirmă'));
     await tester.pumpAndSettle();
+    await pumpUntil(()=>expensePageExpenses.length==1,
+      'HomePage financial subscription must reload the persisted receipt');
     expect(expensePageExpenses,hasLength(1));
     final savedExpense=await db.collection('expenses').doc(expensePageExpenses.single.id)
       .get(const GetOptions(source:Source.server));
@@ -724,8 +733,13 @@ void main() {
     evidence['expenseOcrThroughUi']={
       'controlledRecognition':true,'manualCorrection':150.25,
       'settlementId':receiptSettlement.id,'serverPersisted':true,
-      'decontPdfBuiltFromServerExpense':true,
+      'decontPdfBuiltFromServerExpense':true,'homePagePersistence':true,
     };
+    expenseNavigator.pop();
+    await expenseRoute;
+    await tester.pumpAndSettle();
+    expect(find.textContaining('150.25 lei'),findsOneWidget,
+      reason:'The real HomePage Decont must display the reloaded corrected amount');
     await otherDb.doc('users/$uid').update({'functionIds':['worker']});
     await otherDb.doc('functions/xix-ui-editor').delete();
     evidence['homeCorrectionThroughUi']='actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal';

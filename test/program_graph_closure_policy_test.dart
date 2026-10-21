@@ -101,4 +101,26 @@ void main() {
     );
     expect(app.programGraphClosureReadiness(schedules:[firstDay,secondDay],records:[completed,secondCompleted]).canClose,isTrue);
   });
+  test('Learning readiness checks the entire graph and never closes schedules', () {
+    final first=day(date:DateTime(2026,10,21))..started=true;
+    final later=day(date:DateTime(2026,10,22))..started=true;
+    final completed=attempt(status:app.WorkAttemptStatus.completed,at:DateTime(2026,10,21,9));
+    List<app.WorkSchedule> ready(List<app.CentralizerRecord> records) =>
+      app.programGraphsReadyForOfficialStop(schedules:[first,later],records:records,
+        teamId:'team-1',workDate:DateTime(2026,10,21));
+    expect(ready([completed]),isEmpty,
+      reason:'A resolved current day must not hide an unresolved later day');
+    final refused=attempt(status:app.WorkAttemptStatus.refused,at:DateTime(2026,10,22,9));
+    expect(ready([completed,refused]),isEmpty,
+      reason:'A refused intervention is still pending');
+    final laterCompleted=attempt(status:app.WorkAttemptStatus.completed,at:DateTime(2026,10,22,10));
+    expect(ready([completed,refused,laterCompleted]),[first]);
+    expect(first.closed,false);
+    expect(later.closed,false);
+    expect(first.active,true);
+    expect(later.active,true);
+    expect(app.programGraphsReadyForOfficialStop(schedules:[first,later],
+      records:[completed,laterCompleted],teamId:'other-team',workDate:first.date),isEmpty);
+  });
+
 }

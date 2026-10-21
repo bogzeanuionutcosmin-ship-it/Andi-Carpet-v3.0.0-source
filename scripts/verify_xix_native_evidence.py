@@ -42,6 +42,7 @@ def verify(root: Path) -> None:
         or not isinstance(expense.get("settlementId"), str)
         or not expense["settlementId"].strip()
         or expense.get("serverPersisted") is not True
+        or expense.get("homePagePersistence") is not True
         or expense.get("decontPdfBuiltFromServerExpense") is not True
     ):
         raise AssertionError("Expenses OCR review, manual correction, selected settlement, and server persistence were not demonstrated")

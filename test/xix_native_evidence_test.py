@@ -34,6 +34,7 @@ class NativeEvidenceTest(unittest.TestCase):
                 "settlementId": "xix-receipt-settlement",
                 "serverPersisted": True,
                 "decontPdfBuiltFromServerExpense": True,
+                "homePagePersistence": True,
             },
             "correctionThroughUi": True,
             "homeCorrectionThroughUi": 'actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal',
@@ -115,6 +116,14 @@ class NativeEvidenceTest(unittest.TestCase):
         self.save()
         with self.assertRaisesRegex(AssertionError, "Expenses OCR"):
             module.verify(self.root)
+
+    def test_expense_requires_production_home_persistence(self):
+        for invalid in (None, False, 1, "true"):
+            with self.subTest(value=invalid):
+                self.observation["expenseOcrThroughUi"]["homePagePersistence"] = invalid
+                self.save()
+                with self.assertRaisesRegex(AssertionError, "Expenses OCR"):
+                    module.verify(self.root)
 
     def test_missing_correction_ui_evidence_fails(self):
         self.observation.pop("correctionThroughUi")

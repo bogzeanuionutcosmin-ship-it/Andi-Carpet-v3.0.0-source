@@ -726,30 +726,15 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (programLearning?.enabled != true) return;
     final teamId = me.teamId;
     if (teamId == null || teamId.isEmpty || !canEditTeam(teamId)) return;
-    final active = schedules.where((s) => s.teamId == teamId && sameDay(s.date, workDate) && s.started && !s.closed).toList();
-    for (final schedule in active) {
-      if (schedule.items.isEmpty) continue;
-      var allResolved = true;
-      for (final item in schedule.items) {
-        final r = _homeLatestRecord(teamId, item.locationId, workDate);
-        if (r == null || (r.status != WorkAttemptStatus.completed && r.status != WorkAttemptStatus.refused && r.status != WorkAttemptStatus.notCompleted)) {
-          allResolved = false; break;
-        }
-      }
-      if (!allResolved) continue;
-      final key = 'close_${schedule.id}';
-      if (programLearning!.mode == LearningMode.manualApproval) {
-        _automationNotifyOnce(key, 'Grafic terminat', '${schedule.graphName} are toate locațiile rezolvate. Poți închide graficul.');
-        continue;
-      }
-      schedule.closed = true;
-      schedule.active = false;
-      schedule.paused = false;
-      try {
-        await _saveScheduleDirect(schedule);
-        log('Grafic închis automat Learning', '${schedule.graphName} · ${formatDate(schedule.date)}');
-        _automationNotified.add(key);
-      } catch (_) {}
+    final readyGraphs = programGraphsReadyForOfficialStop(
+      schedules:schedules,records:records,teamId:teamId,workDate:workDate,
+    );
+    for (final graph in readyGraphs) {
+      // Learning can suggest STOP, but only the explicit Program confirmation
+      // may close a graph. Refusals and unresolved later days remain blockers.
+      _automationNotifyOnce('close_${teamId}_${graph.graphId}',
+        'Grafic pregătit pentru STOP',
+        '${graph.graphName} are toate intervențiile principale finalizate. Confirmă STOP în Grafic pentru închiderea oficială.');
     }
   }
 
