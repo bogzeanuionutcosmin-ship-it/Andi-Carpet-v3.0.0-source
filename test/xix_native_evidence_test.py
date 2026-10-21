@@ -27,6 +27,12 @@ class NativeEvidenceTest(unittest.TestCase):
                 "serverPersistedEndpoints": True,
                 "started": True,
             },
+            "expenseOcrThroughUi": {
+                "controlledRecognition": True,
+                "manualCorrection": 150.25,
+                "settlementId": "xix-receipt-settlement",
+                "serverPersisted": True,
+            },
             "correctionThroughUi": True,
             "homeCorrectionThroughUi": 'actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal',
             "productionCorrectionWriter": 'UI adapter uses HomePage persistence; stale, deleted, unauthorized and offline corrections rejected',
@@ -94,6 +100,18 @@ class NativeEvidenceTest(unittest.TestCase):
         self.observation["programStartThroughUi"]["serverPersistedEndpoints"] = False
         self.save()
         with self.assertRaisesRegex(AssertionError, "Program START"):
+            module.verify(self.root)
+
+    def test_expense_requires_review_correction_and_server_persistence(self):
+        self.observation.pop("expenseOcrThroughUi")
+        self.save()
+        with self.assertRaisesRegex(AssertionError, "Expenses OCR"):
+            module.verify(self.root)
+
+    def test_expense_requires_server_persisted_corrected_value(self):
+        self.observation["expenseOcrThroughUi"]["serverPersisted"] = False
+        self.save()
+        with self.assertRaisesRegex(AssertionError, "Expenses OCR"):
             module.verify(self.root)
 
     def test_missing_correction_ui_evidence_fails(self):

@@ -30,6 +30,17 @@ def verify(root: Path) -> None:
     ):
         raise AssertionError("Program START geocoding and server-persisted endpoint evidence was not demonstrated")
 
+    expense = result.get("expenseOcrThroughUi")
+    if (
+        not isinstance(expense, dict)
+        or expense.get("controlledRecognition") is not True
+        or expense.get("manualCorrection") != 150.25
+        or not isinstance(expense.get("settlementId"), str)
+        or not expense["settlementId"].strip()
+        or expense.get("serverPersisted") is not True
+    ):
+        raise AssertionError("Expenses OCR review, manual correction, selected settlement, and server persistence were not demonstrated")
+
     if result.get("correctionThroughUi") is not True:
         raise AssertionError("Centralizator correction through UI was not demonstrated")
 

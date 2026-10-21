@@ -6,6 +6,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
 import 'package:andi_carpeta/main.dart' as app;
 import 'package:andi_carpeta/operations/record_writer.dart';
 import 'package:andi_carpeta/centralizer/correction_writer.dart';
@@ -565,6 +567,78 @@ void main() {
       'HomePage must remove correction permission after the function changes');
     expect(find.byTooltip('Corectează data, orele și fațada'),findsNothing);
     expect((await ref.get(const GetOptions(source:Source.server))).data()!['finishedAt'],night['finishedAt']);
+
+    final receiptSettlement=app.TravelSettlement(
+      id:'xix-receipt-settlement',teamId:'craiova',name:'Decont E2E',
+      startDate:DateTime(2026,10,1),managerId:uid,
+    );
+    await db.collection('settlements').doc(receiptSettlement.id).set({
+      'teamId':receiptSettlement.teamId,'name':receiptSettlement.name,
+      'startDate':Timestamp.fromDate(receiptSettlement.startDate),
+      'managerId':uid,'closed':false,
+    });
+    final expenseSettings=app.AppSettings()..learning['ocr']!.enabled=true;
+    final receiptBytes=Uint8List.fromList(img.encodePng(img.Image(width:2,height:2)));
+    final expensePageExpenses=<app.Expense>[];
+    await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.ExpensePage(
+      currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),
+      teams:[app.Team(id:'craiova',name:'Craiova',members:[uid],financialManagerId:uid)],
+      users:[app.AppUser(id:uid,name:'Editor',role:app.UserRole.member)],
+      expenses:expensePageExpenses,perDiems:[],
+      finances:[app.TeamFinance(teamId:'craiova',managerId:uid)],
+      settlements:[receiptSettlement],settings:expenseSettings,
+      canEditTeam:(teamId)=>teamId=='craiova',isAdmin:false,
+      canEditOwnDecont:true,canViewOtherDecont:false,onChanged:(){},
+      notifyUser:(_,__,___){},log:(_,__) {},
+      pickDocumentImage:({allowNoImage=false}) async => XFile.fromData(
+        receiptBytes,name:'synthetic-receipt.png',path:'synthetic-receipt.png',
+      ),
+      recognizeExpenseText:(bytes,{path}) async {
+        expect(bytes,isNotEmpty);
+        return 'SC EXEMPLU SRL\nBON FISCAL NR 12345\nDATA 05.10.2026\nTOTAL 148,75 LEI';
+      },
+      saveExpense:(expense) async {
+        final data={
+          'teamId':expense.teamId,'settlementId':expense.settlementId,
+          'category':expense.category,'description':expense.description,
+          'amount':expense.amount,'date':Timestamp.fromDate(expense.date),
+          'documentType':expense.documentType.name,
+          'documentNumber':expense.documentNumber,'supplier':expense.supplier,
+          'liters':expense.liters,'pricePerLiter':expense.pricePerLiter,
+          'documentImageBase64':expense.documentImageBase64,
+          'imageFingerprint':expense.imageFingerprint,
+          'ocrRawText':expense.ocrRawText,'ocrConfidence':expense.ocrConfidence,
+          'confirmed':expense.confirmed,'updatedAt':FieldValue.serverTimestamp(),
+        };
+        await db.collection('expenses').doc(expense.id).set(data);
+        expensePageExpenses.add(expense);
+      },
+      savePerDiem:(_) async {},saveFinance:(_) async {},saveSettlement:(_) async {},
+    ))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Scanează bon / factură'));
+    await tester.pumpAndSettle();
+    expect(find.text('Verifică datele citite prin OCR'),findsOneWidget);
+    final correctedAmount=find.byWidgetPredicate((widget)=>
+      widget is TextFormField&&widget.decoration?.labelText=='Sumă');
+    expect(correctedAmount,findsOneWidget);
+    await tester.enterText(correctedAmount,'150,25');
+    await tester.tap(find.text('Confirmă'));
+    await tester.pumpAndSettle();
+    expect(expensePageExpenses,hasLength(1));
+    final savedExpense=await db.collection('expenses').doc(expensePageExpenses.single.id)
+      .get(const GetOptions(source:Source.server));
+    expect(savedExpense.metadata.isFromCache,false);
+    expect(savedExpense.metadata.hasPendingWrites,false);
+    expect(savedExpense.data()!['teamId'],'craiova');
+    expect(savedExpense.data()!['settlementId'],receiptSettlement.id);
+    expect(savedExpense.data()!['documentNumber'],'12345');
+    expect(savedExpense.data()!['amount'],150.25,reason:'manual correction must persist the corrected OCR amount');
+    expect(savedExpense.data()!['confirmed'],true);
+    evidence['expenseOcrThroughUi']={
+      'controlledRecognition':true,'manualCorrection':150.25,
+      'settlementId':receiptSettlement.id,'serverPersisted':true,
+    };
     await otherDb.doc('users/$uid').update({'functionIds':['worker']});
     await otherDb.doc('functions/xix-ui-editor').delete();
     evidence['homeCorrectionThroughUi']='actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal';

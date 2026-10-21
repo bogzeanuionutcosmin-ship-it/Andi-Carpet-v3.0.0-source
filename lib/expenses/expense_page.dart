@@ -20,7 +20,9 @@ class ExpensePage extends StatefulWidget {
   final Future<void> Function(PerDiemEntry) savePerDiem;
   final Future<void> Function(TeamFinance) saveFinance;
   final Future<void> Function(TravelSettlement) saveSettlement;
-  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
+  final Future<XFile?> Function({bool allowNoImage})? pickDocumentImage;
+  final Future<String> Function(Uint8List, {String? path})? recognizeExpenseText;
+  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement,this.pickDocumentImage,this.recognizeExpenseText});
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 
@@ -979,8 +981,10 @@ class _ExpensePageState extends State<ExpensePage> {
     catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva diurna: $e'); }
   }
 
-  Future<XFile?> _pickDocumentImage({bool allowNoImage = false}) =>
-      pickExpenseDocumentImage(
+  Future<XFile?> _pickDocumentImage({bool allowNoImage = false}) {
+    final injectedPicker = widget.pickDocumentImage;
+    if (injectedPicker != null) return injectedPicker(allowNoImage: allowNoImage);
+    return pickExpenseDocumentImage(
         context: context,
         allowNoImage: allowNoImage,
         requestImage: (source, {
@@ -999,6 +1003,11 @@ class _ExpensePageState extends State<ExpensePage> {
           }
         },
       );
+  }
+
+  Future<String> _recognizeExpenseText(Uint8List bytes, {String? path}) =>
+      widget.recognizeExpenseText?.call(bytes, path: path) ??
+      recognizeTextFromImage(bytes, path: path);
 
   Expense? _duplicateOf(Expense candidate) =>
       findPotentialExpenseDuplicate<Expense>(
@@ -1050,7 +1059,7 @@ class _ExpensePageState extends State<ExpensePage> {
             path: picked.path,
             enabled: ocrSetting?.enabled == true,
             automaticMode: ocrSetting?.mode == LearningMode.automatic,
-            recognize: recognizeTextFromImage,
+            recognize: _recognizeExpenseText,
             parse: parseFiscalOcr,
           );
           if (result != null && result.error == null) {
@@ -1081,7 +1090,7 @@ class _ExpensePageState extends State<ExpensePage> {
       final result = await scanExpenseDocumentOcr(
         raw,
         path: picked.path,
-        recognize: recognizeTextFromImage,
+        recognize: _recognizeExpenseText,
         parse: parseFiscalOcr,
         onSuccess: (data) => widget.log(
           'OCR document procesat',
