@@ -28,3 +28,38 @@ List<CentralizerRecord> dashboardCompletedHistory(
     records
         .where((r) => r.locationId == locationId && r.completed && r.duration != null)
         .toList();
+
+
+/// Selects the open running attempts shown in Dashboard, newest event first.
+List<CentralizerRecord> dashboardRunningRecords(
+  Iterable<CentralizerRecord> records, {
+  required String teamId,
+}) {
+  final selected = records
+      .where((record) =>
+          record.teamId == teamId &&
+          record.status == WorkAttemptStatus.running &&
+          record.startedAt != null &&
+          record.finishedAt == null)
+      .toList();
+  selected.sort((a, b) => recordEventTime(b).compareTo(recordEventTime(a)));
+  return selected;
+}
+
+/// Selects same-team open waiting attempts on the requested operational work date.
+List<CentralizerRecord> dashboardWaitingRecords(
+  Iterable<CentralizerRecord> records, {
+  required String teamId,
+  required DateTime workDate,
+}) {
+  final selected = records
+      .where((record) =>
+          record.teamId == teamId &&
+          recordBelongsToWorkDate(record, workDate) &&
+          record.status == WorkAttemptStatus.waitingAccess &&
+          record.waitingStartedAt != null &&
+          record.waitingEndedAt == null)
+      .toList();
+  selected.sort((a, b) => recordEventTime(b).compareTo(recordEventTime(a)));
+  return selected;
+}
