@@ -642,7 +642,11 @@ void main() {
       savePerDiem:(_) async {},saveFinance:(_) async {},saveSettlement:(_) async {},
     ))));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Scanează bon / factură'));
+    final scanReceipt=find.text('Scanează bon / factură');
+    await tester.ensureVisible(scanReceipt);
+    expect(scanReceipt.hitTestable(),findsOneWidget,
+      reason:'receipt scan must be visible and tappable before exercising OCR');
+    await tester.tap(scanReceipt);
     await tester.pumpAndSettle();
     expect(find.text('Verifică datele citite prin OCR'),findsOneWidget);
     final receiptFields=find.descendant(
