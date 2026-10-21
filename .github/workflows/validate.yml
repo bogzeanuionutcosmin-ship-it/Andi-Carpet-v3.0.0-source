@@ -123,4 +123,4 @@ jobs:
       - name: Install Firebase emulator and test libraries
         run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
       - name: Run Firestore authorization tests
-        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test --test-concurrency=1 tests/firestore/diurna.test.cjs tests/firestore/program_schedule.test.cjs tests/firestore/centralizer_correction.test.cjs tests/firestore/finance_identity.test.cjs tests/firestore/record_start_lock.test.cjs'
+        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test --test-concurrency=1 tests/firestore/diurna.test.cjs tests/firestore/program_schedule.test.cjs tests/firestore/centralizer_correction.test.cjs tests/firestore/finance_identity.test.cjs tests/firestore/record_start_lock.test.cjs tests/firestore/expenses.test.cjs'
