@@ -94,7 +94,7 @@ jobs:
       - name: Test Centralizator PDF projection
         run: flutter test test/centralizer_pdf_projection_test.dart
       - name: Build debug APK
-        run: flutter build apk --debug
+        run: flutter build apk --debug --dart-define=ANDICARPET_EMULATOR_HOST=10.0.2.2
       - name: Verify APK package metadata
         run: |
           APK=build/app/outputs/flutter-apk/app-debug.apk
