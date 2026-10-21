@@ -18,7 +18,7 @@ void main() {
 
     test('uses county before state and combines distinct locality names', () {
       expect(
-        app.liveLocalityLabelFromAddress({
+        liveLocalityLabelFromAddress({
           'village': 'Sântandrei',
           'county': 'Bihor',
           'state': 'Crișana',
@@ -29,7 +29,7 @@ void main() {
 
     test('does not duplicate a county that differs only by letter case', () {
       expect(
-        app.liveLocalityLabelFromAddress({
+        liveLocalityLabelFromAddress({
           'city': 'ORADEA',
           'county': 'Oradea',
         }),
@@ -39,11 +39,11 @@ void main() {
 
     test('falls back to state when county is absent and to an empty label when all are absent', () {
       expect(
-        app.liveLocalityLabelFromAddress({'state': 'Bihor'}),
+        liveLocalityLabelFromAddress({'state': 'Bihor'}),
         'Bihor',
       );
       expect(
-        app.liveLocalityLabelFromAddress({}),
+        liveLocalityLabelFromAddress({}),
         '',
       );
     });
