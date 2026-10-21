@@ -160,7 +160,8 @@ service cloud.firestore {
         || (hasPermission('editProgram')
           && isTeamMember(resource.data.teamId)
           && isTeamMember(request.resource.data.teamId)
-          && resource.data.closed != true);
+          && resource.data.closed != true
+          && request.resource.data.get('paused', false) == resource.data.get('paused', false));
       allow delete: if isAdmin()
         || (hasPermission('editProgram') && isTeamMember(resource.data.teamId));
     }

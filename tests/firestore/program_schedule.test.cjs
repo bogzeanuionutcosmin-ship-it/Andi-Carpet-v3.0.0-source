@@ -23,7 +23,7 @@ before(async () => {
       setDoc(doc(adminDb, 'teams/team-a'), { active: true, members: ['editor', 'viewer', 'admin'] }),
       setDoc(doc(adminDb, 'teams/team-b'), { active: true, members: ['outsider', 'admin'] }),
       setDoc(doc(adminDb, schedulePath('open')), {
-        teamId: 'team-a', graphId: 'graph-1', graphName: 'Grafic test', closed: false,
+        teamId: 'team-a', graphId: 'graph-1', graphName: 'Grafic test', closed: false, paused: false,
         items: [
           { locationId: 'loc-a', order: 1, locationNameSnapshot: 'A' },
           { locationId: 'loc-b', order: 2, locationNameSnapshot: 'B' },
@@ -79,12 +79,23 @@ test('authorized team editor creates a schedule that survives an independent rea
   assert.equal(reread.data().items[0].locationId, 'loc-c');
 });
 
-test('whole-graph changes commit atomically and a denied day leaves every day unchanged', async () => {
-  const editorDb = db('editor');
-  const first = doc(editorDb, schedulePath('open'));
-  const second = doc(editorDb, schedulePath('batch-second'));
+test('only Admin can pause or resume a graph', async () => {
+  await assertFails(updateDoc(doc(db('editor'), schedulePath('open')), {
+    paused: true, updatedAt: serverTimestamp(),
+  }));
+  assert.equal((await getDoc(doc(db('editor'), schedulePath('open')))).data().paused, false);
+  await assertSucceeds(updateDoc(doc(db('admin'), schedulePath('open')), {
+    paused: true, updatedAt: serverTimestamp(),
+  }));
+  assert.equal((await getDoc(doc(db('admin'), schedulePath('open')))).data().paused, true);
+});
 
-  const accepted = writeBatch(editorDb);
+test('whole-graph admin pause is atomic and a denied editor batch leaves every day unchanged', async () => {
+  const adminDb = db('admin');
+  const first = doc(adminDb, schedulePath('open'));
+  const second = doc(adminDb, schedulePath('batch-second'));
+
+  const accepted = writeBatch(adminDb);
   accepted.update(first, { paused: true, updatedAt: serverTimestamp() });
   accepted.set(second, {
     teamId: 'team-a', graphId: 'graph-1', graphName: 'Grafic test', closed: false,
@@ -94,11 +105,13 @@ test('whole-graph changes commit atomically and a denied day leaves every day un
   assert.equal((await getDoc(first)).data().paused, true);
   assert.equal((await getDoc(second)).data().paused, true);
 
+  const editorDb = db('editor');
   const rejected = writeBatch(editorDb);
-  rejected.update(first, { paused: false, updatedAt: serverTimestamp() });
-  rejected.update(doc(editorDb, schedulePath('closed')), {
-    paused: true, updatedAt: serverTimestamp(),
+  rejected.update(doc(editorDb, schedulePath('open')), {
+    items: [{ locationId: 'loc-c', order: 1, locationNameSnapshot: 'C nou' }],
+    updatedAt: serverTimestamp(),
   });
+  rejected.update(doc(editorDb, schedulePath('closed')), { items: [], updatedAt: serverTimestamp() });
   await assertFails(rejected.commit());
   assert.equal((await getDoc(first)).data().paused, true,
     'Firestore must roll back every write if any day in the graph is denied');
