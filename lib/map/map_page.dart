@@ -172,17 +172,12 @@ class _MapPageState extends State<MapPage> {
   }
 
   List<Polyline> _rainbowRouteLines() {
-    if (!_showGraphRoute) return const <Polyline>[];
-    const colors = <Color>[Colors.red, Colors.orange, Colors.amber, Colors.green, Colors.blue, Colors.indigo, Colors.purple];
     final route = graphRoutePoints(_routeDays, widget.locations);
-    // Nu desenăm segmente false peste locațiile fără GPS.
-    if (!route.complete) return const <Polyline>[];
-    final lines = <Polyline>[];
-    for (var i = 1; i < route.points.length; i++) {
-      lines.add(Polyline(points: [route.points[i - 1], route.points[i]],
-          color: colors[(i - 1) % colors.length], strokeWidth: 6));
-    }
-    return lines;
+    return mapRouteLinePresentation(
+      visible: _showGraphRoute,
+      complete: route.complete,
+      points: route.points,
+    );
   }
 
   List<Marker> _routeEndpointMarkers() {
