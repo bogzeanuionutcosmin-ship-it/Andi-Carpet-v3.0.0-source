@@ -307,20 +307,24 @@ void main() {
     };
     await expectLater(saveRecordCompared(db,ref.id,{...beforeRace,'addressSnapshot':'stale'},expected:beforeRace),throwsA(isA<StateError>()));
     final latest=(await ref.get()).data()!;
-    // Actual former writer operation: demonstrate deleted-document resurrection.
+    // The former merge-upsert path must not recreate a document deleted elsewhere.
     await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
     final legacy=otherDb.collection('records').doc('deleted-legacy');
     await legacy.set({'teamId':'craiova','locationId':'legacy','type':'magic'});
     final legacyBefore=(await legacy.get()).data()!;await legacy.delete();
-    await db.collection('records').doc(legacy.id).set(legacyBefore,SetOptions(merge:true));
-    expect((await legacy.get()).exists,true);evidence['oldWriterWitness']='deleted legacy document recreated by former upsert';
-    await legacy.delete();
+    await expectLater(db.collection('records').doc(legacy.id).set(legacyBefore,SetOptions(merge:true)),throwsA(permissionDenied));
+    expect((await legacy.get(const GetOptions(source:Source.server))).exists,false);
+    evidence['oldWriterWitness']='former merge-upsert denied; deleted record remains absent';
     await expectLater(saveRecordCompared(db,legacy.id,{...legacyBefore,'status':'running'},expected:legacyBefore),throwsA(isA<StateError>()));
     expect((await legacy.get()).exists,false);
-    await legacy.set({...legacyBefore,'metadata':{'tags':['legacy',{'version':1}]}});
+    await legacy.set({...legacyBefore,'status':'completed',
+      'startedAt':Timestamp.fromDate(DateTime(2026,10,14,8)),
+      'finishedAt':Timestamp.fromDate(DateTime(2026,10,14,9)),
+      'metadata':{'tags':['legacy',{'version':1}]}});
     final nestedLegacy=(await legacy.get()).data()!;
-    await saveRecordCompared(db,legacy.id,{...nestedLegacy,'status':'running'},expected:nestedLegacy);
+    await saveRecordCompared(db,legacy.id,{...nestedLegacy,'addressSnapshot':'nested-update'},expected:nestedLegacy);
     evidence['legacyAndDeletion']='legacy update passed; deleted baseline rejected';
+    await legacy.delete();
     final deletedCorrection=otherDb.collection('records').doc('deleted-correction');
     await deletedCorrection.set(legacyBefore);await deletedCorrection.delete();
     await otherAuth.signInWithEmailAndPassword(email:'outsider@andi.test',password:'synthetic-only-123');
