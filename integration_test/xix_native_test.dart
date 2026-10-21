@@ -205,6 +205,45 @@ void main() {
     expect((await ref.get(const GetOptions(source:Source.server))).data()!['addressSnapshot'],'race-${race.indexOf(true)}');
     expect((await db.collection('records').get()).size,countBeforeRace);
     evidence['twoNativeClients']={'accepted':race,'loser':'StateError stale baseline','serverWinner':'race-${race.indexOf(true)}','documentCount':countBeforeRace};
+    final crossDeviceStarts = List.generate(2, (index) => <String, dynamic>{
+      'teamId':'craiova','locationId':'cross-device-$index','type':'magic',
+      'status':'running','startedAt':Timestamp.fromDate(DateTime.now()),'finishedAt':null,
+    });
+    final crossDeviceStartResults = await Future.wait([db, otherDb].asMap().entries.map((entry) async {
+      try {
+        await saveRecordCompared(entry.value, 'cross-device-start-${entry.key}', crossDeviceStarts[entry.key]);
+        return true;
+      } on StateError {
+        return false;
+      }
+    }));
+    expect(crossDeviceStartResults.where((accepted) => accepted), hasLength(1));
+    final acceptedStartIndex = crossDeviceStartResults.indexOf(true);
+    final acceptedStartId = 'cross-device-start-$acceptedStartIndex';
+    final lockRef = db.collection('activeRecordLocks').doc('craiova');
+    expect((await lockRef.get(const GetOptions(source:Source.server))).data()!['recordId'], acceptedStartId);
+    final acceptedStart = crossDeviceStarts[acceptedStartIndex];
+    final completedStart = {...acceptedStart,'status':'completed','finishedAt':Timestamp.fromDate(DateTime.now())};
+    await saveRecordCompared(db, acceptedStartId, completedStart, expected: acceptedStart);
+    expect((await lockRef.get(const GetOptions(source:Source.server))).exists, false);
+    final afterFinishStart = {
+      ...crossDeviceStarts[0], 'locationId':'after-finish',
+    };
+    await saveRecordCompared(db, 'cross-device-after-finish', afterFinishStart);
+    expect((await lockRef.get(const GetOptions(source:Source.server))).data()!['recordId'], 'cross-device-after-finish');
+    await saveRecordCompared(db, 'cross-device-after-finish', {
+      ...afterFinishStart,'status':'completed','finishedAt':Timestamp.fromDate(DateTime.now()),
+    }, expected: afterFinishStart);
+    await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
+    await otherDb.collection('records').doc(acceptedStartId).delete();
+    await otherDb.collection('records').doc('cross-device-start-${1-acceptedStartIndex}').delete();
+    await otherDb.collection('records').doc('cross-device-after-finish').delete();
+    await otherAuth.signInWithEmailAndPassword(email:'editor@andi.test',password:'synthetic-only-123');
+    expect((await lockRef.get(const GetOptions(source:Source.server))).exists, false);
+    evidence['crossDeviceStartReservation']={
+      'simultaneousDistinctIdsAccepted':crossDeviceStartResults.where((accepted) => accepted).length,
+      'winner':acceptedStartId,'lockReleasedOnFinish':true,'newStartAfterFinish':'cross-device-after-finish',
+    };
     await expectLater(saveRecordCompared(db,ref.id,{...beforeRace,'addressSnapshot':'stale'},expected:beforeRace),throwsA(isA<StateError>()));
     final latest=(await ref.get()).data()!;
     // Actual former writer operation: demonstrate deleted-document resurrection.

@@ -165,16 +165,60 @@ service cloud.firestore {
         || (hasPermission('editProgram') && isTeamMember(resource.data.teamId));
     }
 
+    function isRunningRecord(data) {
+      return data.status == 'running' && data.finishedAt == null;
+    }
+
+    function activeRecordLockPath(teamId) {
+      return /databases/$(database)/documents/activeRecordLocks/$(teamId);
+    }
+
+    function recordLockMatchesAfter(teamId, recordId) {
+      let lockPath = activeRecordLockPath(teamId);
+      return existsAfter(lockPath) && getAfter(lockPath).data.teamId == teamId
+        && getAfter(lockPath).data.recordId == recordId;
+    }
+
+    function validRecordLockTransition(teamId, recordId, nextRecord, wasRunning) {
+      let lockPath = activeRecordLockPath(teamId);
+      return isRunningRecord(nextRecord)
+        ? recordLockMatchesAfter(teamId, recordId)
+        : (!wasRunning || !existsAfter(lockPath)
+          || getAfter(lockPath).data.recordId != recordId);
+    }
+
+    function canWriteTeamRecords(teamId) {
+      return isAdmin() || ((hasPermission('editProgram') || hasPermission('editCentralizer'))
+        && isTeamMember(teamId));
+    }
+
+    // START/FINAL cer un lock per echipă scris în aceeași tranzacție cu execuția.
+    // Acesta serializează START-uri de pe dispozitive diferite și se eliberează atomic la FINAL.
+    match /activeRecordLocks/{teamId} {
+      allow read: if isAdmin() || (isActive() && isTeamMember(teamId));
+      allow create: if canWriteTeamRecords(teamId)
+        && request.resource.data.keys().hasOnly([
+          'teamId', 'recordId', 'locationId', 'startedAt', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll(['teamId', 'recordId', 'locationId'])
+        && request.resource.data.teamId == teamId
+        && request.resource.data.recordId is string
+        && request.resource.data.locationId is string;
+      // The application never retargets an existing reservation: it creates
+      // a new lock only after the previous one has been removed on FINAL.
+      allow update: if false;
+      allow delete: if canWriteTeamRecords(teamId);
+    }
+
     // START/FINAL cer editProgram; corecțiile din Centralizator pot folosi editCentralizer.
     match /records/{recordId} {
       allow read: if isActive();
-      allow create: if isAdmin()
-        || ((hasPermission('editProgram') || hasPermission('editCentralizer'))
-          && isTeamMember(request.resource.data.teamId));
-      allow update: if isAdmin()
-        || ((hasPermission('editProgram') || hasPermission('editCentralizer'))
-          && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+      allow create: if canWriteTeamRecords(request.resource.data.teamId)
+        && validRecordLockTransition(request.resource.data.teamId, recordId, request.resource.data, false);
+      allow update: if canWriteTeamRecords(resource.data.teamId)
+        && (isAdmin() || isTeamMember(request.resource.data.teamId))
+        && validRecordLockTransition(request.resource.data.teamId, recordId, request.resource.data,
+          isRunningRecord(resource.data));
       allow delete: if isAdmin();
     }
 

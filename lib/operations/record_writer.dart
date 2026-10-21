@@ -27,12 +27,20 @@ bool _sameValue(dynamic a, dynamic b) {
   return a == b;
 }
 
-/// Existing records are updates, never upserts. Retrying the same ID and
-/// payload after a lost response is harmless. Distinct IDs remain distinct
-/// legitimate attempts; this is not a cross-device START reservation protocol.
+/// Existing records are updates, never upserts. Team-level reservation docs
+/// serialize START operations from separate clients and are released atomically
+/// with the transition out of the running state.
+bool _isRunningRecord(Map<String, dynamic> data) =>
+    data['status'] == 'running' && data['finishedAt'] == null;
+
+bool _lockMatches(Map<String, dynamic>? data, String recordId) =>
+    data != null && data['recordId'] == recordId;
+
 Future<void> saveRecordCompared(FirebaseFirestore db, String id,
     Map<String, dynamic> desired, {Map<String, dynamic>? expected}) async {
   final ref = db.collection('records').doc(id);
+  final teamId = (desired['teamId'] ?? expected?['teamId'] ?? '').toString();
+  final lockRef = teamId.isEmpty ? null : db.collection('activeRecordLocks').doc(teamId);
   // A native offline transaction completion is not a server acknowledgement.
   // Fail closed before preparing a write and confirm authoritative state after it.
   final available = await ref.get(const GetOptions(source: Source.server));
@@ -43,16 +51,46 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
     await db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       final current = snap.data();
-      if (current != null && recordPayloadMatches(current, desired)) return;
-      if (expected == null) {
-        if (snap.exists) throw StateError('ID ocupat. Reîncarcă înainte de salvare.');
-        tx.set(ref, desired);
-      } else {
-        if (current == null) throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
-        if (!recordPayloadMatches(current, expected)) {
-          throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de salvare.');
+      final lockSnapshot = lockRef == null ? null : await tx.get(lockRef);
+      final lock = lockSnapshot?.data();
+      final wantsRunning = _isRunningRecord(desired);
+      if (wantsRunning && lockRef == null) {
+        throw StateError('Intervenția nu are o echipă validă pentru rezervarea START.');
+      }
+
+      // The fixed team document is the serialization point. Firestore retries
+      // the losing transaction after another device claims the same team.
+      if (wantsRunning && lockSnapshot?.exists == true && !_lockMatches(lock, id)) {
+        throw StateError('Echipa are deja o intervenție pornită pe alt dispozitiv. Reîncarcă înainte de retry.');
+      }
+
+      final samePayload = current != null && recordPayloadMatches(current, desired);
+      if (!samePayload) {
+        if (expected == null) {
+          if (snap.exists) throw StateError('ID ocupat. Reîncarcă înainte de salvare.');
+          tx.set(ref, desired);
+        } else {
+          if (current == null) throw StateError('Intervenția a fost ștearsă. Reîncarcă Centralizatorul.');
+          if (!recordPayloadMatches(current, expected)) {
+            throw StateError('Intervenția a fost modificată pe alt dispozitiv. Reîncarcă înainte de salvare.');
+          }
+          tx.update(ref, desired);
         }
-        tx.update(ref, desired);
+      }
+
+      if (wantsRunning) {
+        if (lockSnapshot?.exists != true) {
+          tx.set(lockRef!, {
+            'teamId': teamId,
+            'recordId': id,
+            'locationId': desired['locationId'],
+            'startedAt': desired['startedAt'],
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      } else if (current != null && _isRunningRecord(current) &&
+          _lockMatches(lock, id)) {
+        tx.delete(lockRef!);
       }
     });
   } on FirebaseException catch (error, stackTrace) {
@@ -67,7 +105,16 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
         Error.throwWithStackTrace(error, stackTrace);
       }
       final current = observed.data();
-      if (current != null && recordPayloadMatches(current, desired)) return;
+      if (_isRunningRecord(desired) && lockRef != null) {
+        final observedLock = await lockRef.get(const GetOptions(source: Source.server));
+        if (!observedLock.metadata.isFromCache && !observedLock.metadata.hasPendingWrites &&
+            observedLock.exists && !_lockMatches(observedLock.data(), id)) {
+          throw StateError('Echipa are deja o intervenție pornită pe alt dispozitiv. Reîncarcă înainte de retry.');
+        }
+      }
+      if (current != null && recordPayloadMatches(current, desired)) {
+        if (!_isRunningRecord(desired) || await _serverLockMatches(lockRef, id)) return;
+      }
       if (expected == null && observed.exists) {
         throw StateError('ID ocupat. Reîncarcă înainte de salvare.');
       }
@@ -89,7 +136,16 @@ Future<void> saveRecordCompared(FirebaseFirestore db, String id,
   }
   final confirmed = await ref.get(const GetOptions(source: Source.server));
   if (confirmed.metadata.isFromCache || confirmed.metadata.hasPendingWrites ||
-      !confirmed.exists || !recordPayloadMatches(confirmed.data()!, desired)) {
+      !confirmed.exists || !recordPayloadMatches(confirmed.data()!, desired) ||
+      (_isRunningRecord(desired) && !await _serverLockMatches(lockRef, id))) {
     throw StateError('Salvarea nu a putut fi confirmată. Reîncarcă înainte de retry.');
   }
+}
+
+Future<bool> _serverLockMatches(DocumentReference<Map<String, dynamic>>? lockRef,
+    String recordId) async {
+  if (lockRef == null) return false;
+  final snapshot = await lockRef.get(const GetOptions(source: Source.server));
+  return !snapshot.metadata.isFromCache && !snapshot.metadata.hasPendingWrites &&
+      _lockMatches(snapshot.data(), recordId);
 }
