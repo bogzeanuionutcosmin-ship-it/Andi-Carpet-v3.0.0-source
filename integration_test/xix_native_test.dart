@@ -106,18 +106,18 @@ void main() {
           matching:find.byType(Scrollable),
         ).first;
         final tile=find.widgetWithText(CheckboxListTile,location.name);
-        await tester.scrollUntilVisible(tile,80,scrollable:pickerList);
-        // scrollUntilVisible only guarantees intersection with the scroll
-        // viewport; the bottom action bar can still cover the row. Align the
-        // target to the top of the picker before tapping.
-        await tester.ensureVisible(tile);
-        for(var attempt=0;attempt<4&&tile.hitTestable().evaluate().isEmpty;attempt++){
-          // A partially visible sliver child can satisfy ensureVisible while
-          // its center remains beneath the dialog actions. Move the list until
-          // the actual tap point is inside the unobscured picker viewport.
-          await tester.drag(pickerList,const Offset(0,-120));
+        // Selection chips change the sliver header height. Start each search
+        // from the top so a target above the previous offset is not skipped.
+        final pickerState=tester.state<ScrollableState>(pickerList);
+        while(pickerState.position.pixels>pickerState.position.minScrollExtent+1){
+          final before=pickerState.position.pixels;
+          await tester.drag(pickerList,const Offset(0,240));
           await tester.pumpAndSettle();
+          expect(pickerState.position.pixels,lessThan(before),
+            reason:'The picker must scroll back toward its first location');
         }
+        await tester.scrollUntilVisible(tile,60,scrollable:pickerList);
+        await Scrollable.ensureVisible(tester.element(tile),alignment:.5);
         await tester.pumpAndSettle();
         debugPrint('[xix-native] picker query="Craiova" '
           'resultTiles=${tile.evaluate().length} '
