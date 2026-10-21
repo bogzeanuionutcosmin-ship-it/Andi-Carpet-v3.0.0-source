@@ -258,3 +258,32 @@ Recontrolul codului din #136 a confirmat că validarea punctelor GPS și politic
 ### Obligații care rămân după loturile MapPage
 
 Extragerea a două politici pure nu modularizează întregul MapPage. MapPage, HomePage, ExpensePage, ProgramPage și DashboardPage rămân pagini mari `part`-uri. Nu elimina cache-urile Home, nu simplifica parsarea financiară și nu fragmentează mutații Firestore până când contractele/fallback-urile nu sunt modelate prin teste. Continuă inventarierea dependențelor, verifică orice candidat de cod nefolosit înainte de ștergere, apoi separă UI și IO incremental cu teste pe fiecare limită. `production_ready=false`.
+
+
+## Addendum XIX — checkpoint C35–C38 (21 octombrie 2026, UTC)
+
+### Candidate status and exact-head evidence
+
+| Candidate | Exact HEAD | Validate | Android | Native | Verdict |
+|---|---|---|---|---|---|
+| C35 / PR #213 — optional automatic Expense OCR prefill | `87a7c13281e8443abc19d72a62cfdf7445f8266d` | run `39534696560` SUCCESS; web `12316738143` SHA-256 `97999396afeab514de81b8a3635f25831bb80bcb05d41f5e73c955e26e43a09b`, PDF `12316563464` `14577627af8096c0703aaa4a7f98482947a3d3c2a3626235a95b1673464b34d3`, audit `12316353648` `0b02f80aa501d7355202297727eb672b2dd380fb44352adb5ef426b0d365451b` | run `39534696587` SUCCESS; APK `12316144752` SHA-256 `5e9eec807eba4046d457b1b8731796d686e941921cc8b0c78b5c958f8ff81906` | run `39534696637` SUCCESS; evidence `12318270032` SHA-256 `a4a9415dc34765f5eb51a1356cef9f417829c7b2776ad4a0b90ce24ff42c19bd` | Fully validated |
+| C36 / PR #214 — Home live location resource lifecycle | `214812c54c75ae147b249076af5304c815d100a9` | run `39534999364` SUCCESS; web `12316758621` SHA-256 `3b37e7ef2abac1ffc9050b28747ac4de19c34093141bc013cb3aff0b5e82a55e`, PDF `12316683716` `7e0239ad42908a17bed1942241360925bfc20a8ab67b6c02a88b22c9cb2390c1`, audit `12316897937` `ddc855e1433e15b962fd65b5c64f3ef888e758dd7737df8b2a0276eff0133185` | run `39534999348` SUCCESS; APK `12317213780` SHA-256 `35dc60a5d30e1061dc29c67555edb812fc1dce4c33d3467d39e9f18f2c08996d` | run `39534999537` first attempt failed before emulator/UI: Android 36 Google APIs image download returned `Error on ZipFile unknown archive`; same-SHA retry is active. Diagnostic artifact `12317194651` SHA-256 `b697de680fc04987795c73ad4c85be097505598fb2277ba2bdfa375c4dea5821` | Partially validated pending Native retry |
+| C37 / PR #215 — Map route line presentation | `9117fc3c8cd9e5b3698beabd216171e299baeccd` | run `39535914321` SUCCESS; web `12316854957` SHA-256 `3e4c45fc712dbd95b9cf01733954c5e9a55013b6003ff1e79016076f4fc275fb`, PDF `12317530462` `e208e2c6938312cda6fdd7c0cfc627bb0f2d90299811111c38140f01c2542a03`, audit `12317069111` `5b8ad7fb1c7f01b63651fe461e953a3a3cc0757981a9bcc6fdec9fb095b9e0e2` | run `39535914331` active after focused contracts/analyze | run `39535914376` active after focused contracts/analyze | Partially validated pending packaging/native evidence |
+| C38 / branch preparation — Dashboard active record selection | Test-first contract commit `b9ec953958179aa0bfa282253c16f1bdbeeaaf84`; implementation is isolated on `codex/xix-dashboard-active-record-selection-20261021` | Not started | Not started | Not started | No PR created; requires C37 terminal validation first |
+
+C35 changes only the eligibility/dispatch boundary for optional automatic OCR; manual document selection, retry/fallback, persistence, and financial calculations remain with ExpensePage. C36 moves ownership of the existing web poll timer and native position subscription into a resource lifecycle helper; permission checks, sampling policy, background behavior, and callbacks remain in HomePage. C37 moves only the already-existing complete-route polyline palette/segment construction; route selection, geometry, and GPS stay in their established modules. Each extraction has focused contract tests and runs in the cumulative Draft chain.
+
+### CI routing investigation
+
+C31 `86d58d3f85d3c8643d7ec2f8f5c751c3c87cb4e4` and C32 `389e30dd937ebcd57c7bcbfdd18e11b7795f565f` have passing Validate runs but no Android/Native PR runs. On each exact SHA, both Android and Native workflow files contain two same-indentation `run:` keys in one Home proximity test step; GitHub recorded only push-triggered workflow-file failures with zero jobs, not test failures. The Android duplicate is absent at hotfix `5f1967150acef5d9b7fc493b145881aa7161732d`; the Native duplicate is absent by C33 `a5fb8ec8772d8f0a25ab42b17b62121a6d04155a`. C31/C32 are not retrospectively certified on Android/Native because rerunning their invalid workflow definitions on new code would not certify those original SHAs.
+
+C37 additionally exposed and corrected a stacked-base predicate typo before final certification: a branch-list edit initially joined two Native `github.base_ref` values into one string and produced a skipped job on an intermediate SHA. The final candidate fixes the predicate, checks each exact base value, and adds a Python contract that rejects multiple `run:` keys in any Android/Native workflow step. Validate passed those regression contracts on C37's exact current HEAD.
+
+### Remaining responsibilities and next work
+
+- C38 isolates only Dashboard's existing running and waiting record selection plus newest-first ordering in `dashboard_record_selection.dart`. Contracts pin same-team filters, status/start/end requirements, operational work-date inclusion, and ordering. It does not alter START/STOP, transaction writes, team state, or C34 status priority.
+- Home still couples permission maintenance, Firebase synchronization, cache projection, background location writes, and screen orchestration. Keep those as separately tested boundaries; do not change GPS permission/background semantics without contract evidence.
+- ExpensePage still owns persistence, settlement workflows, financial mapping, and PDF invocation after OCR and validation helpers. Preserve integer-bani, rounding, record identity, and legacy/v2 settlement behavior.
+- Program/Dashboard still include UI orchestration around transactions and concurrency; keep pure selection/projection extractions separate from Firestore effects.
+- MapPage still coordinates Mapbox loading, route selection, GPS permission/lifecycle, and presentation; the C37 helper does not move these responsibilities.
+- All PRs remain Draft/Open and unmerged. No production Firebase change, deploy, release signing, or production APK distribution was performed. `production_ready=false`.
