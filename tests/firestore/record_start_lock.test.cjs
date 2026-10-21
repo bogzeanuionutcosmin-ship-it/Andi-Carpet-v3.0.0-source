@@ -2,7 +2,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, runTransaction, setDoc } = require('firebase/firestore');
+const { doc, getDoc, runTransaction, setDoc, deleteDoc } = require('firebase/firestore');
 
 let env;
 const db = (uid) => env.authenticatedContext(uid).firestore();
@@ -20,6 +20,7 @@ before(async () => {
       setDoc(doc(adminDb, 'users/editor-a'), { active: true, role: 'worker', effectivePermissions: ['editProgram'] }),
       setDoc(doc(adminDb, 'users/editor-b'), { active: true, role: 'worker', effectivePermissions: ['editProgram'] }),
       setDoc(doc(adminDb, 'teams/team-a'), { members: ['editor-a', 'editor-b'] }),
+      setDoc(doc(adminDb, 'teams/team-empty'), { members: ['editor-a'] }),
     ]);
   });
 });
@@ -54,6 +55,12 @@ test('two clients cannot reserve separate START records for one team; finish rel
   const lock = lockRef(acceptedDb, 'team-a');
   assert.equal((await assertSucceeds(getDoc(lock))).data().recordId, acceptedId);
 
+  // An authorized client cannot remove the serialization point while its
+  // work is running, including before a second device attempts another START.
+  await assertFails(deleteDoc(lockRef(db('editor-b'), 'team-a')));
+  assert.equal((await assertSucceeds(getDoc(lock))).data().recordId, acceptedId);
+  assert.equal((await assertSucceeds(getDoc(acceptedRecord))).data().status, 'running');
+
   await assertSucceeds(runTransaction(acceptedDb, async (transaction) => {
     const record = await transaction.get(acceptedRecord);
     const currentLock = await transaction.get(lock);
@@ -72,4 +79,21 @@ test('two clients cannot reserve separate START records for one team; finish rel
   const secondId = acceptedId === 'record-a' ? 'record-b' : 'record-a';
   await assertSucceeds(startRecord(acceptedDb, secondId, 'location-after-finish'));
   assert.equal((await assertSucceeds(getDoc(lock))).data().recordId, secondId);
+});
+
+
+test('an authorized member cannot forge a reservation for a missing or finished record', async () => {
+  const editor = db('editor-a');
+  const lock = lockRef(editor, 'team-empty');
+  await assertFails(setDoc(lock, {
+    teamId: 'team-empty', recordId: 'missing-reservation-target', locationId: 'room',
+  }));
+  await assertSucceeds(setDoc(recordRef(editor, 'finished-reservation-target'), {
+    teamId: 'team-empty', locationId: 'room', status: 'completed',
+    startedAt: new Date(), finishedAt: new Date(),
+  }));
+  await assertFails(setDoc(lock, {
+    teamId: 'team-empty', recordId: 'finished-reservation-target', locationId: 'room',
+  }));
+  assert.equal((await assertSucceeds(getDoc(lock))).exists(), false);
 });

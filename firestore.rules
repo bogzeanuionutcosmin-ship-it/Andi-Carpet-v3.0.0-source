@@ -204,11 +204,20 @@ service cloud.firestore {
         && request.resource.data.keys().hasAll(['teamId', 'recordId', 'locationId'])
         && request.resource.data.teamId == teamId
         && request.resource.data.recordId is string
-        && request.resource.data.locationId is string;
+        && request.resource.data.locationId is string
+        // A reservation cannot be forged without its matching active record.
+        && existsAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId))
+        && getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.teamId == teamId
+        && getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.locationId == request.resource.data.locationId
+        && isRunningRecord(getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data);
       // The application never retargets an existing reservation: it creates
       // a new lock only after the previous one has been removed on FINAL.
       allow update: if false;
-      allow delete: if canWriteTeamRecords(teamId);
+      // Removing a live reservation alone would permit a second START.
+      // Require the same atomic outcome as the referenced record's FINAL.
+      allow delete: if canWriteTeamRecords(teamId)
+        && (!existsAfter(/databases/$(database)/documents/records/$(resource.data.recordId))
+          || !isRunningRecord(getAfter(/databases/$(database)/documents/records/$(resource.data.recordId)).data));
     }
 
     // START/FINAL cer editProgram; corecțiile din Centralizator pot folosi editCentralizer.
