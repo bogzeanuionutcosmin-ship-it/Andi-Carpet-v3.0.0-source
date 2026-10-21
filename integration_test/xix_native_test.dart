@@ -77,7 +77,12 @@ void main() {
         },
       ))));
       await tester.pumpAndSettle();
-      expect(tester.takeException(),isNull,reason:'The Graph page must not raise Flutter framework exceptions');
+      final frameworkException=tester.takeException();
+      if(frameworkException!=null){
+        debugPrint('Program Graph page framework exception: $frameworkException');
+        debugDumpRenderTree();
+      }
+      expect(frameworkException,isNull,reason:'The Graph page must not raise Flutter framework exceptions');
     }
     Future<void> createGraphThroughUi() async {
       await openProgramPage();
