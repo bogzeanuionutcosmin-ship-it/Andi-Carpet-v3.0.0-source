@@ -43,6 +43,7 @@ import 'map/map_work_badge_state.dart';
 import 'map/map_reverse_geocoder.dart';
 import 'map/reverse_geocode_address.dart';
 import 'map/map_route_selection.dart';
+import 'map/map_route_line_presentation.dart';
 export 'reports/work_graph_pdf_projection.dart';
 import 'reports/work_graph_pdf_projection.dart';
 import 'map/map_point_validation.dart';
