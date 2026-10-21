@@ -3,7 +3,7 @@ set -euo pipefail
 python3 scripts/seed_xix_emulator.py
 collect_evidence() {
   adb logcat -d -s AndroidRuntime:E flutter:I > xix-evidence/native-logcat.txt || true
-  for file in native-flow.pdf observations.json; do
+  for file in native-flow.pdf decont-flow.pdf observations.json; do
     if adb exec-out run-as com.example.andi_carpeta cat "files/xix-evidence/$file" > "xix-evidence/$file.tmp"; then
       if python3 - "$file" "xix-evidence/$file.tmp" <<'PYVALID'
 import json, pathlib, sys
@@ -30,7 +30,7 @@ trap collect_evidence EXIT
 (
   for attempt in $(seq 1 90); do
     complete=1
-    for file in native-flow.pdf observations.json; do
+    for file in native-flow.pdf decont-flow.pdf observations.json; do
       target="xix-evidence/$file"
       if test -s "$target"; then continue; fi
       tmp="$target.polling"

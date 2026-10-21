@@ -19,6 +19,7 @@ class NativeEvidenceTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / "native-flow.pdf").write_bytes(b"%PDF-1.4\n%%EOF\n")
+        (self.root / "decont-flow.pdf").write_bytes(b"%PDF-1.4\n%%EOF\n")
         self.observation = {
             "completed": True,
             "graphCreatedThroughUi": True,
@@ -32,6 +33,7 @@ class NativeEvidenceTest(unittest.TestCase):
                 "manualCorrection": 150.25,
                 "settlementId": "xix-receipt-settlement",
                 "serverPersisted": True,
+                "decontPdfBuiltFromServerExpense": True,
             },
             "correctionThroughUi": True,
             "homeCorrectionThroughUi": 'actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal',
@@ -156,6 +158,11 @@ class NativeEvidenceTest(unittest.TestCase):
     def test_missing_pdf_fails(self):
         (self.root / "native-flow.pdf").unlink()
         with self.assertRaises(AssertionError):
+            module.verify(self.root)
+
+    def test_missing_decont_pdf_fails(self):
+        (self.root / "decont-flow.pdf").unlink()
+        with self.assertRaisesRegex(AssertionError, "decont PDF"):
             module.verify(self.root)
 
     def test_incomplete_scenario_fails(self):
@@ -283,6 +290,15 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIn("release-test-cert.txt", step.group(2))
         self.assertNotIn("operational-release-test.apk", step.group(2))
         self.assertNotRegex(step.group(2), r"cp\s+.+app-release\.apk\s+xix-evidence")
+
+    def test_decont_pdf_e2e_reloads_the_expense_from_firestore(self):
+        source = (ROOT / "integration_test/xix_native_test.dart").read_text()
+        self.assertIn(".get(const GetOptions(source:Source.server))", source)
+        self.assertIn("app.buildDecontPdfBytes(", source)
+        self.assertIn("decontPdfBuiltFromServerExpense':true", source)
+        validator = (ROOT / "scripts/verify_xix_decont_pdf_text.py").read_text()
+        for marker in ("Decont E2E", "12345", "150.25 lei", "Bon fiscal"):
+            self.assertIn(marker, validator)
 
 
 if __name__ == "__main__":

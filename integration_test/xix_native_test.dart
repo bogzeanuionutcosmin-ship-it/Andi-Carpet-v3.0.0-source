@@ -680,9 +680,33 @@ void main() {
     expect(savedExpense.data()!['documentNumber'],'12345');
     expect(savedExpense.data()!['amount'],150.25,reason:'manual correction must persist the corrected OCR amount');
     expect(savedExpense.data()!['confirmed'],true);
+    final savedExpenseData=savedExpense.data()!;
+    final serverExpense=app.Expense(
+      id:savedExpense.id,
+      teamId:savedExpenseData['teamId'] as String,
+      settlementId:savedExpenseData['settlementId'] as String,
+      category:savedExpenseData['category'] as String,
+      description:savedExpenseData['description'] as String,
+      amount:(savedExpenseData['amount'] as num).toDouble(),
+      date:(savedExpenseData['date'] as Timestamp).toDate(),
+      documentType:app.ExpenseDocumentType.values.byName(savedExpenseData['documentType'] as String),
+      documentNumber:savedExpenseData['documentNumber'] as String,
+      supplier:savedExpenseData['supplier'] as String,
+      confirmed:savedExpenseData['confirmed'] as bool,
+    );
+    final decontPdf=await app.buildDecontPdfBytes(
+      team:app.Team(id:'craiova',name:'Craiova'),
+      users:[app.AppUser(id:uid,name:'Editor',role:app.UserRole.member)],
+      expenses:[serverExpense],perDiems:[],
+      finance:app.TeamFinance(teamId:'craiova',managerId:uid,receivedDeparture:200),
+      settlement:receiptSettlement,
+    );
+    final evidenceDir=Directory('/data/user/0/com.example.andi_carpeta/files/xix-evidence')..createSync(recursive:true);
+    File('${evidenceDir.path}/decont-flow.pdf').writeAsBytesSync(decontPdf);
     evidence['expenseOcrThroughUi']={
       'controlledRecognition':true,'manualCorrection':150.25,
       'settlementId':receiptSettlement.id,'serverPersisted':true,
+      'decontPdfBuiltFromServerExpense':true,
     };
     await otherDb.doc('users/$uid').update({'functionIds':['worker']});
     await otherDb.doc('functions/xix-ui-editor').delete();

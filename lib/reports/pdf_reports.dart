@@ -334,7 +334,7 @@ Future<Uint8List> buildCentralizerPdf({
   return doc.save();
 }
 
-Future<void> downloadDecontPdf({
+Future<Uint8List> buildDecontPdfBytes({
   required Team team,
   required List<AppUser> users,
   required List<Expense> expenses,
@@ -540,7 +540,28 @@ Future<void> downloadDecontPdf({
       pw.Text('Notă: fotografiile bonurilor și facturilor nu sunt păstrate în decont; OCR-ul salvează numai datele structurate necesare.',style:const pw.TextStyle(fontSize:7,color:PdfColors.grey700)),
     ],
   ));
-  final bytes = await doc.save();
+  return doc.save();
+}
+
+Future<void> downloadDecontPdf({
+  required Team team,
+  required List<AppUser> users,
+  required List<Expense> expenses,
+  required List<PerDiemEntry> perDiems,
+  required TeamFinance finance,
+  TravelSettlement? settlement,
+  bool legacyOnly = false,
+}) async {
+  final bytes = await buildDecontPdfBytes(
+    team: team,
+    users: users,
+    expenses: expenses,
+    perDiems: perDiems,
+    finance: finance,
+    settlement: settlement,
+    legacyOnly: legacyOnly,
+  );
+  final titleSuffix = settlement?.name ?? (legacyOnly ? 'Istoric anterior' : team.name);
   final filename = 'decont_${_safeFilePart(team.name)}_${_safeFilePart(titleSuffix)}_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf';
   await deliverPdf(
     buildBytes: () async => bytes,

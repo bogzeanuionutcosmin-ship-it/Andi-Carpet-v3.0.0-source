@@ -8,12 +8,16 @@ from pathlib import Path
 
 def verify(root: Path) -> None:
     pdf = root / "native-flow.pdf"
+    decont_pdf = root / "decont-flow.pdf"
     observations = root / "observations.json"
-    if not pdf.is_file() or not observations.is_file():
-        raise AssertionError("Native PDF and observations are both required")
+    if not pdf.is_file() or not decont_pdf.is_file() or not observations.is_file():
+        raise AssertionError("Centralizator PDF, decont PDF, and observations are all required")
     data = pdf.read_bytes()
     if not data.startswith(b"%PDF-") or b"%%EOF" not in data[-1024:]:
         raise AssertionError("Native output is not a complete PDF")
+    decont_data = decont_pdf.read_bytes()
+    if not decont_data.startswith(b"%PDF-") or b"%%EOF" not in decont_data[-1024:]:
+        raise AssertionError("Decont output is not a complete PDF")
     result = json.loads(observations.read_text(encoding="utf-8"))
     if not isinstance(result, dict) or result.get("completed") is not True:
         raise AssertionError("Native scenario did not reach its completion marker")
@@ -38,6 +42,7 @@ def verify(root: Path) -> None:
         or not isinstance(expense.get("settlementId"), str)
         or not expense["settlementId"].strip()
         or expense.get("serverPersisted") is not True
+        or expense.get("decontPdfBuiltFromServerExpense") is not True
     ):
         raise AssertionError("Expenses OCR review, manual correction, selected settlement, and server persistence were not demonstrated")
 

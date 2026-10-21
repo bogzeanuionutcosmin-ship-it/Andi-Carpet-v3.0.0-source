@@ -177,6 +177,9 @@ jobs:
             pdfinfo xix-evidence/native-flow.pdf > xix-evidence/native-pdf-info.txt
             pdftotext -layout xix-evidence/native-flow.pdf xix-evidence/native-flow.txt
             python3 scripts/verify_xix_pdf_text.py
+            pdfinfo xix-evidence/decont-flow.pdf > xix-evidence/decont-pdf-info.txt
+            pdftotext -layout xix-evidence/decont-flow.pdf xix-evidence/decont-flow.txt
+            python3 scripts/verify_xix_decont_pdf_text.py
           else
             echo "Native evidence absent: no PDF verification claimed; inspect native step and emulator logs" >&2
             exit 1

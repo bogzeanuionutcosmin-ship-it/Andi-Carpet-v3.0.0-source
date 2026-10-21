@@ -536,7 +536,7 @@ class _ProgramPageState extends State<ProgramPage> {
     );
     _ensureGraphSelection();
     final can = widget.canEditProgram && widget.canEditTeam(team.id);
-    final canAdministerGraph = widget.currentUser.role == UserRole.admin;
+    final canAdministerGraph = widget.currentUser.role == UserRole.director;
     final isTeamMember = widget.canEditTeam(team.id);
     final head = graphHead;
     final car = assignedCar;
