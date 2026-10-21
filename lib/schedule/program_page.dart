@@ -910,7 +910,30 @@ class _ProgramPageState extends State<ProgramPage> {
   }
   Future<void> _pauseGraph()async{if(!await _applyGraphState(paused:true))return;widget.log('Grafic pus pe pauză','${team.name} · ${graphHead?.graphName??''}');if(mounted)showSuccessMessage(context,'Graficul a fost pus pe pauză.');}
   Future<void> _resumeGraph()async{if(!await _applyGraphState(paused:false))return;widget.log('Grafic reluat','${team.name} · ${graphHead?.graphName??''}');if(mounted)showSuccessMessage(context,'Graficul a fost reluat.');}
-  Future<void> _closeGraph()async{final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('STOP Grafic de lucru'),content:const Text('Graficul complet va fi închis. Istoricul și Centralizatorul rămân păstrate.'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('STOP'))]))??false;if(!ok)return;if(!await _applyGraphState(closed:true,paused:false))return;widget.log('Grafic închis','${team.name} · ${graphHead?.graphName??''}');if(mounted)showSuccessMessage(context,'Graficul a fost închis.');}
+  Future<void> _closeGraph()async{
+    final readiness=programGraphClosureReadiness(
+      schedules:graphSchedules,
+      records:widget.records,
+    );
+    if(!readiness.canClose){
+      final preview=readiness.blockers.take(5).join('\n');
+      final remainder=readiness.blockers.length>5
+          ?'\n… și încă ${readiness.blockers.length-5} intervenții.'
+          :'';
+      if(mounted)showErrorMessage(context,
+        'STOP blocat: ${readiness.blockers.length} intervenții nu au rezultat final.\n$preview$remainder');
+      return;
+    }
+    final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
+      title:const Text('STOP Grafic de lucru'),
+      content:const Text('Toate intervențiile principale sunt finalizate sau au fost declarate nerealizate cu explicație. Graficul complet va fi închis. Istoricul și Centralizatorul rămân păstrate.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('STOP'))],
+    ))??false;
+    if(!ok)return;
+    if(!await _applyGraphState(closed:true,paused:false))return;
+    widget.log('Grafic închis','${team.name} · ${graphHead?.graphName??''}');
+    if(mounted)showSuccessMessage(context,'Graficul a fost închis.');
+  }
   Future<void> _postponeGraph()async{
     if(graphSchedules.isEmpty)return;DateTime selected=graphSchedules.firstWhere((x)=>!x.date.isBefore(operationalWorkDate(DateTime.now())),orElse:()=>graphSchedules.first).date;
     final chosen=await showDialog<DateTime>(context:context,builder:(c)=>StatefulBuilder(builder:(c,setD)=>AlertDialog(title:const Text('Amână programul'),content:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Alege ziua de la care vrei să deplasezi graficul cu +1 zi.'),const SizedBox(height:10),DropdownButtonFormField<DateTime>(value:selected,items:graphSchedules.map((x)=>DropdownMenuItem(value:x.date,child:Text(formatDate(x.date)))).toList(),onChanged:(v){if(v!=null)setD(()=>selected=v);})]),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,selected),child:const Text('Amână cu 1 zi'))])));

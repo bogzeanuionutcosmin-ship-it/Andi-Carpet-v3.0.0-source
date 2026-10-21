@@ -176,6 +176,7 @@ part 'admin/admin_backup_panel_actions.dart';
 part 'admin/admin_panel_page.dart';
 part 'schedule/program_schedule_clone.dart';
 part 'schedule/program_graph_state.dart';
+part 'schedule/program_graph_closure_policy.dart';
 part 'schedule/program_start_snapshot.dart';
 part 'schedule/program_start_location_resolution.dart';
 part 'schedule/program_page.dart';
