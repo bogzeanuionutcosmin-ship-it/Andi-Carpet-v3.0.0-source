@@ -56,6 +56,15 @@ void main() {
 
     final missingReason = attempt(status: app.WorkAttemptStatus.notCompleted, at: DateTime(2026, 10, 21, 9));
     expect(app.programGraphClosureReadiness(schedules: [day()], records: [missingReason]).canClose, isFalse);
+
+    final unfinalizedWithReason = app.CentralizerRecord(
+      id:'unfinalized', teamId:'team-1', locationId:'carpet',
+      type:app.LocationType.magic, locationNameSnapshot:'Carpet room',
+      addressSnapshot:'Street 1', startedAt:DateTime(2026,10,21,9),
+      status:app.WorkAttemptStatus.notCompleted, refusalReason:'Lipsă acces',
+    );
+    expect(app.programGraphClosureReadiness(schedules:[day()],records:[unfinalizedWithReason]).canClose,isFalse,
+      reason:'a reason without a persisted terminal timestamp is not a final decision');
   });
 
   test('latest same-day retry decides readiness; facade does not replace carpet work', () {
@@ -76,5 +85,20 @@ void main() {
     );
     expect(app.programGraphClosureReadiness(schedules: [day(items: [facade])], records: [carpetDoneFacadePending]).canClose, isTrue,
       reason:'unfinished additional facade work does not block finalized carpet work');
+  });
+
+  test('STOP checks every day in the graph, including a later unresolved day', () {
+    final firstDay=day(date:DateTime(2026,10,21));
+    final secondDay=day(date:DateTime(2026,10,22));
+    final completed=attempt(status:app.WorkAttemptStatus.completed,at:DateTime(2026,10,21,9));
+    expect(app.programGraphClosureReadiness(schedules:[firstDay,secondDay],records:[completed]).canClose,isFalse,
+      reason:'a completed earlier day cannot hide an unstarted later-day intervention');
+    final secondCompleted=app.CentralizerRecord(
+      id:'second-day',teamId:'team-1',locationId:'carpet',
+      type:app.LocationType.magic,locationNameSnapshot:'Carpet room',
+      addressSnapshot:'Street 1',startedAt:DateTime(2026,10,22,9),
+      finishedAt:DateTime(2026,10,22,9,5),status:app.WorkAttemptStatus.completed,
+    );
+    expect(app.programGraphClosureReadiness(schedules:[firstDay,secondDay],records:[completed,secondCompleted]).canClose,isTrue);
   });
 }

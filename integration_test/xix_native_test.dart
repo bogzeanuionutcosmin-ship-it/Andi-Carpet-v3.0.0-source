@@ -695,7 +695,7 @@ void main() {
       confirmed:savedExpenseData['confirmed'] as bool,
     );
     final decontPdf=await app.buildDecontPdfBytes(
-      team:app.Team(id:'craiova',name:'Craiova'),
+      team:app.Team(id:'craiova',name:'Craiova',members:[uid]),
       users:[app.AppUser(id:uid,name:'Editor',role:app.UserRole.member)],
       expenses:[serverExpense],perDiems:[],
       finance:app.TeamFinance(teamId:'craiova',managerId:uid,receivedDeparture:200),
@@ -713,7 +713,7 @@ void main() {
     evidence['homeCorrectionThroughUi']='actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal';
     evidence['completed']=true;
     File('${out.path}/observations.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(evidence));
-    // Wait for the host to confirm that both native artifacts were copied.
+    // Wait for the host to confirm that every native artifact was copied.
     final receipt=File('${out.path}/host-captured.ok');
     var received=false;
     for (var n=0;n<120;n++) {

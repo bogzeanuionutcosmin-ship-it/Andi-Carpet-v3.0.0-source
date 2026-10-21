@@ -5,6 +5,7 @@ Review date: 2026-10-18. Documentation only. This does not change APK builds, ke
 ## Current evidence
 - `main:android/app/build.gradle.kts`: `buildTypes.release.signingConfig = signingConfigs.getByName("debug")`. This does not provide a trusted independently controlled production signing identity.
 - `main:pubspec.yaml`: `version: 3.0.1+33`. Treat this as source metadata, not proof of final APK manifest values.
+- `main:lib/main.dart`: in-app version label is also `3.0.1+33`; the older `RELEASE_3.0.0_FINAL.md` describes historical build `3.0.0+32` and must not be used as current-candidate evidence.
 - #95 at `3c372cc839614125b9f375e5ff20b818aa1e18ed` adds HTTPS/public-host validation for Android APK links. It does not verify downloaded artifact SHA-256, certificate fingerprint, or redirect chain.
 - #101 at `98c40ae394941ddfc185f028fc04ad6809d6de3b` contains a synthetic emulator APK test, not physical authenticated production-like application acceptance.
 

@@ -30,6 +30,7 @@ ProgramGraphClosureReadiness programGraphClosureReadiness({
           latest!.completed;
       final explainedNotCompleted =
           latest?.status == WorkAttemptStatus.notCompleted &&
+          latest?.finishedAt != null &&
           (latest?.refusalReason?.trim().isNotEmpty ?? false);
       if (!completed && !explainedNotCompleted) {
         final status = latest == null
