@@ -1454,3 +1454,11 @@ main. Fără flag, etapa nativă se oprește clar; nu continuă fără persisten
 - C31/#209 este Draft/Open, stacked pe C30, HEAD exact `2566b14ec1d39e71b3cbd9f32cc33377c98d174c`. Extrage filtrul duplicat de programe Home pornite, deschise, nepausate și neamânate, păstrând `sameDay`, ordinea și filtrul distinct de auto-rezolvare. Testele contract acoperă echipa, ziua, stările, ordinea și rezultatul gol.
 - CI exact-head C31: Validate `39516568304` este în curs; Python source/security contracts SUCCESS. Android și Native sunt încă în așteptarea înregistrării/terminării. Nu se pretinde încă CI verde pentru HEAD-ul C31.
 - Continuarea rămâne pe seria cumulativă deschisă. Auditul celor șase module, review-ul uman și testarea fizică pe Android rămân deschise.
+
+
+## Mission XIX C30–C32 continuation — 2026-10-21
+
+- C30/#208 exact HEAD `8bfc120ec62d70c24d4317a7577173a61d9537b2`: Validate `39512793185` PASS, Android `39512793093` PASS, Native `39512793206` PASS after same-SHA retry. Native retry job `118949202441` completed connected flow and PDF/checksum validation. Final artifact `12308024349`, SHA-256 `f482bb088478349f5d96f5f44c311b5d4823368d70ae45d3b27dba0a1a559d6c`. First attempt artifact `12306664989` preceded the ADB offline failure.
+- C31/#209 exact HEAD `86d58d3f85d3c8643d7ec2f8f5c751c3c87cb4e4`: Validate `39516711275` PASS. Android and Native are absent from commit workflow runs; C31 is not fully validated.
+- C32 branch `codex/xix-home-arrival-candidate-policy-20261021` is based directly on C31. Contract-first commits `1c5edebb8674d30ddd3a46a98b9e4904f6e52bfb` and `20629971af76d5f2a24d4f644f616b70efc516c2` add Flutter and Python source contracts before implementation. C32 extracts only Home's existing geofence candidate selection; schedule/status/coordinate scanning, dwell, snooze and prompt behavior stay in Home. Final SHA and CI evidence pending.
+- Draft PRs remain unmerged; no deploy, live Firebase changes, production signing/distribution. `production_ready=false`.

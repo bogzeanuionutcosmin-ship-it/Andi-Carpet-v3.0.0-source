@@ -144,3 +144,11 @@ Checkpointul C14/#192 (`cf7768b6a7d312af1b0092d1fd9403505f3c1b85`) este validat 
 - C31/#209 Draft/Open, bazat pe C30, HEAD `2566b14ec1d39e71b3cbd9f32cc33377c98d174c`. Policy pură pentru selecția programelor Home active în două call-site-uri duplicate; păstrează filtrul diferit pentru auto-rezolvare. Contractele verifică echipa/data/stările, ordinea și lista nouă goală.
 - C31: Validate run `39516568304` este în curs. Python source/security contracts au SUCCESS; Android/Native nu au încă rezultat terminal pe acest SHA.
 - Limite neschimbate: fără merge, deploy, Firebase de producție, signing ori distribuire APK; `production_ready=false`. Auditul complet, review-ul uman și testarea Android fizică rămân deschise.
+
+
+## C30/C31/C32 checkpoint — 2026-10-21
+
+- C30/#208 `8bfc120ec62d70c24d4317a7577173a61d9537b2`: Validate `39512793185`, Android `39512793093`, Native `39512793206` all PASS. Native passed on retry, job `118949202441`; final artifact `12308024349`, SHA-256 `f482bb088478349f5d96f5f44c311b5d4823368d70ae45d3b27dba0a1a559d6c`.
+- C31/#209 `86d58d3f85d3c8643d7ec2f8f5c751c3c87cb4e4`: Validate `39516711275` PASS; Android/Native are not registered, so C31 is not fully validated.
+- C32 `codex/xix-home-arrival-candidate-policy-20261021`, directly based on C31: tests came first (`1c5edebb8674d30ddd3a46a98b9e4904f6e52bfb`, `20629971af76d5f2a24d4f644f616b70efc516c2`). Scope is a pure Home geofence candidate selector preserving the 250 m accuracy-adjusted boundary and nearest ordering. Final SHA and CI runs pending.
+- PRs remain Draft/Open; no merge/deploy/live Firebase/signing/production APK distribution; `production_ready=false`.

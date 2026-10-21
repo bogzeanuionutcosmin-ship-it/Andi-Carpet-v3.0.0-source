@@ -592,7 +592,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
     // Sosirea la sală cere întotdeauna confirmarea omului. Nu pornim lucrarea doar
     // pentru că GPS-ul spune că telefonul este în apropiere.
-    final candidates = <(ScheduleItem, Location, double)>[];
+    final candidates = <HomeArrivalCandidate<(ScheduleItem, Location)>>[];
     for (final item in schedule.items) {
       final r = _homeLatestRecord(teamId, item.locationId, workDate);
       if (r?.status == WorkAttemptStatus.completed ||
@@ -603,11 +603,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       final loc = _homeLocationById(item.locationId);
       if (loc?.latitude == null || loc?.longitude == null) continue;
       final meters = Geolocator.distanceBetween(p.latitude, p.longitude, loc!.latitude!, loc.longitude!);
-      // GPS-ul cu eroare mare nu trebuie să declanșeze promptul la marginea razei.
-      // Cerem ca distanța + eroarea estimată să rămână în raza de 250 m.
-      if (meters + p.accuracy <= 250) candidates.add((item, loc, meters));
+      candidates.add(HomeArrivalCandidate(value: (item, loc), meters: meters));
     }
-    if (candidates.isEmpty) {
+    final candidate = nearestEligibleHomeArrivalCandidate<(ScheduleItem, Location)>(
+      candidates: candidates,
+      accuracyMeters: p.accuracy,
+    );
+    if (candidate == null) {
       _autoInsideSince.clear();
       _arrivalSnoozedUntil.clear();
       _arrivalPromptCounts.clear();
@@ -615,9 +617,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       return;
     }
 
-    candidates.sort((a, b) => a.$3.compareTo(b.$3));
-    final item = candidates.first.$1;
-    final meters = candidates.first.$3;
+    final item = candidate.value.$1;
+    final meters = candidate.meters;
     final key = '${schedule.id}_${item.locationId}_${workDate.year}${two(workDate.month)}${two(workDate.day)}';
     final firstInside = _autoInsideSince.putIfAbsent(key, () => now);
     _autoInsideSince.removeWhere((k, _) => k != key);
