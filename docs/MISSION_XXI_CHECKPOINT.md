@@ -33,7 +33,7 @@ Web SDK and was corrected to Date;438Flutter passed, three new negative-ACK test
 exposed an incorrect ID-collision classification. Recovery now preserves the
 original uncertainty error when the payload matches but reservation is unconfirmed.
 Functions/Node/Python passed both rounds. Final exact-SHA CI must be checked anew.
-Local Python201passed; JavaScript syntax and whitespace passed.
+Local Python204passed; JavaScript syntax and whitespace passed.
 
 ## Exact next action
 
@@ -62,3 +62,16 @@ Local working tree is /workspace/scratch/ee2401192265/andi-carpet. Its git HEAD 
 older than API-published commits; local modified files include earlier published
 changes. Do not reset or republish them blindly. Compare file blob hashes with
 current remote tree and update the existing branch with an expected-SHA lease.
+
+
+## Staging preparation added after model boundary
+
+An isolated staging Android builder/workflow now validates a separate public
+Firebase Android JSON, uses package com.example.andi_carpeta.staging, debug test
+signing, records package/certificate/APK hash/source provenance and restores
+source config after failure. Runtime staging initialization rejects missing or
+production config; every Functions URL derives from the selected project.
+No staging project JSON/approved ID was supplied, so the conditional staging job
+is expected to skip. Do not label an emulator build a staging phone APK.
+See docs/release/STAGING_ANDROID_BUILD.md. Test physical/backend rollout remains
+external; do not ask for credentials while other work remains executable.

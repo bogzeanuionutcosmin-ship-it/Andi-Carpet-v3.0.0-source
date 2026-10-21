@@ -1509,11 +1509,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (!canEditTeam(head.teamId) || !hasPermission(FunctionPermission.editProgram)) {
       throw StateError('Nu ai dreptul să închizi acest grafic.');
     }
-    final project = Firebase.app().options.projectId;
-    const emulatorHost = String.fromEnvironment('ANDICARPET_EMULATOR_HOST');
-    final endpoint = emulatorHost.isNotEmpty
-      ? Uri.parse('http://$emulatorHost:5001/$project/europe-central2/closeProgramGraph')
-      : Uri.https('europe-central2-$project.cloudfunctions.net', '/closeProgramGraph');
+    final endpoint = _backendFunction('closeProgramGraph');
     await requestGraphClosure(endpoint: endpoint,
       getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
       post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),

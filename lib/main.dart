@@ -14,6 +14,7 @@ import 'home/home_locality_label.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
+import 'bootstrap/firebase_environment.dart';
 import 'chat/visible_chat_sender_policy.dart';
 import 'download_file.dart';
 import 'package:flutter/services.dart';
@@ -209,9 +210,12 @@ part 'home/home_document_codecs.dart';
 part 'home/home_location_seed.dart';
 
 const MethodChannel _smsGatewayChannel = MethodChannel('andi_carpeta/sms_gateway');
-const String _registerSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/registerSmsGateway';
-const String _disableSmsGatewayUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/disableSmsGateway';
-const String _geocodeRomaniaPlaceUrl = 'https://europe-central2-andicarpet-e777e.cloudfunctions.net/geocodeRomaniaPlace';
+Uri _backendFunction(String name) => firebaseFunctionEndpoint(
+  Firebase.app().options.projectId, name,
+  emulatorHost: const String.fromEnvironment('ANDICARPET_EMULATOR_HOST'));
+String get _registerSmsGatewayUrl => _backendFunction('registerSmsGateway').toString();
+String get _disableSmsGatewayUrl => _backendFunction('disableSmsGateway').toString();
+String get _geocodeRomaniaPlaceUrl => _backendFunction('geocodeRomaniaPlace').toString();
 const String _appVersionLabel = '3.0.1+33';
 
 Future<void> main() async {

@@ -7,6 +7,16 @@ const String _webPushVapidKey = String.fromEnvironment(
 
 Future<void> _initializeFirebaseForPlatform() async {
   const host = String.fromEnvironment('ANDICARPET_EMULATOR_HOST');
+  const environment = String.fromEnvironment('ANDICARPET_ENVIRONMENT', defaultValue:'production');
+  if (!['production','staging'].contains(environment)) throw StateError('Mediu Firebase necunoscut.');
+  if (environment == 'staging') {
+    if (!kDebugMode || host.isNotEmpty || kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      throw StateError('Buildul staging este exclusiv Android debug, separat de emulator.');
+    }
+    final options=stagingFirebaseOptions(const String.fromEnvironment('ANDICARPET_STAGING_OPTIONS'));
+    await Firebase.initializeApp(options:options);
+    return;
+  }
   if (host.isNotEmpty) {
     if (!kDebugMode || !['10.0.2.2', '127.0.0.1', 'localhost'].contains(host)) {
       throw StateError('Emulator Firebase permis doar în debug pe loopback.');
