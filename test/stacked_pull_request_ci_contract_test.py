@@ -21,6 +21,7 @@ STACK_BASES = (
     "codex/xix-dashboard-operational-status-20261021",
     "codex/xix-expense-optional-ocr-prefill-20261021",
     "codex/xix-home-live-location-resources-20261021",
+    "codex/xix-map-route-line-presentation-20261021",
 )
 
 
@@ -37,6 +38,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
         for branch in ("main", *STACK_BASES):
             self.assertIn(branch, workflow)
         self.assertIn("flutter test test/map_road_geometry_controller_test.dart", workflow)
+        self.assertIn("flutter test test/map_route_line_presentation_test.dart", workflow)
         self.assertIn("flutter test test/decont_financial_input_selection_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_removal_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_creation_test.dart", workflow)
@@ -64,6 +66,9 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("github.base_ref == 'codex/xix-home-location-proximity-policy-20261021'", workflow)
         self.assertIn("github.base_ref == 'codex/xix-home-arrival-candidate-policy-20261021'", workflow)
         self.assertIn("github.base_ref == 'codex/xix-home-gps-sampling-profile-20261021'", workflow)
+        self.assertIn("github.base_ref == 'codex/xix-home-live-location-resources-20261021'", workflow)
+        self.assertIn("github.base_ref == 'codex/xix-map-route-line-presentation-20261021'", workflow)
+        self.assertIn("flutter test test/map_route_line_presentation_test.dart", workflow)
         self.assertIn("github.head_ref == 'codex/xix-program-graph-state-persistence-20261021'", workflow)
         self.assertIn("flutter test test/decont_financial_input_selection_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_removal_test.dart", workflow)
