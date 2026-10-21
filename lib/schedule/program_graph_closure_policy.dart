@@ -9,7 +9,8 @@ class ProgramGraphClosureReadiness {
 /// Checks every carpet intervention in every day of a graph before official
 /// STOP. A refused or in-progress attempt remains open; only a completed
 /// attempt or a not-completed result with a recorded explanation is final.
-/// Planned facade work is explicitly additional and does not block STOP.
+/// Planned facade work is additional, but it does not replace the primary
+/// carpet intervention represented by its ScheduleItem.
 ProgramGraphClosureReadiness programGraphClosureReadiness({
   required Iterable<WorkSchedule> schedules,
   required Iterable<CentralizerRecord> records,
@@ -18,7 +19,6 @@ ProgramGraphClosureReadiness programGraphClosureReadiness({
   final blockers = <String>[];
   for (final schedule in schedules) {
     for (final item in schedule.items) {
-      if (item.facadePlanned) continue;
       final matching = allRecords.where((record) =>
         record.teamId == schedule.teamId &&
         record.locationId == item.locationId &&
