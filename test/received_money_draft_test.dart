@@ -19,7 +19,7 @@ void main(){
     await attempt();expect(original.receivedEntries.single.id,'one');expect(original.totalReceived,12.34);
   });
   test('non-finite and fractional-ban amounts cannot reach persistence',()async{
-    for(final value in [double.nan,double.infinity,double.negativeInfinity,-1,0,1.001]){
+    for(final value in <double>[double.nan,double.infinity,double.negativeInfinity,-1,0,1.001]){
       final invalid=ReceivedMoneyEntry(id:'bad',kind:'departure',amount:value,method:'Cash',fromName:'Source',date:DateTime(2026));
       await expectLater(saveReceivedMoneyDraft(entry:invalid,finance:TeamFinance(teamId:'t'),
         saveFinance:(_)async{fail('invalid write');},saveSettlement:(_)async{fail('invalid write');}),throwsArgumentError);
