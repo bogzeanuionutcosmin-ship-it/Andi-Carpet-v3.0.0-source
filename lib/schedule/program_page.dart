@@ -583,9 +583,10 @@ class _ProgramPageState extends State<ProgramPage> {
                   :'Accesul echipei sau drepturile contului s-au schimbat. Reîncarcă aplicația și cere administratorului să verifice repartizarea echipei și dreptul editProgram.',
         )),
         if(graphIds.isNotEmpty) DropdownButtonFormField<String>(
+          isExpanded:true,
           value:selectedGraphId,
           decoration:const InputDecoration(labelText:'Grafic de lucru'),
-          items:graphIds.map((id){final first=teamSchedules.firstWhere((x)=>x.graphId==id);final days=teamSchedules.where((x)=>x.graphId==id).length;return DropdownMenuItem(value:id,child:Text('${first.graphName} · $days zile'));}).toList(),
+          items:graphIds.map((id){final first=teamSchedules.firstWhere((x)=>x.graphId==id);final days=teamSchedules.where((x)=>x.graphId==id).length;return DropdownMenuItem(value:id,child:Text('${first.graphName} · $days zile',maxLines:1,overflow:TextOverflow.ellipsis));}).toList(),
           onChanged:(v)=>setState(()=>selectedGraphId=v),
         ) else const _InfoCard(icon:Icons.calendar_month,title:'Niciun grafic creat',text:'Apasă „Creează grafic”. Alegi sălile pentru Ziua 1, apoi mergi direct la Ziua 2 fără să închizi fereastra.'),
         if(head!=null)...[

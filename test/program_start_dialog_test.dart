@@ -26,6 +26,8 @@ void main() {
         saveSchedules:(days) async {saved.addAll(days);},
       ))));
       await tester.pumpAndSettle();
+      expect(tester.takeException(),isNull,
+        reason:'The graph selector must fit the phone even with the default long graph name');
       final start=find.text('START GRAFIC');
       await tester.ensureVisible(start);
       await tester.tap(start);
