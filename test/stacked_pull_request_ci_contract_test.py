@@ -26,6 +26,20 @@ STACK_BASES = (
 
 
 class StackedPullRequestCiContract(unittest.TestCase):
+    def assert_one_run_key_per_step(self, workflow):
+        step = None
+        run_keys = 0
+        for line in workflow.splitlines():
+            if line.startswith("      - "):
+                if step is not None:
+                    self.assertLessEqual(run_keys, 1, f"duplicate run keys in {step}")
+                step = line.strip()
+                run_keys = 0
+            elif line.startswith("        run:") and step is not None:
+                run_keys += 1
+        if step is not None:
+            self.assertLessEqual(run_keys, 1, f"duplicate run keys in {step}")
+
     def test_validation_workflow_targets_stack_bases(self):
         workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
         for branch in ("main", *STACK_BASES):
@@ -35,6 +49,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
 
     def test_android_workflow_runs_focused_stack_contracts(self):
         workflow = (ROOT / ".github/workflows/build-test-apk.yml").read_text(encoding="utf-8")
+        self.assert_one_run_key_per_step(workflow)
         for branch in ("main", *STACK_BASES):
             self.assertIn(branch, workflow)
         self.assertIn("flutter test test/map_road_geometry_controller_test.dart", workflow)
@@ -59,6 +74,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
 
     def test_native_workflow_runs_contract_without_live_permissions(self):
         workflow = (ROOT / ".github/workflows/xix-native-candidate.yml").read_text(encoding="utf-8")
+        self.assert_one_run_key_per_step(workflow)
         for branch in ("main", *STACK_BASES):
             self.assertIn(branch, workflow)
         self.assertIn("github.base_ref == 'codex/xix-pdf-decont-input-selection-20261021'", workflow)
