@@ -107,12 +107,18 @@ void main() {
         ).first;
         final tile=find.widgetWithText(CheckboxListTile,location.name);
         await tester.scrollUntilVisible(tile,80,scrollable:pickerList);
+        // scrollUntilVisible only guarantees intersection with the scroll
+        // viewport; the bottom action bar can still cover the row. Align the
+        // target to the top of the picker before tapping.
+        await tester.ensureVisible(tile);
         await tester.pumpAndSettle();
         debugPrint('[xix-native] picker query="Craiova" '
           'resultTiles=${tile.evaluate().length} '
           'listScrollables=${find.descendant(of:find.byType(CustomScrollView).last,matching:find.byType(Scrollable)).evaluate().length}');
         expect(tile,findsOneWidget,
           reason:'The open/active fixture location "${location.name}" must remain present under the Craiova filter and after scrolling the Graph picker');
+        expect(tile.hitTestable(),findsOneWidget,
+          reason:'The location row must be clear of the dialog action bar before it is tapped');
         await tester.tap(tile);
         await tester.pumpAndSettle();
       }

@@ -273,6 +273,7 @@ class NativeWorkflowContractTest(unittest.TestCase):
         self.assertIn("find.widgetWithText(CheckboxListTile,location.name)", source)
         self.assertIn("tester.enterText(search,'Craiova')", source)
         self.assertIn("controller.text,'Craiova'", source)
+        self.assertIn("tile.hitTestable()", source)
         self.assertIn("Every selected location must remain visible in order", source)
         self.assertIn("of:find.byType(CustomScrollView).last", source)
         self.assertIn("expect(tile,findsOneWidget", source)
