@@ -88,14 +88,16 @@ void main() {
       await openProgramPage();
       await tester.tap(find.text('Creează grafic'));
       await tester.pumpAndSettle();
+      final search=find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.labelText == 'Caută sală / adresă / categorie');
+      expect(search,findsOneWidget,reason:'The Graph picker must expose its location search field');
+      await tester.ensureVisible(search);
+      await tester.enterText(search,'Craiova');
+      await tester.pumpAndSettle();
+      expect(tester.widget<EditableText>(find.byType(EditableText).first).controller.text,'Craiova',
+        reason:'The active Graph filter must stay visible while locations are selected');
       for(final location in graphLocations){
-        final search=find.byWidgetPredicate((widget) =>
-          widget is TextField &&
-          widget.decoration?.labelText == 'Caută sală / adresă / categorie');
-        expect(search,findsOneWidget,reason:'The Graph picker must expose its location search field');
-        await tester.ensureVisible(search);
-        await tester.enterText(search,location.name);
-        await tester.pumpAndSettle();
         // Scope scrolling to the picker's CustomScrollView. AlertDialog can
         // contain other scrollables (selected chips/actions); scrolling those
         // leaves virtualized location rows unbuilt.
@@ -106,15 +108,18 @@ void main() {
         final tile=find.widgetWithText(CheckboxListTile,location.name);
         await tester.scrollUntilVisible(tile,80,scrollable:pickerList);
         await tester.pumpAndSettle();
-        debugPrint('[xix-native] picker query="${location.name}" '
+        debugPrint('[xix-native] picker query="Craiova" '
           'resultTiles=${tile.evaluate().length} '
           'listScrollables=${find.descendant(of:find.byType(CustomScrollView).last,matching:find.byType(Scrollable)).evaluate().length}');
         expect(tile,findsOneWidget,
-          reason:'The open/active fixture location "${location.name}" must remain present after filtering and scrolling the Graph picker');
+          reason:'The open/active fixture location "${location.name}" must remain present under the Craiova filter and after scrolling the Graph picker');
         await tester.tap(tile);
         await tester.pumpAndSettle();
       }
-      expect(find.widgetWithText(Chip,'1. Craiova 01'),findsOneWidget);
+      for(var index=0;index<graphLocations.length;index++){
+        expect(find.widgetWithText(Chip,'${index+1}. ${graphLocations[index].name}'),findsOneWidget,
+          reason:'Every selected location must remain visible in order before the Graph is finalized');
+      }
       await tester.tap(find.text('Finalizare'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continuă'));
