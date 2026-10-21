@@ -415,16 +415,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         final decoded = jsonDecode(response.body);
         if (decoded is Map && decoded['address'] is Map) {
           final a = decoded['address'] as Map;
-          String first(List<String> keys) {
-            for (final key in keys) {
-              final v = a[key]?.toString().trim() ?? '';
-              if (v.isNotEmpty) return v;
-            }
-            return '';
-          }
-          final city = first(['city','town','municipality','village']);
-          final county = first(['county','state']);
-          final label = city.isNotEmpty && county.isNotEmpty && city.toLowerCase() != county.toLowerCase() ? '$city · $county' : (city.isNotEmpty ? city : county);
+          final label = liveLocalityLabelFromAddress(a);
           if (label.isNotEmpty) {
             _lastLiveLocalityLabel = label;
             _lastLiveLocalityResolvedAt = now;
