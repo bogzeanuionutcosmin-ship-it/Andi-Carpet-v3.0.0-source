@@ -741,8 +741,10 @@ void main() {
     expenseNavigator.pop();
     await expenseRoute;
     await tester.pumpAndSettle();
-    expect(find.textContaining('150.25 lei'),findsOneWidget,
-      reason:'The real HomePage Decont must display the reloaded corrected amount');
+    final reloadedReceipt=find.widgetWithText(ListTile,'Bon Fiscal nr 12345');
+    await tester.ensureVisible(reloadedReceipt);
+    expect(find.descendant(of:reloadedReceipt,matching:find.textContaining('150.25 lei')),
+      findsOneWidget,reason:'The real HomePage Decont must display the reloaded corrected receipt amount');
     await otherDb.doc('users/$uid').update({'functionIds':['worker']});
     await otherDb.doc('functions/xix-ui-editor').delete();
     evidence['homeCorrectionThroughUi']='actual app root, HomePage callback, server-confirmed edit and revert, UI permission removal';
