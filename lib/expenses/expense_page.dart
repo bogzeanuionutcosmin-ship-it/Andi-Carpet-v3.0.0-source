@@ -536,78 +536,25 @@ class _ExpensePageState extends State<ExpensePage> {
     }));
   }
 
+  bool _moneyPending=false;
   Future<void> _money(bool departure) async {
-    final amountC=TextEditingController();
-    final fromC=TextEditingController();
-    String method='Cash';
-    final now=DateTime.now();
-    final result=await showDialog<ReceivedMoneyEntry>(
-      context:context,
-      builder:(d)=>StatefulBuilder(builder:(d,setD)=>AlertDialog(
-        title:Text(departure?'Adaugă sumă primită la plecare':'Adaugă sumă primită în timpul deplasării'),
-        content:SizedBox(width:480,child:Column(mainAxisSize:MainAxisSize.min,children:[
-          TextField(
-            controller:amountC,
-            autofocus:true,
-            keyboardType:const TextInputType.numberWithOptions(decimal:true),
-            decoration:const InputDecoration(labelText:'Valoare',suffixText:'lei'),
-          ),
-          const SizedBox(height:10),
-          DropdownButtonFormField<String>(
-            value:method,
-            decoration:const InputDecoration(labelText:'Metodă'),
-            items:const[
-              DropdownMenuItem(value:'Cash',child:Text('Cash')),
-              DropdownMenuItem(value:'Transfer',child:Text('Transfer')),
-            ],
-            onChanged:(v){if(v!=null)setD(()=>method=v);},
-          ),
-          const SizedBox(height:10),
-          TextField(controller:fromC,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'De la cine')),
-          const SizedBox(height:10),
-          ListTile(
-            contentPadding:EdgeInsets.zero,
-            leading:const Icon(Icons.event_outlined),
-            title:const Text('Data'),
-            subtitle:Text('${two(now.day)}.${two(now.month)}.${now.year} · completată automat'),
-          ),
-        ])),
-        actions:[
-          TextButton(onPressed:()=>Navigator.pop(d),child:const Text('Anulează')),
-          FilledButton(onPressed:(){
-            final amount=double.tryParse(amountC.text.trim().replaceAll(',','.'));
-            final from=fromC.text.trim();
-            if(amount==null||amount<=0||from.isEmpty)return;
-            Navigator.pop(d,ReceivedMoneyEntry(
-              id:idNow(),
-              kind:departure?'departure':'during',
-              amount:amount,
-              method:method,
-              fromName:from,
-              date:now,
-            ));
-          },child:const Text('Adaugă')),
-        ],
-      )),
-    );
-    amountC.dispose();fromC.dispose();
-    if(result==null)return;
-    try{
-      if(settlement!=null){
-        settlement!.receivedEntries.add(result);
-        settlement!.receivedDeparture=settlement!.departureTotal;
-        settlement!.receivedDuring=settlement!.duringTotal;
-        await widget.saveSettlement(settlement!);
-        widget.log('Sumă primită adăugată','${settlement!.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
-      }else{
-        finance.receivedEntries.add(result);
-        finance.receivedDeparture=finance.departureTotal;
-        finance.receivedDuring=finance.duringTotal;
-        await widget.saveFinance(finance);
-        widget.log('Sumă primită adăugată','${team.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
-      }
+    if(_moneyPending)return;
+    _moneyPending=true;
+    final targetSettlement=settlement;
+    final targetFinance=targetSettlement==null?finance:null;
+    try {
+      final result=await showDialog<ReceivedMoneyEntry>(context:context,
+        builder:(_)=>ReceivedMoneyDialog(departure:departure,now:DateTime.now(),newId:idNow));
+      if(result==null||!mounted)return;
+      await saveReceivedMoneyDraft(entry:result,settlement:targetSettlement,finance:targetFinance,
+        saveSettlement:widget.saveSettlement,saveFinance:widget.saveFinance);
+      widget.log('Sumă primită adăugată','${targetSettlement?.name??team.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
       if(mounted){setState((){});showSuccessMessage(context,'Suma primită a fost adăugată.');}
-    }catch(e){if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');}
+    } catch(error) {
+      if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $error');
+    } finally {
+      _moneyPending=false;
+    }
   }
 
   Widget _pendingPerDiemCard(PerDiemEntry entry) {

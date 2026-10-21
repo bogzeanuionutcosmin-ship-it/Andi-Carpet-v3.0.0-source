@@ -106,3 +106,28 @@ production widgets with injected SDK fixtures; new Native acceptance also switch
 the actual Firebase Auth default user editor->outsider->editor while a private
 root route is mounted. Historical PR33 report is labelled as historical.
 No PR33 closure until current candidate gates and a fresh head check.
+
+
+## Financial input and rejected-save defects
+
+The received-money dialog still accepted NaN/Infinity/scientific/fractional-ban
+input and mutated original finance/settlement histories before awaiting save.
+Extracted a controller-owning, scrollable dialog with the shared integer-bani
+parser, plus a separate draft persistence helper. Failed writes preserve original
+history/balances. Undated legacy totals are blocked for explicit reconciliation
+rather than erased by the first history entry. Home validates financial totals
+and entries before persistence; rules reject non-finite/negative aggregate totals
+for members and Admin. Finance/settlements were excluded from the permissive
+Admin catch-all so those checks cannot be bypassed. This is NOT a complete
+server-authoritative financial ledger or durable uncertain-ACK journal.
+Native now enters invalid NaN then valid12,34 in the actual Home Decont money
+card, verifies real settlement persistence/listener and uses the reloaded
+settlement in the decont PDF. New exact-SHA validation is required.
+
+Native b4ec6b81 failed before packaging: the pinned comparison no longer compiled
+against Home's added canContinue writer argument, so only2of4behavioral witnesses
+ran. Moved the new guard test outside the pinned test selection and added an
+API-signature-only adapter to the historical writer during the RED experiment.
+The historical function bodies remain unchanged and all four named behavioral
+failures are still mandatory, followed by restoration and GREEN rerun. This is
+not a native application success/failure and produces no application evidence.

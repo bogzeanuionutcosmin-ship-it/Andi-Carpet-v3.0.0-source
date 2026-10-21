@@ -1761,6 +1761,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (!canEditTeam(settlement.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici această deplasare.');
     }
+    validateReceivedMoneyState(departure:settlement.receivedDeparture,during:settlement.receivedDuring,
+      perDiemRate:settlement.perDiemRate,entries:settlement.receivedEntries);
     await FirebaseFirestore.instance.collection('settlements').doc(settlement.id).set(_settlementMap(settlement), SetOptions(merge: true));
     unawaited(_writeLearningEvent(category: 'finance', event: 'settlement_saved', teamId: settlement.teamId, data: {
       'name': settlement.name, 'closed': settlement.closed, 'received': settlement.totalReceived,
@@ -1772,6 +1774,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (!canEditTeam(finance.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici datele financiare ale acestei echipe.');
     }
+    validateReceivedMoneyState(departure:finance.receivedDeparture,during:finance.receivedDuring,
+      perDiemRate:finance.perDiemRate,entries:finance.receivedEntries);
     final data = _financeMap(finance);
     await FirebaseFirestore.instance.collection('finance').doc(finance.teamId).set(data, SetOptions(merge: true));
     unawaited(_writeLearningEvent(category: 'finance', event: 'team_finance_saved', teamId: finance.teamId, data: {

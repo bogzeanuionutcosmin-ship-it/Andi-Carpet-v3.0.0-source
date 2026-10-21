@@ -25,6 +25,9 @@ def verify(root: Path) -> None:
     if result.get("graphCreatedThroughUi") is not True:
         raise AssertionError("Graph creation through UI and server reload were not demonstrated")
 
+    money = result.get("receivedMoneyThroughHome")
+    if not isinstance(money, dict) or money.get("rejectedNonFinite") is not True or money.get("serverPersisted") != 12.34:
+        raise AssertionError("Received money validation and actual Home server persistence were not demonstrated")
     if result.get("authUidIsolationThroughMain") is not True:
         raise AssertionError("Actual main Firebase Auth UID and private-route isolation was not demonstrated")
     if result.get("nonDestructiveFunctionMigration") is not True:

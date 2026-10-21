@@ -93,6 +93,13 @@ jobs:
           git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/utils/operational_dates.dart > /tmp/xix-pinned-dates.dart
           python3 - <<'PY'
           from pathlib import Path
+          # API-only adapter: keep the pinned legacy implementation and defects,
+          # while current Home compiles against the added optional session guard.
+          writer=Path('lib/operations/record_writer.dart')
+          source=writer.read_text()
+          signature='Map<String, dynamic>? expected}) async {'
+          assert source.count(signature)==1
+          writer.write_text(source.replace(signature,'Map<String, dynamic>? expected, bool Function()? canContinue}) async {'))
           p=Path('lib/utils/operational_dates.dart')
           fixed=Path('/tmp/xix-operational-dates-fixed.dart').read_text()
           old=Path('/tmp/xix-pinned-dates.dart').read_text()

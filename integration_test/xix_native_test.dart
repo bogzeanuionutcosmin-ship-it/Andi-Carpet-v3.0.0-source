@@ -701,6 +701,22 @@ void main() {
       tester.widget<app.ExpensePage>(homeExpenseFinder).settlements
         .any((entry)=>entry.id==receiptSettlement.id),
       'HomePage must load the selected settlement from its financial subscription');
+    final moneyCard=find.text('Primit la plecare');
+    await tester.ensureVisible(moneyCard);await tester.tap(moneyCard);await tester.pumpAndSettle();
+    expect(find.text('Adaugă sumă primită la plecare'),findsOneWidget);
+    final moneyFields=find.descendant(of:find.byType(AlertDialog),matching:find.byType(TextFormField));
+    await tester.enterText(moneyFields.first,'NaN');await tester.enterText(moneyFields.last,'Sursă sintetică');
+    await tester.tap(find.text('Adaugă'));await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog),findsOneWidget);
+    expect((await db.collection('settlements').doc(receiptSettlement.id).get(const GetOptions(source:Source.server))).data()!['receivedEntries'],isNull);
+    await tester.enterText(moneyFields.first,'12,34');await tester.tap(find.text('Adaugă'));await tester.pumpAndSettle();
+    await pumpUntil(()=>tester.widget<app.ExpensePage>(homeExpenseFinder).settlements
+      .firstWhere((s)=>s.id==receiptSettlement.id).totalReceived==12.34,
+      'Home settlement listener must confirm the received-money amount');
+    final moneyServer=(await db.collection('settlements').doc(receiptSettlement.id).get(const GetOptions(source:Source.server))).data()!;
+    expect((moneyServer['receivedEntries'] as List).single['amount'],12.34);
+    expect(moneyServer['receivedDeparture'],12.34);
+    evidence['receivedMoneyThroughHome']={'rejectedNonFinite':true,'serverPersisted':12.34};
     final homeExpense=tester.widget<app.ExpensePage>(homeExpenseFinder);
     expect(homeExpense.canEditOwnDecont,true);
     expect(homeExpense.canEditTeam('craiova'),true);
@@ -777,7 +793,7 @@ void main() {
       users:[app.AppUser(id:uid,name:'Editor',role:app.UserRole.member)],
       expenses:[serverExpense],perDiems:[],
       finance:app.TeamFinance(teamId:'craiova',managerId:uid,receivedDeparture:200),
-      settlement:receiptSettlement,
+      settlement:homeExpense.settlements.firstWhere((s)=>s.id==receiptSettlement.id),
     );
     final evidenceDir=Directory('/data/user/0/com.example.andi_carpeta/files/xix-evidence')..createSync(recursive:true);
     File('${evidenceDir.path}/decont-flow.pdf').writeAsBytesSync(decontPdf);

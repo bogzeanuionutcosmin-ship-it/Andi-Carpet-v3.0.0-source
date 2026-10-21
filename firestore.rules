@@ -536,21 +536,30 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    function validFinancialTotals(data) {
+      return boundedFinancialAmount(data.get('receivedDeparture', 0))
+        && boundedFinancialAmount(data.get('receivedDuring', 0))
+        && boundedFinancialAmount(data.get('perDiemRate', 0));
+    }
+    function boundedFinancialAmount(value) {
+      return value is number && value >= 0 && value <= 100000000;
+    }
+
     match /finance/{teamId} {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(teamId);
       // Only Admin may assign/reassign financial authority. Preserve missing
       // legacy identity fields without allowing a member to populate them.
-      allow create: if isAdmin()
+      allow create: if validFinancialTotals(request.resource.data) && (isAdmin()
         || (hasPermission('viewOwnDecont') && isTeamMember(teamId)
           && request.resource.data.get('teamId', teamId) == teamId
-          && request.resource.data.get('managerId', null) in [null, '']);
-      allow update: if isAdmin()
+          && request.resource.data.get('managerId', null) in [null, '']));
+      allow update: if validFinancialTotals(request.resource.data) && (isAdmin()
         || (hasPermission('viewOwnDecont') && isTeamMember(teamId)
           && request.resource.data.get('teamId', teamId) == teamId
           && request.resource.data.get('teamId', teamId) == resource.data.get('teamId', teamId)
-          && request.resource.data.get('managerId', null) == resource.data.get('managerId', null));
+          && request.resource.data.get('managerId', null) == resource.data.get('managerId', null)));
       allow delete: if isAdmin();
     }
 
@@ -558,12 +567,12 @@ service cloud.firestore {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
-      allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
-      allow update: if isAdmin()
+      allow create: if validFinancialTotals(request.resource.data) && (isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId)));
+      allow update: if validFinancialTotals(request.resource.data) && (isAdmin()
         || (hasPermission('viewOwnDecont')
           && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+          && isTeamMember(request.resource.data.teamId)));
       allow delete: if isAdmin();
     }
 
@@ -740,7 +749,7 @@ service cloud.firestore {
     // catch-all must never bypass the reservations or official STOP service.
     match /{collection}/{document=**} {
       allow read, write: if isAdmin() && !(collection in [
-        'schedules', 'records', 'activeRecordLocks', 'graphStates', 'graphClosures'
+        'schedules', 'records', 'activeRecordLocks', 'graphStates', 'graphClosures', 'finance', 'settlements'
       ]);
     }
   }

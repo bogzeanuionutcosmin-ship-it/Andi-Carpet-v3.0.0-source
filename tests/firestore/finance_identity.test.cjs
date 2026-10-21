@@ -47,3 +47,18 @@ test('member cannot move the finance identity to another team',async()=>{
 test('outsider cannot update team finance',async()=>{
  await assertFails(updateDoc(doc(db('outsider'),'finance/outside'),{receivedDuring:100}));
 });
+
+test('non-finite and negative aggregate amounts are rejected for members and Admin without changing balances',async()=>{
+ for(const uid of ['manager','admin']){
+  const ref=doc(db(uid),'finance/ordinary');
+  const before=(await getDoc(ref)).data();
+  for(const receivedDuring of [NaN,Infinity,-Infinity,-1]){
+   await assertFails(updateDoc(ref,{receivedDuring}));
+   assert.deepEqual((await getDoc(ref)).data(),before);
+  }
+ }
+ const settlement=doc(db('manager'),'settlements/nonfinite');
+ await assertSucceeds(setDoc(settlement,{teamId:'team',closed:false,receivedDeparture:12.34}));
+ await assertFails(updateDoc(settlement,{receivedDeparture:NaN}));
+ assert.equal((await getDoc(settlement)).data().receivedDeparture,12.34);
+});
