@@ -22,6 +22,7 @@ STACK_BASES = (
     "codex/xix-expense-optional-ocr-prefill-20261021",
     "codex/xix-home-live-location-resources-20261021",
     "codex/xix-map-route-line-presentation-20261021",
+    "codex/xix-dashboard-active-record-selection-20261021",
 )
 
 
@@ -54,6 +55,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
             self.assertIn(branch, workflow)
         self.assertIn("flutter test test/map_road_geometry_controller_test.dart", workflow)
         self.assertIn("flutter test test/map_route_line_presentation_test.dart", workflow)
+        self.assertIn("flutter test test/dashboard_record_selection_test.dart", workflow)
         self.assertIn("flutter test test/decont_financial_input_selection_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_removal_test.dart", workflow)
         self.assertIn("flutter test test/program_schedule_item_creation_test.dart", workflow)
@@ -84,6 +86,8 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("github.base_ref == 'codex/xix-home-gps-sampling-profile-20261021'", workflow)
         self.assertIn("github.base_ref == 'codex/xix-home-live-location-resources-20261021'", workflow)
         self.assertIn("github.base_ref == 'codex/xix-map-route-line-presentation-20261021'", workflow)
+        self.assertIn("github.base_ref == 'codex/xix-dashboard-active-record-selection-20261021'", workflow)
+        self.assertIn("flutter test test/dashboard_record_selection_test.dart", workflow)
         self.assertIn("flutter test test/map_route_line_presentation_test.dart", workflow)
         self.assertIn("github.head_ref == 'codex/xix-program-graph-state-persistence-20261021'", workflow)
         self.assertIn("flutter test test/decont_financial_input_selection_test.dart", workflow)
@@ -147,6 +151,21 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("scanExpenseDocumentOcr(", scan)
         self.assertIn("if (e != null) await _saveNewExpense(e);", page)
 
+
+    def test_dashboard_running_and_waiting_lists_use_the_selection_contract(self):
+        page = (ROOT / "lib/dashboard/dashboard_page.dart").read_text(encoding="utf-8")
+        selection = (ROOT / "lib/dashboard/dashboard_record_selection.dart").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("dashboardRunningRecords(widget.records, teamId: team.id)", page)
+        self.assertIn("dashboardWaitingRecords(", page)
+        self.assertIn("record.status == WorkAttemptStatus.running", selection)
+        self.assertIn("record.startedAt != null", selection)
+        self.assertIn("record.finishedAt == null", selection)
+        self.assertIn("recordBelongsToWorkDate(record, workDate)", selection)
+        self.assertIn("record.status == WorkAttemptStatus.waitingAccess", selection)
+        self.assertIn("record.waitingStartedAt != null", selection)
+        self.assertIn("record.waitingEndedAt == null", selection)
 
     def test_home_live_location_resources_own_only_timer_and_stream_lifecycle(self):
         page = (ROOT / "lib/home/home_page.dart").read_text(encoding="utf-8")
