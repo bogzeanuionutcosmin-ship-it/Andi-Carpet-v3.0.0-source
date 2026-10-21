@@ -34,7 +34,7 @@ trap collect_evidence EXIT
       target="xix-evidence/$file"
       if test -s "$target"; then continue; fi
       tmp="$target.polling"
-      if adb exec-out run-as com.example.andi_carpeta cat "files/xix-evidence/$file" > "$tmp" 2>/dev/null && python3 - "$file" "$tmp" <<'PYPOLL'
+      if adb exec-out run-as com.example.andi_carpeta cat "files/xix-evidence/$file" > "$tmp" 2>/dev/null && python3 - "$file" "$tmp" 2>/dev/null <<'PYPOLL'
 import json, pathlib, sys
 kind, name = sys.argv[1:]
 raw = pathlib.Path(name).read_bytes()
