@@ -152,3 +152,23 @@ Checkpointul C14/#192 (`cf7768b6a7d312af1b0092d1fd9403505f3c1b85`) este validat 
 - C31/#209 `86d58d3f85d3c8643d7ec2f8f5c751c3c87cb4e4`: Validate `39516711275` PASS; Android/Native are not registered, so C31 is not fully validated.
 - C32 `codex/xix-home-arrival-candidate-policy-20261021`, directly based on C31: tests came first (`1c5edebb8674d30ddd3a46a98b9e4904f6e52bfb`, `20629971af76d5f2a24d4f644f616b70efc516c2`). Scope is a pure Home geofence candidate selector preserving the 250 m accuracy-adjusted boundary and nearest ordering. Final SHA and CI runs pending.
 - PRs remain Draft/Open; no merge/deploy/live Firebase/signing/production APK distribution; `production_ready=false`.
+
+
+## C30–C32 continuation and remaining Home responsibilities — 2026-10-21
+
+### Exact CI checkpoints
+- C30/#208 `8bfc120ec62d70c24d4317a7577173a61d9537b2`: Validate `39512793185`, Android `39512793093`, Native retry `39512793206` all SUCCESS. Native retry job `118949202441`; final artifact `12308024349`, SHA-256 `f482bb088478349f5d96f5f44c311b5d4823368d70ae45d3b27dba0a1a559d6c`.
+- C31/#209 `86d58d3f85d3c8643d7ec2f8f5c751c3c87cb4e4`: Validate original `39516711275` SUCCESS and exact-SHA rerun `39519139411` SUCCESS. Android and Native have no registered runs; C31 is not fully validated.
+- C32/#210 `bfcf1dacb24fd4fa41030c2b504c92572eed49be`: Validate `39519144632` SUCCESS. Flutter tests, Python source/security contracts, Node, Functions and Firestore jobs succeeded. Artifacts: audit `12311105597` SHA-256 `6e19b276d4bb7a9f7274b8095ac577bb355764821e6b5d6f28790889db30cfd1`; PDF evidence `12311120890` SHA-256 `916ae5a0c533a3790e948629dacbc944896c685efbde888439d74821c997dd88`; web build `12310991123` SHA-256 `4f4fd29ffbb11361b60353827ab23280ff5e672056cc207ea5524f78c6a4216b`. Android and Native are absent; this is not complete three-workflow validation.
+- First C32 source-contract run `39518993724` failed because the new stack contract lacked a Native base condition for C32. The condition was added; rerun `39519144632` passed. Earlier C32 Validate attempt `39519088607` was cancelled when the run was re-triggered.
+
+### Responsibility audit
+- Home lifecycle has a dedicated `HomeSubscriptionRegistry`; separate core and financial registries are disposed by Home. Late-added subscriptions are cancelled after disposal. The GPS timer and Geolocator position stream are still cancelled directly by Home's lifecycle.
+- Financial scope and restart decision are already extracted (`homeFinancialSyncScope`, `shouldRestartHomeFinancialSync`). Query construction and four financial listeners still mutate Home-owned lists and use permission/profile state; retain that coupling until source/server, cancellation, and team-scope contracts cover it.
+- Core Firestore sync remains orchestrated in Home across definitions, directory/profile, operations, notifications, chat, settings and audit. Listener callbacks update shared mutable state, call setState, and can restart financial subscriptions. Do not move these listeners as a bulk refactor.
+- Location/category/function/team/car/schedule/record/expense/per-diem/finance/user-team maps are write-baseline caches used to avoid redundant batch writes; values update after the server batch commits. Do not remove or persist them elsewhere until cache freshness, restart, conflict and write-order contracts are documented.
+- Adaptive GPS remains coupled to platform permissions, web timer/native stream settings, schedule proximity and shared-location writes. C30 extracted precision hysteresis; C32 extracted only the 250 m accuracy-adjusted nearest arrival candidate. Reverse-locality caching already has a reuse policy. GPS sampling, background lifecycle, offline clearing and cost/battery behavior remain to audit before another move.
+- C31 extracted the normal active schedule filter. Automatic schedule resolution intentionally uses a distinct started-and-open predicate and remains in Home. Arrival dwell, snooze, prompt limits, state reset and human confirmation remain stateful Home orchestration.
+
+### Constraints
+C30–C32 remain a cumulative Draft chain, unmerged. No deployment, live Firebase modifications, production signing or APK distribution. `production_ready=false`. Exact final C32 SHA and CI still require verification after this documentation-only commit; Android/Native registration remains unresolved.
