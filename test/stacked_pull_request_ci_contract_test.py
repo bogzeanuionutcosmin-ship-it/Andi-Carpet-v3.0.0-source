@@ -19,6 +19,7 @@ STACK_BASES = (
     "codex/xix-home-arrival-candidate-policy-20261021",
     "codex/xix-home-gps-sampling-profile-20261021",
     "codex/xix-dashboard-operational-status-20261021",
+    "codex/xix-expense-optional-ocr-prefill-20261021",
 )
 
 
@@ -110,6 +111,19 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertEqual(main.count("part 'dashboard/dashboard_operational_status.dart';"), 1)
         self.assertIn("DashboardOperationalStatus.running", policy)
         self.assertIn("insideWorkWindow", policy)
+
+
+    def test_optional_automatic_expense_ocr_prefill_preserves_manual_fallback(self):
+        page = (ROOT / "lib/expenses/expense_page.dart").read_text(encoding="utf-8")
+        scan = (ROOT / "lib/expenses/expense_ocr_scan.dart").read_text(encoding="utf-8")
+        self.assertIn("shouldRunOptionalAutomaticExpenseOcr(", page)
+        self.assertIn("scanOptionalAutomaticExpenseOcr(", page)
+        self.assertIn("ocrSetting?.enabled == true", page)
+        self.assertIn("ocrSetting?.mode == LearningMode.automatic", page)
+        self.assertIn("result.error == null", page)
+        self.assertIn("imageBytes.isNotEmpty && enabled && automaticMode", scan)
+        self.assertIn("scanExpenseDocumentOcr(", scan)
+        self.assertIn("if (e != null) await _saveNewExpense(e);", page)
 
 
 if __name__ == "__main__":

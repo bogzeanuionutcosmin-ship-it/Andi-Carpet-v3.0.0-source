@@ -1037,12 +1037,26 @@ class _ExpensePageState extends State<ExpensePage> {
     if (picked != null) {
       raw = await picked.readAsBytes();
       final ocrSetting = widget.settings.learning['ocr'];
-      if (raw.isNotEmpty && ocrSetting?.enabled == true && ocrSetting?.mode == LearningMode.automatic) {
+      final shouldRunAutomaticOcr = shouldRunOptionalAutomaticExpenseOcr(
+        imageBytes: raw,
+        enabled: ocrSetting?.enabled == true,
+        automaticMode: ocrSetting?.mode == LearningMode.automatic,
+      );
+      if (shouldRunAutomaticOcr) {
         setState(() => scanning = true);
         try {
-          final text = await recognizeTextFromImage(raw, path: picked.path);
-          parsed = parseFiscalOcr(text);
-          widget.log('OCR automat la atașare', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
+          final result = await scanOptionalAutomaticExpenseOcr(
+            raw,
+            path: picked.path,
+            enabled: ocrSetting?.enabled == true,
+            automaticMode: ocrSetting?.mode == LearningMode.automatic,
+            recognize: recognizeTextFromImage,
+            parse: parseFiscalOcr,
+          );
+          if (result != null && result.error == null) {
+            parsed = result.data;
+            widget.log('OCR automat la atașare', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
+          }
         } catch (_) {
           // În modul automat, eșecul OCR nu blochează introducerea manuală.
         } finally {

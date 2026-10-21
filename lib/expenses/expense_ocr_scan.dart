@@ -31,3 +31,36 @@ Future<ExpenseOcrScanResult> scanExpenseDocumentOcr(
     );
   }
 }
+
+/// Keeps the optional automatic prefill setting outside the Expenses page.
+bool shouldRunOptionalAutomaticExpenseOcr({
+  required Uint8List imageBytes,
+  required bool enabled,
+  required bool automaticMode,
+}) =>
+    imageBytes.isNotEmpty && enabled && automaticMode;
+
+/// Runs the existing OCR pipeline only when automatic prefill is eligible.
+/// The caller retains the progress indicator and handles the returned result.
+Future<ExpenseOcrScanResult?> scanOptionalAutomaticExpenseOcr(
+  Uint8List imageBytes, {
+  String? path,
+  required bool enabled,
+  required bool automaticMode,
+  required Future<String> Function(Uint8List, {String? path}) recognize,
+  required FiscalOcrData Function(String text) parse,
+}) async {
+  if (!shouldRunOptionalAutomaticExpenseOcr(
+    imageBytes: imageBytes,
+    enabled: enabled,
+    automaticMode: automaticMode,
+  )) {
+    return null;
+  }
+  return scanExpenseDocumentOcr(
+    imageBytes,
+    path: path,
+    recognize: recognize,
+    parse: parse,
+  );
+}
