@@ -1482,3 +1482,18 @@ main. Fără flag, etapa nativă se oprește clar; nu continuă fără persisten
 
 ### Constraints
 C30–C32 remain a cumulative Draft chain, unmerged. No deployment, live Firebase modifications, production signing or APK distribution. `production_ready=false`. Exact final C32 SHA and CI still require verification after this documentation-only commit; Android/Native registration remains unresolved.
+
+
+## Mission XXI — resumed cumulative candidate, 2026-10-21
+
+Selected branch: `codex/xix-home-locality-label-20261021`, PR #217 (Draft/Open, unmerged). Read its actual HEAD and current workflows before continuing; earlier checkpoints are superseded. Main remains untouched; no production deploy, Firebase production change, signing or distribution is authorized by this checkpoint.
+
+Changes in this continuation:
+- Program picker keeps controls and selection chips separate from location rows, reserves list space under keyboard constraints, dismisses editing on outside taps/selection/scroll, and tests all eleven locations with both broad and exact searches. The four short-screen widget scenarios passed on predecessor 1a9986687b2e262196ad4bf2aa7e8808a4891f2a (422 Flutter tests total).
+- Learning no longer closes graphs automatically or treats refusal as final. It only reminds after the existing closure policy checks every day. The legacy stored setting key is retained; its label now describes the reminder and official STOP confirmation.
+- Native expense test keeps the real HomePage mounted and uses its authorization, production expense persistence and financial subscription. Only receipt media and OCR inputs are controlled. It reloads the corrected receipt from Firestore, builds its decont PDF from server data, and checks the original Home Decont receipt row. The evidence validator requires `homePagePersistence=true`; functional proof still requires the latest Native run to pass.
+- START reservation rules now require a matching running record on creation and reject deleting a reservation while that record remains running. Emulator regression tests cover live-lock deletion and forged reservations for missing/finished records. Do not claim these newer rules validated from predecessor CI.
+
+Local source checks after these changes: 199 Python tests, Node syntax for the lock test, and diff whitespace check passed. There is no local Flutter or adb. Validate on predecessor 1a998668 passed (run 39574062046); Android/Native were superseded when the security fix advanced the branch. Read current exact-SHA results before any package closure.
+
+Remaining acceptance gaps include stable graph/intervention identity, atomic server STOP revalidation, complete uncertain-ACK START/STOP coverage, branch/PR cleanup, independent module boundaries, live Mapbox/OCR, isolated staging persistence/auth/backup-restore, physical Android GPS/background/offline/install/upgrade, and approved release signing/provenance/rollback. A further UI finding to verify: `_ScheduleCardFull` derives its done badge from any historical completed record for a team/location, without work-date filtering. No fix or closure is claimed for that finding here.
