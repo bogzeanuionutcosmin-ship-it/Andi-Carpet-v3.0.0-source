@@ -27,7 +27,9 @@ class DecontSourceContract(unittest.TestCase):
     def test_annual_only_confirmed_actual_receipts(self):
         self.assertIn('amount.isFinite', self.source)
         self.assertIn('actualAmountOf: (entry) => entry.actualReceivedAmount', self.source)
-        self.assertIn('dateOk(d.confirmedAt??d.date)', self.source)
+        self.assertIn('selectedSettlementId: settlement?.id', self.source)
+        self.assertIn('dateOf: (entry) => entry.date', self.source)
+        self.assertIn('dateOf(a).compareTo(dateOf(b))', self.source)
 
     def test_pdf_sections(self):
         for label in ('1. BONURI COMBUSTIBIL','2. FACTURI','3. DIURNE', '4. ALTE CHELTUIELI','REZUMAT','DESFĂȘURĂTOR SUME PRIMITE'):
