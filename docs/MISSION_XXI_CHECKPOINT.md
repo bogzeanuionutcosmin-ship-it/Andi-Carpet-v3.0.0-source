@@ -6,40 +6,43 @@ codex/xix-home-locality-label-20261021, base main. Read its LIVE HEAD before wor
 Main remains 8452159475ff187867002425fa9c3b8c7e8006aa. No merge/deploy/sign/distribute.
 Production readiness is false.
 
-## Latest continuation status (read before historical notes)
+## Latest continuation status (read before historical notes) — 22 October 2026
 
-Published3beb89526002f8dcabf2113a54664d944784e755: durable secure-storage graph
-STOP intent and session-fenced HTTP retries. Validate39679348349SUCCESS:
-478Flutter,206Python,44Firestore; PDF/web/Functions/Node passed. Android39679348355
-SUCCESS, artifact12383177388archiveSHA256
-e56c52dfce06009c57d865f60a617606d0c559eaef2345a589aef8fc6df18d16.
-Native39679348287is still running at this document's preparation; read its live
-result, not earlier green history. Native31ac failed before boot on system-image
-ZIP download/unpack, so3beb runs a fresh runner.
+Current published HEAD: `102c735dec6ee0780455e2f54082727930696a43`.
+PR #217 remains Draft/Open on `main`; main is still
+`8452159475ff187867002425fa9c3b8c7e8006aa`. No merge, production deploy,
+signing, or distribution occurred.
 
-This follow-up prepares production-key rejection in staging builder/runtime,
-exact PR-head checkout for staging provenance, cancellation checks after every
-GPS service/permission await, and disposed-page fencing in manual capture/OCR.
-Actual ExpensePage widget regressions delay picker/OCR across disposal; GPS
-regressions delay each platform boundary. They use controlled SDK/platform inputs,
-not physical camera/OCR/GPS evidence. Local207Python contracts pass. New Dart
-regressions and complete exact-headCI are required after publishing this change.
-Physical matrix now includes receipt-backed STOP interruption, START/FINAL
-two-device recovery, real OCR/manual correction, account switching during capture,
-and upgrade with a pending secure-storage intent. Staging test upgrade is separated
-from the still-unverified production signer/package lineage.
+Exact-SHA CI:
+- Validate run `39779968747`: SUCCESS (Flutter, Firestore Emulator,
+  Functions, Node, Python, web, and PDF verification).
+- Android run `39779968349`: SUCCESS. Debug test APK artifact `12427355158`,
+  archive SHA-256 `72dc7173c019a257eeef3d5016766143fa092e5e3efc872ff8b52b62bf1696c5`.
+- Native run `39779968375`: SUCCESS. Android Emulator connected flow and Firebase
+  Auth/Firestore/Functions Emulator verified a graph with 11 interventions,
+  persisted the server receipt, replayed its exact immutable fingerprint after
+  injected ACK loss through Android secure storage, and validated PDF/checksums.
+  Evidence artifact `12426842940`, archive SHA-256
+  `6774436e3aa56a90c854afb5aaae33d746b3bd188f5e57271655bb0af0884dc0`.
+- Independent APK, directory, and release-guard checks passed. The isolated
+  staging workflow was skipped because staging Firebase project/config variables
+  are unavailable. These are emulator results, not live Firebase or handset tests.
 
-Semantic inventory now records review of PR178,179,181,182as represented, with
-181's missing early cancellation also corrected. Keep those PRs open until this
-follow-up validates, then recheck live heads before closing. PR184and185are closed
-with file/call-site/test proof; total closures68. PR33still requires Native UID
-isolation acceptance. No feature package or physical acceptance is implied.
+The Native retry found an idempotency-test fixture mismatch: it reused the
+receipt request ID with a different schedule revision. The test now reconstructs
+the exact accepted fingerprint from the server receipt, and all three required
+workflows passed on this exact HEAD. The complete `expense_page.dart` and Native
+test sources were verified against their full Git blob IDs after a truncated
+Git-tree transport attempt; no source truncation remains in the candidate.
 
-Exact next action: read PR217live HEAD; finish Native on3beb before advancing the
-branch, inspect its first failure, combine any necessary fix with this follow-up,
-then run Validate/Android/Native on the new head. Verify actual server receipts,
-Android secure-storage replay, Home Decont money and Auth UID switching. Repair
-failures without weakening evidence gates. Remaining gaps below stay explicit.
+New follow-up work adds production-key rejection and source provenance to the
+staging builder, GPS cancellation checks after asynchronous platform calls, and
+mounted checks after expense-picker/OCR awaits with widget lifecycle regressions.
+Physical acceptance remains outstanding for GPS/background/offline, real camera
+and OCR, upgrade/rollback, and signing/package provenance. PRs #178, #179, #181,
+and #182 were rechecked at the reviewed heads, shown functionally represented by
+the candidate, and closed as superseded after these gates passed. Total superseded
+closures: 72. PR #33 remains open pending separate status review.
 
 ## This session's implementation
 
@@ -72,12 +75,13 @@ Local Python204passed; JavaScript syntax and whitespace passed.
 
 ## Exact next action
 
-Read live PR217 HEAD and fetch its Validate/Android/Native runs. Fix any failure;
-retain logs and rerun all3on the changed head. New native phase runs Functions
-emulator on5001 and must prove stable START/FINAL timestamps plus real Home Program
-STOP, receipt persistence and identical-request replay. Do not substitute earlier
-success. After current-SHA gates, finish reviewed PR equivalence decisions against
-live heads and continue unresolved critical/application work.
+Continue from live PR #217 HEAD `102c735dec6ee0780455e2f54082727930696a43`.
+First review PR #33 status and the remaining non-ancestor content inventory,
+then continue the unclosed feature and critical acceptance packages. Do not infer
+package completion from green CI. Obtain approved staging Firebase project/config
+and a physical Android handset for staging, GPS/background/offline, camera/OCR,
+upgrade, signer provenance, and rollback acceptance. Original audit criteria
+remain the source of truth; no 13/13 or 6/6 completion is claimed.
 
 ## Gaps retained explicitly
 
