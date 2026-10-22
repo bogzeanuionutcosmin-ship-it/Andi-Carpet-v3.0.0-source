@@ -823,8 +823,6 @@ void main() {
     final programPage=tester.widget<app.ProgramPage>(find.byType(app.ProgramPage));
     expect(programPage.closeGraph,isNotNull);
     final stopGraph=find.text('STOP GRAFIC');
-    final openDay=await db.collection('schedules').doc(schedule.id).get(const GetOptions(source:Source.server));
-    final originalWriteToken=openDay.data()!['writeToken'];
     await tester.ensureVisible(stopGraph);await tester.tap(stopGraph);await tester.pumpAndSettle();
     expect(find.text('STOP Grafic de lucru'),findsOneWidget);
     await tester.tap(find.text('STOP'));await tester.pumpAndSettle();
@@ -835,9 +833,9 @@ void main() {
     final receiptId=closedDay.data()!['closeReceiptId'];
     final receiptDoc=await db.collection('graphClosures').doc(receiptId as String).get(const GetOptions(source:Source.server));
     expect(receiptDoc.data()!['interventionCount'],11);
-    final replayOperation=<String,dynamic>{'teamId':'craiova','graphId':schedule.graphId,
-      'requestId':receiptDoc.data()!['requestId'],
-      'days':[{'id':schedule.id,'writeToken':originalWriteToken}]};
+    final acceptedFingerprint=jsonDecode(receiptDoc.data()!['fingerprint'] as String) as Map<String,dynamic>;
+    final replayOperation=<String,dynamic>{...acceptedFingerprint,
+      'requestId':receiptDoc.data()!['requestId']};
     Future<String> sendClosure(Map<String,dynamic> operation) => requestGraphClosure(
       endpoint:Uri.parse('http://10.0.2.2:5001/demo-andi-xix/europe-central2/closeProgramGraph'),
       getIdToken:() async=>auth.currentUser?.getIdToken(),
@@ -860,7 +858,7 @@ void main() {
       }),throwsA(isA<TimeoutException>()));
     final closureReplay=await newJournal().close(projectId:Firebase.app().options.projectId,
       userId:uid,operation:{...replayOperation,'requestId':'must-not-replace-original',
-        'days':[{'id':schedule.id,'writeToken':originalWriteToken}]},
+        'days':acceptedFingerprint['days']},
       send:sendClosure);
     expect(closureReplay,receiptId);
     expect(await stopStorage.read(key:persistedStopKey!),isNull);
