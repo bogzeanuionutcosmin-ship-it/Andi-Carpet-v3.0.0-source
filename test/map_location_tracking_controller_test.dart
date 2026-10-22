@@ -26,22 +26,28 @@ class FakeMapLocationPlatform implements app.MapLocationPlatform {
   Object? currentPositionError;
   Completer<Position>? pendingCurrentPosition;
   Completer<void>? currentPositionRequested;
+  Completer<bool>? pendingService;
+  Completer<LocationPermission>? pendingPermissionCheck;
+  Completer<LocationPermission>? pendingPermissionRequest;
 
   @override
   Future<bool> isLocationServiceEnabled() async {
     calls.add('service');
+    if (pendingService != null) return pendingService!.future;
     return enabled;
   }
 
   @override
   Future<LocationPermission> checkPermission() async {
     calls.add('check');
+    if (pendingPermissionCheck != null) return pendingPermissionCheck!.future;
     return permission;
   }
 
   @override
   Future<LocationPermission> requestPermission() async {
     calls.add('request');
+    if (pendingPermissionRequest != null) return pendingPermissionRequest!.future;
     return requestedPermission;
   }
 
@@ -68,6 +74,35 @@ class FakeMapLocationPlatform implements app.MapLocationPlatform {
 }
 
 void main() {
+  for (final stage in ['service', 'check', 'request']) {
+    test('stop during $stage prevents all later GPS platform calls', () async {
+      final platform = FakeMapLocationPlatform()..permission = LocationPermission.denied;
+      final service = Completer<bool>();
+      final permission = Completer<LocationPermission>();
+      if (stage == 'service') platform.pendingService = service;
+      if (stage == 'check') platform.pendingPermissionCheck = permission;
+      if (stage == 'request') platform.pendingPermissionRequest = permission;
+      final tracker = app.MapLocationTrackingController(platform: platform);
+      final starting = tracker.start(onPosition: (_) => fail('position after stop'),
+        onError: (_) => fail('error after stop'));
+      // Let the earlier async platform calls reach the selected boundary.
+      for (var turn = 0; turn < 5 && !platform.calls.contains(stage); turn++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(platform.calls.last, stage);
+      final before = List<String>.of(platform.calls);
+      await tracker.stop();
+      if (stage == 'service') {
+        service.complete(true);
+      } else {
+        permission.complete(stage == 'check' ? LocationPermission.denied : LocationPermission.whileInUse);
+      }
+      expect((await starting).status, app.MapLocationTrackingStatus.cancelled);
+      expect(platform.calls, before);
+      expect(platform.stream.hasListener, isFalse);
+      await platform.close();
+    });
+  }
   test('disabled service stops before asking for permission', () async {
     final platform = FakeMapLocationPlatform()..enabled = false;
     final tracker = app.MapLocationTrackingController(platform: platform);

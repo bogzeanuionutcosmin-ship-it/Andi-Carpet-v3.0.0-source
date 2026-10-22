@@ -40,3 +40,9 @@ class StagingBuildTest(unittest.TestCase):
                 raise RuntimeError('simulated build failure')
             with self.assertRaisesRegex(RuntimeError,'simulated'):m.build(config(),root,root/'out',run=failed_run)
             for path,data in originals.items():self.assertEqual(path.read_bytes(),data)
+
+    def test_relabelled_staging_config_cannot_retain_known_production_api_key(self):
+        self.assertTrue(m.PRODUCTION_API_KEYS)
+        for key in m.PRODUCTION_API_KEYS:
+            c=config();c['client'][0]['api_key'][0]['current_key']=key
+            with self.assertRaises(ValueError):m.validate_config(c)

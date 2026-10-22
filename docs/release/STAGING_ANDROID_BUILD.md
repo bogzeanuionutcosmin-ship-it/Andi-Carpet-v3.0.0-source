@@ -37,3 +37,11 @@ ANDROID_UPGRADE_ROLLBACK_RUNBOOK with staged test identities. GPS/background,
 camera/real ML OCR, offline/reconnect, process death and test-to-test upgrade
 remain NOT RUN until physical evidence is recorded. Provider tokens/costs and
 backend rollout are independent required gates, not implied by compilation.
+
+Both the builder and runtime reject API keys listed in the checked-in production
+Firebase options, including when the remaining fields have been relabelled as
+staging. This guards accidental mixed configuration; it does not authenticate an
+arbitrary supplied key's project ownership. Use the original JSON downloaded from
+the independently verified staging project. The workflow checks out the exact PR
+head so the recorded source SHA matches the artifact name, rather than a virtual
+merge commit. No staging backend credential or configuration was fabricated.

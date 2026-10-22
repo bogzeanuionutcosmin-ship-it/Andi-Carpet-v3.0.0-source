@@ -35,7 +35,7 @@ Future<XFile?> pickExpenseDocumentImage({
       ]),
     ),
   );
-  if (source == null || source == 'none') return null;
+  if (!context.mounted || source == null || source == 'none') return null;
   try {
     return await requestImage(
       source == 'camera' ? ImageSource.camera : ImageSource.gallery,

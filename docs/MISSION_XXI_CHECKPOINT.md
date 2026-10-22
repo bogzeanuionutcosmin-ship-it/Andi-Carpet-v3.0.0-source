@@ -6,6 +6,41 @@ codex/xix-home-locality-label-20261021, base main. Read its LIVE HEAD before wor
 Main remains 8452159475ff187867002425fa9c3b8c7e8006aa. No merge/deploy/sign/distribute.
 Production readiness is false.
 
+## Latest continuation status (read before historical notes)
+
+Published3beb89526002f8dcabf2113a54664d944784e755: durable secure-storage graph
+STOP intent and session-fenced HTTP retries. Validate39679348349SUCCESS:
+478Flutter,206Python,44Firestore; PDF/web/Functions/Node passed. Android39679348355
+SUCCESS, artifact12383177388archiveSHA256
+e56c52dfce06009c57d865f60a617606d0c559eaef2345a589aef8fc6df18d16.
+Native39679348287is still running at this document's preparation; read its live
+result, not earlier green history. Native31ac failed before boot on system-image
+ZIP download/unpack, so3beb runs a fresh runner.
+
+This follow-up prepares production-key rejection in staging builder/runtime,
+exact PR-head checkout for staging provenance, cancellation checks after every
+GPS service/permission await, and disposed-page fencing in manual capture/OCR.
+Actual ExpensePage widget regressions delay picker/OCR across disposal; GPS
+regressions delay each platform boundary. They use controlled SDK/platform inputs,
+not physical camera/OCR/GPS evidence. Local207Python contracts pass. New Dart
+regressions and complete exact-headCI are required after publishing this change.
+Physical matrix now includes receipt-backed STOP interruption, START/FINAL
+two-device recovery, real OCR/manual correction, account switching during capture,
+and upgrade with a pending secure-storage intent. Staging test upgrade is separated
+from the still-unverified production signer/package lineage.
+
+Semantic inventory now records review of PR178,179,181,182as represented, with
+181's missing early cancellation also corrected. Keep those PRs open until this
+follow-up validates, then recheck live heads before closing. PR184and185are closed
+with file/call-site/test proof; total closures68. PR33still requires Native UID
+isolation acceptance. No feature package or physical acceptance is implied.
+
+Exact next action: read PR217live HEAD; finish Native on3beb before advancing the
+branch, inspect its first failure, combine any necessary fix with this follow-up,
+then run Validate/Android/Native on the new head. Verify actual server receipts,
+Android secure-storage replay, Home Decont money and Auth UID switching. Repair
+failures without weakening evidence gates. Remaining gaps below stay explicit.
+
 ## This session's implementation
 
 - Stable IDs generated for new scheduled visits, preserved by all clone/reorder/

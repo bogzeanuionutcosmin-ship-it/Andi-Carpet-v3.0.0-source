@@ -4,6 +4,9 @@ Status: PROCEDURE ONLY. No APK installed or signed here.
 
 ## Preconditions
 Use isolated staging, synthetic data and a physical test device. Record old and new versionCode, package ID, signer SHA-256, APK SHA-256 and device Android version. Obtain the prior approved APK from a trusted artifact archive.
+Both rehearsal builds must use the same staging application ID and test signer.
+The `.staging` package installs alongside production and cannot establish a
+production upgrade or production signing lineage.
 
 ## Upgrade rehearsal
 1. Verify both APK signatures and hashes independently.
@@ -11,6 +14,10 @@ Use isolated staging, synthetic data and a physical test device. Record old and 
 3. Upgrade without uninstalling; confirm application ID and signing continuity.
 4. Validate schedule history, START/FINAL, Centralizator, PDF, background permission prompts and offline replay.
 5. Inspect crash logs and confirm no production endpoints were contacted.
+6. Repeat with a pending official STOP intent: preserve app data and secure
+   storage, reconnect after upgrade and verify the original request/receipt and
+   authoritative graph state. Record a failed journal read as a blocker; do not
+   clear it to make the test pass.
 
 ## Failure/rollback rehearsal
 1. Simulate a failed candidate launch and capture redacted logs.

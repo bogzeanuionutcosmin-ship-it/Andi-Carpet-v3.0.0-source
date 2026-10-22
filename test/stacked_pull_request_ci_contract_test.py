@@ -153,7 +153,7 @@ class StackedPullRequestCiContract(unittest.TestCase):
         self.assertIn("result.error == null", page)
         self.assertIn("imageBytes.isNotEmpty && enabled && automaticMode", scan)
         self.assertIn("scanExpenseDocumentOcr(", scan)
-        self.assertIn("if (e != null) await _saveNewExpense(e);", page)
+        self.assertIn("if (mounted && e != null) await _saveNewExpense(e);", page)
 
 
     def test_dashboard_running_and_waiting_lists_use_the_selection_contract(self):

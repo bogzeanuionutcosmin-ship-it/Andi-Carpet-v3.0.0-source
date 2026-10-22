@@ -11,6 +11,9 @@ import tempfile
 
 PACKAGE = 'com.example.andi_carpeta.staging'
 PRODUCTION = 'andicarpet-e777e'
+PRODUCTION_API_KEYS = frozenset(re.findall(
+    r"apiKey:\s*['\"]([^'\"]+)['\"]",
+    (Path(__file__).resolve().parents[1] / 'lib/firebase_options.dart').read_text()))
 
 
 def validate_config(config):
@@ -30,8 +33,8 @@ def validate_config(config):
     if not app_id.startswith(f'1:{sender}:android:'):
         raise ValueError('Staging app and project number differ')
     api_key = client['api_key'][0]['current_key']
-    if not isinstance(api_key, str) or not api_key:
-        raise ValueError('Missing staging API key')
+    if not isinstance(api_key, str) or not api_key or api_key in PRODUCTION_API_KEYS:
+        raise ValueError('A separate staging API key is required')
     options = dict(projectId=project, messagingSenderId=sender, appId=app_id,
                    storageBucket=bucket, apiKey=api_key)
     native = dict(project_info=config['project_info'], client=[client], configuration_version='1')

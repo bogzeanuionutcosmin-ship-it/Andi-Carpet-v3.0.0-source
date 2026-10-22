@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
+import '../firebase_options.dart';
 
 const productionFirebaseProject = 'andicarpet-e777e';
 
@@ -23,7 +24,12 @@ FirebaseOptions stagingFirebaseOptions(String encoded) {
   if(!['$project.firebasestorage.app','$project.appspot.com'].contains(bucket)) {
     throw const FormatException('Storage staging nu corespunde proiectului.');
   }
-  return FirebaseOptions(apiKey:field('apiKey'),appId:appId,
+  final apiKey=field('apiKey');
+  if ([DefaultFirebaseOptions.android.apiKey, DefaultFirebaseOptions.web.apiKey,
+      DefaultFirebaseOptions.ios.apiKey].contains(apiKey)) {
+    throw const FormatException('Cheia Firebase de producție nu poate fi folosită în staging.');
+  }
+  return FirebaseOptions(apiKey:apiKey,appId:appId,
     messagingSenderId:sender,projectId:project,storageBucket:bucket);
 }
 

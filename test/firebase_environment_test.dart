@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:andi_carpeta/bootstrap/firebase_environment.dart';
+import 'package:andi_carpeta/firebase_options.dart';
 
 void main() {
   Map<String,String> options()=>{'projectId':'andi-staging-test','messagingSenderId':'123456',
@@ -8,7 +9,9 @@ void main() {
   test('staging accepts isolated project and rejects production/missing/mixed configuration', () {
     expect(stagingFirebaseOptions(jsonEncode(options())).projectId,'andi-staging-test');
     for(final change in [{'projectId':'andicarpet-e777e'},{'messagingSenderId':'141489733149'},
-      {'appId':'1:other:android:test'},{'storageBucket':'andicarpet-e777e.firebasestorage.app'},{'apiKey':''}]) {
+      {'appId':'1:other:android:test'},{'storageBucket':'andicarpet-e777e.firebasestorage.app'},{'apiKey':''},
+      for(final key in [DefaultFirebaseOptions.android.apiKey, DefaultFirebaseOptions.web.apiKey,
+        DefaultFirebaseOptions.ios.apiKey]) {'apiKey':key}]) {
       expect(()=>stagingFirebaseOptions(jsonEncode({...options(),...change})),throwsFormatException);
     }
   });

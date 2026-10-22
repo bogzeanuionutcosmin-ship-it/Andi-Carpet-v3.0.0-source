@@ -75,15 +75,25 @@ class MapLocationTrackingController {
     _starting = true;
     final generation = ++_generation;
     try {
-      if (!await _platform.isLocationServiceEnabled()) {
+      final enabled = await _platform.isLocationServiceEnabled();
+      if (generation != _generation) {
+        return const MapLocationTrackingResult(MapLocationTrackingStatus.cancelled);
+      }
+      if (!enabled) {
         return const MapLocationTrackingResult(
           MapLocationTrackingStatus.serviceDisabled,
         );
       }
 
       var permission = await _platform.checkPermission();
+      if (generation != _generation) {
+        return const MapLocationTrackingResult(MapLocationTrackingStatus.cancelled);
+      }
       if (permission == LocationPermission.denied) {
         permission = await _platform.requestPermission();
+        if (generation != _generation) {
+          return const MapLocationTrackingResult(MapLocationTrackingStatus.cancelled);
+        }
       }
       if (permission == LocationPermission.denied) {
         return const MapLocationTrackingResult(
