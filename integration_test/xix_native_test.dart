@@ -375,7 +375,182 @@ void main() {
     await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
     await otherDb.collection('records').doc(acceptedStartId).delete();
     await otherDb.collection('records').doc('cross-device-start-${1-acceptedStartIndex}').delete();
-    await otherDb.c…3025 tokens truncated…locationId).toSet();
+    await otherDb.collection('records').doc('cross-device-after-finish').delete();
+    await otherAuth.signInWithEmailAndPassword(email:'editor@andi.test',password:'synthetic-only-123');
+    expect((await lockRef.get(const GetOptions(source:Source.server))).exists, false);
+    evidence['crossDeviceStartReservation']={
+      'simultaneousDistinctIdsAccepted':crossDeviceStartResults.where((accepted) => accepted).length,
+      'winner':acceptedStartId,'lockReleasedOnFinish':true,'newStartAfterFinish':'cross-device-after-finish',
+    };
+    await expectLater(saveRecordCompared(db,ref.id,{...beforeRace,'addressSnapshot':'stale'},expected:beforeRace),throwsA(isA<StateError>()));
+    final latest=(await ref.get()).data()!;
+    // The former merge-upsert path must not recreate a document deleted elsewhere.
+    await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
+    final legacy=otherDb.collection('records').doc('deleted-legacy');
+    await legacy.set({'teamId':'craiova','locationId':'legacy','type':'magic'});
+    final legacyBefore=(await legacy.get()).data()!;await legacy.delete();
+    await otherAuth.signInWithEmailAndPassword(email:'outsider@andi.test',password:'synthetic-only-123');
+    await expectLater(otherDb.collection('records').doc(legacy.id).set(legacyBefore,SetOptions(merge:true)),throwsA(permissionDenied));
+    await otherAuth.signInWithEmailAndPassword(email:'admin@andi.test',password:'synthetic-only-123');
+    expect((await legacy.get(const GetOptions(source:Source.server))).exists,false);
+    evidence['unauthorizedRecreate']='permission-denied; deleted record remains absent';
+    await expectLater(saveRecordCompared(db,legacy.id,{...legacyBefore,'status':'running'},expected:legacyBefore),throwsA(isA<StateError>()));
+    expect((await legacy.get()).exists,false);
+    evidence['oldWriterWitness']='application compare-before-write denied recreating a deleted baseline';
+    await legacy.set({...legacyBefore,'status':'completed',
+      'startedAt':Timestamp.fromDate(DateTime(2026,10,14,8)),
+      'finishedAt':Timestamp.fromDate(DateTime(2026,10,14,9)),
+      'metadata':{'tags':['legacy',{'version':1}]}});
+    final nestedLegacy=(await legacy.get()).data()!;
+    await saveRecordCompared(db,legacy.id,{...nestedLegacy,'addressSnapshot':'nested-update'},expected:nestedLegacy);
+    evidence['legacyAndDeletion']='legacy update passed; deleted baseline rejected';
+    await legacy.delete();
+    final deletedCorrection=otherDb.collection('records').doc('deleted-correction');
+    await deletedCorrection.set(legacyBefore);await deletedCorrection.delete();
+    await otherAuth.signInWithEmailAndPassword(email:'outsider@andi.test',password:'synthetic-only-123');
+    await expectLater(saveRecordCompared(otherDb,ref.id,{...latest,'facadeDone':true},expected:latest),throwsA(permissionDenied));
+    evidence['unauthorizedTeam']='permission-denied';
+    final beforeCorrection=app.centralizerRecordFromData(ref.id,latest);
+    var correctionSaved=false;
+    await tester.pumpWidget(MaterialApp(home:Scaffold(body:app.CentralizerPage(
+      currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),
+      teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],
+      locations:[],categories:[],schedules:[],records:[beforeCorrection],
+      isAdmin:false,canEditTeam:(_)=>true,canEditCentralizer:true,
+      onChanged:(){},log:(_,__) {},saveRecord:(_) async {fail('correction must not add a record');},
+      correctRecord:(original,corrected) async {
+        expect(original.id,ref.id);expect(corrected.id,ref.id);
+        expect(corrected.teamId,original.teamId);expect(corrected.locationId,original.locationId);
+        await correctCentralizerRecordCompared(db,ref.id,expected:{
+          'teamId':original.teamId,'locationId':original.locationId,'type':original.type.name,
+          'startedAt':original.startedAt,'finishedAt':original.finishedAt,'status':original.status.name,
+          'facadeDone':original.facadeDone,'facadePlanned':original.facadePlanned,
+        },changes:{
+          'startedAt':Timestamp.fromDate(corrected.startedAt!),
+          'finishedAt':Timestamp.fromDate(corrected.finishedAt!),
+          'facadeDone':corrected.facadeDone,'facadePlanned':corrected.facadePlanned,
+          'updatedAt':FieldValue.serverTimestamp(),
+        });
+        correctionSaved=true;
+      },
+    ))));
+    await tester.pumpAndSettle();
+    final correctedLocation=find.text(beforeCorrection.locationNameSnapshot);
+    await tester.ensureVisible(correctedLocation);await tester.tap(correctedLocation);
+    await tester.pumpAndSettle();
+    final editCorrection=find.byTooltip('Corectează data, orele și fațada');
+    await tester.ensureVisible(editCorrection);await tester.tap(editCorrection);
+    await tester.pumpAndSettle();
+    final correctionFields=find.descendant(of:find.byType(AlertDialog),matching:find.byType(TextField));
+    expect(correctionFields,findsNWidgets(2));
+    await tester.enterText(correctionFields.at(0),'23:55');
+    await tester.enterText(correctionFields.at(1),'00:20');
+    await tester.pumpAndSettle();
+    final facadeSwitch=find.descendant(of:find.byType(AlertDialog),matching:find.byType(SwitchListTile));
+    await tester.ensureVisible(facadeSwitch);await tester.tap(facadeSwitch);
+    await tester.pumpAndSettle();await tester.tap(find.text('Salvează'));
+    for(var n=0;n<60&&!correctionSaved;n++){await tester.pump(const Duration(milliseconds:200));}
+    await tester.pumpAndSettle();
+    expect(correctionSaved,true);expect(tester.takeException(),isNull);
+    evidence['correctionThroughUi']=true;
+    final nightSnapshot=await ref.get(const GetOptions(source:Source.server));
+    final night=nightSnapshot.data()!;
+    // Exercise the production correction writer, rather than the general writer
+    // substituted by the earlier component adapter. No synthetic live backend.
+    await expectLater(correctCentralizerRecordCompared(db,ref.id,
+      expected:{'finishedAt':beforeCorrection.finishedAt},changes:{'facadeDone':false}),
+      throwsA(anyOf(isA<StateError>(),isA<FirebaseException>())));
+    await expectLater(correctCentralizerRecordCompared(db,'deleted-correction',
+      expected:{'teamId':'craiova'},changes:{'facadeDone':false}),
+      throwsA(anyOf(isA<StateError>(),isA<FirebaseException>())));
+    await expectLater(correctCentralizerRecordCompared(otherDb,ref.id,
+      expected:{'teamId':'craiova'},changes:{'facadeDone':false}),throwsA(permissionDenied));
+    await db.disableNetwork();
+    try {
+      await expectLater(correctCentralizerRecordCompared(db,ref.id,
+        expected:{'facadeDone':true},changes:{'facadeDone':false}),
+        throwsA(anyOf(isA<StateError>(),isA<FirebaseException>())));
+    } finally {
+      await db.enableNetwork();
+    }
+    expect((await ref.get(const GetOptions(source:Source.server))).data()!['facadeDone'],true);
+    evidence['productionCorrectionWriter']='UI adapter uses HomePage persistence; stale, deleted, unauthorized and offline corrections rejected';
+    final reloaded=app.centralizerRecordFromData(ref.id,nightSnapshot.data()!);
+    expect(reloaded.duration,const Duration(minutes:25));
+    expect(reloaded.startedAt,DateTime(2026,10,15,23,55));
+    expect(reloaded.finishedAt,DateTime(2026,10,16,0,20));
+    expect(reloaded.facadeDone,true);
+    await saveRecordCompared(db,'second-legitimate',{...nightSnapshot.data()!,
+      'startedAt':Timestamp.fromDate(DateTime(2026,10,16,0,55)),
+      'finishedAt':Timestamp.fromDate(DateTime(2026,10,16,1,20))});
+    expect((await db.doc('records/second-legitimate').get()).exists,true);
+    evidence['distinctLegitimateAttempt']='a distinct completed attempt retains a distinct ID';
+    final offlineDesired=<String,dynamic>{
+      'teamId':'craiova','locationId':'offline','status':'running',
+      'startedAt':Timestamp.fromDate(DateTime(2026,10,16,2)),
+      'finishedAt':null,
+    };
+    await db.disableNetwork();
+    try {
+      await expectLater(saveRecordCompared(db,'offline-attempt',offlineDesired),throwsA(isA<FirebaseException>()));
+    } finally {
+      await db.enableNetwork();
+    }
+    expect((await db.doc('records/offline-attempt').get(const GetOptions(source:Source.server))).exists,false);
+    await saveRecordCompared(db,'offline-attempt',offlineDesired);
+    final reconnected=await db.doc('records/offline-attempt').get(const GetOptions(source:Source.server));
+    expect(reconnected.exists,true);
+    expect(reconnected.metadata.isFromCache,false);
+    expect(reconnected.metadata.hasPendingWrites,false);
+    expect(reconnected.data()!['status'],'running');
+    final completedOffline={...reconnected.data()!,'status':'completed',
+      'finishedAt':Timestamp.fromDate(DateTime(2026,10,16,2,25))};
+    await saveRecordCompared(db,'offline-attempt',completedOffline,expected:reconnected.data());
+    expect((await db.doc('activeRecordLocks/craiova').get(const GetOptions(source:Source.server))).exists,false);
+    evidence['offlineBeforeStart']='offline write rejected without queue; explicit server-backed retry after reconnect persisted once and released its lock on completion';
+    final finalScenarioRecords=<app.CentralizerRecord>[];
+    for(final item in items){
+      final record=records.singleWhere((r)=>r.locationId==item.locationId);
+      final snapshot=await db.collection('records').doc(record.id).get(const GetOptions(source:Source.server));
+      expect(snapshot.exists,true);
+      finalScenarioRecords.add(app.centralizerRecordFromData(snapshot.id,snapshot.data()!));
+    }
+    final projected=app.centralizerPdfExecutionRows(records:finalScenarioRecords,type:app.LocationType.magic,teamId:'craiova');
+    expect(projected,hasLength(11));
+    expect(projected.where((row)=>row.date.day==15),hasLength(6));
+    expect(projected.where((row)=>row.date.day==16),hasLength(5));
+    expect(projected.map((row)=>row.record.id).toSet(),hasLength(11));
+    final scheduledLocationIds=schedule.items.map((item)=>item.locationId).toSet();
+    final executedLocationIds=finalScenarioRecords.map((record)=>record.locationId).toSet();
+    expect(scheduledLocationIds,hasLength(11));
+    expect(executedLocationIds,scheduledLocationIds);
+    // Keep the same Graph location IDs and split its snapshot by each
+    // execution's synthetic operational date for Centralizer/PDF matching.
+    final projectedSchedules=<app.WorkSchedule>[
+      app.WorkSchedule(id:'graph-craiova-15',teamId:'craiova',date:DateTime(2026,10,15),items:items.sublist(1,7),started:true),
+      app.WorkSchedule(id:'graph-craiova-16',teamId:'craiova',date:DateTime(2026,10,16),items:[items.first,...items.sublist(7)],started:true),
+    ];
+    for(final projectedSchedule in projectedSchedules){
+      await db.collection('schedules').doc(projectedSchedule.id).set({
+        'teamId':projectedSchedule.teamId,
+        'date':Timestamp.fromDate(projectedSchedule.date),
+        'started':projectedSchedule.started,
+        'items':projectedSchedule.items.map((item)=>{'locationId':item.locationId}).toList(),
+      });
+    }
+    final scenarioSchedules=<app.WorkSchedule>[];
+    for(final projectedSchedule in projectedSchedules){
+      final snapshot=await db.collection('schedules').doc(projectedSchedule.id).get(const GetOptions(source:Source.server));
+      expect(snapshot.exists,true);
+      final data=snapshot.data()!;
+      final persistedIds=(data['items'] as List).map((raw)=>(raw as Map)['locationId'] as String).toList();
+      final persistedItems=persistedIds.map((id)=>items.singleWhere((item)=>item.locationId==id)).toList();
+      scenarioSchedules.add(app.WorkSchedule(
+        id:snapshot.id,teamId:data['teamId'] as String,date:(data['date'] as Timestamp).toDate(),
+        items:persistedItems,started:data['started'] as bool,
+      ));
+    }
+    final scheduledScenarioIds=scenarioSchedules.expand((entry)=>entry.items).map((item)=>item.locationId).toSet();
     expect(scheduledScenarioIds,scheduledLocationIds);
     for(final scenarioSchedule in scenarioSchedules){
       for(final item in scenarioSchedule.items){
