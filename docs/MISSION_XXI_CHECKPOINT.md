@@ -8,7 +8,7 @@ Production readiness is false.
 
 ## Latest continuation status (read before historical notes) — 22 October 2026
 
-Current published HEAD: `102c735dec6ee0780455e2f54082727930696a43`.
+Last fully validated application-code SHA: `102c735dec6ee0780455e2f54082727930696a43`. A later documentation-only checkpoint commit follows this code; rerun all three required workflows on the live PR HEAD before claiming exact-HEAD green.
 PR #217 remains Draft/Open on `main`; main is still
 `8452159475ff187867002425fa9c3b8c7e8006aa`. No merge, production deploy,
 signing, or distribution occurred.
@@ -75,8 +75,7 @@ Local Python204passed; JavaScript syntax and whitespace passed.
 
 ## Exact next action
 
-Continue from live PR #217 HEAD `102c735dec6ee0780455e2f54082727930696a43`.
-First review PR #33 status and the remaining non-ancestor content inventory,
+Continue from the live PR #217 HEAD. Re-run Validate, Android, and Native on the documentation checkpoint SHA before code changes. Then review PR #33 status and the remaining non-ancestor content inventory,
 then continue the unclosed feature and critical acceptance packages. Do not infer
 package completion from green CI. Obtain approved staging Firebase project/config
 and a physical Android handset for staging, GPS/background/offline, camera/OCR,
