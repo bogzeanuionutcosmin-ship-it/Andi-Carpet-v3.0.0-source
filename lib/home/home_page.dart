@@ -1670,7 +1670,20 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       throw StateError('Nu ai dreptul să modifici Decontul acestei echipe.');
     }
     final data = _expenseMap(expense);
-    await FirebaseFirestore.instance.collection('expenses').doc(expense.id).set(data, SetOptions(merge: true));
+    final db = FirebaseFirestore.instance;
+    final ref = db.collection('expenses').doc(expense.id);
+    final created = await db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      final write = expenseDocumentCreateWrite(
+        incoming: data,
+        current: snapshot.data() ?? const <String, dynamic>{},
+        exists: snapshot.exists,
+      );
+      if (write == null) return false;
+      transaction.set(ref, write);
+      return true;
+    });
+    if (!created) return; // Exact retry after an uncertain acknowledgement.
     unawaited(_writeLearningEvent(category: expense.ocrRawText.trim().isNotEmpty ? 'ocr' : 'finance', event: 'expense_saved', teamId: expense.teamId, data: {
       'category': expense.category, 'amount': expense.amount, 'documentType': expense.documentType.name,
       'ocrConfidence': expense.ocrConfidence, 'confirmed': expense.confirmed, 'hasImage': expense.hasImage,

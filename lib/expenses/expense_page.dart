@@ -26,15 +26,100 @@ class ExpensePage extends StatefulWidget {
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 
-class _ExpensePageState extends State<ExpensePage> {
+class _ExpensePageState extends State<ExpensePage> with WidgetsBindingObserver {
   static const String _legacySettlementKey = '__legacy__';
   static const FlutterSecureStorage _moneyStorage = FlutterSecureStorage();
+  static const FlutterSecureStorage _expenseStorage = FlutterSecureStorage();
   int teamIndex = 0;
   String? selectedSettlementId;
   bool exporting = false;
   bool scanning = false;
   final Set<String> _savingPerDiemIds = <String>{};
+  final Set<String> _expenseRecoveryStarted = <String>{};
+  final Set<String> _expenseRetryTeams = <String>{};
+  final Set<String> _expenseBusyTeams = <String>{};
+  Timer? _expenseRetryTimer;
   final ImagePicker _imagePicker = ImagePicker();
+
+  ExpenseSaveJournal get _expenseJournal => ExpenseSaveJournal(
+    read: (key) => _expenseStorage.read(key: key),
+    write: (key, value) => _expenseStorage.write(key: key, value: value),
+    remove: (key) => _expenseStorage.delete(key: key),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    for (final team in widget.teams) {
+      if (widget.canEditTeam(team.id) && widget.canEditOwnDecont) _scheduleExpenseRecovery(team.id);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    for (final team in widget.teams) {
+      if (widget.canEditTeam(team.id) && widget.canEditOwnDecont) {
+        unawaited(_recoverExpenseIntent(team.id));
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _expenseRetryTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleExpenseRecovery(String teamId) {
+    if (!_expenseRecoveryStarted.add(teamId)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_recoverExpenseIntent(teamId));
+    });
+  }
+
+  void _ensureExpenseRetryTimer() {
+    _expenseRetryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
+      for (final teamId in _expenseRetryTeams.toList()) {
+        unawaited(_recoverExpenseIntent(teamId));
+      }
+    });
+  }
+
+  Future<void> _recoverExpenseIntent(String teamId) async {
+    if (!_expenseBusyTeams.add(teamId)) return;
+    try {
+      final intent = await _expenseJournal.pending(userId: widget.currentUser.id, teamId: teamId);
+      if (intent == null) {
+        _expenseRetryTeams.remove(teamId);
+        if (_expenseRetryTeams.isEmpty) {
+          _expenseRetryTimer?.cancel();
+          _expenseRetryTimer = null;
+        }
+        return;
+      }
+      await _expenseJournal.run(candidate: intent, send: widget.saveExpense);
+      _expenseRetryTeams.remove(teamId);
+      if (!mounted) return;
+      widget.onChanged();
+      widget.log('Cheltuială confirmată după reconectare', '${intent.expense.category} · ${intent.expense.amount.toStringAsFixed(2)} lei');
+      if (mounted) showSuccessMessage(context, 'O cheltuială în așteptare a fost confirmată după reconectare.');
+      if (_expenseRetryTeams.isEmpty) {
+        _expenseRetryTimer?.cancel();
+        _expenseRetryTimer = null;
+      }
+    } catch (_) {
+      if (_expenseRetryTeams.add(teamId) && mounted) {
+        showErrorMessage(context, 'O cheltuială este în așteptarea confirmării serverului. Reconectează-te; sistemul va reîncerca aceeași operație.');
+      }
+      _ensureExpenseRetryTimer();
+    } finally {
+      _expenseBusyTeams.remove(teamId);
+    }
+  }
 
   List<Team> get visibleTeams => (widget.isAdmin || widget.canViewOtherDecont)
       ? widget.teams
@@ -1147,10 +1232,20 @@ class _ExpensePageState extends State<ExpensePage> {
   Future<void> _saveNewExpense(Expense e) async {
     if (!mounted || !await _duplicateAllowed(e) || !mounted) return;
     try {
-      await widget.saveExpense(e);
+      final intent = ExpenseSaveIntent(userId: widget.currentUser.id, teamId: e.teamId, expense: e);
+      await _expenseJournal.run(candidate: intent, send: widget.saveExpense);
+      _expenseRetryTeams.remove(e.teamId);
+      if (_expenseRetryTeams.isEmpty) {
+        _expenseRetryTimer?.cancel();
+        _expenseRetryTimer = null;
+      }
       widget.log('${e.documentType == ExpenseDocumentType.fiscalReceipt ? 'Bon Fiscal' : 'Factură'} introdus', '${e.category} · ${settlement?.name ?? 'istoric anterior'}');
       if (mounted) showSuccessMessage(context, e.confirmed ? 'Documentul a fost salvat.' : 'Documentul a fost trimis gestionarului pentru confirmare.');
-    } catch (err) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva documentul: $err'); }
+    } catch (err) {
+      _expenseRetryTeams.add(e.teamId);
+      _ensureExpenseRetryTimer();
+      if (mounted) showErrorMessage(context, 'Nu s-a putut confirma salvarea documentului: $err. Va fi reîncercată aceeași cheltuială.');
+    }
   }
 
   List<Widget> _groupedExpenses() {

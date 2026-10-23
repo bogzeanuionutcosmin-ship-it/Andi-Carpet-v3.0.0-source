@@ -41,6 +41,8 @@ import 'services/romania_place_geocoder.dart';
 import 'map/map_navigation_uri.dart';
 import 'finance/per_diem_money.dart';
 import 'expenses/expense_duplicate_matcher.dart';
+import 'expenses/expense_save_journal.dart';
+import 'expenses/expense_document_create.dart';
 import 'finance/legacy_per_diem_balance.dart';
 import 'package:http/http.dart' as http;
 import 'dashboard/location_city_label.dart';
