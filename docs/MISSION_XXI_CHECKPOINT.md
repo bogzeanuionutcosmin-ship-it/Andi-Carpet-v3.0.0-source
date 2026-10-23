@@ -271,3 +271,41 @@ sources pass on the recovered candidate. Flutter, Dart, Firebase CLI and
 not be run. A local Git bundle and binary patch against the exact PR base are
 provided separately; they are recovery artifacts, not publication or CI
 acceptance.
+
+### Follow-up source review — 2026-10-23
+
+Post-recovery review found and fixed regressions that source-contract tests alone
+did not compile: Dashboard schedule intent decoding now validates each write
+against its enclosing START/STOP transition; the expense retry catch retains its
+intent in scope; the Native Dashboard fixture uses the new callback contract;
+and the Mapbox cache expiry test now asserts the exact five-minute boundary
+consistently with the implementation.
+
+Manager confirmation now has a separate transactional path from create-only
+expense retry. It compares the reviewed expense identity/financial fields,
+writes only `confirmed` and `updatedAt`, and preserves server metadata. Firestore
+rules restrict non-admin expense updates to assigned managers confirming an
+existing unconfirmed expense. Create replay accepts a later confirmed state
+without downgrading it. Finance/settlement and expense transaction retries
+recheck the active Home session after each awaited read and before writes or
+accepting a replay.
+
+New local commits after recovery: `d64ae33` (fix schedule/expense/native
+integration callsites), `97e9639` (restore manager confirmation with rule and
+transaction coverage), and `38dfeb6` (session fencing and corrected cache test).
+The current code head is `38dfeb6cb89e4fa9829c133aa46cafbcb719e4d2`; the full
+local diff against PR base now covers 36 files. Latest local checks: 207 Python
+source contracts passed, 8 Node projection tests passed, Functions and changed
+Firestore test scripts pass `node --check`, `git diff --check` passes, and
+constructor callsites were searched. New Flutter unit/widget tests and changed
+Firestore authorization tests were added but not executed because Flutter,
+Dart, Firebase CLI and `node_modules` are unavailable. Android and Native E2E
+remain unrun on these local commits.
+
+Publication was retried only against the existing `origin` branch after the
+connected GitHub API confirmed repository ID `1411102708` and `push: true`.
+The automatic publication review again rejected the push because it would publish
+the complete local branch to the public GitHub repository and required explicit
+authorization for that exact publication. No alternate write mechanism was
+used. Recovery bundle and binary patch must be regenerated against this tip;
+they do not count as publication, CI, or feature acceptance.
