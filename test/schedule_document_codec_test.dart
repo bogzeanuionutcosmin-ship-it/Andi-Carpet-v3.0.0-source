@@ -31,16 +31,16 @@ void main() {
     expect(restored.teamId, original.teamId);
     expect(restored.graphId, original.graphId);
     expect(restored.graphName, original.graphName);
-    expect(restored.date, original.date);
+    expect(restored.date.isAtSameMomentAs(original.date), isTrue);
     expect(restored.active, original.active);
     expect(restored.closed, original.closed);
     expect(restored.started, original.started);
     expect(restored.paused, original.paused);
     expect(restored.postponed, original.postponed);
     expect(restored.autoProposed, original.autoProposed);
-    expect(restored.planAlertAt, original.planAlertAt);
+    expect(restored.planAlertAt!.isAtSameMomentAs(original.planAlertAt!), isTrue);
     expect(restored.planAlertReason, original.planAlertReason);
-    expect(restored.lastRecalculatedAt, original.lastRecalculatedAt);
+    expect(restored.lastRecalculatedAt!.isAtSameMomentAs(original.lastRecalculatedAt!), isTrue);
     expect(restored.recalculationCount, original.recalculationCount);
     expect(restored.learningExplanation, original.learningExplanation);
     expect(restored.learningConfidence, original.learningConfidence);
@@ -55,7 +55,7 @@ void main() {
     expect(restored.items.single.locationId, 'room-1');
     expect(restored.items.single.transferred, isTrue);
     expect(restored.items.single.facadePlanned, isTrue);
-    expect(restored.updatedAt, commitTime.toDate());
+    expect(restored.updatedAt!.isAtSameMomentAs(commitTime.toDate()), isTrue);
     expect(restored.writeToken, 'new-token');
     expect(restored.persisted, isTrue);
   });
