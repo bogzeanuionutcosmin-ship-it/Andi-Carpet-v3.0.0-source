@@ -249,7 +249,19 @@ void main() {
       final start=find.byTooltip('Intră / începe lucrul').first;
       await tester.ensureVisible(start);await tester.tap(start);await tester.tap(start,warnIfMissed:false);
       for(var n=0;n<60&&!records.any((r)=>r.locationId==item.locationId&&r.status==app.WorkAttemptStatus.running);n++){await tester.pump(const Duration(milliseconds:200));}
-      expect(records.where((r)=>r.locationId==item.locationId&&r.status==app.WorkAttemptStatus.running),hasLength(1));
+      final startedForLocation=records.where((r)=>r.locationId==item.locationId&&r.status==app.WorkAttemptStatus.running).toList();
+      if(startedForLocation.length!=1){
+        final visibleMessages=find.byType(SnackBar).evaluate().map((element){
+          final snack=element.widget as SnackBar;
+          return snack.content is Text ? (snack.content as Text).data ?? '<rich text>' : snack.content.runtimeType.toString();
+        }).toList();
+        final serverRecords=await db.collection('records').where('teamId',isEqualTo:'craiova').get(const GetOptions(source:Source.server));
+        debugPrint('[xix-native] start failure location=${item.locationId} intervention=${item.interventionId} '
+          'localRecords=${records.length} serverRecords=${serverRecords.docs.length} '
+          'localStatuses=${records.map((r)=>'${r.locationId}:${r.status}').toList()} '
+          'visibleMessages=$visibleMessages');
+      }
+      expect(startedForLocation,hasLength(1),reason:'Dashboard INTRĂ must persist a running record before Centralizator/PDF');
       if(item == items.first) {
         final startedRecord=records.singleWhere((r)=>r.locationId==item.locationId);
         final current=(await db.collection('records').doc(startedRecord.id).get(const GetOptions(source:Source.server))).data()!;
