@@ -57,7 +57,7 @@ void main() {
     expect(recovered, isNotNull);
     expect(recovered!.sameOperation(original), isTrue);
     expect(recovered.desired['finishedAt'], isA<Timestamp>());
-    expect((recovered.desired['finishedAt'] as Timestamp).toDate(), DateTime.utc(2026, 10, 23, 9));
+    expect((recovered.desired['finishedAt'] as Timestamp).toDate().isAtSameMomentAs(DateTime.utc(2026, 10, 23, 9)), isTrue);
 
     await restarted.run(candidate: original, send: (sent) async {
       expect(sent.sameOperation(original), isTrue);
