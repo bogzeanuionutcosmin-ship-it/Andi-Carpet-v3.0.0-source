@@ -764,8 +764,6 @@ void main() {
     final homeExpense=tester.widget<app.ExpensePage>(homeExpenseFinder);
     expect(homeExpense.canEditOwnDecont,true);
     expect(homeExpense.canEditTeam('craiova'),true);
-    final expensePageExpenses=homeExpense.expenses;
-    expect(expensePageExpenses,isEmpty);
     final expenseNavigator=Navigator.of(tester.element(homeExpenseFinder));
     final expenseRoute=expenseNavigator.push<void>(MaterialPageRoute(builder:(_)=>
       Scaffold(body:app.ExpensePage(
@@ -807,10 +805,15 @@ void main() {
     await tester.enterText(receiptFields.at(2),'150,25');
     await tester.tap(find.text('Confirmă'));
     await tester.pumpAndSettle();
-    await pumpUntil(()=>expensePageExpenses.length==1,
-      'HomePage financial subscription must reload the persisted receipt');
-    expect(expensePageExpenses,hasLength(1));
-    final savedExpense=await db.collection('expenses').doc(expensePageExpenses.single.id)
+    final persistedReceipts=await db.collection('expenses')
+      .where('teamId',isEqualTo:'craiova')
+      .get(const GetOptions(source:Source.server));
+    final receiptMatches=persistedReceipts.docs.where((doc)=>
+      doc.data()['settlementId']==receiptSettlement.id &&
+      doc.data()['documentNumber']=='12345').toList();
+    expect(receiptMatches,hasLength(1),
+      reason:'The corrected OCR receipt must be persisted to the server before Home reload is checked');
+    final savedExpense=await receiptMatches.single.reference
       .get(const GetOptions(source:Source.server));
     expect(savedExpense.metadata.isFromCache,false);
     expect(savedExpense.metadata.hasPendingWrites,false);
@@ -850,6 +853,9 @@ void main() {
     expenseNavigator.pop();
     await expenseRoute;
     await tester.pumpAndSettle();
+    await pumpUntil(()=>tester.widget<app.ExpensePage>(homeExpenseFinder).expenses
+      .any((expense)=>expense.id==savedExpense.id),
+      'HomePage financial subscription must reload the persisted receipt after returning from OCR review');
     final reloadedReceipt=find.widgetWithText(ListTile,'Bon Fiscal nr 12345');
     await tester.ensureVisible(reloadedReceipt);
     expect(find.descendant(of:reloadedReceipt,matching:find.textContaining('150.25 lei')),
