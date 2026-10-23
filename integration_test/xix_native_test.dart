@@ -764,6 +764,8 @@ void main() {
     final homeExpense=tester.widget<app.ExpensePage>(homeExpenseFinder);
     expect(homeExpense.canEditOwnDecont,true);
     expect(homeExpense.canEditTeam('craiova'),true);
+    app.Expense? submittedExpense;
+    var saveExpenseCallbackReturned=false;
     final expenseNavigator=Navigator.of(tester.element(homeExpenseFinder));
     final expenseRoute=expenseNavigator.push<void>(MaterialPageRoute(builder:(_)=>
       Scaffold(body:app.ExpensePage(
@@ -784,7 +786,18 @@ void main() {
         expect(bytes,isNotEmpty);
         return 'SC EXEMPLU SRL\nBON FISCAL NR 12345\nDATA 05.10.2026\nTOTAL 148,75 LEI';
       },
-      saveExpense:homeExpense.saveExpense,
+      saveExpense:(expense) async {
+        submittedExpense=expense;
+        debugPrint('[xix-native] expense save callback begin team=${expense.teamId} settlement=${expense.settlementId} id=${expense.id}');
+        try {
+          await homeExpense.saveExpense(expense);
+          saveExpenseCallbackReturned=true;
+          debugPrint('[xix-native] expense save callback done id=${expense.id}');
+        } catch(error) {
+          debugPrint('[xix-native] expense save callback failed id=${expense.id} error=$error');
+          rethrow;
+        }
+      },
       confirmExpense:homeExpense.confirmExpense,
       savePerDiem:homeExpense.savePerDiem,
       saveFinance:homeExpense.saveFinance,
@@ -805,19 +818,25 @@ void main() {
     await tester.enterText(receiptFields.at(2),'150,25');
     await tester.tap(find.text('Confirmă'));
     await tester.pumpAndSettle();
-    final expenseQuery=db.collection('expenses').where('teamId',isEqualTo:'craiova');
-    var receiptMatches=<QueryDocumentSnapshot<Map<String,dynamic>>>[];
-    for(var n=0;n<120&&receiptMatches.isEmpty;n++){
-      final persistedReceipts=await expenseQuery.get(const GetOptions(source:Source.server));
-      receiptMatches=persistedReceipts.docs.where((doc)=>
-        doc.data()['settlementId']==receiptSettlement.id &&
-        doc.data()['documentNumber']=='12345').toList();
-      if(receiptMatches.isEmpty)await tester.pump(const Duration(milliseconds:200));
-    }
-    expect(receiptMatches,hasLength(1),
-      reason:'The corrected OCR receipt must be persisted to the server before Home reload is checked');
-    final savedExpense=await receiptMatches.single.reference
+    await pumpUntil(()=>submittedExpense!=null,
+      'OCR confirmation must invoke HomePage expense persistence');
+    final expenseToSave=submittedExpense!;
+    debugPrint('[xix-native] expense save intent team=${expenseToSave.teamId} settlement=${expenseToSave.settlementId} callbackReturned=$saveExpenseCallbackReturned');
+    expect(expenseToSave.teamId,'craiova',
+      reason:'OCR must persist into the selected Craiova team');
+    expect(expenseToSave.settlementId,receiptSettlement.id,
+      reason:'OCR must persist into the selected synthetic settlement');
+    var savedExpense=await db.collection('expenses').doc(expenseToSave.id)
       .get(const GetOptions(source:Source.server));
+    for(var n=0;n<120&&!savedExpense.exists;n++){
+      await tester.pump(const Duration(milliseconds:200));
+      savedExpense=await db.collection('expenses').doc(expenseToSave.id)
+        .get(const GetOptions(source:Source.server));
+    }
+    expect(savedExpense.exists,true,
+      reason:'The submitted OCR receipt must persist to the server before Home reload is checked');
+    expect(saveExpenseCallbackReturned,true,
+      reason:'HomePage expense persistence callback must return successfully');
     expect(savedExpense.metadata.isFromCache,false);
     expect(savedExpense.metadata.hasPendingWrites,false);
     expect(savedExpense.data()!['teamId'],'craiova');
