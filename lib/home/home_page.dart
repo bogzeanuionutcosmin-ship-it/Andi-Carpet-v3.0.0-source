@@ -1743,8 +1743,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         current: snapshot.data() ?? const <String, dynamic>{},
         exists: snapshot.exists,
       );
-      if (write == null) return false;
       _requireCurrentSession();
+      if (write == null) return false;
       transaction.set(ref, write);
       return true;
     });
@@ -1900,14 +1900,19 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   /// cannot count it twice. Unknown or conflicting records fail closed.
   Future<void> _saveReceivedMoneyDocument({required String collection, required String id,
       required Map<String, dynamic> data}) async {
+    _requireCurrentSession();
     final db = FirebaseFirestore.instance;
     final ref = db.collection(collection).doc(id);
     await db.runTransaction((tx) async {
+      _requireCurrentSession();
       final snap = await tx.get(ref);
+      _requireCurrentSession();
       final writeData = mergeReceivedMoneyDocument(incoming: data,
         current: snap.data() ?? <String, dynamic>{}, exists: snap.exists);
+      _requireCurrentSession();
       tx.set(ref, writeData, SetOptions(merge: true));
     });
+    _requireCurrentSession();
   }
 
   Future<void> _writeAuditRemote(String action, String target) async {

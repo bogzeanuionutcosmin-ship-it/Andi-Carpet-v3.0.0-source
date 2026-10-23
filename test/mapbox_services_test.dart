@@ -69,7 +69,7 @@ void main() {
     final service = MapboxServices('pk.test', client: client, now: () => now);
 
     expect(await service.drivingGeometry(route), routeResult);
-    now = now.add(const Duration(minutes: 5));
+    now = now.add(const Duration(minutes: 5) - const Duration(microseconds: 1));
     expect(await service.drivingGeometry(route), routeResult);
     expect(requests, 1);
     now = now.add(const Duration(microseconds: 1));

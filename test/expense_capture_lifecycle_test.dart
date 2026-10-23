@@ -6,6 +6,49 @@ import 'package:image_picker/image_picker.dart';
 import 'package:andi_carpeta/main.dart' as app;
 
 void main() {
+  testWidgets('manager confirms an existing expense through the confirmation path only', (tester) async {
+    tester.view.physicalSize = const Size(1440, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final user = app.AppUser(id: 'manager', name: 'Manager', role: app.UserRole.member);
+    final expense = app.Expense(
+      id: 'expense-1', teamId: 'team', settlementId: 'settlement',
+      category: 'Combustibil', description: 'Test', amount: 12.34,
+      date: DateTime(2026, 10, 23), confirmed: false,
+    );
+    final confirmation = Completer<void>();
+    var creates = 0;
+    var confirms = 0;
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: app.ExpensePage(
+      currentUser: user, users: [user],
+      teams: [app.Team(id: 'team', name: 'Team', members: ['manager'])],
+      expenses: [expense], perDiems: [], finances: [],
+      settlements: [app.TravelSettlement(id: 'settlement', teamId: 'team', name: 'Trip',
+        startDate: DateTime(2026, 10, 23), managerId: 'manager')],
+      settings: app.AppSettings(), canEditTeam: (_) => true, isAdmin: false,
+      canEditOwnDecont: true, canViewOtherDecont: false, onChanged: () {},
+      notifyUser: (_, _, _) {}, log: (_, _) {},
+      saveExpense: (_) async { creates++; throw StateError('create path must not confirm'); },
+      confirmExpense: (_) { confirms++; return confirmation.future; },
+      savePerDiem: (_) async {}, saveFinance: (_) async {}, saveSettlement: (_) async {},
+    ))));
+    await tester.pumpAndSettle();
+    final row = find.ancestor(of: find.text('Bon Fiscal nr —'), matching: find.byType(ListTile)).first;
+    await tester.ensureVisible(row);
+    final confirmButton = find.descendant(of: row, matching: find.widgetWithText(FilledButton, 'Confirmă'));
+    expect(confirmButton, findsOneWidget);
+    await tester.tap(confirmButton);
+    await tester.pump();
+    expect(confirms, 1);
+    expect(creates, 0);
+    expect(expense.confirmed, isFalse, reason: 'UI must not claim confirmation before the server ACK');
+    confirmation.complete();
+    await tester.pumpAndSettle();
+    expect(expense.confirmed, isTrue);
+    expect(creates, 0);
+  });
+
   for (final manual in [true, false]) {
     for (final boundary in ['picker', 'ocr']) {
       testWidgets('${manual ? 'manual' : 'scan'} ignores $boundary result after ExpensePage disposal', (tester) async {
