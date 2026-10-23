@@ -4,7 +4,7 @@ import 'package:andi_carpeta/main.dart' as app;
 void main() {
   final date = DateTime(2026, 10, 21);
 
-  test('preserves financial summary team filters and totals without deduplication', () {
+  test('deduplicates persisted financial rows and validates summary amounts', () {
     final team = app.Team(id: 'team-a', name: 'A', members: <String>[]);
     final finance = app.TeamFinance(
       teamId: team.id,
@@ -142,12 +142,12 @@ void main() {
       settlements: <app.TravelSettlement>[settlement, otherTeamSettlement],
     );
 
-    // TeamFinance and TravelSettlement totals retain their existing aggregate
-    // semantics, while the summary expense fold does not deduplicate IDs.
-    expect(projection.totalReceived, 22);
-    expect(projection.expenseTotal, 35);
+    // Duplicate transfer/expense document IDs represent repeated snapshots,
+    // not a second payment or expense.
+    expect(projection.totalReceived, 20);
+    expect(projection.expenseTotal, 30);
     expect(projection.perDiemTotal, 20);
-    expect(projection.balance, -33);
+    expect(projection.balance, -30);
     expect(projection.settlementCount, 1);
   });
 
@@ -174,10 +174,67 @@ void main() {
 
     expect(projection.totalReceived, 0);
     expect(projection.expenseTotal, 0);
-    // Existing summary logic sums every non-null confirmed actual payment
-    // without the stricter finite/nonnegative decont-PDF filter.
-    expect(projection.perDiemTotal.isNaN, isTrue);
-    expect(projection.balance.isNaN, isTrue);
+    expect(projection.perDiemTotal, 0);
+    expect(projection.balance, 0);
     expect(projection.settlementCount, 0);
+  });
+
+  test('ignores invalid and duplicate expense values without poisoning totals', () {
+    final team = app.Team(id: 'team-safe', name: 'Safe', members: <String>[]);
+    final projection = app.projectFinancialSummaryRow(
+      team: team,
+      expenses: <app.Expense>[
+        app.Expense(
+          id: 'nan',
+          teamId: team.id,
+          category: 'Fuel',
+          description: '',
+          amount: double.nan,
+          date: date,
+        ),
+        app.Expense(
+          id: 'infinite',
+          teamId: team.id,
+          category: 'Fuel',
+          description: '',
+          amount: double.infinity,
+          date: date,
+        ),
+        app.Expense(
+          id: 'negative',
+          teamId: team.id,
+          category: 'Fuel',
+          description: '',
+          amount: -4,
+          date: date,
+        ),
+        app.Expense(
+          id: 'valid',
+          teamId: team.id,
+          category: 'Fuel',
+          description: '',
+          amount: 12.5,
+          date: date,
+        ),
+        app.Expense(
+          id: 'valid',
+          teamId: team.id,
+          category: 'Fuel',
+          description: '',
+          amount: 99,
+          date: date,
+        ),
+      ],
+      perDiems: <app.PerDiemEntry>[],
+      finances: <app.TeamFinance>[
+        app.TeamFinance(teamId: team.id, receivedDeparture: double.infinity, receivedDuring: -2),
+      ],
+      settlements: <app.TravelSettlement>[],
+    );
+
+    expect(projection.expenseTotal, 12.5);
+    expect(projection.totalReceived, 0);
+    expect(projection.balance, -12.5);
+    expect(projection.balance.isFinite, isTrue);
   });
 }

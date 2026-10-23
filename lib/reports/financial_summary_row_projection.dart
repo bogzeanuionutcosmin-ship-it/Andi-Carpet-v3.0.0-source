@@ -25,30 +25,77 @@ FinancialSummaryRowProjection projectFinancialSummaryRow({
   required List<TeamFinance> finances,
   required List<TravelSettlement> settlements,
 }) {
-  final expenseTotal = expenses
-      .where((expense) => expense.teamId == team.id && expense.confirmed)
-      .fold<double>(0, (total, expense) => total + expense.amount);
-  final perDiemTotal = perDiems
-      .where((entry) =>
-          entry.teamId == team.id &&
-          entry.status == PerDiemStatus.confirmed &&
-          entry.received == true &&
-          entry.actualReceivedAmount != null)
-      .fold<double>(
-        0,
-        (total, entry) => total + entry.actualReceivedAmount!,
-      );
+  // Snapshot/list inputs can contain the same persisted row more than once.
+  // Count the first valid instance for each immutable ID and fail closed on
+  // malformed monetary values so one corrupt legacy value cannot poison every
+  // row and the balance with NaN/Infinity.
+  final seenExpenseIds = <String>{};
+  final expenseTotal = expenses.fold<double>(0, (total, expense) {
+    if (expense.teamId != team.id ||
+        !expense.confirmed ||
+        !expense.amount.isFinite ||
+        expense.amount < 0 ||
+        !seenExpenseIds.add(expense.id)) {
+      return total;
+    }
+    return total + expense.amount;
+  });
+  final seenPerDiemIds = <String>{};
+  final perDiemTotal = perDiems.fold<double>(0, (total, entry) {
+    final amount = entry.actualReceivedAmount;
+    if (entry.teamId != team.id ||
+        entry.status != PerDiemStatus.confirmed ||
+        entry.received != true ||
+        amount == null ||
+        !amount.isFinite ||
+        amount < 0 ||
+        !seenPerDiemIds.add(entry.id)) {
+      return total;
+    }
+    return total + amount;
+  });
   final finance = finances.firstWhere(
     (entry) => entry.teamId == team.id,
     orElse: () => TeamFinance(teamId: team.id),
   );
-  final teamSettlements =
-      settlements.where((entry) => entry.teamId == team.id).toList();
-  final tripReceived = teamSettlements.fold<double>(
-    0,
-    (total, settlement) => total + settlement.totalReceived,
-  );
-  final totalReceived = finance.totalReceived + tripReceived;
+  double legacyTotal(double departure, double during) =>
+      (departure.isFinite && departure >= 0 ? departure : 0) +
+      (during.isFinite && during >= 0 ? during : 0);
+  double uniqueReceiptTotal(Iterable<ReceivedMoneyEntry> entries) {
+    final seen = <String>{};
+    return entries.fold<double>(0, (total, entry) {
+      if ((entry.kind != 'departure' && entry.kind != 'during') ||
+          !entry.amount.isFinite ||
+          entry.amount < 0 ||
+          !seen.add(entry.id)) {
+        return total;
+      }
+      return total + entry.amount;
+    });
+  }
+
+  final financeReceived = finance.receivedEntries.isEmpty
+      ? legacyTotal(finance.receivedDeparture, finance.receivedDuring)
+      : uniqueReceiptTotal(finance.receivedEntries);
+  final seenSettlementIds = <String>{};
+  final tripReceived = settlements.fold<double>(0, (total, settlement) {
+    if (settlement.teamId != team.id ||
+        !seenSettlementIds.add(settlement.id)) {
+      return total;
+    }
+    final amount = settlement.receivedEntries.isEmpty
+        ? legacyTotal(settlement.receivedDeparture, settlement.receivedDuring)
+        : uniqueReceiptTotal(settlement.receivedEntries);
+    return total + amount;
+  });
+  final totalReceived = financeReceived + tripReceived;
+  final teamSettlements = <TravelSettlement>[];
+  final settlementIds = <String>{};
+  for (final settlement in settlements) {
+    if (settlement.teamId == team.id && settlementIds.add(settlement.id)) {
+      teamSettlements.add(settlement);
+    }
+  }
 
   return FinancialSummaryRowProjection(
     totalReceived: totalReceived,
