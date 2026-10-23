@@ -20,10 +20,11 @@ Future<void> saveReceivedMoneyDraft({required ReceivedMoneyEntry entry,
   if((settlement==null)==(finance==null))throw ArgumentError('Choose one financial target');
   if(!entry.amount.isFinite || entry.amount<=0 || entry.amount>100000000 ||
       (entry.amount*100-(entry.amount*100).round()).abs()>0.000001 ||
-      !['departure','during'].contains(entry.kind) || entry.fromName.trim().isEmpty) {
+      !['departure','during'].contains(entry.kind) || entry.fromName.trim().isEmpty || entry.id.trim().isEmpty) {
     throw ArgumentError('Invalid received amount');
   }
   final history=settlement?.receivedEntries??finance!.receivedEntries;
+  final nextHistory=_mergeReceivedMoneyEntry(history,entry);
   final legacyDeparture=settlement?.receivedDeparture??finance!.receivedDeparture;
   final legacyDuring=settlement?.receivedDuring??finance!.receivedDuring;
   if(history.isEmpty && (legacyDeparture!=0 || legacyDuring!=0)) {
@@ -33,7 +34,7 @@ Future<void> saveReceivedMoneyDraft({required ReceivedMoneyEntry entry,
     final draft=TravelSettlement(id:settlement.id,teamId:settlement.teamId,name:settlement.name,
       startDate:settlement.startDate,endDate:settlement.endDate,managerId:settlement.managerId,
       receivedDeparture:settlement.receivedDeparture,receivedDuring:settlement.receivedDuring,
-      receivedEntries:[...settlement.receivedEntries,entry],perDiemRate:settlement.perDiemRate,
+      receivedEntries:nextHistory,perDiemRate:settlement.perDiemRate,
       closed:settlement.closed,createdAt:settlement.createdAt);
     draft.receivedDeparture=draft.departureTotal;draft.receivedDuring=draft.duringTotal;
     await saveSettlement(draft);
@@ -43,10 +44,32 @@ Future<void> saveReceivedMoneyDraft({required ReceivedMoneyEntry entry,
     final target=finance!;
     final draft=TeamFinance(teamId:target.teamId,managerId:target.managerId,
       receivedDeparture:target.receivedDeparture,receivedDuring:target.receivedDuring,
-      receivedEntries:[...target.receivedEntries,entry],perDiemRate:target.perDiemRate);
+      receivedEntries:nextHistory,perDiemRate:target.perDiemRate);
     draft.receivedDeparture=draft.departureTotal;draft.receivedDuring=draft.duringTotal;
     await saveFinance(draft);
     target.receivedEntries=List.of(draft.receivedEntries);
     target.receivedDeparture=draft.receivedDeparture;target.receivedDuring=draft.receivedDuring;
   }
 }
+
+List<ReceivedMoneyEntry> _mergeReceivedMoneyEntry(
+    Iterable<ReceivedMoneyEntry> history, ReceivedMoneyEntry incoming) {
+  final byId=<String,ReceivedMoneyEntry>{};
+  final merged=<ReceivedMoneyEntry>[];
+  for(final item in [...history,incoming]) {
+    final previous=byId[item.id];
+    if(previous!=null) {
+      if(!_sameReceivedMoney(previous,item)) {
+        throw StateError('ID-ul sumei primite există cu date diferite.');
+      }
+      continue;
+    }
+    byId[item.id]=item;
+    merged.add(item);
+  }
+  return merged;
+}
+
+bool _sameReceivedMoney(ReceivedMoneyEntry a, ReceivedMoneyEntry b) =>
+    a.kind==b.kind && a.amount==b.amount && a.method==b.method &&
+    a.fromName==b.fromName && a.date.isAtSameMomentAs(b.date);

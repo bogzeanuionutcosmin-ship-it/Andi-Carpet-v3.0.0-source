@@ -10,6 +10,29 @@ void main(){
       saveFinance:(_)async{fail('wrong target');}),throwsA(isA<StateError>()));
     expect(original.receivedEntries,isEmpty);expect(original.totalReceived,0);expect(original.closed,false);expect(original.endDate,isNull);
   });
+  test('exact journal replay already in local history is not counted twice',()async{
+    final original=TeamFinance(teamId:'t',receivedDuring:12.34,receivedEntries:[entry]);
+    var calls=0;
+    await saveReceivedMoneyDraft(entry:entry,finance:original,
+      saveFinance:(draft)async{
+        calls++;
+        expect(draft.receivedEntries,hasLength(1));
+        expect(draft.receivedDuring,12.34);
+      },saveSettlement:(_)async{fail('wrong target');});
+    expect(calls,1);
+    expect(original.receivedEntries,hasLength(1));
+    expect(original.totalReceived,12.34);
+  });
+  test('same receipt ID with different values fails closed',()async{
+    final original=TeamFinance(teamId:'t',receivedEntries:[entry]);
+    final conflict=ReceivedMoneyEntry(id:'one',kind:'departure',amount:20,
+      method:'Cash',fromName:'Source',date:DateTime(2026,10,21));
+    await expectLater(saveReceivedMoneyDraft(entry:conflict,finance:original,
+      saveFinance:(_)async{fail('conflict must not be sent');},
+      saveSettlement:(_)async{fail('wrong target');}),throwsStateError);
+    expect(original.receivedEntries,hasLength(1));
+    expect(original.totalReceived,12.34);
+  });
   test('rejected legacy-finance save preserves baseline and explicit retry adds once',()async{
     final original=TeamFinance(teamId:'t',managerId:'manager');
     var calls=0;
