@@ -28,6 +28,7 @@ class ExpensePage extends StatefulWidget {
 
 class _ExpensePageState extends State<ExpensePage> {
   static const String _legacySettlementKey = '__legacy__';
+  static const FlutterSecureStorage _moneyStorage = FlutterSecureStorage();
   int teamIndex = 0;
   String? selectedSettlementId;
   bool exporting = false;
@@ -542,12 +543,18 @@ class _ExpensePageState extends State<ExpensePage> {
     _moneyPending=true;
     final targetSettlement=settlement;
     final targetFinance=targetSettlement==null?finance:null;
+    final targetId=targetSettlement?.id??targetFinance!.teamId;
+    final journal=ReceivedMoneyJournal(read:(key)=>_moneyStorage.read(key:key),
+      write:(key,value)=>_moneyStorage.write(key:key,value:value),
+      remove:(key)=>_moneyStorage.delete(key:key));
     try {
-      final result=await showDialog<ReceivedMoneyEntry>(context:context,
+      final pending=await journal.pending(userId:widget.currentUser.id,teamId:team.id,targetId:targetId);
+      final result=pending??await showDialog<ReceivedMoneyEntry>(context:context,
         builder:(_)=>ReceivedMoneyDialog(departure:departure,now:DateTime.now(),newId:idNow));
       if(result==null||!mounted)return;
-      await saveReceivedMoneyDraft(entry:result,settlement:targetSettlement,finance:targetFinance,
-        saveSettlement:widget.saveSettlement,saveFinance:widget.saveFinance);
+      await journal.run(userId:widget.currentUser.id,teamId:team.id,targetId:targetId,candidate:result,
+        send:(entry)=>saveReceivedMoneyDraft(entry:entry,settlement:targetSettlement,finance:targetFinance,
+          saveSettlement:widget.saveSettlement,saveFinance:widget.saveFinance));
       widget.log('Sumă primită adăugată','${targetSettlement?.name??team.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
       if(mounted){setState((){});showSuccessMessage(context,'Suma primită a fost adăugată.');}
     } catch(error) {

@@ -1774,7 +1774,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     }
     validateReceivedMoneyState(departure:settlement.receivedDeparture,during:settlement.receivedDuring,
       perDiemRate:settlement.perDiemRate,entries:settlement.receivedEntries);
-    await FirebaseFirestore.instance.collection('settlements').doc(settlement.id).set(_settlementMap(settlement), SetOptions(merge: true));
+    await _saveReceivedMoneyDocument(collection: 'settlements', id: settlement.id, data: _settlementMap(settlement));
     unawaited(_writeLearningEvent(category: 'finance', event: 'settlement_saved', teamId: settlement.teamId, data: {
       'name': settlement.name, 'closed': settlement.closed, 'received': settlement.totalReceived,
     }));
@@ -1788,10 +1788,25 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     validateReceivedMoneyState(departure:finance.receivedDeparture,during:finance.receivedDuring,
       perDiemRate:finance.perDiemRate,entries:finance.receivedEntries);
     final data = _financeMap(finance);
-    await FirebaseFirestore.instance.collection('finance').doc(finance.teamId).set(data, SetOptions(merge: true));
+    await _saveReceivedMoneyDocument(collection: 'finance', id: finance.teamId, data: data);
     unawaited(_writeLearningEvent(category: 'finance', event: 'team_finance_saved', teamId: finance.teamId, data: {
       'receivedDeparture': finance.receivedDeparture, 'receivedDuring': finance.receivedDuring, 'perDiemRate': finance.perDiemRate,
     }));
+  }
+
+  /// Merge entry history against the current server record. A stale client may
+  /// not erase another device's receipt, and retries with the same entry ID
+  /// cannot count it twice. Unknown or conflicting records fail closed.
+  Future<void> _saveReceivedMoneyDocument({required String collection, required String id,
+      required Map<String, dynamic> data}) async {
+    final db = FirebaseFirestore.instance;
+    final ref = db.collection(collection).doc(id);
+    await db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final writeData = mergeReceivedMoneyDocument(incoming: data,
+        current: snap.data() ?? <String, dynamic>{}, exists: snap.exists);
+      tx.set(ref, writeData, SetOptions(merge: true));
+    });
   }
 
   Future<void> _writeAuditRemote(String action, String target) async {

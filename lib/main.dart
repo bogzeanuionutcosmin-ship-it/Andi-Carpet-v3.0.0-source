@@ -32,6 +32,8 @@ import 'package:image_picker/image_picker.dart';
 import 'expenses/expense_document_image.dart';
 import 'expenses/received_money_dialog.dart';
 import 'finance/received_money_draft.dart';
+import 'finance/received_money_journal.dart';
+import 'finance/received_money_merge.dart';
 import 'dashboard/record_state_presentation.dart';
 import 'dashboard/dashboard_pending_operation.dart';
 import 'services/romania_place_geocoder.dart';
