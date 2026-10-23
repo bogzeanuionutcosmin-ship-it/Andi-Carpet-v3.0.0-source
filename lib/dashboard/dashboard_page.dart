@@ -1,14 +1,15 @@
 part of '../main.dart';
 
 class DashboardPage extends StatefulWidget {
-  final List<Team> teams; final List<AppUser> users; final List<FunctionDefinition> functionDefinitions; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final AppUser currentUser; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final Future<void> Function(CentralizerRecord) saveRecord; final Future<void> Function(WorkSchedule) saveSchedule; final Future<void> Function(List<WorkSchedule>) saveSchedules; final void Function(String,String) log;
-  const DashboardPage({super.key, required this.teams, required this.users, required this.functionDefinitions, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.currentUser, required this.canEditProgram, required this.userName, required this.onChanged, required this.saveRecord, required this.saveSchedule, required this.saveSchedules, required this.log});
+  final List<Team> teams; final List<AppUser> users; final List<FunctionDefinition> functionDefinitions; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final AppUser currentUser; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final Future<void> Function(CentralizerRecord) saveRecord; final Future<void> Function(DashboardScheduleIntent) saveDashboardScheduleOperation; final void Function(String,String) log;
+  const DashboardPage({super.key, required this.teams, required this.users, required this.functionDefinitions, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.currentUser, required this.canEditProgram, required this.userName, required this.onChanged, required this.saveRecord, required this.saveDashboardScheduleOperation, required this.log});
   @override State<DashboardPage> createState() => _DashboardPageState();
 }
 class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserver {
   int teamIndex = 0;
   String? selectedGraphId;
   static const FlutterSecureStorage _recordStorage = FlutterSecureStorage();
+  static const FlutterSecureStorage _scheduleStorage = FlutterSecureStorage();
   final Set<String> _recoveryStarted = {};
   final Set<String> _journalRetryTeams = {};
   final Set<String> _journalBusyTeams = {};
@@ -19,6 +20,12 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
         read: (key) => _recordStorage.read(key: key),
         write: (key, value) => _recordStorage.write(key: key, value: value),
         remove: (key) => _recordStorage.delete(key: key),
+      );
+
+  DashboardScheduleJournal get _scheduleJournal => DashboardScheduleJournal(
+        read: (key) => _scheduleStorage.read(key: key),
+        write: (key, value) => _scheduleStorage.write(key: key, value: value),
+        remove: (key) => _scheduleStorage.delete(key: key),
       );
 
   @override
@@ -50,6 +57,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
   }
 
   void _ensureJournalRetryTimer() {
+    if (!mounted) return;
     _journalRetryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
       if (!mounted || !_appResumed || _journalRetryTeams.isEmpty) return;
       for (final teamId in _journalRetryTeams.toList()) {
@@ -62,8 +70,22 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     if (!_journalBusyTeams.add(teamId)) return;
     final userId = widget.currentUser.id;
     try {
+      var recovered = false;
       final intent = await _recordJournal.pending(userId: userId, teamId: teamId);
-      if (intent == null) {
+      if (intent != null) {
+        await _recordJournal.run(candidate: intent, send: (pending) async {
+          final record = centralizerRecordFromData(pending.recordId, pending.desired)
+            ..writeBaseline = pending.expected;
+          await widget.saveRecord(record);
+        });
+        recovered = true;
+      }
+      final scheduleIntent = await _scheduleJournal.pending(userId: userId, teamId: teamId);
+      if (scheduleIntent != null) {
+        await _scheduleJournal.run(candidate: scheduleIntent, send: widget.saveDashboardScheduleOperation);
+        recovered = true;
+      }
+      if (!recovered) {
         _journalRetryTeams.remove(teamId);
         if (_journalRetryTeams.isEmpty) {
           _journalRetryTimer?.cancel();
@@ -71,15 +93,10 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
         }
         return;
       }
-      await _recordJournal.run(candidate: intent, send: (pending) async {
-        final record = centralizerRecordFromData(pending.recordId, pending.desired)
-          ..writeBaseline = pending.expected;
-        await widget.saveRecord(record);
-      });
       _journalRetryTeams.remove(teamId);
       if (mounted) {
         widget.onChanged();
-        showSuccessMessage(context, 'O salvare a intervenției a fost confirmată după reconectare.');
+        showSuccessMessage(context, 'O operație salvată în așteptare a fost confirmată după reconectare.');
       }
       if (_journalRetryTeams.isEmpty) {
         _journalRetryTimer?.cancel();
@@ -134,6 +151,67 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       rethrow;
     } finally {
       _journalBusyTeams.remove(record.teamId);
+    }
+  }
+
+  DashboardScheduleIntent _dashboardScheduleIntent({
+    required String transition,
+    required List<WorkSchedule> schedules,
+  }) {
+    final now = DateTime.now();
+    final committedAt = Timestamp.fromDate(now);
+    final teamId = schedules.first.teamId;
+    final graphId = schedules.first.graphId;
+    return DashboardScheduleIntent(
+      userId: widget.currentUser.id,
+      teamId: teamId,
+      graphId: graphId,
+      transition: transition,
+      writes: schedules.map((schedule) {
+        final token = '${now.microsecondsSinceEpoch}-${newInterventionId()}-${schedule.id}';
+        return DashboardScheduleWrite(
+          scheduleId: schedule.id,
+          expectedExists: schedule.persisted,
+          expectedUpdatedAt: schedule.updatedAt == null ? null : Timestamp.fromDate(schedule.updatedAt!),
+          expectedWriteToken: schedule.writeToken,
+          desired: scheduleDocumentData(schedule, updatedAt: committedAt, writeToken: token),
+        );
+      }).toList(),
+    );
+  }
+
+  Future<void> _saveDashboardScheduleJournalled({
+    required String transition,
+    required List<WorkSchedule> schedules,
+  }) async {
+    if (schedules.isEmpty) throw StateError('Graficul nu conține zile de salvat.');
+    final teamId = schedules.first.teamId;
+    if (!_journalBusyTeams.add(teamId)) {
+      throw StateError('O altă salvare a acestei echipe este în curs.');
+    }
+    final intent = _dashboardScheduleIntent(transition: transition, schedules: schedules);
+    try {
+      await _scheduleJournal.run(candidate: intent, send: widget.saveDashboardScheduleOperation);
+      _journalRetryTeams.remove(teamId);
+      if (_journalRetryTeams.isEmpty) {
+        _journalRetryTimer?.cancel();
+        _journalRetryTimer = null;
+      }
+    } catch (_) {
+      var shouldRetry = true;
+      try {
+        shouldRetry = await _scheduleJournal.pending(userId: intent.userId, teamId: teamId) != null;
+      } catch (_) {
+        // An unreadable journal leaves the commit outcome unknown; keep retry.
+        shouldRetry = true;
+      }
+      if (shouldRetry) {
+        _journalRetryTeams.add(teamId);
+        _ensureJournalRetryTimer();
+      }
+      rethrow;
+    } finally {
+      _journalBusyTeams.remove(teamId);
     }
   }
 
@@ -206,16 +284,26 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
         returnLatitude: endPoint['lat'] as double,
         returnLongitude: endPoint['lon'] as double,
       );
-      try { await widget.saveSchedules(sameGraph); } catch(e) { if(mounted)showErrorMessage(context,'Programul nu a putut fi pornit: ${scheduleSaveFailureMessage(e)}'); return; }
+      try {
+        await _saveDashboardScheduleJournalled(transition: 'start', schedules: sameGraph);
+      } catch(e) {
+        if(mounted)showErrorMessage(context,'Programul nu a putut fi pornit: ${scheduleSaveFailureMessage(e)}');
+        return;
+      }
       widget.onChanged();
       widget.log('START program din Acasă','${team.name} · ${schedule.graphName} · $departureText → $returnText');
       if(mounted)showSuccessMessage(context,'Programul echipei a fost pornit cu traseul complet.');
       return;
     }
     final updated = dashboardScheduleForGraphStop(schedule);
-    await widget.saveSchedule(updated);
-    widget.log('STOP program din Acasă','${team.name} · ${updated.graphName} · ${formatDate(updated.date)}');
-    if(mounted)showSuccessMessage(context,'Programul echipei a fost oprit.');
+    try {
+      await _saveDashboardScheduleJournalled(transition: 'stop', schedules: [updated]);
+      widget.onChanged();
+      widget.log('STOP program din Acasă','${team.name} · ${updated.graphName} · ${formatDate(updated.date)}');
+      if(mounted)showSuccessMessage(context,'Programul echipei a fost oprit.');
+    } catch (e) {
+      if (mounted) showErrorMessage(context,'Programul nu a putut fi oprit: ${scheduleSaveFailureMessage(e)}');
+    }
   }
 
   String _memberLocationLabel(String userId, Map<String, Map<String,dynamic>> live, String teamId) {

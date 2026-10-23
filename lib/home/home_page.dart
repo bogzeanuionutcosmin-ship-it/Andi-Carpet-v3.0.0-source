@@ -1539,6 +1539,69 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     });
   }
 
+  Future<void> _saveDashboardScheduleOperation(DashboardScheduleIntent intent) async {
+    _requireCurrentSession();
+    intent.validate();
+    if (intent.userId != currentUserId || !hasPermission(FunctionPermission.editProgram)) {
+      throw StateError('Nu ai dreptul să modifici programul acestei echipe.');
+    }
+    for (final write in intent.writes) {
+      if (!canEditTeam(intent.teamId) ||
+          write.desired['teamId'] != intent.teamId ||
+          write.desired['graphId'] != intent.graphId) {
+        throw StateError('Programul nu mai aparține echipei autorizate.');
+      }
+    }
+
+    final db = FirebaseFirestore.instance;
+    final wrote = await db.runTransaction<bool>((transaction) async {
+      _requireCurrentSession();
+      final snapshots = <DocumentSnapshot<Map<String, dynamic>>>[];
+      for (final write in intent.writes) {
+        snapshots.add(await transaction.get(db.collection('schedules').doc(write.scheduleId)));
+      }
+      final plan = dashboardScheduleWritePlan(
+        intent: intent,
+        currentDocuments: snapshots.map((snapshot) => snapshot.data()).toList(),
+      );
+      if (plan == DashboardScheduleWritePlan.replay) return false;
+      _requireCurrentSession();
+      for (var index = 0; index < intent.writes.length; index++) {
+        transaction.set(
+          snapshots[index].reference,
+          intent.writes[index].desired,
+          SetOptions(merge: true),
+        );
+      }
+      return true;
+    });
+
+    _requireCurrentSession();
+    final committed = <WorkSchedule>[
+      for (final write in intent.writes)
+        scheduleFromDocumentData(write.scheduleId, write.desired),
+    ];
+    if (!_sessionActive) return;
+    setState(() {
+      for (final schedule in committed) {
+        final index = schedules.indexWhere((item) => item.id == schedule.id);
+        if (index >= 0) {
+          schedules[index] = schedule;
+        } else {
+          schedules.add(schedule);
+        }
+      }
+    });
+    if (!wrote) return; // Exact replay after a lost acknowledgement.
+    for (final schedule in committed) {
+      unawaited(_writeLearningEvent(category: 'program', event: 'schedule_saved', teamId: schedule.teamId, scheduleId: schedule.id, data: {
+        'date': schedule.date.toIso8601String(), 'started': schedule.started, 'closed': schedule.closed,
+        'paused': schedule.paused, 'postponed': schedule.postponed, 'order': schedule.items.map((item) => item.locationId).toList(),
+        'autoProposed': schedule.autoProposed, 'learningConfidence': schedule.learningConfidence,
+      }));
+    }
+  }
+
   Future<void> _closeProgramGraphDirect(List<WorkSchedule> days) async {
     _requireCurrentSession();
     if (days.isEmpty) throw StateError('Grafic fără zile.');
@@ -2106,7 +2169,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     const settingsColor = Color(0xff607D8B);
 
     addPage(hasPermission(FunctionPermission.viewDashboard),
-      DashboardPage(teams: teams, users: users, functionDefinitions: functionDefinitions, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, currentUser: me, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, saveRecord: _saveRecordDirect, saveSchedule: _saveScheduleDirect, saveSchedules: _saveSchedulesDirect, log: log),
+      DashboardPage(teams: teams, users: users, functionDefinitions: functionDefinitions, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, currentUser: me, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, saveRecord: _saveRecordDirect, saveDashboardScheduleOperation: _saveDashboardScheduleOperation, log: log),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_dashboard.png', size: 24, accent: homeColor), selectedIcon: appAssetIcon('assets/ui/tab_dashboard.png', size: 27, accent: homeColor, selected: true), label: 'Acasă'), homeColor);
     addPage(hasPermission(FunctionPermission.viewProgram),
       ProgramPage(currentUser: me, teams: teams, cars: cars, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, canEditTeam: canEditTeam, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, notifyTeam: notifyTeam, log: log, saveSchedules: _saveSchedulesDirect, closeGraph: _closeProgramGraphDirect),

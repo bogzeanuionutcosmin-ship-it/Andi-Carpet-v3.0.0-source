@@ -2,7 +2,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, setDoc, updateDoc, getDoc, serverTimestamp, writeBatch, runTransaction } = require('firebase/firestore');
+const { doc, setDoc, updateDoc, getDoc, serverTimestamp, writeBatch, runTransaction, Timestamp } = require('firebase/firestore');
 
 let env;
 const db = (uid) => env.authenticatedContext(uid).firestore();
@@ -152,6 +152,88 @@ test('two concurrent schedule editors cannot both save from the same updatedAt v
   assert.ok(accepted.updatedAt, 'the accepted transaction must persist its update timestamp');
   assert.ok(['writer-a-version-1', 'writer-b-version-1'].includes(accepted.writeToken),
     'the accepted transaction must persist its unique write token');
+});
+
+test('Dashboard schedule START replays a committed batch after a lost acknowledgement without changing its receipt', async () => {
+  const secondDay = doc(db('editor'), schedulePath('start-day-two'));
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), schedulePath('start-day-two')), {
+      teamId: 'team-a', graphId: 'graph-1', graphName: 'Grafic test', closed: false,
+      paused: false, started: false, items: [{ locationId: 'loc-c', order: 1 }],
+    });
+  });
+
+  const operationDb = db('admin');
+  const refs = [doc(operationDb, schedulePath('open')), doc(operationDb, schedulePath('start-day-two'))];
+  const snapshots = await Promise.all(refs.map((reference) => getDoc(reference)));
+  const committedAt = Timestamp.fromDate(new Date('2026-10-23T08:00:00.000Z'));
+  const desired = snapshots.map((snapshot, index) => ({
+    ...snapshot.data(),
+    started: true,
+    paused: false,
+    closed: false,
+    departureName: 'Brăila',
+    departureLatitude: 45.27,
+    departureLongitude: 27.96,
+    returnName: 'Galați',
+    returnLatitude: 45.44,
+    returnLongitude: 28.04,
+    updatedAt: committedAt,
+    writeToken: `stable-start-${index}`,
+  }));
+  const expected = snapshots.map((snapshot) => ({
+    exists: snapshot.exists(),
+    updatedAt: snapshot.data().updatedAt ?? null,
+    writeToken: snapshot.data().writeToken ?? null,
+    teamId: snapshot.data().teamId,
+    graphId: snapshot.data().graphId,
+  }));
+  const sameValue = (left, right) => {
+    if (left instanceof Timestamp && right instanceof Timestamp) return left.isEqual(right);
+    if (left && right && typeof left === 'object' && typeof right === 'object') {
+      const leftKeys = Object.keys(left);
+      const rightKeys = Object.keys(right);
+      return leftKeys.length === rightKeys.length && leftKeys.every((key) => sameValue(left[key], right[key]));
+    }
+    return left === right;
+  };
+  const apply = () => runTransaction(operationDb, async (transaction) => {
+    const current = [];
+    for (const reference of refs) current.push(await transaction.get(reference));
+    const exactReplay = current.every((snapshot, index) => snapshot.exists()
+      && Object.entries(desired[index]).every(([key, value]) => sameValue(snapshot.data()[key], value)));
+    if (exactReplay) return 'replay';
+    const baselineMatches = current.every((snapshot, index) => {
+      const loaded = expected[index];
+      if (snapshot.exists() !== loaded.exists) return false;
+      if (!snapshot.exists()) return true;
+      const data = snapshot.data();
+      return data.teamId === loaded.teamId && data.graphId === loaded.graphId
+        && sameValue(data.updatedAt ?? null, loaded.updatedAt)
+        && (data.writeToken ?? null) === loaded.writeToken;
+    });
+    if (!baselineMatches) throw new Error('schedule changed since it was loaded');
+    for (let index = 0; index < refs.length; index++) {
+      transaction.set(refs[index], desired[index], { merge: true });
+    }
+    return 'write';
+  });
+
+  const lostAcknowledgement = async () => {
+    assert.equal(await apply(), 'write');
+    throw new Error('acknowledgement lost after commit');
+  };
+  await assert.rejects(lostAcknowledgement(), /acknowledgement lost/);
+  const committed = await Promise.all(refs.map((reference) => getDoc(reference)));
+  assert.equal(committed[0].data().writeToken, 'stable-start-0');
+  assert.equal(committed[1].data().writeToken, 'stable-start-1');
+  assert.ok(committed.every((snapshot) => snapshot.data().updatedAt.isEqual(committedAt)));
+
+  assert.equal(await apply(), 'replay');
+  const replayed = await Promise.all(refs.map((reference) => getDoc(reference)));
+  assert.deepEqual(replayed.map((snapshot) => snapshot.data().writeToken), ['stable-start-0', 'stable-start-1']);
+  assert.ok(replayed.every((snapshot) => snapshot.data().updatedAt.isEqual(committedAt)));
+  assert.ok(replayed.every((snapshot) => snapshot.data().started === true));
 });
 
 test('team membership and editProgram are both required for schedule writes', async () => {
