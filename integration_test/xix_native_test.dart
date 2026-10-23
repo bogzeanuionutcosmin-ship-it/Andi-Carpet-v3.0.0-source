@@ -752,6 +752,7 @@ void main() {
         return 'SC EXEMPLU SRL\nBON FISCAL NR 12345\nDATA 05.10.2026\nTOTAL 148,75 LEI';
       },
       saveExpense:homeExpense.saveExpense,
+      confirmExpense:homeExpense.confirmExpense,
       savePerDiem:homeExpense.savePerDiem,
       saveFinance:homeExpense.saveFinance,
       saveSettlement:homeExpense.saveSettlement,

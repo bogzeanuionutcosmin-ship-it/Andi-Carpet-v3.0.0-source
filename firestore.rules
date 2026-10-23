@@ -285,6 +285,24 @@ service cloud.firestore {
     }
 
     match /expenses/{expenseId} {
+      function expenseManager(teamId, settlementId) {
+        let settlementPath = /databases/$(database)/documents/settlements/$(settlementId);
+        let financePath = /databases/$(database)/documents/finance/$(teamId);
+        let teamPath = /databases/$(database)/documents/teams/$(teamId);
+        let hasSettlement = settlementId is string && settlementId != '' && exists(settlementPath);
+        let settlementData = hasSettlement ? get(settlementPath).data : {};
+        let hasFinance = exists(financePath);
+        let financeData = hasFinance ? get(financePath).data : {};
+        return hasPermission('viewOwnDecont') && isTeamMember(teamId) && (
+          (hasSettlement && settlementData.teamId == teamId
+            && settlementData.get('managerId', null) == request.auth.uid)
+          || ((!hasSettlement || settlementData.get('managerId', null) == null)
+            && hasFinance && financeData.get('managerId', null) == request.auth.uid)
+          || ((!hasSettlement || settlementData.get('managerId', null) == null)
+            && (!hasFinance || financeData.get('managerId', null) == null)
+            && get(teamPath).data.get('financialManagerId', null) == request.auth.uid)
+        );
+      }
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
@@ -299,9 +317,11 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.distributedBy == request.resource.data.distributedBy
             && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.status == 'confirmed'));
       allow update: if isAdmin()
-        || (hasPermission('viewOwnDecont')
-          && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+        || (expenseManager(resource.data.teamId, resource.data.get('settlementId', null))
+          && request.resource.data.teamId == resource.data.teamId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed', 'updatedAt'])
+          && resource.data.get('confirmed', true) == false
+          && request.resource.data.confirmed == true);
       allow delete: if isAdmin();
     }
 

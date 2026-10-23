@@ -17,12 +17,13 @@ class ExpensePage extends StatefulWidget {
   final void Function(String,String,String) notifyUser;
   final void Function(String,String) log;
   final Future<void> Function(Expense) saveExpense;
+  final Future<void> Function(Expense) confirmExpense;
   final Future<void> Function(PerDiemEntry) savePerDiem;
   final Future<void> Function(TeamFinance) saveFinance;
   final Future<void> Function(TravelSettlement) saveSettlement;
   final Future<XFile?> Function({bool allowNoImage})? pickDocumentImage;
   final Future<String> Function(Uint8List, {String? path})? recognizeExpenseText;
-  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement,this.pickDocumentImage,this.recognizeExpenseText});
+  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.confirmExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement,this.pickDocumentImage,this.recognizeExpenseText});
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 
@@ -34,6 +35,7 @@ class _ExpensePageState extends State<ExpensePage> with WidgetsBindingObserver {
   String? selectedSettlementId;
   bool exporting = false;
   bool scanning = false;
+  final Set<String> _confirmingExpenseIds = <String>{};
   final Set<String> _savingPerDiemIds = <String>{};
   final Set<String> _expenseRecoveryStarted = <String>{};
   final Set<String> _expenseRetryTeams = <String>{};
@@ -1299,9 +1301,18 @@ class _ExpensePageState extends State<ExpensePage> with WidgetsBindingObserver {
   }
 
   Future<void> _confirmExpense(Expense e) async {
-    e.confirmed = true;
-    try { await widget.saveExpense(e); widget.log('Cheltuială confirmată', e.documentNumber); }
-    catch (err) { e.confirmed = false; if (mounted) showErrorMessage(context, 'Confirmarea a eșuat: $err'); }
+    if (!isManager || !_confirmingExpenseIds.add(e.id)) return;
+    try {
+      await widget.confirmExpense(e);
+      if (!mounted) return;
+      setState(() => e.confirmed = true);
+      widget.onChanged();
+      widget.log('Cheltuială confirmată', e.documentNumber);
+    } catch (err) {
+      if (mounted) showErrorMessage(context, 'Confirmarea nu a fost verificată. Reîncearcă: $err');
+    } finally {
+      _confirmingExpenseIds.remove(e.id);
+    }
   }
 
   Future<void> _pdf() async {

@@ -1736,6 +1736,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     final db = FirebaseFirestore.instance;
     final ref = db.collection('expenses').doc(expense.id);
     final created = await db.runTransaction((transaction) async {
+      _requireCurrentSession();
       final snapshot = await transaction.get(ref);
       final write = expenseDocumentCreateWrite(
         incoming: data,
@@ -1743,14 +1744,38 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         exists: snapshot.exists,
       );
       if (write == null) return false;
+      _requireCurrentSession();
       transaction.set(ref, write);
       return true;
     });
+    _requireCurrentSession();
     if (!created) return; // Exact retry after an uncertain acknowledgement.
     unawaited(_writeLearningEvent(category: expense.ocrRawText.trim().isNotEmpty ? 'ocr' : 'finance', event: 'expense_saved', teamId: expense.teamId, data: {
       'category': expense.category, 'amount': expense.amount, 'documentType': expense.documentType.name,
       'ocrConfidence': expense.ocrConfidence, 'confirmed': expense.confirmed, 'hasImage': expense.hasImage,
     }));
+  }
+
+  Future<void> _confirmExpenseDirect(Expense expense) async {
+    _requireCurrentSession();
+    if (!canEditTeam(expense.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
+      throw StateError('Nu ai dreptul să modifici Decontul acestei echipe.');
+    }
+    final incoming = _expenseMap(expense)..['confirmed'] = true;
+    final db = FirebaseFirestore.instance;
+    final ref = db.collection('expenses').doc(expense.id);
+    await db.runTransaction((transaction) async {
+      _requireCurrentSession();
+      final snapshot = await transaction.get(ref);
+      final write = expenseDocumentConfirmationWrite(
+        incoming: incoming,
+        current: snapshot.data() ?? const <String, dynamic>{},
+        exists: snapshot.exists,
+      );
+      _requireCurrentSession();
+      if (write != null) transaction.update(ref, write);
+    });
+    _requireCurrentSession();
   }
 
   Future<void> _savePerDiemDirect(PerDiemEntry entry) async {
@@ -2181,7 +2206,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect, correctRecord: _correctCentralizerRecord),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_centralizator.png', size: 24, accent: centralizerColor), selectedIcon: appAssetIcon('assets/ui/tab_centralizator.png', size: 27, accent: centralizerColor, selected: true), label: compactNav ? 'Central.' : 'Centralizator'), centralizerColor);
     addPage(hasPermission(FunctionPermission.viewOwnDecont) || hasPermission(FunctionPermission.viewOtherDecont),
-      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
+      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, confirmExpense: _confirmExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_decont.png', size: 24, accent: decontColor), selectedIcon: appAssetIcon('assets/ui/tab_decont.png', size: 27, accent: decontColor, selected: true), label: 'Decont'), decontColor);
     addPage(hasPermission(FunctionPermission.viewContacts),
       MessagesContactsPage(locations:locations,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),

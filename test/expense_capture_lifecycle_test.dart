@@ -30,7 +30,7 @@ void main() {
           settings: settings, canEditTeam: (_) => true, isAdmin: true,
           canEditOwnDecont: true, canViewOtherDecont: false,
           onChanged: () {}, notifyUser: (_, _, _) {}, log: (_, _) { logged++; },
-          saveExpense: (_) async { saved++; }, savePerDiem: (_) async {},
+          saveExpense: (_) async { saved++; }, confirmExpense: (_) async {}, savePerDiem: (_) async {},
           saveFinance: (_) async {}, saveSettlement: (_) async {},
           pickDocumentImage: ({bool allowNoImage = false}) async =>
             boundary == 'picker' ? await picker.future : image,
