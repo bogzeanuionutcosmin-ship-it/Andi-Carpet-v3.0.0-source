@@ -805,12 +805,15 @@ void main() {
     await tester.enterText(receiptFields.at(2),'150,25');
     await tester.tap(find.text('Confirmă'));
     await tester.pumpAndSettle();
-    final persistedReceipts=await db.collection('expenses')
-      .where('teamId',isEqualTo:'craiova')
-      .get(const GetOptions(source:Source.server));
-    final receiptMatches=persistedReceipts.docs.where((doc)=>
-      doc.data()['settlementId']==receiptSettlement.id &&
-      doc.data()['documentNumber']=='12345').toList();
+    final expenseQuery=db.collection('expenses').where('teamId',isEqualTo:'craiova');
+    var receiptMatches=<QueryDocumentSnapshot<Map<String,dynamic>>>[];
+    for(var n=0;n<120&&receiptMatches.isEmpty;n++){
+      final persistedReceipts=await expenseQuery.get(const GetOptions(source:Source.server));
+      receiptMatches=persistedReceipts.docs.where((doc)=>
+        doc.data()['settlementId']==receiptSettlement.id &&
+        doc.data()['documentNumber']=='12345').toList();
+      if(receiptMatches.isEmpty)await tester.pump(const Duration(milliseconds:200));
+    }
     expect(receiptMatches,hasLength(1),
       reason:'The corrected OCR receipt must be persisted to the server before Home reload is checked');
     final savedExpense=await receiptMatches.single.reference
