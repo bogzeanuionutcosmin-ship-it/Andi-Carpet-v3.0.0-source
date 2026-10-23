@@ -42,6 +42,8 @@ void main() {
 
     final first = service.drivingGeometry(route);
     final concurrent = service.drivingGeometry(route);
+    // MockClient schedules its handler asynchronously; wait until it starts.
+    await Future<void>.delayed(Duration.zero);
     expect(requests, 1);
     response.complete(routeResponse());
 
