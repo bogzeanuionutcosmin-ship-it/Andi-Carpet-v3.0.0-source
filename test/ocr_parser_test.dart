@@ -55,4 +55,24 @@ TOTAL 308,13 LEI
     final unlabeled = parseFiscalOcr('COMERT SRL\n1 234,56');
     expect(unlabeled.amount, closeTo(1234.56, 0.01));
   });
+
+  test('does not combine fields from two numbered receipts in one photo', () {
+    final result = parseFiscalOcr('''
+SC PRIMUL SRL
+BON FISCAL NR 12345
+DATA 05.10.2026
+TOTAL 148,75 LEI
+
+SC AL DOILEA SRL
+BON FISCAL NR 67890
+DATA 06.10.2026
+TOTAL 248,90 LEI
+''');
+    expect(result.ambiguousDocument, isTrue);
+    expect(result.documentNumber, isEmpty);
+    expect(result.date, isNull);
+    expect(result.amount, isNull);
+    expect(result.supplier, isEmpty);
+    expect(result.confidence, 0);
+  });
 }

@@ -8,6 +8,7 @@ class FiscalOcrData {
   final double? pricePerLiter;
   final bool looksLikeFuel;
   final double confidence;
+  final bool ambiguousDocument;
 
   const FiscalOcrData({
     required this.rawText,
@@ -19,6 +20,7 @@ class FiscalOcrData {
     this.pricePerLiter,
     this.looksLikeFuel = false,
     this.confidence = 0,
+    this.ambiguousDocument = false,
   });
 }
 
@@ -98,6 +100,20 @@ FiscalOcrData parseFiscalOcr(String text) {
     RegExp(r'(?:BON(?:\s+FISCAL)?|FACTUR[ĂA]?|FACT\.?|DOCUMENT|NR\.?)\s*(?:NR\.?)?\s*[:#\-]?\s*([A-Z0-9\-/]{2,})', caseSensitive: false),
     RegExp(r'NR\.?\s*[:#\-]?\s*([A-Z0-9\-/]{3,})', caseSensitive: false),
   ];
+  final markedDocumentNumbers = RegExp(
+    r'(?:BON(?:\s+FISCAL)?|FACTUR[ĂA]?)\s*(?:NR\.?)?\s*[:#\-]?\s*([A-Z0-9\-/]{2,})',
+    caseSensitive: false,
+  ).allMatches(raw).map((m) => (m.group(1) ?? '').trim()).where((n) => n.isNotEmpty).toSet();
+  if (markedDocumentNumbers.length > 1) {
+    // Never combine the first receipt's identity/date with a later receipt's
+    // amount when one photo contains multiple numbered documents.
+    return FiscalOcrData(
+      rawText: raw.trim(),
+      looksLikeFuel: false,
+      confidence: 0,
+      ambiguousDocument: true,
+    );
+  }
   for (final re in numberPatterns) {
     final m = re.firstMatch(raw);
     if (m != null) { docNo = (m.group(1) ?? '').trim(); if (docNo.isNotEmpty) break; }
