@@ -29,7 +29,7 @@ class DashboardScheduleWrite {
         'desired': _encode(desired),
       };
 
-  factory DashboardScheduleWrite.fromJson(Map<String, dynamic> json) {
+  factory DashboardScheduleWrite.fromJson(Map<String, dynamic> json, {required String transition}) {
     if (json['scheduleId'] is! String ||
         json['expectedExists'] is! bool ||
         (json['expectedUpdatedAt'] != null && json['expectedUpdatedAt'] is! String) ||
@@ -47,7 +47,7 @@ class DashboardScheduleWrite {
       expectedWriteToken: json['expectedWriteToken'] as String?,
       desired: Map<String, dynamic>.from(_decode(json['desired']) as Map),
     );
-    value.validate();
+    value.validate(transition: transition);
     return value;
   }
 
@@ -108,7 +108,7 @@ class DashboardScheduleIntent {
       transition: json['transition'] as String,
       writes: (json['writes'] as List).map((item) {
         if (item is! Map) throw const FormatException('Invalid schedule write row.');
-        return DashboardScheduleWrite.fromJson(Map<String, dynamic>.from(item));
+        return DashboardScheduleWrite.fromJson(Map<String, dynamic>.from(item), transition: json['transition'] as String);
       }).toList(),
     );
     intent.validate();

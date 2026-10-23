@@ -96,6 +96,21 @@ void main() {
     ), DashboardScheduleWritePlan.write);
   });
 
+  test('decoded writes validate against the enclosing START or STOP intent', () {
+    final start = candidate().toJson();
+    expect(DashboardScheduleIntent.fromJson(start).transition, 'start');
+    final mismatch = {...start, 'transition': 'stop'};
+    expect(() => DashboardScheduleIntent.fromJson(mismatch), throwsFormatException);
+    final stop = {
+      ...mismatch,
+      'writes': (start['writes'] as List).map((row) => {
+        ...row as Map<String, dynamic>,
+        'desired': {...row['desired'] as Map<String, dynamic>, 'started': false},
+      }).toList(),
+    };
+    expect(DashboardScheduleIntent.fromJson(stop).transition, 'stop');
+  });
+
   test('transaction plan fails closed for a changed or mixed batch', () {
     final operation = candidate();
     final changed = {...documents['day-b']!, 'writeToken': 'other-device'};

@@ -234,7 +234,10 @@ void main() {
         teams:[app.Team(id:'craiova',name:'Craiova',members:[uid])],users:[],functionDefinitions:[],locations:[],categories:[],
         schedules:schedules,records:records,settings:app.AppSettings()..allowUndo=false,
         currentUser:app.AppUser(id:uid,name:'Editor',role:app.UserRole.member),canEditProgram:true,
-        userName:(_)=>'Editor',onChanged:(){},saveRecord:save,saveSchedule:(_) async {},saveSchedules:(_) async {},log:(_,__) {},
+        userName:(_)=>'Editor',onChanged:(){},saveRecord:save,
+        saveDashboardScheduleOperation:(_) async {
+          throw StateError('Unexpected Dashboard schedule transition in intervention flow');
+        },log:(_,__) {},
       ))));await tester.pumpAndSettle();
     }
     // Create and persist the Craiova Graph through ProgramPage UI, then mark

@@ -1232,8 +1232,8 @@ class _ExpensePageState extends State<ExpensePage> with WidgetsBindingObserver {
 
   Future<void> _saveNewExpense(Expense e) async {
     if (!mounted || !await _duplicateAllowed(e) || !mounted) return;
+    final intent = ExpenseSaveIntent(userId: widget.currentUser.id, teamId: e.teamId, expense: e);
     try {
-      final intent = ExpenseSaveIntent(userId: widget.currentUser.id, teamId: e.teamId, expense: e);
       await _expenseJournal.run(candidate: intent, send: widget.saveExpense);
       _expenseRetryTeams.remove(e.teamId);
       if (_expenseRetryTeams.isEmpty) {
