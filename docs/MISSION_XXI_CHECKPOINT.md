@@ -225,27 +225,32 @@ artifacts or build success with application validation.
 
 ## Local continuation — 2026-10-23
 
-Local cumulative branch `codex/rule10-profile-stats-20261023` is at
-`240b2e6f740d0ac34cfcf7dfb812333dbdbcb07e`, based on `2aa1869c437a05bbd3a1ec68a4d73aaa1c75d17a`.
-It contains the profile live-stat queries, PDF total/deduplication checks,
-Mapbox geometry cache, recoverable received-money and Dashboard journals,
-OCR impossible-date rejection, collision-safe Dashboard journal keys, and a
-privacy-minimal expense save journal with create-only Firestore replay handling.
-Expense retry messaging now checks that the operation is actually journaled;
-an unreadable journal keeps retry enabled conservatively. Timers are not created
-after the page is disposed.
+Local cumulative branch `codex/rule10-profile-stats-20261023` is based on
+`2aa1869c437a05bbd3a1ec68a4d73aaa1c75d17a`. Current cumulative code head before
+this documentation-only update: `5b61708` (`Add durable Dashboard schedule
+transition journal`). Changes since the base add Profile live-stat queries, PDF
+total/deduplication checks, Mapbox geometry caching, durable received-money,
+Dashboard record and expense-save journals, OCR date/amount/ambiguous-document
+handling, collision-safe journal keys, plus durable Program START/STOP intents.
+The Program journal persists a complete batch and stable write receipts before
+dispatch; exact replay is an idempotent no-op, while changed baselines fail
+closed. Expense retry messaging checks that its operation is journaled.
 
-The code candidate immediately before this documentation-only checkpoint was
-`240b2e6f740d0ac34cfcf7dfb812333dbdbcb07e`. On that candidate,
-`python3 -m unittest discover -s test -p '*test.py' -q` passed 207 tests,
-`git diff --check` passed, and `node --check` passed for
-`functions/index.js` and `functions/graph_closure.js`. Dart, Flutter and Firebase
-CLI are unavailable in this environment; Flutter tests/analyze, emulator tests,
-Android and Native workflows were not run on this local head. The public PR head
-remains `2aa1869`; this continuation is local and is not CI-accepted or published.
-An attempt to publish the branch was blocked by automatic review because it
-would disclose repository contents to an unverified external GitHub destination.
-Do not bypass that block. Staging credentials/configuration, physical-device
-acceptance, signing/provenance and the legacy-reconciliation/reopening policy
-decisions remain outstanding. No production readiness or package/critical-count
-completion is claimed.
+On exact code head `5b61708`, `python3 -m unittest discover -s test -p
+'*test.py' -q` passed all 207 tests; `git diff --check 2aa1869..HEAD` passed;
+`node --check` passed for `functions/index.js`, `functions/graph_closure.js`,
+and `tests/firestore/program_schedule.test.cjs`. Focused Dart tests and a
+Firestore Emulator lost-ACK test were added for Program schedule journaling but
+were not executed. Flutter, Dart, Firebase CLI and `node_modules` are not
+available in this environment, so no Flutter analyze/test, Emulator, Android,
+Native, staging or physical-device result exists for this local candidate.
+
+Public PR #217 remains Draft/Open at its verified head `2aa1869`; this local
+continuation has not been CI-accepted or published. An attempt to publish the
+cumulative branch was rejected by automatic review because it would expose
+repository contents to an unverified external GitHub destination; no alternate
+publication path was attempted. Staging credentials/configuration,
+device/signing/rollback acceptance, legacy intervention reconciliation, closed
+graph reopening policy, and Flutter/Emulator execution remain outstanding. No
+package or critical-count completion is claimed. Do not merge, deploy or
+distribute an APK based on this checkpoint.
