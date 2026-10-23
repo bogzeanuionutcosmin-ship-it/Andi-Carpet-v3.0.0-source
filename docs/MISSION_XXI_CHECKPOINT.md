@@ -254,3 +254,20 @@ device/signing/rollback acceptance, legacy intervention reconciliation, closed
 graph reopening policy, and Flutter/Emulator execution remain outstanding. No
 package or critical-count completion is claimed. Do not merge, deploy or
 distribute an APK based on this checkpoint.
+
+### Recovery verification — 2026-10-23
+
+Recovered branch `codex/rule10-profile-stats-20261023`; code commit
+`5b61708c28fed53fc965f6ee2d4ec3131441dd8c` is present and descends from the
+public PR base `2aa1869c437a05bbd3a1ec68a4d73aaa1c75d17a`. The current branch
+tip is `53568e5b7de7c671896c170b51970bd72690bb8f`, a documentation-only child
+of that code commit. Local cumulative diff against the PR base touches 32 files
+(2,634 insertions, 196 deletions); worktree is clean. PR #217 was re-read and
+remains Draft/Open at `2aa1869`; no local changes are present in that public
+head. `git fsck --connectivity-only HEAD`, the 207 Python tests, `git diff
+--check`, and Node syntax checks for the Functions and schedule Emulator test
+sources pass on the recovered candidate. Flutter, Dart, Firebase CLI and
+`node_modules` are absent, so Flutter/Firestore/Android/Native validation could
+not be run. A local Git bundle and binary patch against the exact PR base are
+provided separately; they are recovery artifacts, not publication or CI
+acceptance.
