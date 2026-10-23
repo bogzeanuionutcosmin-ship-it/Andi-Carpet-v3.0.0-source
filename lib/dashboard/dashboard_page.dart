@@ -5,9 +5,136 @@ class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key, required this.teams, required this.users, required this.functionDefinitions, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.currentUser, required this.canEditProgram, required this.userName, required this.onChanged, required this.saveRecord, required this.saveSchedule, required this.saveSchedules, required this.log});
   @override State<DashboardPage> createState() => _DashboardPageState();
 }
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserver {
   int teamIndex = 0;
   String? selectedGraphId;
+  static const FlutterSecureStorage _recordStorage = FlutterSecureStorage();
+  final Set<String> _recoveryStarted = {};
+  final Set<String> _journalRetryTeams = {};
+  final Set<String> _journalBusyTeams = {};
+  Timer? _journalRetryTimer;
+  bool _appResumed = true;
+
+  DashboardRecordJournal get _recordJournal => DashboardRecordJournal(
+        read: (key) => _recordStorage.read(key: key),
+        write: (key, value) => _recordStorage.write(key: key, value: value),
+        remove: (key) => _recordStorage.delete(key: key),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appResumed = state == AppLifecycleState.resumed;
+    if (_appResumed && widget.teams.isNotEmpty) {
+      unawaited(_recoverDashboardRecord(widget.teams[teamIndex.clamp(0, widget.teams.length - 1)].id));
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _journalRetryTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleRecordRecovery(String teamId) {
+    if (!_recoveryStarted.add(teamId)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_recoverDashboardRecord(teamId));
+    });
+  }
+
+  void _ensureJournalRetryTimer() {
+    _journalRetryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted || !_appResumed || _journalRetryTeams.isEmpty) return;
+      for (final teamId in _journalRetryTeams.toList()) {
+        unawaited(_recoverDashboardRecord(teamId));
+      }
+    });
+  }
+
+  Future<void> _recoverDashboardRecord(String teamId) async {
+    if (!_journalBusyTeams.add(teamId)) return;
+    final userId = widget.currentUser.id;
+    try {
+      final intent = await _recordJournal.pending(userId: userId, teamId: teamId);
+      if (intent == null) {
+        _journalRetryTeams.remove(teamId);
+        if (_journalRetryTeams.isEmpty) {
+          _journalRetryTimer?.cancel();
+          _journalRetryTimer = null;
+        }
+        return;
+      }
+      final record = centralizerRecordFromData(intent.recordId, intent.desired)
+        ..writeBaseline = intent.expected;
+      await widget.saveRecord(record);
+      await _recordJournal.clear(intent);
+      _journalRetryTeams.remove(teamId);
+      if (mounted) {
+        widget.onChanged();
+        showSuccessMessage(context, 'O salvare a intervenției a fost confirmată după reconectare.');
+      }
+      if (_journalRetryTeams.isEmpty) {
+        _journalRetryTimer?.cancel();
+        _journalRetryTimer = null;
+      }
+    } catch (_) {
+      // Keep the exact intent and retry only while the app is active. The
+      // authoritative Home writer validates server state and rejects conflicts.
+      if (_journalRetryTeams.add(teamId) && mounted) {
+        showErrorMessage(context, 'O salvare de intervenție este în așteptare. Reconectează-te; sistemul va reîncerca aceeași operație.');
+      }
+      _ensureJournalRetryTimer();
+    } finally {
+      _journalBusyTeams.remove(teamId);
+    }
+  }
+
+  Future<void> _saveRecordJournalled(CentralizerRecord record) async {
+    if (!_journalBusyTeams.add(record.teamId)) {
+      throw StateError('O altă salvare a intervenției acestei echipe este în curs.');
+    }
+    final transition = record.status == WorkAttemptStatus.running && record.finishedAt == null
+        ? 'start'
+        : record.status == WorkAttemptStatus.completed || record.status == WorkAttemptStatus.refused || record.status == WorkAttemptStatus.notCompleted
+            ? 'finish'
+            : record.status == WorkAttemptStatus.waitingAccess
+                ? 'waiting'
+                : 'outcome';
+    final desired = recordDocumentData(record)..remove('updatedAt');
+    final intent = DashboardRecordIntent(
+      userId: widget.currentUser.id,
+      teamId: record.teamId,
+      recordId: record.id,
+      transition: transition,
+      desired: desired,
+      expected: record.writeBaseline == null ? null : Map<String, dynamic>.from(record.writeBaseline!),
+    );
+    try {
+      await _recordJournal.run(candidate: intent, send: (pending) async {
+        final replay = centralizerRecordFromData(pending.recordId, pending.desired)
+          ..writeBaseline = pending.expected;
+        await widget.saveRecord(replay);
+      });
+      _journalRetryTeams.remove(record.teamId);
+      if (_journalRetryTeams.isEmpty) {
+        _journalRetryTimer?.cancel();
+        _journalRetryTimer = null;
+      }
+    } catch (_) {
+      _journalRetryTeams.add(record.teamId);
+      _ensureJournalRetryTimer();
+      rethrow;
+    } finally {
+      _journalBusyTeams.remove(record.teamId);
+    }
+  }
 
   Team get team => widget.teams[teamIndex.clamp(0, widget.teams.length - 1)];
 
@@ -140,6 +267,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return _Page(title: 'Acasă', subtitle: formatDate(now), child: const _Empty(icon: Icons.groups_outlined, text: 'Nu există încă nicio echipă. Adminul poate crea prima echipă din Admin Panel → Echipe.'));
     }
     if (teamIndex >= widget.teams.length) teamIndex = 0;
+    _scheduleRecordRecovery(team.id);
 
     final candidates = widget.schedules.where((s) => s.teamId == team.id && sameDay(s.date, workDate) && !s.closed).toList();
     candidates.sort((a, b) {
@@ -461,7 +589,7 @@ class _DashboardPageState extends State<DashboardPage> {
       facadePlanned: item.facadePlanned, facadeDone: base?.facadeDone ?? false,
     );
     try {
-      await widget.saveRecord(r);
+      await _saveRecordJournalled(r);
       widget.log('INTRĂ pe sală', '${team.name} · ${item.locationNameSnapshot}');
       if (mounted) showSuccessMessage(context, 'Intrare salvată: ${item.locationNameSnapshot} · ${timeText(r.startedAt)}');
     } catch (e) {
@@ -511,7 +639,7 @@ class _DashboardPageState extends State<DashboardPage> {
       facadeDone: facadeDone,
     );
     try {
-      await widget.saveRecord(r);
+      await _saveRecordJournalled(r);
       widget.log('IEȘI de pe sală', '${team.name} · ${r.locationNameSnapshot} · ${durationText(r.duration)}');
       if (mounted) {
         showSuccessMessage(context, 'Ieșire salvată: ${r.locationNameSnapshot} · ${timeText(r.finishedAt)} · ${durationText(r.duration)}');
@@ -553,7 +681,7 @@ class _DashboardPageState extends State<DashboardPage> {
       facadePlanned: item.facadePlanned, facadeDone: base?.facadeDone ?? false,
     );
     try {
-      await widget.saveRecord(r);
+      await _saveRecordJournalled(r);
       widget.log('Așteptare acces', '${team.name} · ${item.locationNameSnapshot}');
       if (mounted) showSuccessMessage(context, 'Așteptarea a fost pornită pentru ${item.locationNameSnapshot}.');
     } catch (e) {
@@ -616,7 +744,7 @@ class _DashboardPageState extends State<DashboardPage> {
       facadePlanned: item.facadePlanned, facadeDone: base?.facadeDone ?? false,
     );
     try {
-      await widget.saveRecord(r);
+      await _saveRecordJournalled(r);
       final label = status == WorkAttemptStatus.refused ? 'Refuzată' : 'Nerealizată';
       widget.log(label, '${team.name} · ${item.locationNameSnapshot} · $reason');
       if (mounted) showSuccessMessage(context, '$label: ${item.locationNameSnapshot}. Motivul a fost păstrat pentru Learning.');

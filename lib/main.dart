@@ -36,6 +36,7 @@ import 'finance/received_money_journal.dart';
 import 'finance/received_money_merge.dart';
 import 'dashboard/record_state_presentation.dart';
 import 'dashboard/dashboard_pending_operation.dart';
+import 'dashboard/dashboard_record_journal.dart';
 import 'services/romania_place_geocoder.dart';
 import 'map/map_navigation_uri.dart';
 import 'finance/per_diem_money.dart';
