@@ -77,7 +77,7 @@ void main() {
     final pending = await restarted.pending(userId: 'user-a', teamId: 'team-a');
     expect(pending, isNotNull);
     expect(pending!.sameOperation(operation), isTrue);
-    expect((pending.writes.first.desired['updatedAt'] as Timestamp).toDate(), DateTime.utc(2026, 10, 23, 8));
+    expect((pending.writes.first.desired['updatedAt'] as Timestamp).toDate().isAtSameMomentAs(DateTime.utc(2026, 10, 23, 8)), isTrue);
     expect(pending.writes.first.desired['writeToken'], 'operation-day-a');
 
     await restarted.run(candidate: operation, send: (replay) async {
