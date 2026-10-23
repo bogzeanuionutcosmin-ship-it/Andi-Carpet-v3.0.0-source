@@ -38,4 +38,21 @@ TOTAL 308,13 LEI
     final invalidLeapDay = parseFiscalOcr('BON NR 125\nDATA 29.02.2025\nTOTAL 10,00 LEI');
     expect(invalidLeapDay.date, isNull);
   });
+
+  test('keeps Romanian thousands separators when extracting the total', () {
+    final spaced = parseFiscalOcr('BON NR 1\nTOTAL DE PLATA 1 234,56 LEI');
+    expect(spaced.amount, closeTo(1234.56, 0.01));
+
+    final dotted = parseFiscalOcr('FACTURA NR 2\nTOTAL 1.234,56 RON');
+    expect(dotted.amount, closeTo(1234.56, 0.01));
+
+    final ungrouped = parseFiscalOcr('BON NR 3\nTOTAL 1234,56 LEI');
+    expect(ungrouped.amount, closeTo(1234.56, 0.01));
+
+    final integerThousands = parseFiscalOcr('BON NR 4\nTOTAL 1.234 LEI');
+    expect(integerThousands.amount, closeTo(1234, 0.01));
+
+    final unlabeled = parseFiscalOcr('COMERT SRL\n1 234,56');
+    expect(unlabeled.amount, closeTo(1234.56, 0.01));
+  });
 }

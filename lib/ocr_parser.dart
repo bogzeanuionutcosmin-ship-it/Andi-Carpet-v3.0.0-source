@@ -36,10 +36,12 @@ String _cleanNumber(String value) {
   final separator=comma>=0?',':(dot>=0?'.':'');
   if(separator.isEmpty)return v;
   final pieces=v.split(separator);
-  if(pieces.length==2&&pieces.last.length<=3)return '${pieces.first}.${pieces.last}';
+  if(pieces.length==2&&pieces.last.length<3)return '${pieces.first}.${pieces.last}';
+  if(pieces.length==2&&pieces.last.length==3)return pieces.join();
   if(pieces.length>2){
     final last=pieces.last;
-    if(last.length<=3)return '${pieces.take(pieces.length-1).join()}.$last';
+    if(last.length<3)return '${pieces.take(pieces.length-1).join()}.$last';
+    if(last.length==3)return pieces.join();
   }
   return v.replaceAll(separator,'');
 }
@@ -109,9 +111,13 @@ FiscalOcrData parseFiscalOcr(String text) {
   }
 
   double? amount;
+  // Romanian receipts often group thousands with spaces or dots:
+  // 1 234,56 / 1.234,56. Capture the complete amount so the regex cannot
+  // silently accept only the leading "1" before _money sees the separator.
+  const moneyToken = r'((?:[0-9]{1,3}(?:[ .\u00A0][0-9]{3})*(?:[.,][0-9]{2})?|[0-9]{1,7}(?:[.,][0-9]{2})?)(?![0-9.,]))';
   final totalPatterns = <RegExp>[
-    RegExp(r'(?:TOTAL\s+(?:DE\s+PLAT[ĂA]|PLAT[ĂA])?|TOTAL|SUMA\s+DE\s+PLAT[ĂA]|DE\s+PLAT[ĂA])[^0-9]{0,20}([0-9]{1,7}(?:[.,][0-9]{2})?)', caseSensitive: false),
-    RegExp(r'([0-9]{1,7}(?:[.,][0-9]{2})?)\s*(?:RON|LEI)\b', caseSensitive: false),
+    RegExp('(?:TOTAL\\s+(?:DE\\s+PLAT[ĂA]|PLAT[ĂA])?|TOTAL|SUMA\\s+DE\\s+PLAT[ĂA]|DE\\s+PLAT[ĂA])[^0-9]{0,20}$moneyToken', caseSensitive: false),
+    RegExp('$moneyToken\\s*(?:RON|LEI)\\b', caseSensitive: false),
   ];
   for (final re in totalPatterns) {
     final matches = re.allMatches(raw).toList();
@@ -122,7 +128,7 @@ FiscalOcrData parseFiscalOcr(String text) {
     if (amount != null) break;
   }
   if (amount == null) {
-    final candidates = RegExp(r'\b([0-9]{1,6}[.,][0-9]{2})\b').allMatches(raw)
+    final candidates = RegExp(r'([0-9]{1,3}(?:[ .\u00A0][0-9]{3})*(?:[.,][0-9]{2})|[0-9]{1,7}[.,][0-9]{2})(?![0-9.,])').allMatches(raw)
         .map((m) => _money(m.group(1) ?? ''))
         .whereType<double>()
         .where((x) => x < 100000)
