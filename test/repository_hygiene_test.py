@@ -393,7 +393,7 @@ class RepositoryHygieneTests(unittest.TestCase):
         for contract in ("widget.onLogout", "Icons.logout", "Ieșire din cont"):
             self.assertIn(contract, module)
 
-    def test_profile_page_extracted_preserving_records_and_per_diem(self):
+    def test_profile_page_extracted_with_live_persistent_statistics(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/profile/profile_page.dart").read_text(encoding="utf-8")
         self.assertEqual(main.count("part 'profile/profile_page.dart';"), 1)
@@ -401,8 +401,9 @@ class RepositoryHygieneTests(unittest.TestCase):
         for name in ("ProfilePage", "_ProfilePageState"):
             self.assertNotIn("class " + name + " extends ", main)
             self.assertEqual(module.count("class " + name + " extends "), 1)
-        for contract in ("widget.user", "widget.records", "widget.perDiems",
-                         "widget.functionDefinitions"):
+        for contract in ("widget.user", "widget.functionDefinitions",
+                         "collection('records')", "collection('perDiems')",
+                         "where('teamId'", "where('memberId'", "actualReceivedAmount"):
             self.assertIn(contract, module)
 
     def test_centralizer_page_extracted_preserving_records_and_export(self):

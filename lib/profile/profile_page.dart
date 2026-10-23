@@ -1,5 +1,86 @@
 part of '../main.dart';
 
+class _ProfileLiveStats extends StatelessWidget {
+  final String? teamId;
+  final String memberId;
+  const _ProfileLiveStats({required this.teamId, required this.memberId});
+
+  DateTime? _date(Object? raw) {
+    if (raw is Timestamp) return raw.toDate();
+    if (raw is DateTime) return raw;
+    if (raw is String) return DateTime.tryParse(raw);
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final recordsQuery = teamId == null || teamId!.isEmpty
+        ? null
+        : FirebaseFirestore.instance.collection('records').where('teamId', isEqualTo: teamId);
+    final perDiemsQuery = FirebaseFirestore.instance.collection('perDiems').where('memberId', isEqualTo: memberId);
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: recordsQuery?.snapshots(),
+      builder: (context, recordsSnap) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: perDiemsQuery.snapshots(),
+        builder: (context, perSnap) {
+          final rows = (recordsSnap.data?.docs ?? const []).map((doc) => centralizerRecordFromData(doc.id, doc.data()))
+              .where((r) => r.completed && r.duration != null && !r.duration!.isNegative).toList();
+          final dayRows = rows.where((r) => sameDay(r.startedAt!, now)).toList();
+          final monthRows = rows.where((r) => r.startedAt!.year == now.year && r.startedAt!.month == now.month).toList();
+          final yearRows = rows.where((r) => r.startedAt!.year == now.year).toList();
+          String hours(Iterable<CentralizerRecord> rs) {
+            final value = rs.fold<double>(0, (sum, r) => sum + r.duration!.inMinutes / 60.0);
+            return '${value.toStringAsFixed(value >= 10 ? 1 : 2)} h';
+          }
+          Set<String> workedDays(Iterable<CentralizerRecord> rs) => rs.map((r) {
+            final d = r.startedAt!;
+            return '${d.year}-${two(d.month)}-${two(d.day)}';
+          }).toSet();
+          double paidAmount(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+            final d = doc.data();
+            if (d['status'] != PerDiemStatus.confirmed.name || d['received'] != true) return 0;
+            final raw = d['actualReceivedAmount'] ?? d['amount']; // fallback for confirmed legacy records
+            final amount = raw is num ? raw.toDouble() : double.tryParse('$raw');
+            return amount != null && amount.isFinite && amount > 0 ? amount : 0;
+          }
+          final paid = (perSnap.data?.docs ?? const []).where((doc) => doc.data()['status'] == PerDiemStatus.confirmed.name && doc.data()['received'] == true);
+          final perMonth = paid.where((doc) { final d = _date(doc.data()['date']); return d != null && d.year == now.year && d.month == now.month; }).fold<double>(0, (sum, doc) => sum + paidAmount(doc));
+          final perYear = paid.where((doc) { final d = _date(doc.data()['date']); return d != null && d.year == now.year; }).fold<double>(0, (sum, doc) => sum + paidAmount(doc));
+          final perAll = paid.fold<double>(0, (sum, doc) => sum + paidAmount(doc));
+          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Statistici angajat', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            if (recordsSnap.hasError || perSnap.hasError) const Text('Statisticile nu s-au putut sincroniza.'),
+            if (recordsSnap.connectionState == ConnectionState.waiting || perSnap.connectionState == ConnectionState.waiting) const LinearProgressIndicator(),
+            Wrap(spacing: 10, runSpacing: 10, children: [
+              _ProfileStatCard(title: 'Zile lucrate luna curentă', value: '${workedDays(monthRows).length}', icon: Icons.calendar_view_month),
+              _ProfileStatCard(title: 'Zile lucrate anul curent', value: '${workedDays(yearRows).length}', icon: Icons.calendar_today_outlined),
+              _ProfileStatCard(title: 'Ore lucrate azi', value: hours(dayRows), icon: Icons.schedule),
+              _ProfileStatCard(title: 'Ore lucrate luna curentă', value: hours(monthRows), icon: Icons.more_time),
+              _ProfileStatCard(title: 'Ore lucrate anul curent', value: hours(yearRows), icon: Icons.access_time_filled),
+            ]),
+            const SizedBox(height: 10),
+            Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Diurne încasate', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)), const SizedBox(height: 8),
+              Text('Luna curentă: ${perMonth.toStringAsFixed(2)} lei'), Text('Anul curent: ${perYear.toStringAsFixed(2)} lei'), Text('Total: ${perAll.toStringAsFixed(2)} lei'),
+            ]))),
+            const SizedBox(height: 8),
+            Text('Notă: orele și zilele de lucru sunt calculate din intervențiile finalizate ale echipei la care este alocat contul.', style: Theme.of(context).textTheme.bodySmall),
+          ]);
+        },
+      ),
+    );
+  }
+}
+
+class _ProfileStatCard extends StatelessWidget {
+  final String title, value;
+  final IconData icon;
+  const _ProfileStatCard({required this.title, required this.value, required this.icon});
+  @override Widget build(BuildContext context) => SizedBox(width: 210, child: Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 8), Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)), const SizedBox(height: 2), Text(title)]))));
+}
+
 class ProfilePage extends StatefulWidget {
   final AppUser user;
   final List<Team> teams;
@@ -21,10 +102,6 @@ class _ProfilePageState extends State<ProfilePage>{
     }catch(e){if(mounted)showErrorMessage(context,'Poza nu a putut fi selectată: $e');return null;}
   }
   DateTime? _dateFromRaw(Object? raw){if(raw is Timestamp)return raw.toDate();if(raw is DateTime)return raw;if(raw is String)return DateTime.tryParse(raw);return null;}
-  double _hours(Iterable<CentralizerRecord> rows)=>rows.fold<double>(0,(sum,r)=>sum+(r.duration?.inMinutes??0)/60.0);
-  String _hoursText(double v)=>'${v.toStringAsFixed(v>=10?1:2)} h';
-  Set<String> _workedDayKeys(Iterable<CentralizerRecord> rows)=>rows.map((r){final d=r.startedAt??r.finishedAt!;return '${d.year}-${two(d.month)}-${two(d.day)}';}).toSet();
-
   Future<void> _openLink(String raw)async{
     final text=raw.trim();if(text.isEmpty)return;
     final normalized=RegExp(r'^https?://',caseSensitive:false).hasMatch(text)?text:'https://$text';
@@ -89,19 +166,12 @@ class _ProfilePageState extends State<ProfilePage>{
     for(final f in fields){(f['label'] as TextEditingController).dispose();(f['value'] as TextEditingController).dispose();}
   }
 
-  Widget _statCard(BuildContext context,String title,String value,IconData icon)=>SizedBox(width:210,child:Card(child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:Theme.of(context).colorScheme.primary),const SizedBox(height:8),Text(value,style:const TextStyle(fontSize:22,fontWeight:FontWeight.w900)),const SizedBox(height:2),Text(title)]))));
-
   @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Profil')),body:StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(
     stream:FirebaseFirestore.instance.collection('users').doc(widget.user.id).snapshots(),
     builder:(context,snap){
       final d=snap.data?.data()??<String,dynamic>{};final display=_profileDisplayName(d,fallback:widget.user.name);final photo=_photoFromData((d['photoBase64']??'').toString());
       final hire=_dateFromRaw(d['hireDate']);final employment=hire==null?null:calculateEmploymentParts(hire, now: DateTime.now());
-      final teamId=widget.user.teamId;final completed=widget.records.where((r)=>teamId!=null&&r.teamId==teamId&&r.completed).toList();final now=DateTime.now();
-      final today=completed.where((r){final x=r.startedAt??r.finishedAt;return x!=null&&sameDay(x,now);}).toList();
-      final month=completed.where((r){final x=r.startedAt??r.finishedAt;return x!=null&&x.year==now.year&&x.month==now.month;}).toList();
-      final year=completed.where((r){final x=r.startedAt??r.finishedAt;return x!=null&&x.year==now.year;}).toList();
-      final myPer=widget.perDiems.where((x)=>x.memberId==widget.user.id&&(x.received==true||x.status==PerDiemStatus.confirmed)).toList();
-      final perMonth=myPer.where((x)=>x.date.year==now.year&&x.date.month==now.month).fold<double>(0,(a,b)=>a+b.amount);final perYear=myPer.where((x)=>x.date.year==now.year).fold<double>(0,(a,b)=>a+b.amount);final perAll=myPer.fold<double>(0,(a,b)=>a+b.amount);
+      final teamId=(d['teamId']??widget.user.teamId)?.toString();
       final rawFields=d['profileFields'];final fields=<Map<String,String>>[];if(rawFields is List){for(final raw in rawFields){if(raw is Map){final label=(raw['label']??'').toString().trim();final value=(raw['value']??'').toString().trim();final type=(raw['type']??'text').toString();if(label.isNotEmpty||value.isNotEmpty)fields.add({'label':label,'value':value,'type':type});}}}
       return ListView(padding:const EdgeInsets.all(16),children:[
         Card(child:Padding(padding:const EdgeInsets.all(16),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -114,21 +184,10 @@ class _ProfilePageState extends State<ProfilePage>{
         ]))),
         if(fields.isNotEmpty)...[const SizedBox(height:10),Card(child:Column(children:fields.map((f){final link=f['type']=='link';return ListTile(leading:Icon(link?Icons.link:Icons.info_outline),title:Text(f['label']!.isEmpty?'Informație':f['label']!),subtitle:Text(f['value']??''),trailing:link?const Icon(Icons.open_in_new):null,onTap:link?()=>_openLink(f['value']??''):null);}).toList()))],
         const SizedBox(height:12),
-        Text('Statistici angajat',style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w900)),const SizedBox(height:8),
         if(employment==null)const _InfoCard(icon:Icons.event_outlined,title:'Perioada de angajare',text:'Completează data angajării din Editare profil pentru calculul perioadei.')
         else _InfoCard(icon:Icons.event_available_outlined,title:'Perioada de angajare',text:'${employment.years} ani · ${employment.months} luni · ${employment.days} zile  |  ${employment.totalDays} zile calendaristice de la angajare'),
-        const SizedBox(height:8),
-        Wrap(spacing:10,runSpacing:10,children:[
-          _statCard(context,'Zile lucrate luna curentă','${_workedDayKeys(month).length}',Icons.calendar_view_month),
-          _statCard(context,'Zile lucrate anul curent','${_workedDayKeys(year).length}',Icons.calendar_today_outlined),
-          _statCard(context,'Ore lucrate azi',_hoursText(_hours(today)),Icons.schedule),
-          _statCard(context,'Ore lucrate luna curentă',_hoursText(_hours(month)),Icons.more_time),
-          _statCard(context,'Ore lucrate anul curent',_hoursText(_hours(year)),Icons.access_time_filled),
-        ]),
-        const SizedBox(height:10),
-        Card(child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Diurne încasate',style:TextStyle(fontSize:17,fontWeight:FontWeight.w900)),const SizedBox(height:8),Text('Luna curentă: ${perMonth.toStringAsFixed(2)} lei'),Text('Anul curent: ${perYear.toStringAsFixed(2)} lei'),Text('Total: ${perAll.toStringAsFixed(2)} lei')]))),
-        const SizedBox(height:8),
-        Text('Notă: orele și zilele de lucru sunt calculate din intervențiile finalizate ale echipei la care este alocat contul.',style:Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height:12),
+        _ProfileLiveStats(teamId:teamId,memberId:widget.user.id),
       ]);
     },
   ));
