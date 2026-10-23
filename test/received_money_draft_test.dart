@@ -11,13 +11,13 @@ void main(){
     expect(original.receivedEntries,isEmpty);expect(original.totalReceived,0);expect(original.closed,false);expect(original.endDate,isNull);
   });
   test('exact journal replay already in local history is not counted twice',()async{
-    final original=TeamFinance(teamId:'t',receivedDuring:12.34,receivedEntries:[entry]);
+    final original=TeamFinance(teamId:'t',receivedDeparture:12.34,receivedEntries:[entry]);
     var calls=0;
     await saveReceivedMoneyDraft(entry:entry,finance:original,
       saveFinance:(draft)async{
         calls++;
         expect(draft.receivedEntries,hasLength(1));
-        expect(draft.receivedDuring,12.34);
+        expect(draft.receivedDeparture,12.34);
       },saveSettlement:(_)async{fail('wrong target');});
     expect(calls,1);
     expect(original.receivedEntries,hasLength(1));
