@@ -81,6 +81,7 @@ class _ExpensePageState extends State<ExpensePage> with WidgetsBindingObserver {
   }
 
   void _ensureExpenseRetryTimer() {
+    if (!mounted) return;
     _expenseRetryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
       if (!mounted) return;
       for (final teamId in _expenseRetryTeams.toList()) {
@@ -1242,9 +1243,32 @@ class _ExpensePageState extends State<ExpensePage> with WidgetsBindingObserver {
       widget.log('${e.documentType == ExpenseDocumentType.fiscalReceipt ? 'Bon Fiscal' : 'Factură'} introdus', '${e.category} · ${settlement?.name ?? 'istoric anterior'}');
       if (mounted) showSuccessMessage(context, e.confirmed ? 'Documentul a fost salvat.' : 'Documentul a fost trimis gestionarului pentru confirmare.');
     } catch (err) {
-      _expenseRetryTeams.add(e.teamId);
-      _ensureExpenseRetryTimer();
-      if (mounted) showErrorMessage(context, 'Nu s-a putut confirma salvarea documentului: $err. Va fi reîncercată aceeași cheltuială.');
+      ExpenseSaveIntent? pending;
+      var journalStateUnknown = false;
+      try {
+        pending = await _expenseJournal.pending(userId: intent.userId, teamId: intent.teamId);
+      } catch (_) {
+        // A read failure cannot prove whether the durable write completed.
+        journalStateUnknown = true;
+      }
+      if (pending != null || journalStateUnknown) {
+        _expenseRetryTeams.add(e.teamId);
+        _ensureExpenseRetryTimer();
+      } else {
+        _expenseRetryTeams.remove(e.teamId);
+        if (_expenseRetryTeams.isEmpty) {
+          _expenseRetryTimer?.cancel();
+          _expenseRetryTimer = null;
+        }
+      }
+      if (mounted) {
+        final message = pending == null && !journalStateUnknown
+            ? 'Cheltuiala nu a fost trimisă: nu s-a putut salva jurnalul securizat. Încearcă din nou.'
+            : pending != null && !pending.sameOperation(intent)
+                ? 'Există o cheltuială anterioară fără confirmare; reîncercarea ei continuă. Această cheltuială nu a fost trimisă.'
+                : 'Nu s-a putut confirma salvarea documentului. Starea jurnalului este incertă; sistemul va verifica și va reîncerca aceeași operație.';
+        showErrorMessage(context, '$message ($err)');
+      }
     }
   }
 
