@@ -41,7 +41,7 @@ class DashboardRecordIntent {
         (json['expected'] != null && json['expected'] is! Map)) {
       throw const FormatException('Invalid Dashboard record intent.');
     }
-    return DashboardRecordIntent(
+    final intent = DashboardRecordIntent(
       userId: json['userId'] as String,
       teamId: json['teamId'] as String,
       recordId: json['recordId'] as String,
@@ -51,6 +51,28 @@ class DashboardRecordIntent {
           ? null
           : Map<String, dynamic>.from(_decode(json['expected']) as Map),
     );
+    intent.validate();
+    return intent;
+  }
+
+  void validate() {
+    final status = desired['status'];
+    final validStatus = switch (transition) {
+      'start' => status == 'running',
+      'finish' || 'outcome' => const {'completed', 'refused', 'notCompleted'}.contains(status),
+      'waiting' => status == 'waitingAccess',
+      _ => false,
+    };
+    if (userId.trim().isEmpty || teamId.trim().isEmpty || recordId.trim().isEmpty ||
+        desired['teamId'] != teamId || desired['locationId'] is! String ||
+        (desired['locationId'] as String).trim().isEmpty || !validStatus) {
+      throw const FormatException('Dashboard record payload does not match its scope or transition.');
+    }
+    if (expected != null && (expected!['teamId'] != teamId ||
+        expected!['locationId'] != desired['locationId'] ||
+        (expected!['interventionId'] ?? '') != (desired['interventionId'] ?? ''))) {
+      throw const FormatException('Dashboard record baseline identity does not match its payload.');
+    }
   }
 
   bool sameOperation(DashboardRecordIntent other) =>
@@ -72,6 +94,7 @@ class DashboardRecordJournal {
   final Future<String?> Function(String key) read;
   final Future<void> Function(String key, String value) write;
   final Future<void> Function(String key) remove;
+  static final Set<String> _inFlight = <String>{};
 
   String _key(String userId, String teamId) =>
       'dashboard_record_intent_v1_${Uri.encodeComponent(userId)}_${Uri.encodeComponent(teamId)}';
@@ -98,9 +121,7 @@ class DashboardRecordJournal {
   }
 
   Future<void> persist(DashboardRecordIntent intent) async {
-    if (intent.userId.isEmpty || intent.teamId.isEmpty || intent.recordId.isEmpty) {
-      throw ArgumentError('Record intent requires user, team, and record identity.');
-    }
+    intent.validate();
     await write(_key(intent.userId, intent.teamId), jsonEncode(intent.toJson()));
   }
 
@@ -113,14 +134,23 @@ class DashboardRecordJournal {
     required DashboardRecordIntent candidate,
     required Future<void> Function(DashboardRecordIntent intent) send,
   }) async {
-    final current = await pending(userId: candidate.userId, teamId: candidate.teamId);
-    if (current != null && !current.sameOperation(candidate)) {
-      throw StateError('A previous Dashboard record save is unresolved; reconnect and retry it first.');
+    candidate.validate();
+    final key = _key(candidate.userId, candidate.teamId);
+    if (!_inFlight.add(key)) {
+      throw StateError('A Dashboard record save is already running for this team.');
     }
-    final intent = current ?? candidate;
-    if (current == null) await persist(intent);
-    await send(intent);
-    await clear(intent);
+    try {
+      final current = await pending(userId: candidate.userId, teamId: candidate.teamId);
+      if (current != null && !current.sameOperation(candidate)) {
+        throw StateError('A previous Dashboard record save is unresolved; reconnect and retry it first.');
+      }
+      final intent = current ?? candidate;
+      if (current == null) await persist(intent);
+      await send(intent);
+      await clear(intent);
+    } finally {
+      _inFlight.remove(key);
+    }
   }
 }
 

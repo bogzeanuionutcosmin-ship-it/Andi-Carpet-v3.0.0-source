@@ -103,4 +103,29 @@ void main() {
       throwsStateError,
     );
   });
+
+  test('rejects a payload whose identity does not match its durable scope', () async {
+    final malformed = intent(desired: {...payload, 'teamId': 'team-b'});
+    await expectLater(
+      journal().run(candidate: malformed, send: (_) async => fail('must not send a mismatched payload')),
+      throwsFormatException,
+    );
+    expect(disk, isEmpty);
+  });
+
+  test('serializes concurrent writes for the same user and team scope', () async {
+    final gate = Completer<void>();
+    final first = journal().run(candidate: intent(), send: (_) => gate.future);
+    // Let the first run reach send after it has claimed the in-process scope.
+    for (var turn = 0; turn < 5 && disk.isEmpty; turn++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    await expectLater(
+      journal().run(candidate: intent(), send: (_) async => fail('must not race the first operation')),
+      throwsStateError,
+    );
+    gate.complete();
+    await first;
+    expect(disk, isEmpty);
+  });
 }

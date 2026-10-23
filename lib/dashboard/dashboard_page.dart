@@ -71,10 +71,11 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
         }
         return;
       }
-      final record = centralizerRecordFromData(intent.recordId, intent.desired)
-        ..writeBaseline = intent.expected;
-      await widget.saveRecord(record);
-      await _recordJournal.clear(intent);
+      await _recordJournal.run(candidate: intent, send: (pending) async {
+        final record = centralizerRecordFromData(pending.recordId, pending.desired)
+          ..writeBaseline = pending.expected;
+        await widget.saveRecord(record);
+      });
       _journalRetryTeams.remove(teamId);
       if (mounted) {
         widget.onChanged();
