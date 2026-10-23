@@ -63,7 +63,15 @@ DateTime? _parseDate(String value) {
   }
   if (c < 100) c += c >= 70 ? 1900 : 2000;
   if (a < 1 || a > 31 || b < 1 || b > 12 || c < 2000 || c > 2100) return null;
-  try { return DateTime(c, b, a); } catch (_) { return null; }
+  try {
+    final parsed = DateTime(c, b, a);
+    // DateTime normalizes impossible dates (31 February → March). OCR must
+    // reject those rather than silently prefill a different expense date.
+    if (parsed.year != c || parsed.month != b || parsed.day != a) return null;
+    return parsed;
+  } catch (_) {
+    return null;
+  }
 }
 
 FiscalOcrData parseFiscalOcr(String text) {
