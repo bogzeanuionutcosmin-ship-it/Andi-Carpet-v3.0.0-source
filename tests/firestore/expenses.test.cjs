@@ -2,7 +2,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, setDoc, updateDoc } = require('firebase/firestore');
+const { doc, setDoc, updateDoc, runTransaction } = require('firebase/firestore');
 
 let env;
 const db = (uid) => env.authenticatedContext(uid).firestore();
@@ -53,6 +53,27 @@ function expense(teamId) {
 
 test('team finance writer can create an expense without a per-diem distributedBy field', async () => {
   await assertSucceeds(setDoc(expenseRef(db('writer'), 'expense-authorized'), expense('team-a')));
+});
+
+test('authorized expense writer can transactionally read a missing target and create the receipt', async () => {
+  const ref = expenseRef(db('writer'), 'expense-transaction-create');
+  await assertSucceeds(runTransaction(db('writer'), async (transaction) => {
+    const current = await transaction.get(ref);
+    assert.equal(current.exists(), false);
+    transaction.set(ref, expense('team-a'));
+  }));
+});
+
+test('missing expense reads need own-decont permission; existing expense reads stay team-scoped', async () => {
+  await assertFails(runTransaction(db('member-no-finance'), async (transaction) => {
+    await transaction.get(expenseRef(db('member-no-finance'), 'missing-expense'));
+  }));
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(expenseRef(ctx.firestore(), 'expense-team-b-private'), expense('team-b'));
+  });
+  await assertFails(runTransaction(db('outsider'), async (transaction) => {
+    await transaction.get(expenseRef(db('outsider'), 'expense-team-b-private'));
+  }));
 });
 
 test('expense creation still requires finance permission and team membership', async () => {

@@ -303,7 +303,14 @@ service cloud.firestore {
             && get(teamPath).data.get('financialManagerId', null) == request.auth.uid)
         );
       }
-      allow read: if isAdmin()
+      // A create-only client transaction must read its target document before
+      // writing. Allow missing-document get only to active users with the own-
+      // decont permission; existing documents remain team scoped and list
+      // queries still require the caller's team scope.
+      allow get: if resource == null
+        ? (isAdmin() || hasPermission('viewOwnDecont'))
+        : (isAdmin() || hasPermission('viewOtherDecont') || isTeamMember(resource.data.teamId));
+      allow list: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
       allow create: if (isAdmin()
