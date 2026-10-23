@@ -92,6 +92,25 @@ void main() {
     expect(await journal().pending(userId: 'user-a', teamId: 'team-b'), isNull);
   });
 
+  test('encodes user and team scope without separator collisions', () async {
+    final first = DashboardRecordIntent(
+      userId: 'a_b', teamId: 'c', recordId: 'first', transition: 'finish',
+      desired: {...payload, 'teamId': 'c'},
+      expected: {...baseline, 'teamId': 'c'},
+    );
+    final second = DashboardRecordIntent(
+      userId: 'a', teamId: 'b_c', recordId: 'second', transition: 'finish',
+      desired: {...payload, 'teamId': 'b_c'},
+      expected: {...baseline, 'teamId': 'b_c'},
+    );
+    await journal().persist(first);
+    await journal().persist(second);
+
+    expect(disk.keys, hasLength(2));
+    expect((await journal().pending(userId: 'a_b', teamId: 'c'))?.recordId, 'first');
+    expect((await journal().pending(userId: 'a', teamId: 'b_c'))?.recordId, 'second');
+  });
+
   test('does not send a record transition if secure storage cannot persist it', () async {
     final broken = DashboardRecordJournal(
       read: (_) async => null,

@@ -96,8 +96,10 @@ class DashboardRecordJournal {
   final Future<void> Function(String key) remove;
   static final Set<String> _inFlight = <String>{};
 
-  String _key(String userId, String teamId) =>
-      'dashboard_record_intent_v1_${Uri.encodeComponent(userId)}_${Uri.encodeComponent(teamId)}';
+  String _key(String userId, String teamId) {
+    final scope = jsonEncode([userId, teamId]);
+    return 'dashboard_record_intent_v1_${base64Url.encode(utf8.encode(scope))}';
+  }
 
   Future<DashboardRecordIntent?> pending({
     required String userId,
