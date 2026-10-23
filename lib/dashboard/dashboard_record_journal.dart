@@ -89,12 +89,22 @@ class DashboardRecordJournal {
     required this.read,
     required this.write,
     required this.remove,
+    this.trace,
   });
 
   final Future<String?> Function(String key) read;
   final Future<void> Function(String key, String value) write;
   final Future<void> Function(String key) remove;
+  final void Function(String stage, Object? error)? trace;
   static final Set<String> _inFlight = <String>{};
+
+  void _trace(String stage, [Object? error]) {
+    try {
+      trace?.call(stage, error);
+    } catch (_) {
+      // Diagnostic observers must not change the durability path.
+    }
+  }
 
   String _key(String userId, String teamId) {
     final scope = jsonEncode([userId, teamId]);
@@ -136,22 +146,39 @@ class DashboardRecordJournal {
     required DashboardRecordIntent candidate,
     required Future<void> Function(DashboardRecordIntent intent) send,
   }) async {
+    _trace('journal.run.begin');
     candidate.validate();
     final key = _key(candidate.userId, candidate.teamId);
     if (!_inFlight.add(key)) {
+      _trace('journal.run.in_flight');
       throw StateError('A Dashboard record save is already running for this team.');
     }
     try {
+      _trace('journal.pending.read.begin');
       final current = await pending(userId: candidate.userId, teamId: candidate.teamId);
+      _trace(current == null ? 'journal.pending.empty' : 'journal.pending.existing');
       if (current != null && !current.sameOperation(candidate)) {
+        _trace('journal.pending.conflict');
         throw StateError('A previous Dashboard record save is unresolved; reconnect and retry it first.');
       }
       final intent = current ?? candidate;
-      if (current == null) await persist(intent);
+      if (current == null) {
+        _trace('journal.persist.begin');
+        await persist(intent);
+        _trace('journal.persist.done');
+      }
+      _trace('journal.send.begin');
       await send(intent);
+      _trace('journal.send.done');
+      _trace('journal.clear.begin');
       await clear(intent);
+      _trace('journal.clear.done');
+    } catch (error) {
+      _trace('journal.run.failed', error);
+      rethrow;
     } finally {
       _inFlight.remove(key);
+      _trace('journal.run.released');
     }
   }
 }
@@ -160,35 +187,4 @@ dynamic _encode(dynamic value) {
   if (value is Timestamp) return {'__dashboardTimestamp': value.toDate().toIso8601String()};
   if (value is DateTime) return {'__dashboardTimestamp': value.toIso8601String()};
   if (value is Map) {
-    return value.map((key, item) => MapEntry(key.toString(), _encode(item)));
-  }
-  if (value is List) return value.map(_encode).toList();
-  if (value == null || value is String || value is num || value is bool) return value;
-  throw ArgumentError('Unsupported value in Dashboard record intent: ${value.runtimeType}');
-}
-
-dynamic _decode(dynamic value) {
-  if (value is Map) {
-    if (value.length == 1 && value['__dashboardTimestamp'] is String) {
-      final date = DateTime.tryParse(value['__dashboardTimestamp'] as String);
-      if (date == null) throw const FormatException('Invalid timestamp in Dashboard record intent.');
-      return Timestamp.fromDate(date);
-    }
-    return value.map((key, item) => MapEntry(key.toString(), _decode(item)));
-  }
-  if (value is List) return value.map(_decode).toList();
-  return value;
-}
-
-bool _deepEquals(dynamic a, dynamic b) {
-  if (a is Timestamp) a = a.toDate();
-  if (b is Timestamp) b = b.toDate();
-  if (a is DateTime && b is DateTime) return a.isAtSameMomentAs(b);
-  if (a is Map && b is Map) {
-    return a.length == b.length && a.keys.every((key) => b.containsKey(key) && _deepEquals(a[key], b[key]));
-  }
-  if (a is List && b is List) {
-    return a.length == b.length && List.generate(a.length, (i) => i).every((i) => _deepEquals(a[i], b[i]));
-  }
-  return a == b;
-}
+    return value.map((key, item) => MapEntry(key.toString(), _enco
