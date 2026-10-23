@@ -187,4 +187,35 @@ dynamic _encode(dynamic value) {
   if (value is Timestamp) return {'__dashboardTimestamp': value.toDate().toIso8601String()};
   if (value is DateTime) return {'__dashboardTimestamp': value.toIso8601String()};
   if (value is Map) {
-    return value.map((key, item) => MapEntry(key.toString(), _enco
+    return value.map((key, item) => MapEntry(key.toString(), _encode(item)));
+  }
+  if (value is List) return value.map(_encode).toList();
+  if (value == null || value is String || value is num || value is bool) return value;
+  throw ArgumentError('Unsupported value in Dashboard record intent: ${value.runtimeType}');
+}
+
+dynamic _decode(dynamic value) {
+  if (value is Map) {
+    if (value.length == 1 && value['__dashboardTimestamp'] is String) {
+      final date = DateTime.tryParse(value['__dashboardTimestamp'] as String);
+      if (date == null) throw const FormatException('Invalid timestamp in Dashboard record intent.');
+      return Timestamp.fromDate(date);
+    }
+    return value.map((key, item) => MapEntry(key.toString(), _decode(item)));
+  }
+  if (value is List) return value.map(_decode).toList();
+  return value;
+}
+
+bool _deepEquals(dynamic a, dynamic b) {
+  if (a is Timestamp) a = a.toDate();
+  if (b is Timestamp) b = b.toDate();
+  if (a is DateTime && b is DateTime) return a.isAtSameMomentAs(b);
+  if (a is Map && b is Map) {
+    return a.length == b.length && a.keys.every((key) => b.containsKey(key) && _deepEquals(a[key], b[key]));
+  }
+  if (a is List && b is List) {
+    return a.length == b.length && List.generate(a.length, (i) => i).every((i) => _deepEquals(a[i], b[i]));
+  }
+  return a == b;
+}
