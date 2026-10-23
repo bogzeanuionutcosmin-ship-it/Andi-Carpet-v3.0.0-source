@@ -769,7 +769,7 @@ void main() {
       Scaffold(body:app.ExpensePage(
       currentUser:homeExpense.currentUser,
       teams:homeExpense.teams,users:homeExpense.users,
-      expenses:expensePageExpenses,perDiems:homeExpense.perDiems,
+      expenses:homeExpense.expenses,perDiems:homeExpense.perDiems,
       finances:homeExpense.finances,
       settlements:homeExpense.settlements,settings:expenseSettings,
       canEditTeam:homeExpense.canEditTeam,isAdmin:homeExpense.isAdmin,
