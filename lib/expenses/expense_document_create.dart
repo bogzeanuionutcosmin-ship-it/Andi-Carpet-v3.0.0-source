@@ -83,10 +83,17 @@ bool _sameValue(Object? left, Object? right) {
   if (left is DateTime && right is DateTime) return left.isAtSameMomentAs(right);
   if (left is num && right is num) return left == right;
   if (left is Map && right is Map) {
-    return left.length == right.length && left.keys.every((key) => right.containsKey(key) && _sameValue(left[key], right[key]));
+    final leftMap = left;
+    final rightMap = right;
+    return leftMap.length == rightMap.length &&
+        leftMap.keys.every((key) => rightMap.containsKey(key) && _sameValue(leftMap[key], rightMap[key]));
   }
   if (left is List && right is List) {
-    return left.length == right.length && List.generate(left.length, (index) => index).every((index) => _sameValue(left[index], right[index]));
+    final leftList = left;
+    final rightList = right;
+    return leftList.length == rightList.length &&
+        List.generate(leftList.length, (index) => index)
+            .every((index) => _sameValue(leftList[index], rightList[index]));
   }
   return left == right;
 }
