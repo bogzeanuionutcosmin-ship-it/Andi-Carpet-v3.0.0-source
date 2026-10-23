@@ -263,6 +263,14 @@ void main() {
       for(var n=0;n<150&&!startTrace.contains('start.operation.complete');n++){
         await tester.pump(const Duration(milliseconds:200));
       }
+      if(startTrace.contains('recovery.begin')){
+        expect(startTrace,contains('record.waiting.for.recovery'),
+          reason:'Dashboard START must wait for the initial durable-intent recovery instead of failing on its team lock');
+        expect(startTrace,contains('record.recovery.wait.complete'),
+          reason:'Dashboard START must continue after recovery releases the team lock');
+      }
+      expect(startTrace, isNot(contains('record.busy.conflict')),
+        reason:'A START tap must not be rejected solely because initial recovery is reading secure storage');
       final startedForLocation=records.where((r)=>r.locationId==item.locationId&&r.status==app.WorkAttemptStatus.running).toList();
       if(startedForLocation.length!=1){
         debugPrint('[xix-native] start trace location=${item.locationId} stages=$startTrace');

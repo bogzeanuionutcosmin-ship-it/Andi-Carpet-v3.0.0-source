@@ -12,6 +12,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
   static const FlutterSecureStorage _recordStorage = FlutterSecureStorage();
   static const FlutterSecureStorage _scheduleStorage = FlutterSecureStorage();
   final Set<String> _recoveryStarted = {};
+  final Map<String, Completer<void>> _recordRecoveryCompletion = {};
   final Set<String> _journalRetryTeams = {};
   final Set<String> _journalBusyTeams = {};
   Timer? _journalRetryTimer;
@@ -81,6 +82,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       _traceRecordOperation('recovery.busy');
       return;
     }
+    final recoveryCompletion = Completer<void>();
+    _recordRecoveryCompletion[teamId] = recoveryCompletion;
     _traceRecordOperation('recovery.begin');
     final userId = widget.currentUser.id;
     try {
@@ -128,11 +131,21 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       _ensureJournalRetryTimer();
     } finally {
       _journalBusyTeams.remove(teamId);
+      if (identical(_recordRecoveryCompletion[teamId], recoveryCompletion)) {
+        _recordRecoveryCompletion.remove(teamId);
+      }
+      if (!recoveryCompletion.isCompleted) recoveryCompletion.complete();
       _traceRecordOperation('recovery.released');
     }
   }
 
   Future<void> _saveRecordJournalled(CentralizerRecord record) async {
+    final recovery = _recordRecoveryCompletion[record.teamId];
+    if (recovery != null) {
+      _traceRecordOperation('record.waiting.for.recovery');
+      await recovery.future;
+      _traceRecordOperation('record.recovery.wait.complete');
+    }
     if (!_journalBusyTeams.add(record.teamId)) {
       _traceRecordOperation('record.busy.conflict', StateError('team=${record.teamId}'));
       throw StateError('O altă salvare a intervenției acestei echipe este în curs.');
