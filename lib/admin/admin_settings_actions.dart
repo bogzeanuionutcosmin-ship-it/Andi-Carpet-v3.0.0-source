@@ -5,12 +5,19 @@ mixin _AdminSettingsActions on State<AdminPanelPage> {
   AppSettings get settings;
 
 Future<void> _saveUiSettings() async {
+    final androidDownloadUrl = settings.androidDownloadUrl.trim();
+    if (androidDownloadUrl.isNotEmpty && validatedAndroidApkUrl(androidDownloadUrl) == null) {
+      if (mounted) {
+        showErrorMessage(context, 'Linkul APK salvat trebuie să fie HTTPS și public. Corectează sau golește linkul înainte de salvarea setărilor.');
+      }
+      return;
+    }
     try {
       await FirebaseFirestore.instance.collection('meta').doc('uiSettings').set({
         'background': settings.background,
         'brandingBackgroundId': settings.brandingBackgroundId,
         'brandingLogoId': settings.brandingLogoId,
-        'androidDownloadUrl': settings.androidDownloadUrl,
+        'androidDownloadUrl': androidDownloadUrl,
         'smsPreviousDayTime': settings.smsPreviousDayTime,
         'smsTemplates': settings.smsTemplates,
         'backgroundOpacity': settings.backgroundOpacity,
@@ -111,7 +118,10 @@ Future<void> _saveUiSettings() async {
       actions:[TextButton(onPressed:()=>Navigator.pop(d),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(d,c.text.trim()),child:const Text('Salvează'))],
     ));
     c.dispose();if(value==null)return;
-    if(value.isNotEmpty){final uri=Uri.tryParse(value);if(uri==null||!(uri.scheme=='https'||uri.scheme=='http')){if(mounted)showErrorMessage(context,'Linkul trebuie să înceapă cu https:// sau http://');return;}}
+    if(value.isNotEmpty && validatedAndroidApkUrl(value)==null){
+      if(mounted)showErrorMessage(context,'Linkul APK trebuie să fie HTTPS și public, fără date de autentificare în URL.');
+      return;
+    }
     setState(()=>settings.androidDownloadUrl=value);await _saveUiSettings();
   }
 
@@ -202,7 +212,7 @@ Future<void> _saveUiSettings() async {
       ListTile(title:const Text('Diurnă implicită'),subtitle:Text('${settings.defaultPerDiem.toStringAsFixed(2)} lei/zi'),trailing:IconButton(icon:const Icon(Icons.edit_outlined),onPressed:()async{final c=TextEditingController(text:settings.defaultPerDiem.toStringAsFixed(2));final v=await showDialog<double>(context:context,builder:(d)=>AlertDialog(title:const Text('Diurnă implicită'),content:TextField(controller:c,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(suffixText:'lei/zi')),actions:[TextButton(onPressed:()=>Navigator.pop(d),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(d,double.tryParse(c.text.replaceAll(',', '.'))),child:const Text('Salvează'))]));c.dispose();if(v!=null&&v>0){setState(()=>settings.defaultPerDiem=v);await _saveUiSettings();}})),
       SwitchListTile(value:settings.autoStart,onChanged:(v){setState(()=>settings.autoStart=v);widget.onChanged();},title:const Text('START automat asistat'),subtitle:const Text('Se aplică împreună cu Learning → Acces și așteptare.')),
       SwitchListTile(value:settings.autoFinish,onChanged:(v){setState(()=>settings.autoFinish=v);widget.onChanged();},title:const Text('FINAL automat asistat'),subtitle:const Text('Poate propune sau aplica FINAL după ieșirea din perimetrul locației.')),
-      SwitchListTile(value:settings.autoCloseWhenAllDone,onChanged:(v){setState(()=>settings.autoCloseWhenAllDone=v);widget.onChanged();},title:const Text('Închide automat graficul rezolvat'),subtitle:const Text('Funcționează în modul automat al Learning → Modificări de program.')),
+      SwitchListTile(value:settings.autoCloseWhenAllDone,onChanged:(v){setState(()=>settings.autoCloseWhenAllDone=v);widget.onChanged();},title:const Text('Anunță când graficul este pregătit pentru STOP'),subtitle:const Text('Learning verifică toate zilele. Închiderea oficială necesită confirmarea STOP în Grafic.')),
       SwitchListTile(value:settings.pushNotifications,onChanged:(v){setState(()=>settings.pushNotifications=v);widget.onChanged();},title:const Text('Notificări operaționale')),
       SwitchListTile(value:settings.allowUndo,onChanged:(v){setState(()=>settings.allowUndo=v);widget.onChanged();},title:const Text('Undo unde este posibil')),
     ]))),

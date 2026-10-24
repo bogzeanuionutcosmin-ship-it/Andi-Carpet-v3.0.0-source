@@ -2,9 +2,9 @@ name: Validate Flutter and Firebase
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/grafic-end-to-end-xiv-20261017, fix/application-delivery-xv-20261017]
   pull_request:
-    branches: [main]
+    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021, codex/xix-map-road-geometry-controller-20261021, codex/xix-home-financial-scope-20261021, codex/xix-expense-ocr-scan-20261021, codex/xix-dashboard-pending-operation-20261021, codex/xix-pdf-summary-row-20261021, codex/xix-program-postpone-policy-20261021, codex/xix-program-start-snapshot-20261021, codex/xix-pdf-decont-input-selection-20261021, codex/xix-program-schedule-item-removal-20261021, codex/xix-program-schedule-item-addition-20261021, codex/xix-home-team-membership-projection-20261021, codex/xix-program-start-location-resolution-20261021, codex/xix-expense-duplicate-decision-20261021, codex/xix-program-graph-state-persistence-20261021, codex/xix-dashboard-start-record-policy-20261021, codex/xix-home-location-proximity-policy-20261021, codex/xix-home-active-schedule-policy-20261021, codex/xix-home-arrival-candidate-policy-20261021, codex/xix-home-gps-sampling-profile-20261021, codex/xix-dashboard-operational-status-20261021, codex/xix-expense-optional-ocr-prefill-20261021, codex/xix-home-live-location-resources-20261021, codex/xix-map-route-line-presentation-20261021, codex/xix-dashboard-active-record-selection-20261021, codex/xix-home-locality-label-20261021]
   workflow_dispatch:
 
 permissions:
@@ -32,6 +32,22 @@ jobs:
         run: python3 -m unittest discover -s test -p 'repository_hygiene_test.py'
       - name: Run Flutter unit and widget tests
         run: flutter test test/
+      - name: Verify real Centralizator PDFs
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          python3 scripts/verify_centralizer_pdfs.py
+          pdftoppm -scale-to 1600 -png build/pdf-verification/craiova.pdf build/pdf-verification/craiova
+          pdftoppm -scale-to 1600 -png build/pdf-verification/overnight.pdf build/pdf-verification/overnight
+          pdftoppm -scale-to 1600 -png build/pdf-verification/history.pdf build/pdf-verification/history
+      - name: Upload synthetic PDF evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: centralizer-pdf-evidence
+          path: build/pdf-verification/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Build web
         run: flutter build web --release
       - name: Upload web build
@@ -106,5 +122,7 @@ jobs:
           java-version: '21'
       - name: Install Firebase emulator and test libraries
         run: npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
+      - name: Install server transaction dependencies
+        run: npm ci --prefix functions
       - name: Run Firestore authorization tests
-        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test tests/firestore/diurna.test.cjs'
+        run: npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test --test-concurrency=1 tests/firestore/diurna.test.cjs tests/firestore/program_schedule.test.cjs tests/firestore/centralizer_correction.test.cjs tests/firestore/finance_identity.test.cjs tests/firestore/record_start_lock.test.cjs tests/firestore/expenses.test.cjs tests/firestore/graph_closure.test.cjs'

@@ -1,0 +1,202 @@
+name: XIX operational candidate and native emulator validation
+on:
+  pull_request:
+    branches: [main, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021, codex/xix-map-road-geometry-controller-20261021, codex/xix-home-financial-scope-20261021, codex/xix-expense-ocr-scan-20261021, codex/xix-dashboard-pending-operation-20261021, codex/xix-pdf-summary-row-20261021, codex/xix-program-postpone-policy-20261021, codex/xix-program-start-snapshot-20261021, codex/xix-pdf-decont-input-selection-20261021, codex/xix-program-schedule-item-removal-20261021, codex/xix-program-schedule-item-addition-20261021, codex/xix-home-team-membership-projection-20261021, codex/xix-program-start-location-resolution-20261021, codex/xix-expense-duplicate-decision-20261021, codex/xix-program-graph-state-persistence-20261021, codex/xix-dashboard-start-record-policy-20261021, codex/xix-home-location-proximity-policy-20261021, codex/xix-home-active-schedule-policy-20261021, codex/xix-home-arrival-candidate-policy-20261021, codex/xix-home-gps-sampling-profile-20261021, codex/xix-dashboard-operational-status-20261021, codex/xix-expense-optional-ocr-prefill-20261021, codex/xix-home-live-location-resources-20261021, codex/xix-map-route-line-presentation-20261021, codex/xix-dashboard-active-record-selection-20261021, codex/xix-home-locality-label-20261021]
+permissions:
+  contents: read
+concurrency:
+  group: xix-native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    if: github.head_ref == 'codex/xix-home-locality-label-20261021' || github.head_ref == 'mission-xix/release-candidate' || github.head_ref == 'mission-xix/modular-integration' || github.base_ref == 'mission-xix/modular-integration' || github.base_ref == 'codex/xix-integrated-home-manual-lifecycle-20261019' || github.base_ref == 'codex/xix-manual-entry-midnight-date-20261019' || github.base_ref == 'codex/xix-schedule-save-errors-20261020' || github.base_ref == 'codex/xix-native-selector-scroll-20261020' || github.base_ref == 'codex/xix-dashboard-live-label-20261020' || github.base_ref == 'codex/xix-pdf-delivery-adapter-20261020' || github.base_ref == 'codex/xix-expense-settlement-selection-20261021' || github.base_ref == 'codex/xix-program-pending-items-20261021' || github.base_ref == 'codex/xix-program-finish-estimate-20261021' || github.base_ref == 'codex/xix-map-road-geometry-controller-20261021' || github.base_ref == 'codex/xix-home-financial-scope-20261021' || github.base_ref == 'codex/xix-expense-ocr-scan-20261021' || github.base_ref == 'codex/xix-dashboard-pending-operation-20261021' || github.base_ref == 'codex/xix-pdf-summary-row-20261021' || github.base_ref == 'codex/xix-program-postpone-policy-20261021' || github.base_ref == 'codex/xix-program-start-snapshot-20261021' || github.base_ref == 'codex/xix-pdf-decont-input-selection-20261021' || github.base_ref == 'codex/xix-program-schedule-item-removal-20261021' || github.base_ref == 'codex/xix-program-schedule-item-addition-20261021' || github.base_ref == 'codex/xix-home-team-membership-projection-20261021' || github.base_ref == 'codex/xix-program-start-location-resolution-20261021' || github.base_ref == 'codex/xix-expense-duplicate-decision-20261021' || github.base_ref == 'codex/xix-program-graph-state-persistence-20261021' || github.base_ref == 'codex/xix-dashboard-start-record-policy-20261021' || github.base_ref == 'codex/xix-home-location-proximity-policy-20261021' || github.base_ref == 'codex/xix-home-active-schedule-policy-20261021' || github.base_ref == 'codex/xix-home-arrival-candidate-policy-20261021' || github.base_ref == 'codex/xix-home-gps-sampling-profile-20261021' || github.base_ref == 'codex/xix-dashboard-operational-status-20261021' || github.base_ref == 'codex/xix-expense-optional-ocr-prefill-20261021' || github.base_ref == 'codex/xix-home-live-location-resources-20261021' || github.base_ref == 'codex/xix-map-route-line-presentation-20261021' || github.base_ref == 'codex/xix-dashboard-active-record-selection-20261021' || github.base_ref == 'codex/xix-home-locality-label-20261021' || github.head_ref == 'codex/xix-home-location-proximity-policy-20261021' || github.head_ref == 'codex/xix-dashboard-start-record-policy-20261021' || github.head_ref == 'codex/xix-program-graph-state-persistence-20261021' || github.base_ref == 'codex/xix-expense-duplicate-decision-20261021' || github.head_ref == 'codex/xix-consolidated-integration-wip-20261020' || github.head_ref == 'codex/xix-consolidated-geofence-contract-20261020' || github.head_ref == 'codex/xix-home-arrival-idempotence-20261020' || github.head_ref == 'codex/xix-dashboard-live-label-20261020' || github.head_ref == 'codex/xix-pdf-delivery-adapter-20261020' || github.head_ref == 'codex/xix-expense-settlement-selection-20261021' || github.head_ref == 'codex/xix-program-pending-items-20261021'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Test financial summary PDF projection contract
+        run: flutter test test/financial_summary_row_projection_test.dart
+      - name: Test decont PDF financial input selection contract
+        run: flutter test test/decont_financial_input_selection_test.dart
+      - name: Test Program postpone policy contract
+        run: flutter test test/program_postpone_policy_test.dart
+      - name: Test Program START snapshot contract
+        run: flutter test test/program_start_snapshot_test.dart
+      - name: Test Program schedule item removal contract
+        run: flutter test test/program_schedule_item_removal_test.dart
+      - name: Test Program schedule item creation contract
+        run: flutter test test/program_schedule_item_creation_test.dart
+      - name: Test Home team membership projection contract
+        run: flutter test test/home_team_membership_projection_test.dart
+      - name: Test Program START location resolution contract
+        run: flutter test test/program_start_location_resolution_test.dart
+      - name: Test Program graph-state persistence contract
+        run: flutter test test/program_graph_state_persistence_test.dart
+      - name: Test Dashboard start record policy contract
+        run: flutter test test/dashboard_start_record_policy_test.dart
+      - name: Test Home location proximity contract
+        run: flutter test test/home_location_proximity_policy_test.dart
+      - name: Test Home active schedule policy contract
+        run: flutter test test/home_active_schedule_policy_test.dart
+      - name: Test Home arrival candidate policy contract
+        run: flutter test test/home_arrival_candidate_policy_test.dart
+      - name: Test Home GPS sampling profile contract
+        run: flutter test test/home_location_sampling_profile_test.dart
+      - name: Test Home live location resources contract
+        run: flutter test test/home_live_location_resources_test.dart
+      - name: Test Home live locality label contract
+        run: flutter test test/home_live_locality_label_test.dart
+      - name: Test Dashboard operational status policy contract
+        run: flutter test test/dashboard_operational_status_test.dart
+      - name: Test Expenses duplicate decision contract
+        run: flutter test test/expense_duplicate_decision_test.dart
+      - name: Test Dashboard pending operation contract
+        run: flutter test test/dashboard_pending_operation_test.dart
+      - name: Test Dashboard active record selection contract
+        run: flutter test test/dashboard_record_selection_test.dart
+      - name: Test Expenses OCR scan contract
+        run: flutter test test/expense_ocr_scan_test.dart
+      - name: Test optional Expense OCR prefill contract
+        run: flutter test test/expense_optional_ocr_prefill_test.dart
+      - name: Test Home financial subscription scope contract
+        run: flutter test test/home_financial_sync_scope_test.dart
+      - name: Test Mapbox road geometry controller contract
+        run: flutter test test/map_road_geometry_controller_test.dart
+      - name: Test Map route line presentation contract
+        run: flutter test test/map_route_line_presentation_test.dart
+      - name: Verify native evidence validator contract
+        run: python3 -m unittest discover -s test -p 'xix_native_evidence_test.py'
+      - name: Reproduce pinned legacy comparison and operational-day defects
+        run: |
+          mkdir -p xix-evidence
+          cp lib/operations/record_writer.dart /tmp/xix-record-writer-fixed.dart
+          cp lib/operations/atomic_restore.dart /tmp/xix-restore-fixed.dart
+          cp lib/utils/operational_dates.dart /tmp/xix-operational-dates-fixed.dart
+          git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/operations/record_writer.dart > lib/operations/record_writer.dart
+          git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/operations/atomic_restore.dart > lib/operations/atomic_restore.dart
+          git show 8024722d41b738c23b3949fe5ec0fbac5102be1b:lib/utils/operational_dates.dart > /tmp/xix-pinned-dates.dart
+          python3 - <<'PY'
+          from pathlib import Path
+          # API-only adapter: keep the pinned legacy implementation and defects,
+          # while current Home compiles against the added optional session guard.
+          writer=Path('lib/operations/record_writer.dart')
+          source=writer.read_text()
+          signature='Map<String, dynamic>? expected}) async {'
+          assert source.count(signature)==1
+          writer.write_text(source.replace(signature,'Map<String, dynamic>? expected, bool Function()? canContinue}) async {'))
+          p=Path('lib/utils/operational_dates.dart')
+          fixed=Path('/tmp/xix-operational-dates-fixed.dart').read_text()
+          old=Path('/tmp/xix-pinned-dates.dart').read_text()
+          start='bool recordBelongsToWorkDate('; end='DateTime recordEventTime('
+          p.write_text(fixed[:fixed.index(start)]+old[old.index(start):old.index(end)]+fixed[fixed.index(end):])
+          PY
+          if flutter test --reporter=json test/record_writer_test.dart test/centralizer_operational_day_test.dart test/atomic_restore_preflight_test.dart > xix-evidence/pinned-red.log 2>&1; then
+            echo 'Expected pinned defects were not reproduced'; exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          names={};failed=[]
+          for line in open('xix-evidence/pinned-red.log'):
+              try: e=json.loads(line)
+              except ValueError: continue
+              if e.get('type')=='testStart': names[e['test']['id']]=e['test']['name']
+              if e.get('type')=='testDone' and e.get('result')=='failure': failed.append(names[e['testID']])
+          assert set(failed)=={'independently decoded nested legacy metadata compares by value','real daytime and late-evening executions do not expire at 12:30','oversized restore is rejected before database inventory','empty restore cannot write successful metadata'},failed
+          print('Four pinned behavior defects reproduced; compilation succeeded.')
+          PY
+          cp /tmp/xix-record-writer-fixed.dart lib/operations/record_writer.dart
+          cp /tmp/xix-restore-fixed.dart lib/operations/atomic_restore.dart
+          cp /tmp/xix-operational-dates-fixed.dart lib/utils/operational_dates.dart
+          flutter test test/record_writer_test.dart test/centralizer_operational_day_test.dart test/atomic_restore_preflight_test.dart > xix-evidence/fixed-green.log 2>&1
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Verify mobile Graph creation before native packaging
+        run: flutter test test/program_graph_creation_test.dart test/centralizer_correction_dialog_test.dart
+      - name: Build operational APK without running live backend
+        run: |
+          flutter build apk --debug
+          mkdir -p xix-evidence
+          cp build/app/outputs/flutter-apk/app-debug.apk xix-evidence/operational-debug.apk
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt | sort -V | tail -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$AAPT" dump badging xix-evidence/operational-debug.apk > xix-evidence/operational-metadata.txt
+          "$AAPT" dump permissions xix-evidence/operational-debug.apk >> xix-evidence/operational-metadata.txt
+          "$APKSIGNER" verify --print-certs xix-evidence/operational-debug.apk > xix-evidence/operational-cert.txt
+          sha256sum xix-evidence/operational-debug.apk > xix-evidence/SHA256SUMS
+      - name: Compile release candidate without production signing or publication
+        if: github.event_name == 'pull_request'
+        run: |
+          flutter build apk --release --dart-define=MAPBOX_ACCESS_TOKEN=
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt | sort -V | tail -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$AAPT" dump badging build/app/outputs/flutter-apk/app-release.apk > xix-evidence/release-test-metadata.txt
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk > xix-evidence/release-test-cert.txt
+      - name: Configure temporary emulator backend only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle.kts');p.write_text(p.read_text().replace('    id("com.google.gms.google-services")','    // No native production Firebase auto-init in emulator build'))
+          p=Path('android/app/src/debug/AndroidManifest.xml')
+          p.write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.INTERNET"/><application android:networkSecurityConfig="@xml/xix_emulator_network"/></manifest>')
+          p=Path('android/app/src/debug/res/xml/xix_emulator_network.xml');p.parent.mkdir(parents=True,exist_ok=True)
+          p.write_text('<network-security-config><base-config cleartextTrafficPermitted="false"/><domain-config cleartextTrafficPermitted="true"><domain>10.0.2.2</domain><domain>127.0.0.1</domain><domain>localhost</domain></domain-config></network-security-config>')
+          PY
+          npm install --no-save --no-package-lock firebase-tools@14
+          npm ci --prefix functions
+          test -e /dev/kvm
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify Flutter retains the operational app after integration tests
+        run: |
+          flutter test --help > xix-evidence/flutter-test-help.txt
+          grep -q -- '--no-uninstall' xix-evidence/flutter-test-help.txt
+      - name: Native connected component flow and operational app restart
+        uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-boot-timeout: 600
+          script: npx firebase emulators:exec --only auth,firestore,functions --project demo-andi-xix --config firebase.xix-test.json 'bash scripts/run_xix_native.sh'
+      - name: Verify native PDF and checksums
+        if: always()
+        run: |
+          if test -f xix-evidence/native-flow.pdf && test -f xix-evidence/observations.json; then
+            python3 scripts/verify_xix_native_evidence.py
+            sudo apt-get update -qq
+            sudo apt-get install -y poppler-utils
+            pdfinfo xix-evidence/native-flow.pdf > xix-evidence/native-pdf-info.txt
+            pdftotext -layout xix-evidence/native-flow.pdf xix-evidence/native-flow.txt
+            python3 scripts/verify_xix_pdf_text.py
+            pdfinfo xix-evidence/decont-flow.pdf > xix-evidence/decont-pdf-info.txt
+            pdftotext -layout xix-evidence/decont-flow.pdf xix-evidence/decont-flow.txt
+            python3 scripts/verify_xix_decont_pdf_text.py
+          else
+            echo "Native evidence absent: no PDF verification claimed; inspect native step and emulator logs" >&2
+            exit 1
+          fi
+          cp pubspec.lock xix-evidence/pubspec.lock
+          find xix-evidence -name '*.apk' -o -name '*.pdf' | sort | xargs -r sha256sum > xix-evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: XIX-candidate-${{ github.event.pull_request.head.sha }}
+          path: xix-evidence/
+          retention-days: 7

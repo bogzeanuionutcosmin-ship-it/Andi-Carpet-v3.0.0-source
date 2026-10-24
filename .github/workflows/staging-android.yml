@@ -1,0 +1,61 @@
+name: Isolated staging Android preparation
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: staging-android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  staging-apk:
+    if: vars.ANDICARPET_STAGING_ANDROID_CONFIG != '' && vars.ANDICARPET_STAGING_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Validate isolated public Firebase Android configuration
+        env:
+          STAGING_ANDROID_CONFIG: ${{ vars.ANDICARPET_STAGING_ANDROID_CONFIG }}
+          EXPECTED_STAGING_PROJECT: ${{ vars.ANDICARPET_STAGING_PROJECT_ID }}
+        run: |
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          from scripts.build_staging_android import validate_config
+          config=json.loads(os.environ['STAGING_ANDROID_CONFIG'])
+          options,_=validate_config(config)
+          if options['projectId']!=os.environ['EXPECTED_STAGING_PROJECT']:
+              raise SystemExit('Staging project does not match the approved build variable')
+          Path('/tmp/andi-staging-android.json').write_text(json.dumps(config))
+          PY
+      - name: Build and inspect staging debug APK
+        run: python3 scripts/build_staging_android.py --config /tmp/andi-staging-android.json --output build/staging
+      - name: Include physical test specifications
+        run: |
+          cp docs/release/ANDROID_DEVICE_TEST_MATRIX.md build/staging/
+          cp docs/release/ANDROID_UPGRADE_ROLLBACK_RUNBOOK.md build/staging/
+          cp docs/release/STAGING_ANDROID_BUILD.md build/staging/
+      - name: Upload isolated staging test artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndiCarpet-staging-debug-${{ github.event.pull_request.head.sha || github.sha }}
+          path: build/staging/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove temporary public configuration
+        if: always()
+        run: rm -f /tmp/andi-staging-android.json

@@ -1,0 +1,111 @@
+name: Build testable Android APK
+
+on:
+  push:
+    branches: [fix/grafic-end-to-end-xiv-20261017, fix/application-delivery-xv-20261017]
+  pull_request:
+    branches: [main, fix/grafic-edit-controls-20261017, fix/grafic-end-to-end-xiv-20261017, mission-xix/modular-integration, codex/xix-integrated-home-manual-lifecycle-20261019, codex/xix-manual-entry-midnight-date-20261019, codex/xix-schedule-save-errors-20261020, codex/xix-native-selector-scroll-20261020, codex/xix-dashboard-live-label-20261020, codex/xix-pdf-delivery-adapter-20261020, codex/xix-expense-settlement-selection-20261021, codex/xix-program-pending-items-20261021, codex/xix-program-finish-estimate-20261021, codex/xix-map-road-geometry-controller-20261021, codex/xix-home-financial-scope-20261021, codex/xix-expense-ocr-scan-20261021, codex/xix-dashboard-pending-operation-20261021, codex/xix-pdf-summary-row-20261021, codex/xix-program-postpone-policy-20261021, codex/xix-program-start-snapshot-20261021, codex/xix-pdf-decont-input-selection-20261021, codex/xix-program-schedule-item-removal-20261021, codex/xix-program-schedule-item-addition-20261021, codex/xix-home-team-membership-projection-20261021, codex/xix-program-start-location-resolution-20261021, codex/xix-expense-duplicate-decision-20261021, codex/xix-program-graph-state-persistence-20261021, codex/xix-dashboard-start-record-policy-20261021, codex/xix-home-location-proximity-policy-20261021, codex/xix-home-active-schedule-policy-20261021, codex/xix-home-arrival-candidate-policy-20261021, codex/xix-home-gps-sampling-profile-20261021, codex/xix-dashboard-operational-status-20261021, codex/xix-expense-optional-ocr-prefill-20261021, codex/xix-home-live-location-resources-20261021, codex/xix-map-route-line-presentation-20261021, codex/xix-dashboard-active-record-selection-20261021, codex/xix-home-locality-label-20261021]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-apk-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debug-apk:
+    name: Analyze, test, and package debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Test Mapbox road geometry controller contract
+        run: flutter test test/map_road_geometry_controller_test.dart
+      - name: Test Map route line presentation contract
+        run: flutter test test/map_route_line_presentation_test.dart
+      - name: Test Home financial subscription scope contract
+        run: flutter test test/home_financial_sync_scope_test.dart
+      - name: Test Expenses OCR scan contract
+        run: flutter test test/expense_ocr_scan_test.dart
+      - name: Test optional Expense OCR prefill contract
+        run: flutter test test/expense_optional_ocr_prefill_test.dart
+      - name: Test Dashboard pending operation contract
+        run: flutter test test/dashboard_pending_operation_test.dart
+      - name: Test Dashboard active record selection contract
+        run: flutter test test/dashboard_record_selection_test.dart
+      - name: Test Home live locality label contract
+        run: flutter test test/home_live_locality_label_test.dart
+      - name: Test financial summary PDF projection contract
+        run: flutter test test/financial_summary_row_projection_test.dart
+      - name: Test decont PDF financial input selection contract
+        run: flutter test test/decont_financial_input_selection_test.dart
+      - name: Test Program postpone policy contract
+        run: flutter test test/program_postpone_policy_test.dart
+      - name: Test Program START snapshot contract
+        run: flutter test test/program_start_snapshot_test.dart
+      - name: Test Program schedule item removal contract
+        run: flutter test test/program_schedule_item_removal_test.dart
+      - name: Test Program schedule item creation contract
+        run: flutter test test/program_schedule_item_creation_test.dart
+      - name: Test Home team membership projection contract
+        run: flutter test test/home_team_membership_projection_test.dart
+      - name: Test Program START location resolution contract
+        run: flutter test test/program_start_location_resolution_test.dart
+      - name: Test Program graph-state persistence contract
+        run: flutter test test/program_graph_state_persistence_test.dart
+      - name: Test Dashboard start record policy contract
+        run: flutter test test/dashboard_start_record_policy_test.dart
+      - name: Test Home location proximity contract
+        run: flutter test test/home_location_proximity_policy_test.dart
+      - name: Test Home active schedule policy contract
+        run: flutter test test/home_active_schedule_policy_test.dart
+      - name: Test Home arrival candidate policy contract
+        run: flutter test test/home_arrival_candidate_policy_test.dart
+      - name: Test Home GPS sampling profile contract
+        run: flutter test test/home_location_sampling_profile_test.dart
+      - name: Test Home live location resources contract
+        run: flutter test test/home_live_location_resources_test.dart
+      - name: Test Dashboard operational status policy contract
+        run: flutter test test/dashboard_operational_status_test.dart
+      - name: Test Expenses duplicate decision contract
+        run: flutter test test/expense_duplicate_decision_test.dart
+      - name: Analyze application
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Test schedule team selection
+        run: flutter test test/program_team_selection_test.dart test/program_graph_creation_test.dart
+      - name: Test Centralizator correction snapshot behavior
+        run: flutter test test/centralizer_correction_snapshot_test.dart test/centralizer_correction_dialog_test.dart
+      - name: Test Centralizator operational-day behavior
+        run: flutter test test/centralizer_operational_day_test.dart
+      - name: Test Centralizator PDF projection
+        run: flutter test test/centralizer_pdf_projection_test.dart
+      - name: Build debug APK
+        run: flutter build apk --debug --dart-define=ANDICARPET_EMULATOR_HOST=10.0.2.2
+      - name: Verify APK package metadata
+        run: |
+          APK=build/app/outputs/flutter-apk/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/aapt" dump badging "$APK" | tee /tmp/andi-apk-badging.txt
+          grep -Fq "package: name='com.example.andi_carpeta'" /tmp/andi-apk-badging.txt
+          grep -Fq "sdkVersion:'24'" /tmp/andi-apk-badging.txt
+      - name: Upload test-only APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndiCarpet-debug-${{ github.event.pull_request.head.sha || github.sha }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7

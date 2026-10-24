@@ -1,8 +1,30 @@
 part of '../main.dart';
 
+/// Keeps the schedule screen on a team accepted by the same access callback
+/// that guards rendering and writes. The fallback preserves read-only browsing
+/// when the user has no team assignment.
+int preferredProgramTeamIndex({
+  required List<Team> teams,
+  required int currentIndex,
+  required bool Function(String teamId) canEditTeam,
+}) {
+  if (teams.isEmpty) return -1;
+  if (currentIndex < 0 || currentIndex >= teams.length) {
+    return currentIndex.clamp(0, teams.length - 1).toInt();
+  }
+  final selectedIsEditable = currentIndex >= 0 &&
+      currentIndex < teams.length &&
+      canEditTeam(teams[currentIndex].id);
+  if (selectedIsEditable) return currentIndex;
+  final editableIndex = teams.indexWhere((team) => canEditTeam(team.id));
+  return editableIndex >= 0
+      ? editableIndex
+      : currentIndex.clamp(0, teams.length - 1).toInt();
+}
+
 class ProgramPage extends StatefulWidget {
-  final AppUser currentUser; final List<Team> teams; final List<Car> cars; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final bool Function(String) canEditTeam; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final void Function(String,String,String) notifyTeam; final void Function(String,String) log; final Future<void> Function(WorkSchedule) saveSchedule;
-  const ProgramPage({super.key, required this.currentUser, required this.teams, required this.cars, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.canEditTeam, required this.canEditProgram, required this.userName, required this.onChanged, required this.notifyTeam, required this.log, required this.saveSchedule});
+  final AppUser currentUser; final List<Team> teams; final List<Car> cars; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final bool Function(String) canEditTeam; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final void Function(String,String,String) notifyTeam; final void Function(String,String) log; final Future<void> Function(List<WorkSchedule>) saveSchedules; final Future<Map<String,dynamic>?> Function(String query)? geocodeTripPoint; final Future<void> Function(List<WorkSchedule>)? closeGraph;
+  const ProgramPage({super.key, required this.currentUser, required this.teams, required this.cars, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.canEditTeam, required this.canEditProgram, required this.userName, required this.onChanged, required this.notifyTeam, required this.log, required this.saveSchedules, this.geocodeTripPoint, this.closeGraph});
   @override State<ProgramPage> createState() => _ProgramPageState();
 }
 class _ProgramPageState extends State<ProgramPage> {
@@ -32,15 +54,11 @@ class _ProgramPageState extends State<ProgramPage> {
     if (id == null) return <WorkSchedule>[];
     return teamSchedules.where((s) => s.graphId == id).toList()..sort((a,b)=>a.date.compareTo(b.date));
   }
-  List<String> get graphIds {
-    final out = <String>[];
-    for (final s in teamSchedules) { if (!out.contains(s.graphId)) out.add(s.graphId); }
-    out.sort((a,b) {
-      DateTime first(String id) => teamSchedules.where((s)=>s.graphId==id).map((s)=>s.date).reduce((x,y)=>y.isBefore(x)?y:x);
-      return first(b).compareTo(first(a));
-    });
-    return out;
-  }
+  List<String> get graphIds => orderedProgramGraphIds<WorkSchedule>(
+    schedules: teamSchedules,
+    graphIdOf: (schedule) => schedule.graphId,
+    dateOf: (schedule) => schedule.date,
+  );
   WorkSchedule? get graphHead => graphSchedules.isEmpty ? null : graphSchedules.first;
   Car? get assignedCar {
     final id = team.carId;
@@ -50,40 +68,46 @@ class _ProgramPageState extends State<ProgramPage> {
   }
 
   CentralizerRecord? _latestRecordForItem(ScheduleItem item, DateTime workDate) {
-    final rs = widget.records.where((r) =>
-      r.teamId == team.id && r.locationId == item.locationId && recordBelongsToWorkDate(r, workDate)
-    ).toList()..sort((a,b)=>recordEventTime(a).compareTo(recordEventTime(b)));
+    final rs = selectWorkDateRecords(
+      widget.records,
+      teamId: team.id,
+      locationId: item.locationId,
+      teamIdOf: (record) => record.teamId,
+      locationIdOf: (record) => record.locationId,
+      belongsToWorkDate: (record) => recordBelongsToWorkDate(record, workDate),
+    )..sort((a,b)=>recordEventTime(a).compareTo(recordEventTime(b)));
     return rs.isEmpty ? null : rs.last;
   }
 
   Duration? _averageDurationForLocation(String locationId) => learnedAverageDuration(widget.records, locationId, widget.settings);
 
   List<ScheduleItem> _pendingItemsForDay(WorkSchedule day, DateTime workDate, {bool includeActive = true}) {
-    return day.items.where((item){
-      final r = _latestRecordForItem(item, workDate);
-      if (r?.status == WorkAttemptStatus.completed || r?.status == WorkAttemptStatus.refused || r?.status == WorkAttemptStatus.notCompleted) return false;
-      if (!includeActive && (r?.status == WorkAttemptStatus.running || r?.status == WorkAttemptStatus.waitingAccess)) return false;
-      return true;
-    }).toList();
+    return pendingProgramItems<ScheduleItem, CentralizerRecord>(
+      items: day.items,
+      latestRecordForItem: (item) => _latestRecordForItem(item, workDate),
+      isTerminal: (record) =>
+          record?.status == WorkAttemptStatus.completed ||
+          record?.status == WorkAttemptStatus.refused ||
+          record?.status == WorkAttemptStatus.notCompleted,
+      isActive: (record) =>
+          record?.status == WorkAttemptStatus.running ||
+          record?.status == WorkAttemptStatus.waitingAccess,
+      includeActive: includeActive,
+    );
   }
 
   DateTime? _estimatedEndForDay(WorkSchedule day, DateTime now) {
     final workDate = operationalWorkDate(now);
     final pending = _pendingItemsForDay(day, workDate);
-    if (pending.isEmpty) return now;
-    var seconds = 0;
-    for (final item in pending) {
-      final avg = _averageDurationForLocation(item.locationId);
-      if (avg == null) return null;
-      final r = _latestRecordForItem(item, workDate);
-      if (r?.status == WorkAttemptStatus.running && r?.startedAt != null) {
-        final elapsed = now.difference(r!.startedAt!).inSeconds;
-        seconds += (avg.inSeconds - elapsed).clamp(0, avg.inSeconds).toInt();
-      } else {
-        seconds += avg.inSeconds;
-      }
-    }
-    return now.add(Duration(seconds: seconds));
+    return estimateProgramFinish<ScheduleItem, CentralizerRecord>(
+      now: now,
+      pendingItems: pending,
+      averageDurationForItem: (item) =>
+          _averageDurationForLocation(item.locationId),
+      latestRecordForItem: (item) => _latestRecordForItem(item, workDate),
+      isRunning: (record) => record?.status == WorkAttemptStatus.running,
+      startedAt: (record) => record?.startedAt,
+    );
   }
 
   String? _planRiskReason(WorkSchedule day, DateTime now) {
@@ -121,10 +145,10 @@ class _ProgramPageState extends State<ProgramPage> {
         DateTime.now().difference(day.planAlertAt!).inHours < 4) return;
     _planAlertInFlight.add(day.id);
     try {
-      final updated = _cloneSchedule(day);
+      final updated = cloneWorkSchedule(day);
       updated.planAlertAt = DateTime.now();
       updated.planAlertReason = reason;
-      await widget.saveSchedule(updated);
+      await widget.saveSchedules(<WorkSchedule>[updated]);
       widget.notifyTeam(team.id, 'Planul zilei este în risc', '${updated.graphName} · ${formatDate(updated.date)} · $reason');
       widget.log('Plan nerespectat / risc întârziere', '${team.name} · ${updated.graphName} · ${formatDate(updated.date)} · $reason');
       final routing = widget.settings.learning['routing'];
@@ -437,7 +461,7 @@ class _ProgramPageState extends State<ProgramPage> {
       ))??false;
       if(!ok)return false;
     }
-    final updated = _cloneSchedule(day);
+    final updated = cloneWorkSchedule(day);
     final movableIds = movable.map((e)=>e.locationId).toSet();
     var p = 0;
     for (var i=0;i<updated.items.length;i++) {
@@ -456,7 +480,7 @@ class _ProgramPageState extends State<ProgramPage> {
     if (mapboxSuggested) {
       updated.learningExplanation = '${updated.learningExplanation} Propunere Mapbox verificată rutier și aprobată de utilizator.';
     }
-    await widget.saveSchedule(updated);
+    await widget.saveSchedules(<WorkSchedule>[updated]);
     unawaited(_recordRoutingChoice(updated, automatic ? 'automatic_route_applied' : 'assisted_route_applied'));
     final label = automatic ? 'Recalculare automată traseu' : 'Recalculare asistată traseu';
     widget.log(label, '${team.name} · ${updated.graphName} · ${formatDate(updated.date)} · ${oldKm.toStringAsFixed(1)} km → ${newKm.toStringAsFixed(1)} km');
@@ -476,7 +500,7 @@ class _ProgramPageState extends State<ProgramPage> {
       actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Transferă'))],
     ))??false;
     if(!ok)return;
-    final current = _cloneSchedule(day);
+    final current = cloneWorkSchedule(day);
     final ids = transferable.map((e)=>e.locationId).toSet();
     current.items.removeWhere((e)=>ids.contains(e.locationId));
     for(var i=0;i<current.items.length;i++)current.items[i].order=i+1;
@@ -484,12 +508,12 @@ class _ProgramPageState extends State<ProgramPage> {
     for(final s in graphSchedules){if(sameDay(s.date,nextDate)){existingNext=s;break;}}
     final next = existingNext==null
       ? WorkSchedule(id:idNow(),teamId:day.teamId,graphId:day.graphId,graphName:day.graphName,date:nextDate,items:<ScheduleItem>[],active:true,started:day.started)
-      : _cloneSchedule(existingNext);
-    final moved = transferable.map((e)=>ScheduleItem(locationId:e.locationId,locationNameSnapshot:e.locationNameSnapshot,addressSnapshot:e.addressSnapshot,typeSnapshot:e.typeSnapshot,categoryIdSnapshot:e.categoryIdSnapshot,order:0,transferred:true,facadePlanned:e.facadePlanned)).toList();
+      : cloneWorkSchedule(existingNext);
+    final moved = transferable.map((e)=>ScheduleItem(interventionId:e.interventionId,locationId:e.locationId,locationNameSnapshot:e.locationNameSnapshot,addressSnapshot:e.addressSnapshot,typeSnapshot:e.typeSnapshot,categoryIdSnapshot:e.categoryIdSnapshot,order:0,transferred:true,facadePlanned:e.facadePlanned)).toList();
     next.items = <ScheduleItem>[...moved,...next.items.where((x)=>!ids.contains(x.locationId))];
     for(var i=0;i<next.items.length;i++)next.items[i].order=i+1;
-    await widget.saveSchedule(current);
-    await widget.saveSchedule(next);
+    try { await widget.saveSchedules(<WorkSchedule>[current, next]); } catch (e) { if (mounted) showErrorMessage(context, 'Transferul nu a putut fi salvat: ${scheduleSaveFailureMessage(e)}'); return; }
+    widget.onChanged();
     widget.log('Transfer locații între zile','${team.name} · ${day.graphName} · ${formatDate(day.date)} → ${formatDate(nextDate)} · ${transferable.length} locații');
     widget.notifyTeam(team.id,'Locații transferate','${transferable.length} locații au fost mutate în ${formatDate(nextDate)}.');
     if(mounted)showSuccessMessage(context,'${transferable.length} locații au fost transferate în ziua următoare.');
@@ -505,9 +529,15 @@ class _ProgramPageState extends State<ProgramPage> {
 
   @override Widget build(BuildContext context) {
     if (widget.teams.isEmpty) return const _Page(title:'Grafic de lucru',subtitle:'Planificare lunară simplificată',child:_Empty(icon:Icons.groups_outlined,text:'Nu există încă nicio echipă.'));
-    if (teamIndex >= widget.teams.length) teamIndex = 0;
+    teamIndex = preferredProgramTeamIndex(
+      teams: widget.teams,
+      currentIndex: teamIndex,
+      canEditTeam: widget.canEditTeam,
+    );
     _ensureGraphSelection();
     final can = widget.canEditProgram && widget.canEditTeam(team.id);
+    final canAdministerGraph = widget.currentUser.role == UserRole.director;
+    final isTeamMember = widget.canEditTeam(team.id);
     final head = graphHead;
     final car = assignedCar;
     final km = estimateGraphDistanceKm(graphSchedules, widget.locations);
@@ -543,10 +573,20 @@ class _ProgramPageState extends State<ProgramPage> {
       child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
         _TeamSelector(teams:widget.teams,selected:teamIndex,onChanged:(v)=>setState((){teamIndex=v;selectedGraphId=null;})),
         const SizedBox(height:10),
+        if(!can) Padding(padding:const EdgeInsets.symmetric(vertical:8),child:_InfoCard(
+          icon:Icons.lock_outline,
+          title:!isTeamMember?'Nu ești repartizat în echipa ${team.name}':'Lipsește dreptul de editare a graficului',
+          text:!isTeamMember
+              ?'Administratorul trebuie să te adauge în Admin → Echipe → ${team.name}. Graficul poate fi citit, dar editarea rămâne blocată până când apartenența este confirmată de Firestore.'
+              :!widget.canEditProgram
+                  ?'Contul tău este în echipa selectată, dar funcția atribuită nu are dreptul „Poate modifica graficul de lucru”. Cere unui Admin să verifice Admin → Membri / Conturi → Funcții și dreptul editProgram.'
+                  :'Accesul echipei sau drepturile contului s-au schimbat. Reîncarcă aplicația și cere administratorului să verifice repartizarea echipei și dreptul editProgram.',
+        )),
         if(graphIds.isNotEmpty) DropdownButtonFormField<String>(
+          isExpanded:true,
           value:selectedGraphId,
           decoration:const InputDecoration(labelText:'Grafic de lucru'),
-          items:graphIds.map((id){final first=teamSchedules.firstWhere((x)=>x.graphId==id);final days=teamSchedules.where((x)=>x.graphId==id).length;return DropdownMenuItem(value:id,child:Text('${first.graphName} · $days zile'));}).toList(),
+          items:graphIds.map((id){final first=teamSchedules.firstWhere((x)=>x.graphId==id);final days=teamSchedules.where((x)=>x.graphId==id).length;return DropdownMenuItem(value:id,child:Text('${first.graphName} · $days zile',maxLines:1,overflow:TextOverflow.ellipsis));}).toList(),
           onChanged:(v)=>setState(()=>selectedGraphId=v),
         ) else const _InfoCard(icon:Icons.calendar_month,title:'Niciun grafic creat',text:'Apasă „Creează grafic”. Alegi sălile pentru Ziua 1, apoi mergi direct la Ziua 2 fără să închizi fereastra.'),
         if(head!=null)...[
@@ -583,8 +623,8 @@ class _ProgramPageState extends State<ProgramPage> {
               const SizedBox(height:10),
               Wrap(spacing:8,runSpacing:8,children:[
                 if(!head.started&&!head.closed) FilledButton.icon(onPressed:_startGraph,icon:const Icon(Icons.play_arrow),label:const Text('START GRAFIC')),
-                if(head.started&&!head.closed&&!head.paused) OutlinedButton.icon(onPressed:_pauseGraph,icon:const Icon(Icons.pause),label:const Text('Pauză')),
-                if(head.started&&!head.closed&&head.paused) FilledButton.tonalIcon(onPressed:_resumeGraph,icon:const Icon(Icons.play_circle_outline),label:const Text('Reia')),
+                if(canAdministerGraph&&head.started&&!head.closed&&!head.paused) OutlinedButton.icon(onPressed:_pauseGraph,icon:const Icon(Icons.pause),label:const Text('Pauză')),
+                if(canAdministerGraph&&head.started&&!head.closed&&head.paused) FilledButton.tonalIcon(onPressed:_resumeGraph,icon:const Icon(Icons.play_circle_outline),label:const Text('Reia')),
                 if(head.started&&!head.closed) OutlinedButton.icon(onPressed:_postponeGraph,icon:const Icon(Icons.event_repeat),label:const Text('Amână program')),
                 if(todayDay!=null&&!head.closed) OutlinedButton.icon(onPressed:todayTransferable.length<2?null:()=>_recalculateRemainingRoute(todayDay!),icon:const Icon(Icons.alt_route),label:const Text('Recalculează traseul rămas')),
                 if(todayDay!=null&&!head.closed) OutlinedButton.icon(onPressed:todayTransferable.isEmpty?null:()=>_transferRemainingToNextDay(todayDay!),icon:const Icon(Icons.move_down),label:const Text('Transferă rămase')),
@@ -596,15 +636,20 @@ class _ProgramPageState extends State<ProgramPage> {
           RepaintBoundary(key:_graphCaptureKey,child:_graphOverview()),
           if(can&&!head.closed)...[
             const SizedBox(height:12),
-            ExpansionTile(
+            Material(
+              color: Colors.transparent,
+              child: ExpansionTile(
+              initiallyExpanded:true,
               title:const Text('Editare zile',style:TextStyle(fontWeight:FontWeight.bold)),
-              subtitle:const Text('Adaugă, scoate sau schimbă ordinea locațiilor după finalizarea graficului.'),
+              subtitle:const Text('Adaugă sau elimină locații; trage de mânerul din dreapta pentru a schimba ordinea.'),
               children:graphSchedules.map((s)=>Padding(padding:const EdgeInsets.only(bottom:10),child:_ScheduleCardFull(
                 schedule:s,locations:widget.locations,categories:widget.categories,records:widget.records,canEdit:can,
                 onAdd:()=>_addLocations(s),onRemove:(item)=>unawaited(_removeItem(s,item)),onReorder:(a,b)=>unawaited(_reorder(s,a,b)),
               ))).toList(),
+              ),
             ),
           ],
+          if(can&&head.closed) const Padding(padding:EdgeInsets.symmetric(vertical:8),child:_InfoCard(icon:Icons.lock_clock_outlined,title:'Grafic închis',text:'Editarea locațiilor este blocată după închiderea graficului.')),
           const SizedBox(height:8),
           if (!routeData.complete) Card(child: ListTile(leading: const Icon(Icons.warning_amber_rounded), title: const Text('Traseu GPS incomplet'), subtitle: Text('Completează coordonatele pentru: ${[if(routeData.missingDeparture) 'plecare', ...routeData.missingLocations, if(routeData.missingDestination) 'destinație'].join(', ')}. Km și consumul nu pot fi estimate corect.'))),
           if (routeData.complete && routeData.points.length >= 2)
@@ -682,27 +727,74 @@ class _ProgramPageState extends State<ProgramPage> {
       final selected=days[dayIndex];
       final filtered=available.where((l){final q=query.trim().toLowerCase();return q.isEmpty||l.name.toLowerCase().contains(q)||l.address.toLowerCase().contains(q)||categoryName(widget.categories,l.categoryId,fallbackType:l.type).toLowerCase().contains(q);}).toList();
       return AlertDialog(
+        insetPadding:const EdgeInsets.symmetric(horizontal:16,vertical:8),
         title:Text('Creează grafic · Ziua ${dayIndex+1}'),
-        content:SizedBox(width:760,height:MediaQuery.sizeOf(c).height*.72,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Wrap(spacing:6,runSpacing:6,children:days.asMap().entries.map((e)=>ChoiceChip(label:Text('Ziua ${e.key+1} · ${e.value.length}'),selected:e.key==dayIndex,onSelected:(_)=>setD((){dayIndex=e.key;query='';}))).toList()),
-          const SizedBox(height:8),
-          if(selected.isNotEmpty) Container(width:double.infinity,padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:Theme.of(c).colorScheme.primaryContainer.withValues(alpha:.45),borderRadius:BorderRadius.circular(12)),child:Wrap(spacing:6,runSpacing:6,children:selected.asMap().entries.map((e){final l=available.firstWhere((x)=>x.id==e.value);return Chip(label:Text('${e.key+1}. ${l.name}'),onDeleted:()=>setD(()=>selected.remove(e.value)));}).toList())),
-          const SizedBox(height:8),
-          TextField(decoration:const InputDecoration(prefixIcon:Icon(Icons.search),labelText:'Caută sală / adresă / categorie'),onChanged:(v)=>setD(()=>query=v)),
-          const SizedBox(height:8),
-          Expanded(child:ListView(children:filtered.map((l)=>CheckboxListTile(
-            value:selected.contains(l.id),
-            secondary: categoryBrandWidget(l.categoryId, size: 28, fallbackColor: categoryColor(widget.categories,l.categoryId,fallbackType:l.type)),
-            title:Text(l.name),subtitle:Text('${categoryName(widget.categories,l.categoryId,fallbackType:l.type)} · ${l.address}'),
-            onChanged:(v)=>setD((){if(v==true){if(!selected.contains(l.id))selected.add(l.id);}else{selected.remove(l.id);}}),
-          )).toList())),
-        ])),
-        actions:[
+        // Keep the search and day controls outside the virtualized list.
+        // Growing selection chips must not move location rows underneath the
+        // fixed dialog actions or hide the search on keyboard-sized screens.
+        content:SizedBox(width:760,height:MediaQuery.sizeOf(c).height*.58,
+          child:LayoutBuilder(builder:(c,constraints)=>Column(
+            crossAxisAlignment:CrossAxisAlignment.start,
+            children:[
+              ConstrainedBox(
+                constraints:BoxConstraints(maxHeight:constraints.maxHeight*.55),
+                child:SingleChildScrollView(child:Column(
+                  crossAxisAlignment:CrossAxisAlignment.start,
+                  children:[
+              SizedBox(height:48,child:SingleChildScrollView(
+                scrollDirection:Axis.horizontal,
+                child:Row(children:days.asMap().entries.map((e)=>Padding(
+                  padding:const EdgeInsets.only(right:6),
+                  child:ChoiceChip(label:Text('Ziua ${e.key+1} · ${e.value.length}'),
+                    selected:e.key==dayIndex,
+                    onSelected:(_)=>setD((){dayIndex=e.key;query='';})),
+                )).toList()),
+              )),
+              if(selected.isNotEmpty) ConstrainedBox(
+                constraints:BoxConstraints(maxHeight:constraints.maxHeight*.22),
+                child:SingleChildScrollView(child:Container(
+                  width:double.infinity,padding:const EdgeInsets.all(6),
+                  decoration:BoxDecoration(color:Theme.of(c).colorScheme.primaryContainer.withValues(alpha:.45),borderRadius:BorderRadius.circular(12)),
+                  child:Wrap(spacing:6,runSpacing:6,children:selected.asMap().entries.map((e){
+                    final l=available.firstWhere((x)=>x.id==e.value);
+                    return Chip(label:Text('${e.key+1}. ${l.name}'),
+                      onDeleted:()=>setD(()=>selected.remove(e.value)));
+                  }).toList()),
+                )),
+              ),
+              TextField(
+                decoration:const InputDecoration(prefixIcon:Icon(Icons.search),labelText:'Caută sală / adresă / categorie'),
+                onTapOutside:(_)=>FocusScope.of(c).unfocus(),
+                onChanged:(v)=>setD(()=>query=v),
+              ),
+              const SizedBox(height:8),
+                  ],
+                )),
+              ),
+              Expanded(child:CustomScrollView(
+                key:const ValueKey('program-location-picker-list'),
+                keyboardDismissBehavior:ScrollViewKeyboardDismissBehavior.onDrag,
+                slivers:[SliverList(delegate:SliverChildListDelegate(
+                  filtered.map((l)=>CheckboxListTile(
+                    value:selected.contains(l.id),
+                    secondary:categoryBrandWidget(l.categoryId,size:28,fallbackColor:categoryColor(widget.categories,l.categoryId,fallbackType:l.type)),
+                    title:Text(l.name),subtitle:Text('${categoryName(widget.categories,l.categoryId,fallbackType:l.type)} · ${l.address}'),
+                    onChanged:(v){
+                      FocusScope.of(c).unfocus();
+                      setD((){if(v==true){if(!selected.contains(l.id))selected.add(l.id);}else{selected.remove(l.id);}});
+                    },
+                  )).toList(),
+                ))],
+              )),
+            ],
+          )),
+        ),
+        actions:[Wrap(alignment:WrapAlignment.end,spacing:8,runSpacing:8,children:[
           TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),
           if(dayIndex>0) OutlinedButton.icon(onPressed:()=>setD((){dayIndex--;query='';}),icon:const Icon(Icons.arrow_back),label:const Text('Ziua anterioară')),
           FilledButton.tonalIcon(onPressed:selected.isEmpty?null:()=>setD((){if(dayIndex==days.length-1)days.add(<String>[]);dayIndex++;query='';}),icon:const Icon(Icons.arrow_forward),label:const Text('Următoarea zi')),
           FilledButton.icon(onPressed:days.where((d)=>d.isNotEmpty).isEmpty?null:()=>Navigator.pop(c,days.where((d)=>d.isNotEmpty).map((d)=>[...d]).toList()),icon:const Icon(Icons.done_all),label:const Text('Finalizare')),
-        ],
+        ])],
       );
     }));
     if(drafted==null||drafted.isEmpty)return;
@@ -749,37 +841,38 @@ class _ProgramPageState extends State<ProgramPage> {
     if(facadeAccepted!=true)return;
 
     DateTime startDate=operationalWorkDate(DateTime.now());
-    final name=TextEditingController(text:graphDefaultName(startDate));
+    var graphNameInput=graphDefaultName(startDate);
     final meta=await showDialog<Map<String,dynamic>>(context:context,builder:(c)=>StatefulBuilder(builder:(c,setD){
       final endDate=DateTime(startDate.year,startDate.month,startDate.day).add(Duration(days:drafted.length-1));
-      return AlertDialog(title:const Text('Finalizează Graficul de lucru'),content:SizedBox(width:520,child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
-        TextField(controller:name,decoration:const InputDecoration(labelText:'Nume grafic')),
+      return AlertDialog(title:const Text('Finalizează Graficul de lucru'),content:SizedBox(width:520,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        TextFormField(initialValue:graphNameInput,onChanged:(value)=>graphNameInput=value,decoration:const InputDecoration(labelText:'Nume grafic')),
         const SizedBox(height:12),
         ListTile(contentPadding:EdgeInsets.zero,leading:const Icon(Icons.play_circle_outline),title:const Text('Data început'),subtitle:Text(formatDate(startDate)),trailing:const Icon(Icons.calendar_month),onTap:()async{final d=await showDatePicker(context:c,firstDate:DateTime(2025),lastDate:DateTime(2035),initialDate:startDate);if(d!=null)setD(()=>startDate=d);}),
         ListTile(contentPadding:EdgeInsets.zero,leading:const Icon(Icons.flag_outlined),title:const Text('Data final'),subtitle:Text(formatDate(endDate))),
         Text('${drafted.length} zile · ${drafted.fold<int>(0,(a,b)=>a+b.length)} locații selectate'),
-      ])),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Înapoi')),FilledButton(onPressed:()=>Navigator.pop(c,{'name':name.text.trim().isEmpty?graphDefaultName(startDate):name.text.trim(),'start':startDate}),child:const Text('Creează graficul'))]);
+      ]))),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Înapoi')),FilledButton(onPressed:()=>Navigator.pop(c,{'name':graphNameInput.trim().isEmpty?graphDefaultName(startDate):graphNameInput.trim(),'start':startDate}),child:const Text('Creează graficul'))]);
     }));
-    name.dispose();
     if(meta==null)return;
     final graphId=idNow();final graphName=meta['name'] as String;final start=meta['start'] as DateTime;
     try{
+      final created=<WorkSchedule>[];
       for(var d=0;d<drafted.length;d++){
         final date=DateTime(start.year,start.month,start.day).add(Duration(days:d));
         final ids=drafted[d];
         final items=<ScheduleItem>[];
-        for(var i=0;i<ids.length;i++){final l=available.firstWhere((x)=>x.id==ids[i]);items.add(ScheduleItem(locationId:l.id,locationNameSnapshot:l.name,addressSnapshot:l.address,typeSnapshot:l.type,categoryIdSnapshot:l.categoryId,order:i+1,facadePlanned:facadePlanKeys.contains('$d:${l.id}')));}
-        await widget.saveSchedule(WorkSchedule(id:idNow(),teamId:team.id,graphId:graphId,graphName:graphName,date:date,items:items));
+        for(var i=0;i<ids.length;i++){final l=available.firstWhere((x)=>x.id==ids[i]);items.add(ScheduleItem(interventionId:newInterventionId(),locationId:l.id,locationNameSnapshot:l.name,addressSnapshot:l.address,typeSnapshot:l.type,categoryIdSnapshot:l.categoryId,order:i+1,facadePlanned:facadePlanKeys.contains('$d:${l.id}')));}
+        created.add(WorkSchedule(id:idNow(),teamId:team.id,graphId:graphId,graphName:graphName,date:date,items:items));
       }
+      await widget.saveSchedules(created);
       widget.log('Grafic de lucru creat','$graphName · ${drafted.length} zile · ${team.name}');
       widget.notifyTeam(team.id,'Grafic de lucru creat','$graphName · ${drafted.length} zile.');
       if(mounted){setState(()=>selectedGraphId=graphId);showSuccessMessage(context,'Graficul a fost creat cu ${drafted.length} zile.');}
-    }catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi creat: $e');}
+    }catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi creat: ${scheduleSaveFailureMessage(e)}');}
   }
 
   Future<void> _addLocations(WorkSchedule s) async {
     final picked=await _locationDialog(s.items.map((i)=>i.locationId).toList());
-    if(picked==null)return;
+    if(picked==null||!mounted)return;
     final additions=picked.where((l)=>!s.items.any((i)=>i.locationId==l.id)).toList();
     if(additions.isEmpty)return;
     final facadeIds=<String>{};
@@ -796,119 +889,142 @@ class _ProgramPageState extends State<ProgramPage> {
         FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Adaugă')),
       ],
     )));
-    if(accepted!=true)return;
-    final updated=_cloneSchedule(s);var order=updated.items.length+1;
-    for(final l in additions){updated.items.add(ScheduleItem(locationId:l.id,locationNameSnapshot:l.name,addressSnapshot:l.address,typeSnapshot:l.type,categoryIdSnapshot:l.categoryId,order:order++,facadePlanned:facadeIds.contains(l.id)));}
+    if(accepted!=true||!mounted)return;
+    final updated=cloneWorkSchedule(s);updated.items.addAll(createProgramScheduleItems(locations:additions,firstOrder:updated.items.length+1,facadePlannedLocationIds:facadeIds));
     await _saveWithFeedback(updated,success:'Locațiile au fost adăugate în ziua selectată.',auditAction:'Locații adăugate în Grafic');
   }
-  WorkSchedule _cloneSchedule(WorkSchedule s)=>WorkSchedule(id:s.id,teamId:s.teamId,graphId:s.graphId,graphName:s.graphName,date:s.date,items:s.items.map((i)=>ScheduleItem(locationId:i.locationId,locationNameSnapshot:i.locationNameSnapshot,addressSnapshot:i.addressSnapshot,typeSnapshot:i.typeSnapshot,categoryIdSnapshot:i.categoryIdSnapshot,order:i.order,transferred:i.transferred,facadePlanned:i.facadePlanned)).toList(),active:s.active,closed:s.closed,started:s.started,paused:s.paused,postponed:s.postponed,autoProposed:s.autoProposed,planAlertAt:s.planAlertAt,planAlertReason:s.planAlertReason,lastRecalculatedAt:s.lastRecalculatedAt,recalculationCount:s.recalculationCount,learningExplanation:s.learningExplanation,learningConfidence:s.learningConfidence,learningSamples:s.learningSamples,departureName:s.departureName,departureLatitude:s.departureLatitude,departureLongitude:s.departureLongitude,returnName:s.returnName,returnLatitude:s.returnLatitude,returnLongitude:s.returnLongitude);
-  Future<void> _saveWithFeedback(WorkSchedule s,{required String success,required String auditAction})async{try{await widget.saveSchedule(s);widget.log(auditAction,'${team.name} · ${s.graphName} · ${formatDate(s.date)}');widget.notifyTeam(team.id,'Grafic de lucru modificat','${s.graphName} · ${formatDate(s.date)} a fost actualizat.');if(mounted)showSuccessMessage(context,success);}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi salvat: $e');}}
-  Future<void> _applyGraphState({bool? started,bool? closed,bool? paused})async{final items=graphSchedules.map(_cloneSchedule).toList();for(final x in items){if(started!=null)x.started=started;if(closed!=null)x.closed=closed;if(paused!=null)x.paused=paused;await widget.saveSchedule(x);}widget.onChanged();}
+  
+  Future<bool> _saveWithFeedback(WorkSchedule s,{required String success,required String auditAction})async{try{await widget.saveSchedules(<WorkSchedule>[s]);if(!mounted)return true;widget.onChanged();widget.log(auditAction,'${team.name} · ${s.graphName} · ${formatDate(s.date)}');widget.notifyTeam(team.id,'Grafic de lucru modificat','${s.graphName} · ${formatDate(s.date)} a fost actualizat.');showSuccessMessage(context,success);return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi salvat: ${scheduleSaveFailureMessage(e)}');return false;}}
+  Future<bool> _applyGraphState({bool? started,bool? closed,bool? paused})async{try{await saveProgramGraphState(
+      schedules: graphSchedules,
+      clone: cloneWorkSchedule,
+      save: widget.saveSchedules,
+      started: started,
+      closed: closed,
+      paused: paused,
+    );if(!mounted)return true;widget.onChanged();return true;}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi actualizat: ${scheduleSaveFailureMessage(e)}');return false;}}
   Future<Map<String,dynamic>?> _geocodeTripPoint(String query) async {
-    final clean=query.trim();
-    if(clean.isEmpty)return null;
-
-    Map<String,dynamic>? parsePoint(Object? raw){
-      if(raw is! Map)return null;
-      final lat=double.tryParse((raw['lat']??'').toString());
-      final lon=double.tryParse((raw['lon']??'').toString());
-      if(lat==null||lon==null)return null;
-      return {'name':(raw['name']??clean).toString(),'lat':lat,'lon':lon};
-    }
-
-    Future<Map<String,dynamic>?> viaServer() async {
-      try{
-        final token=await FirebaseAuth.instance.currentUser?.getIdToken();
-        if(token==null||token.isEmpty)return null;
-        final response=await http.post(
-          Uri.parse(_geocodeRomaniaPlaceUrl),
-          headers:{'Content-Type':'application/json','Authorization':'Bearer $token'},
-          body:jsonEncode({'query':clean}),
-        ).timeout(const Duration(seconds:12));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        final decoded=jsonDecode(response.body);
-        return parsePoint(decoded);
-      }catch(e){debugPrint('[geocode] Server fallback: $e');return null;}
-    }
-
-    Future<Map<String,dynamic>?> viaNominatim(String value) async {
-      try{
-        final uri=Uri.https('nominatim.openstreetmap.org','/search',{
-          'format':'jsonv2','q':value,'limit':'1','countrycodes':'ro','accept-language':'ro','addressdetails':'1'
-        });
-        final headers=<String,String>{'Accept':'application/json','Accept-Language':'ro'};
-        if(!kIsWeb)headers['User-Agent']='AndiCarpeta/2.0.8 (internal operations app)';
-        final response=await http.get(uri,headers:headers).timeout(const Duration(seconds:10));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        final decoded=jsonDecode(response.body);
-        if(decoded is! List||decoded.isEmpty)return null;
-        return parsePoint(decoded.first);
-      }catch(e){debugPrint('[geocode] Nominatim $value: $e');return null;}
-    }
-
-    // În browser cererea directă către Nominatim poate fi blocată/intermediată
-    // diferit față de Android. Web folosește întâi proxy-ul nostru Firebase.
-    if(kIsWeb){
-      final server=await viaServer();
-      if(server!=null)return server;
-    }
-
-    final candidates=<String>[clean];
-    if(!clean.toLowerCase().contains('românia')&&!clean.toLowerCase().contains('romania'))candidates.add('$clean, România');
-    for(final candidate in candidates){
-      final direct=await viaNominatim(candidate);
-      if(direct!=null)return direct;
-    }
-
-    if(!kIsWeb)return viaServer();
-    return null;
+    return RomaniaPlaceGeocoder(
+      serverEndpoint: Uri.parse(_geocodeRomaniaPlaceUrl),
+      getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
+      get: (uri, {headers}) => http.get(uri, headers: headers),
+      post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),
+      isWeb: kIsWeb,
+      includeName: true,
+      log: (message) => debugPrint(message),
+    ).geocode(query);
   }
 
   Future<void> _startGraph()async{
     final head=graphHead;if(head==null)return;
-    final departure=TextEditingController(text:head.departureName);
-    final destination=TextEditingController(text:head.returnName);
+    var departureInput=head.departureName;
+    var destinationInput=head.returnName;
     final choice=await showDialog<Map<String,String>>(context:context,barrierDismissible:false,builder:(c)=>AlertDialog(
       title:const Text('Pornește Graficul de lucru'),
+      scrollable:true,
       content:SizedBox(width:560,child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
         const Text('Alege punctul real de plecare și punctul în care se termină deplasarea. Acestea sunt folosite numai pentru traseu, kilometri și consum; nu apar în Centralizator.'),
         const SizedBox(height:14),
-        TextField(controller:departure,decoration:const InputDecoration(labelText:'Plecare',hintText:'Ex: Brăila')),
+        TextFormField(initialValue:departureInput,decoration:const InputDecoration(labelText:'Plecare',hintText:'Ex: Brăila'),onChanged:(value)=>departureInput=value),
         const SizedBox(height:10),
-        TextField(controller:destination,decoration:const InputDecoration(labelText:'Întoarcere / destinație finală',hintText:'Ex: Brăila')),
+        TextFormField(initialValue:destinationInput,decoration:const InputDecoration(labelText:'Întoarcere / destinație finală',hintText:'Ex: Brăila'),onChanged:(value)=>destinationInput=value),
       ])),
-      actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,{'departure':departure.text.trim(),'return':destination.text.trim()}),child:const Text('START'))],
+      actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,{'departure':departureInput.trim(),'return':destinationInput.trim()}),child:const Text('START'))],
     ));
-    departure.dispose();destination.dispose();
     if(choice==null)return;
     final departureText=(choice['departure']??'').trim();final returnText=(choice['return']??'').trim();
     if(departureText.isEmpty||returnText.isEmpty){if(mounted)showErrorMessage(context,'Completează atât plecarea, cât și punctul final.');return;}
     if(mounted)showSuccessMessage(context,'Identific punctele de plecare și întoarcere…');
-    final startPoint=await _geocodeTripPoint(departureText);
-    final endPoint=departureText.toLowerCase()==returnText.toLowerCase()?startPoint:await _geocodeTripPoint(returnText);
-    if(startPoint==null||endPoint==null){if(mounted)showErrorMessage(context,'Nu am putut identifica una dintre localități. Scrie localitatea mai explicit, de exemplu „Brăila, România”.');return;}
-    final items=graphSchedules.map(_cloneSchedule).toList();
-    for(final x in items){
-      x.started=true;x.closed=false;x.paused=false;
-      x.departureName=departureText;x.departureLatitude=startPoint['lat'] as double;x.departureLongitude=startPoint['lon'] as double;
-      x.returnName=returnText;x.returnLatitude=endPoint['lat'] as double;x.returnLongitude=endPoint['lon'] as double;
-      await widget.saveSchedule(x);
-    }
+    final tripPoints=await resolveProgramStartLocations(
+      departure:departureText,
+      destination:returnText,
+      geocode:widget.geocodeTripPoint ?? _geocodeTripPoint,
+    );
+    if(tripPoints==null){if(mounted)showErrorMessage(context,'Nu am putut identifica una dintre localități. Scrie localitatea mai explicit, de exemplu „Brăila, România”.');return;}
+    final items=buildStartedProgramScheduleSnapshot(
+      schedules:graphSchedules,
+      departureName:departureText,
+      departureLatitude:tripPoints.departureLatitude,
+      departureLongitude:tripPoints.departureLongitude,
+      returnName:returnText,
+      returnLatitude:tripPoints.destinationLatitude,
+      returnLongitude:tripPoints.destinationLongitude,
+    );
+    try { await widget.saveSchedules(items); } catch (e) { if (mounted) showErrorMessage(context, 'Graficul nu a putut fi pornit: ${scheduleSaveFailureMessage(e)}'); return; }
     widget.onChanged();
     final km=estimateGraphDistanceKm(items,widget.locations);
     widget.log('Grafic pornit','${team.name} · ${head.graphName} · $departureText → $returnText · ${km.toStringAsFixed(1)} km estimați');
     if(mounted)showSuccessMessage(context,'Grafic pornit. Traseu complet: $departureText → săli → $returnText · ${km.toStringAsFixed(1)} km estimați.');
   }
-  Future<void> _pauseGraph()async{await _applyGraphState(paused:true);widget.log('Grafic pus pe pauză','${team.name} · ${graphHead?.graphName??''}');if(mounted)showSuccessMessage(context,'Graficul a fost pus pe pauză.');}
-  Future<void> _resumeGraph()async{await _applyGraphState(paused:false);widget.log('Grafic reluat','${team.name} · ${graphHead?.graphName??''}');if(mounted)showSuccessMessage(context,'Graficul a fost reluat.');}
-  Future<void> _closeGraph()async{final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('STOP Grafic de lucru'),content:const Text('Graficul complet va fi închis. Istoricul și Centralizatorul rămân păstrate.'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('STOP'))]))??false;if(!ok)return;await _applyGraphState(closed:true,paused:false);widget.log('Grafic închis','${team.name} · ${graphHead?.graphName??''}');if(mounted)showSuccessMessage(context,'Graficul a fost închis.');}
+  Future<void> _pauseGraph()async{if(!await _applyGraphState(paused:true))return;widget.log('Grafic pus pe pauză','${team.name} · ${graphHead?.graphName??''}');if(mounted)showSuccessMessage(context,'Graficul a fost pus pe pauză.');}
+  Future<void> _resumeGraph()async{if(!await _applyGraphState(paused:false))return;widget.log('Grafic reluat','${team.name} · ${graphHead?.graphName??''}');if(mounted)showSuccessMessage(context,'Graficul a fost reluat.');}
+  Future<void> _closeGraph()async{
+    final readiness=programGraphClosureReadiness(
+      schedules:graphSchedules,
+      records:widget.records,
+    );
+    if(!readiness.canClose){
+      final preview=readiness.blockers.take(5).join('\n');
+      final remainder=readiness.blockers.length>5
+          ?'\n… și încă ${readiness.blockers.length-5} intervenții.'
+          :'';
+      if(mounted)showErrorMessage(context,
+        'STOP blocat: ${readiness.blockers.length} intervenții nu au rezultat final.\n$preview$remainder');
+      return;
+    }
+    final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
+      title:const Text('STOP Grafic de lucru'),
+      content:const Text('Toate intervențiile principale sunt finalizate sau au fost declarate nerealizate cu explicație. Graficul complet va fi închis. Istoricul și Centralizatorul rămân păstrate.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('STOP'))],
+    ))??false;
+    if(!ok)return;
+    try {
+      final close = widget.closeGraph;
+      if (close == null) throw StateError('Serviciul de închidere verificată nu este disponibil.');
+      await close(graphSchedules.toList());
+    } catch (error) {
+      if(mounted)showErrorMessage(context,'STOP nu a fost confirmat: $error');
+      return;
+    }
+    widget.onChanged();
+    widget.log('Grafic închis','${team.name} · ${graphHead?.graphName??''}');
+    if(mounted)showSuccessMessage(context,'Graficul a fost închis.');
+  }
   Future<void> _postponeGraph()async{
     if(graphSchedules.isEmpty)return;DateTime selected=graphSchedules.firstWhere((x)=>!x.date.isBefore(operationalWorkDate(DateTime.now())),orElse:()=>graphSchedules.first).date;
     final chosen=await showDialog<DateTime>(context:context,builder:(c)=>StatefulBuilder(builder:(c,setD)=>AlertDialog(title:const Text('Amână programul'),content:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Alege ziua de la care vrei să deplasezi graficul cu +1 zi.'),const SizedBox(height:10),DropdownButtonFormField<DateTime>(value:selected,items:graphSchedules.map((x)=>DropdownMenuItem(value:x.date,child:Text(formatDate(x.date)))).toList(),onChanged:(v){if(v!=null)setD(()=>selected=v);})]),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Anulează')),FilledButton(onPressed:()=>Navigator.pop(c,selected),child:const Text('Amână cu 1 zi'))])));
-    if(chosen==null)return;final affected=graphSchedules.where((x)=>!x.date.isBefore(DateTime(chosen.year,chosen.month,chosen.day))).map(_cloneSchedule).toList()..sort((a,b)=>b.date.compareTo(a.date));for(final x in affected){x.date=DateTime(x.date.year,x.date.month,x.date.day).add(const Duration(days:1));await widget.saveSchedule(x);}widget.log('Grafic amânat','${team.name} · de la ${formatDate(chosen)} · +1 zi');if(mounted)showSuccessMessage(context,'Graficul s-a actualizat în timp real: zilele au fost mutate cu +1 zi.');
+    if(chosen==null)return;
+    final affected=postponeProgramSchedules<WorkSchedule>(
+      schedules:graphSchedules,
+      startDate:chosen,
+      dateOf:(schedule)=>schedule.date,
+      clone:cloneWorkSchedule,
+      setDate:(schedule,date)=>schedule.date=date,
+    );
+    try{await widget.saveSchedules(affected);}catch(e){if(mounted)showErrorMessage(context,'Graficul nu a putut fi amânat: ${scheduleSaveFailureMessage(e)}');return;}
+    widget.log('Grafic amânat','${team.name} · de la ${formatDate(chosen)} · +1 zi');
+    if(mounted)showSuccessMessage(context,'Graficul s-a actualizat în timp real: zilele au fost mutate cu +1 zi.');
   }
-  Future<void> _removeItem(WorkSchedule s,ScheduleItem item)async{final updated=_cloneSchedule(s);updated.items.removeWhere((x)=>x.locationId==item.locationId&&x.order==item.order);for(int i=0;i<updated.items.length;i++)updated.items[i].order=i+1;await _saveWithFeedback(updated,success:'Locația a fost eliminată.',auditAction:'Locație eliminată din Grafic');}
-  Future<void> _reorder(WorkSchedule s,int oldIndex,int newIndex)async{final updated=_cloneSchedule(s);if(newIndex>oldIndex)newIndex--;final item=updated.items.removeAt(oldIndex);updated.items.insert(newIndex,item);for(int i=0;i<updated.items.length;i++)updated.items[i].order=i+1;await _saveWithFeedback(updated,success:'Ordinea zilei a fost salvată.',auditAction:'Ordine Grafic modificată');unawaited(_recordRoutingChoice(updated,'manual_order'));}
+  Future<void> _removeItem(WorkSchedule s,ScheduleItem item)async{final updated=cloneWorkSchedule(s,items:removeProgramScheduleItem(s.items,locationId:item.locationId,order:item.order));await _saveWithFeedback(updated,success:'Locația a fost eliminată.',auditAction:'Locație eliminată din Grafic');}
+  Future<void> _reorder(
+    WorkSchedule schedule,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final reorderedItems =
+        reorderScheduleItems(schedule.items, oldIndex, newIndex);
+    if (reorderedItems == null) return;
+
+    final updated = cloneWorkSchedule(schedule, items: reorderedItems);
+    final saved = await _saveWithFeedback(
+      updated,
+      success: 'Ordinea zilei a fost salvată.',
+      auditAction: 'Ordine Grafic modificată',
+    );
+    if (saved) {
+      unawaited(_recordRoutingChoice(updated, 'manual_order'));
+    }
+  }
   Future<List<Location>?> _locationDialog(List<String> already) async {
     final selected = already.toSet();
     return showDialog<List<Location>>(

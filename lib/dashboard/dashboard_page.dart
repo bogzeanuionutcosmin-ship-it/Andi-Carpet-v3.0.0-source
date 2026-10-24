@@ -1,99 +1,294 @@
 part of '../main.dart';
 
 class DashboardPage extends StatefulWidget {
-  final List<Team> teams; final List<AppUser> users; final List<FunctionDefinition> functionDefinitions; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final AppUser currentUser; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final Future<void> Function(CentralizerRecord) saveRecord; final Future<void> Function(WorkSchedule) saveSchedule; final void Function(String,String) log;
-  const DashboardPage({super.key, required this.teams, required this.users, required this.functionDefinitions, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.currentUser, required this.canEditProgram, required this.userName, required this.onChanged, required this.saveRecord, required this.saveSchedule, required this.log});
+  final List<Team> teams; final List<AppUser> users; final List<FunctionDefinition> functionDefinitions; final List<Location> locations; final List<LocationCategory> categories; final List<WorkSchedule> schedules; final List<CentralizerRecord> records; final AppSettings settings; final AppUser currentUser; final bool canEditProgram; final String Function(String) userName; final VoidCallback onChanged; final Future<void> Function(CentralizerRecord) saveRecord; final Future<void> Function(DashboardScheduleIntent) saveDashboardScheduleOperation; final void Function(String,String) log;
+  final void Function(String, Object?)? onRecordJournalTrace;
+  const DashboardPage({super.key, required this.teams, required this.users, required this.functionDefinitions, required this.locations, required this.categories, required this.schedules, required this.records, required this.settings, required this.currentUser, required this.canEditProgram, required this.userName, required this.onChanged, required this.saveRecord, required this.saveDashboardScheduleOperation, required this.log, this.onRecordJournalTrace});
   @override State<DashboardPage> createState() => _DashboardPageState();
 }
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserver {
   int teamIndex = 0;
   String? selectedGraphId;
+  static const FlutterSecureStorage _recordStorage = FlutterSecureStorage();
+  static const FlutterSecureStorage _scheduleStorage = FlutterSecureStorage();
+  final Set<String> _recoveryStarted = {};
+  final Map<String, Completer<void>> _recordRecoveryCompletion = {};
+  final Set<String> _journalRetryTeams = {};
+  final Set<String> _journalBusyTeams = {};
+  Timer? _journalRetryTimer;
+  bool _appResumed = true;
+
+  DashboardRecordJournal get _recordJournal => DashboardRecordJournal(
+        read: (key) => _recordStorage.read(key: key),
+        write: (key, value) => _recordStorage.write(key: key, value: value),
+        remove: (key) => _recordStorage.delete(key: key),
+        trace: widget.onRecordJournalTrace,
+      );
+
+  void _traceRecordOperation(String stage, [Object? error]) {
+    try {
+      widget.onRecordJournalTrace?.call(stage, error);
+    } catch (_) {
+      // Diagnostics must never affect an operational transition.
+    }
+  }
+
+  DashboardScheduleJournal get _scheduleJournal => DashboardScheduleJournal(
+        read: (key) => _scheduleStorage.read(key: key),
+        write: (key, value) => _scheduleStorage.write(key: key, value: value),
+        remove: (key) => _scheduleStorage.delete(key: key),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appResumed = state == AppLifecycleState.resumed;
+    if (_appResumed && widget.teams.isNotEmpty) {
+      unawaited(_recoverDashboardRecord(widget.teams[teamIndex.clamp(0, widget.teams.length - 1)].id));
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _journalRetryTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleRecordRecovery(String teamId) {
+    if (!_recoveryStarted.add(teamId)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_recoverDashboardRecord(teamId));
+    });
+  }
+
+  void _ensureJournalRetryTimer() {
+    if (!mounted) return;
+    _journalRetryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted || !_appResumed || _journalRetryTeams.isEmpty) return;
+      for (final teamId in _journalRetryTeams.toList()) {
+        unawaited(_recoverDashboardRecord(teamId));
+      }
+    });
+  }
+
+  Future<void> _recoverDashboardRecord(String teamId) async {
+    if (!_journalBusyTeams.add(teamId)) {
+      _traceRecordOperation('recovery.busy');
+      return;
+    }
+    final recoveryCompletion = Completer<void>();
+    _recordRecoveryCompletion[teamId] = recoveryCompletion;
+    _traceRecordOperation('recovery.begin');
+    final userId = widget.currentUser.id;
+    try {
+      var recovered = false;
+      _traceRecordOperation('recovery.record.pending.read.begin');
+      final intent = await _recordJournal.pending(userId: userId, teamId: teamId);
+      _traceRecordOperation(intent == null ? 'recovery.record.pending.empty' : 'recovery.record.pending.existing');
+      if (intent != null) {
+        await _recordJournal.run(candidate: intent, send: (pending) async {
+          final record = centralizerRecordFromData(pending.recordId, pending.desired)
+            ..writeBaseline = pending.expected;
+          await widget.saveRecord(record);
+        });
+        recovered = true;
+      }
+      final scheduleIntent = await _scheduleJournal.pending(userId: userId, teamId: teamId);
+      if (scheduleIntent != null) {
+        await _scheduleJournal.run(candidate: scheduleIntent, send: widget.saveDashboardScheduleOperation);
+        recovered = true;
+      }
+      if (!recovered) {
+        _journalRetryTeams.remove(teamId);
+        if (_journalRetryTeams.isEmpty) {
+          _journalRetryTimer?.cancel();
+          _journalRetryTimer = null;
+        }
+        return;
+      }
+      _journalRetryTeams.remove(teamId);
+      if (mounted) {
+        widget.onChanged();
+        showSuccessMessage(context, 'O operație salvată în așteptare a fost confirmată după reconectare.');
+      }
+      if (_journalRetryTeams.isEmpty) {
+        _journalRetryTimer?.cancel();
+        _journalRetryTimer = null;
+      }
+    } catch (error) {
+      _traceRecordOperation('recovery.failed', error);
+      // Keep the exact intent and retry only while the app is active. The
+      // authoritative Home writer validates server state and rejects conflicts.
+      if (_journalRetryTeams.add(teamId) && mounted) {
+        showErrorMessage(context, 'O salvare de intervenție este în așteptare. Reconectează-te; sistemul va reîncerca aceeași operație.');
+      }
+      _ensureJournalRetryTimer();
+    } finally {
+      _journalBusyTeams.remove(teamId);
+      if (identical(_recordRecoveryCompletion[teamId], recoveryCompletion)) {
+        _recordRecoveryCompletion.remove(teamId);
+      }
+      if (!recoveryCompletion.isCompleted) recoveryCompletion.complete();
+      _traceRecordOperation('recovery.released');
+    }
+  }
+
+  Future<void> _saveRecordJournalled(CentralizerRecord record) async {
+    final recovery = _recordRecoveryCompletion[record.teamId];
+    if (recovery != null) {
+      _traceRecordOperation('record.waiting.for.recovery');
+      await recovery.future;
+      _traceRecordOperation('record.recovery.wait.complete');
+    }
+    if (!_journalBusyTeams.add(record.teamId)) {
+      _traceRecordOperation('record.busy.conflict', StateError('team=${record.teamId}'));
+      throw StateError('O altă salvare a intervenției acestei echipe este în curs.');
+    }
+    _traceRecordOperation('record.journalled.begin');
+    final transition = record.status == WorkAttemptStatus.running && record.finishedAt == null
+        ? 'start'
+        : record.status == WorkAttemptStatus.completed || record.status == WorkAttemptStatus.refused || record.status == WorkAttemptStatus.notCompleted
+            ? 'finish'
+            : record.status == WorkAttemptStatus.waitingAccess
+                ? 'waiting'
+                : 'outcome';
+    final desired = recordDocumentData(record)..remove('updatedAt');
+    final intent = DashboardRecordIntent(
+      userId: widget.currentUser.id,
+      teamId: record.teamId,
+      recordId: record.id,
+      transition: transition,
+      desired: desired,
+      expected: record.writeBaseline == null ? null : Map<String, dynamic>.from(record.writeBaseline!),
+    );
+    try {
+      _traceRecordOperation('record.journal.run.begin');
+      await _recordJournal.run(candidate: intent, send: (pending) async {
+        _traceRecordOperation('record.saveRecord.callback.begin');
+        final replay = centralizerRecordFromData(pending.recordId, pending.desired)
+          ..writeBaseline = pending.expected;
+        await widget.saveRecord(replay);
+        _traceRecordOperation('record.saveRecord.callback.done');
+      });
+      _traceRecordOperation('record.journal.run.done');
+      _journalRetryTeams.remove(record.teamId);
+      if (_journalRetryTeams.isEmpty) {
+        _journalRetryTimer?.cancel();
+        _journalRetryTimer = null;
+      }
+    } catch (error) {
+      _traceRecordOperation('record.journalled.failed', error);
+      _journalRetryTeams.add(record.teamId);
+      _ensureJournalRetryTimer();
+      rethrow;
+    } finally {
+      _journalBusyTeams.remove(record.teamId);
+      _traceRecordOperation('record.journalled.released');
+    }
+  }
+
+  DashboardScheduleIntent _dashboardScheduleIntent({
+    required String transition,
+    required List<WorkSchedule> schedules,
+  }) {
+    final now = DateTime.now();
+    final committedAt = Timestamp.fromDate(now);
+    final teamId = schedules.first.teamId;
+    final graphId = schedules.first.graphId;
+    return DashboardScheduleIntent(
+      userId: widget.currentUser.id,
+      teamId: teamId,
+      graphId: graphId,
+      transition: transition,
+      writes: schedules.map((schedule) {
+        final token = '${now.microsecondsSinceEpoch}-${newInterventionId()}-${schedule.id}';
+        return DashboardScheduleWrite(
+          scheduleId: schedule.id,
+          expectedExists: schedule.persisted,
+          expectedUpdatedAt: schedule.updatedAt == null ? null : Timestamp.fromDate(schedule.updatedAt!),
+          expectedWriteToken: schedule.writeToken,
+          desired: scheduleDocumentData(schedule, updatedAt: committedAt, writeToken: token),
+        );
+      }).toList(),
+    );
+  }
+
+  Future<void> _saveDashboardScheduleJournalled({
+    required String transition,
+    required List<WorkSchedule> schedules,
+  }) async {
+    if (schedules.isEmpty) throw StateError('Graficul nu conține zile de salvat.');
+    final teamId = schedules.first.teamId;
+    if (!_journalBusyTeams.add(teamId)) {
+      throw StateError('O altă salvare a acestei echipe este în curs.');
+    }
+    final intent = _dashboardScheduleIntent(transition: transition, schedules: schedules);
+    try {
+      await _scheduleJournal.run(candidate: intent, send: widget.saveDashboardScheduleOperation);
+      _journalRetryTeams.remove(teamId);
+      if (_journalRetryTeams.isEmpty) {
+        _journalRetryTimer?.cancel();
+        _journalRetryTimer = null;
+      }
+    } catch (_) {
+      var shouldRetry = true;
+      try {
+        shouldRetry = await _scheduleJournal.pending(userId: intent.userId, teamId: teamId) != null;
+      } catch (_) {
+        // An unreadable journal leaves the commit outcome unknown; keep retry.
+        shouldRetry = true;
+      }
+      if (shouldRetry) {
+        _journalRetryTeams.add(teamId);
+        _ensureJournalRetryTimer();
+      }
+      rethrow;
+    } finally {
+      _journalBusyTeams.remove(teamId);
+    }
+  }
 
   Team get team => widget.teams[teamIndex.clamp(0, widget.teams.length - 1)];
 
-  List<CentralizerRecord> _recordsForItem(ScheduleItem item, DateTime workDate) {
-    final out = widget.records.where((r) =>
-      r.teamId == team.id &&
-      r.locationId == item.locationId &&
-      recordBelongsToWorkDate(r, workDate)
-    ).toList();
-    out.sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
-    return out;
+  WorkSchedule? _scheduleForItem(ScheduleItem item) {
+    final matches = widget.schedules.where((s) => s.teamId == team.id &&
+      s.graphId == selectedGraphId && s.items.any((i) => identical(i, item) ||
+        (item.interventionId.isNotEmpty && i.interventionId == item.interventionId)));
+    return matches.length == 1 ? matches.single : null;
   }
+
+  List<CentralizerRecord> _recordsForItem(ScheduleItem item, DateTime workDate) =>
+      dashboardRecordsForItem(widget.records, teamId: team.id, item: item, workDate: workDate);
 
   CentralizerRecord? _latestRecord(ScheduleItem item, DateTime workDate) {
     final rs = _recordsForItem(item, workDate);
     return rs.isEmpty ? null : rs.last;
   }
 
-  List<CentralizerRecord> _completedHistory(String locationId) => widget.records
-      .where((r) => r.locationId == locationId && r.completed && r.duration != null)
-      .toList();
+  List<CentralizerRecord> _completedHistory(String locationId) =>
+      dashboardCompletedHistory(widget.records, locationId: locationId);
 
   Duration? _averageDuration(String locationId) => learnedAverageDuration(widget.records, locationId, widget.settings);
 
-  WorkSchedule _copySchedule(WorkSchedule s) => WorkSchedule(
-    id:s.id, teamId:s.teamId, graphId:s.graphId, graphName:s.graphName, date:s.date,
-    items:s.items.map((i)=>ScheduleItem(locationId:i.locationId,locationNameSnapshot:i.locationNameSnapshot,addressSnapshot:i.addressSnapshot,typeSnapshot:i.typeSnapshot,categoryIdSnapshot:i.categoryIdSnapshot,order:i.order,transferred:i.transferred,facadePlanned:i.facadePlanned)).toList(),
-    active:s.active, closed:s.closed, started:s.started, paused:s.paused, postponed:s.postponed, autoProposed:s.autoProposed,
-    planAlertAt:s.planAlertAt, planAlertReason:s.planAlertReason, lastRecalculatedAt:s.lastRecalculatedAt, recalculationCount:s.recalculationCount,
-    learningExplanation:s.learningExplanation, learningConfidence:s.learningConfidence, learningSamples:s.learningSamples,
-    departureName:s.departureName, departureLatitude:s.departureLatitude, departureLongitude:s.departureLongitude, returnName:s.returnName, returnLatitude:s.returnLatitude, returnLongitude:s.returnLongitude,
-  );
+
 
   Future<Map<String,dynamic>?> _dashboardGeocodeTripPoint(String query) async {
-    final clean=query.trim();
-    if(clean.isEmpty)return null;
-
-    Map<String,dynamic>? parsePoint(Object? raw){
-      if(raw is! Map)return null;
-      final lat=double.tryParse((raw['lat']??'').toString());
-      final lon=double.tryParse((raw['lon']??'').toString());
-      if(lat==null||lon==null)return null;
-      return {'lat':lat,'lon':lon};
-    }
-
-    Future<Map<String,dynamic>?> viaServer() async {
-      try{
-        final token=await FirebaseAuth.instance.currentUser?.getIdToken();
-        if(token==null||token.isEmpty)return null;
-        final response=await http.post(
-          Uri.parse(_geocodeRomaniaPlaceUrl),
-          headers:{'Content-Type':'application/json','Authorization':'Bearer $token'},
-          body:jsonEncode({'query':clean}),
-        ).timeout(const Duration(seconds:12));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        return parsePoint(jsonDecode(response.body));
-      }catch(e){debugPrint('[geocode] Dashboard server fallback: $e');return null;}
-    }
-
-    Future<Map<String,dynamic>?> viaNominatim(String value) async {
-      try{
-        final uri=Uri.https('nominatim.openstreetmap.org','/search',{
-          'format':'jsonv2','q':value,'limit':'1','countrycodes':'ro','accept-language':'ro','addressdetails':'1'
-        });
-        final headers=<String,String>{'Accept':'application/json','Accept-Language':'ro'};
-        if(!kIsWeb)headers['User-Agent']='AndiCarpeta/2.0.8 (internal operations app)';
-        final response=await http.get(uri,headers:headers).timeout(const Duration(seconds:10));
-        if(response.statusCode!=200||response.body.isEmpty)return null;
-        final decoded=jsonDecode(response.body);
-        if(decoded is! List||decoded.isEmpty)return null;
-        return parsePoint(decoded.first);
-      }catch(e){debugPrint('[geocode] Dashboard Nominatim $value: $e');return null;}
-    }
-
-    if(kIsWeb){
-      final server=await viaServer();
-      if(server!=null)return server;
-    }
-    final candidates=<String>[clean];
-    if(!clean.toLowerCase().contains('românia')&&!clean.toLowerCase().contains('romania'))candidates.add('$clean, România');
-    for(final candidate in candidates){
-      final direct=await viaNominatim(candidate);
-      if(direct!=null)return direct;
-    }
-    if(!kIsWeb)return viaServer();
-    return null;
+    return RomaniaPlaceGeocoder(
+      serverEndpoint: Uri.parse(_geocodeRomaniaPlaceUrl),
+      getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
+      get: (uri, {headers}) => http.get(uri, headers: headers),
+      post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),
+      isWeb: kIsWeb,
+      includeName: false,
+      logPrefix: 'Dashboard',
+      log: (message) => debugPrint(message),
+    ).geocode(query);
   }
 
   Future<void> _toggleProgram(WorkSchedule schedule) async {
@@ -118,87 +313,53 @@ class _DashboardPageState extends State<DashboardPage> {
       final startPoint=await _dashboardGeocodeTripPoint(departureText);
       final endPoint=departureText.toLowerCase()==returnText.toLowerCase()?startPoint:await _dashboardGeocodeTripPoint(returnText);
       if(startPoint==null||endPoint==null){if(mounted)showErrorMessage(context,'Nu am putut identifica una dintre localități. Scrie localitatea mai explicit.');return;}
-      final sameGraph=widget.schedules.where((s)=>s.graphId==schedule.graphId&&s.teamId==schedule.teamId).map(_copySchedule).toList();
-      for(final x in sameGraph){
-        x.started=true;x.paused=false;x.closed=false;
-        x.departureName=departureText;x.departureLatitude=startPoint['lat'] as double;x.departureLongitude=startPoint['lon'] as double;
-        x.returnName=returnText;x.returnLatitude=endPoint['lat'] as double;x.returnLongitude=endPoint['lon'] as double;
-        await widget.saveSchedule(x);
+      final sameGraph = dashboardSchedulesForGraphStart(
+        schedules: widget.schedules,
+        selectedSchedule: schedule,
+        departureName: departureText,
+        departureLatitude: startPoint['lat'] as double,
+        departureLongitude: startPoint['lon'] as double,
+        returnName: returnText,
+        returnLatitude: endPoint['lat'] as double,
+        returnLongitude: endPoint['lon'] as double,
+      );
+      try {
+        await _saveDashboardScheduleJournalled(transition: 'start', schedules: sameGraph);
+      } catch(e) {
+        if(mounted)showErrorMessage(context,'Programul nu a putut fi pornit: ${scheduleSaveFailureMessage(e)}');
+        return;
       }
+      widget.onChanged();
       widget.log('START program din Acasă','${team.name} · ${schedule.graphName} · $departureText → $returnText');
       if(mounted)showSuccessMessage(context,'Programul echipei a fost pornit cu traseul complet.');
       return;
     }
-    final updated=_copySchedule(schedule);
-    updated.started=false;
-    updated.paused=false;
-    await widget.saveSchedule(updated);
-    widget.log('STOP program din Acasă','${team.name} · ${updated.graphName} · ${formatDate(updated.date)}');
-    if(mounted)showSuccessMessage(context,'Programul echipei a fost oprit.');
-  }
-
-  // Orașul este preluat din denumirea locației sau din ultimul segment al
-  // adresei, nu din numele străzii (primul segment al adresei).
-  String _locationCityLabel(Location l) {
-    final name = l.name.trim().replaceFirst(
-      RegExp(r'^(million|magic)\s+', caseSensitive: false), '',
-    ).trim();
-    final parts = l.address.split(',').map((s) => s.trim())
-        .where((s) => s.isNotEmpty).toList();
-    if (parts.length >= 2) {
-      final candidate = parts.last.replaceFirst(
-        RegExp(r'^(jud\.?|județul|municipiul|orașul)\s+', caseSensitive: false), '',
-      ).trim();
-      if (candidate.isNotEmpty &&
-          !RegExp(r'^(românia|romania|rom|\d{5,6})$', caseSensitive: false).hasMatch(candidate)) {
-        return candidate;
-      }
+    final updated = dashboardScheduleForGraphStop(schedule);
+    try {
+      await _saveDashboardScheduleJournalled(transition: 'stop', schedules: [updated]);
+      widget.onChanged();
+      widget.log('STOP program din Acasă','${team.name} · ${updated.graphName} · ${formatDate(updated.date)}');
+      if(mounted)showSuccessMessage(context,'Programul echipei a fost oprit.');
+    } catch (e) {
+      if (mounted) showErrorMessage(context,'Programul nu a putut fi oprit: ${scheduleSaveFailureMessage(e)}');
     }
-    return name.split(RegExp(r'[-–]')).first.trim();
   }
 
   String _memberLocationLabel(String userId, Map<String, Map<String,dynamic>> live, String teamId) {
-    final d = live[userId];
-    if (d == null) return 'Locație live indisponibilă';
-    final lat = d['latitude'];
-    final lon = d['longitude'];
-    if (lat is! num || lon is! num || !lat.toDouble().isFinite ||
-        !lon.toDouble().isFinite || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      return 'Locație live indisponibilă';
-    }
-    final updated = d['updatedAt'];
-    final at = updated is Timestamp ? updated.toDate() : null;
-    if (at == null || DateTime.now().difference(at) > const Duration(minutes: 30) ||
-        at.isAfter(DateTime.now().add(const Duration(minutes: 5)))) {
-      return 'Locație live neactualizată';
-    }
-    final age = ' · actualizat ${timeText(at)}';
-    final locality = (d['localityLabel'] ?? '').toString().trim();
-
-    // Apropierea GPS de o sală nu dovedește că membrul lucrează acolo.
-    // Afișăm sala numai când echipa are o intervenție efectiv în lucru.
-    final active = widget.records.where((r) =>
-        r.teamId == teamId && r.status == WorkAttemptStatus.running &&
-        r.finishedAt == null && recordBelongsToWorkDate(r, DateTime.now()));
-    Location? currentSite;
-    var closest = double.infinity;
-    for (final record in active) {
-      for (final site in widget.locations) {
-        if (site.id != record.locationId || site.latitude == null || site.longitude == null) continue;
-        final meters = Geolocator.distanceBetween(lat.toDouble(), lon.toDouble(),
-            site.latitude!, site.longitude!);
-        if (meters <= 150 && meters < closest) {
-          currentSite = site;
-          closest = meters;
-        }
-      }
-    }
-    if (currentSite != null) {
-      final city = _locationCityLabel(currentSite);
-      return city.isEmpty ? '${currentSite.name}$age' : '${currentSite.name} · $city$age';
-    }
-    if (locality.isNotEmpty) return '$locality$age';
-    return 'Oraș/județ indisponibil$age';
+    return dashboardMemberLocationLabel(
+      live: live[userId],
+      teamId: teamId,
+      records: widget.records,
+      locations: widget.locations,
+      now: DateTime.now,
+      belongsToWorkDate: recordBelongsToWorkDate,
+      distanceBetween: Geolocator.distanceBetween,
+      formatTime: timeText,
+      locationCityLabel: (name, address) => dashboardLocationCityLabel(
+        name: name,
+        address: address,
+      ),
+    );
   }
 
   String _confidenceLabel(List<int> counts) {
@@ -209,44 +370,21 @@ class _DashboardPageState extends State<DashboardPage> {
     return 'inițială';
   }
 
-  String _recordStateText(CentralizerRecord? r) {
-    if (r == null) return 'Neîncepută';
-    switch (r.status) {
-      case WorkAttemptStatus.completed:
-        return 'Finalizată · ${durationText(r.duration)} · ${timeText(r.startedAt)}–${timeText(r.finishedAt)}';
-      case WorkAttemptStatus.running:
-        final wait = r.waitingDuration;
-        return 'Pe sală din ${timeText(r.startedAt)}${wait == null ? '' : ' · așteptare ${durationText(wait)}'}';
-      case WorkAttemptStatus.waitingAccess:
-        return 'Așteptare acces din ${timeText(r.waitingStartedAt)}';
-      case WorkAttemptStatus.refused:
-        return 'Refuzată${(r.refusalReason ?? '').trim().isEmpty ? '' : ' · ${r.refusalReason}'}';
-      case WorkAttemptStatus.notCompleted:
-        return 'Nerealizată${(r.refusalReason ?? '').trim().isEmpty ? '' : ' · ${r.refusalReason}'}';
-    }
-  }
+  String _recordStateText(CentralizerRecord? r) => dashboardRecordStateText(
+    status: r?.status,
+    refusalReason: r?.refusalReason,
+    duration: r?.duration,
+    startedAt: r?.startedAt,
+    finishedAt: r?.finishedAt,
+    waitingStartedAt: r?.waitingStartedAt,
+    waitingDuration: r?.waitingDuration,
+  );
 
-  Color _recordStateColor(CentralizerRecord? r) {
-    if (r == null) return Colors.blueGrey;
-    return switch (r.status) {
-      WorkAttemptStatus.completed => Colors.green,
-      WorkAttemptStatus.running => Colors.blue,
-      WorkAttemptStatus.waitingAccess => Colors.orange,
-      WorkAttemptStatus.refused => Colors.red,
-      WorkAttemptStatus.notCompleted => Colors.deepOrange,
-    };
-  }
+  Color _recordStateColor(CentralizerRecord? r) =>
+      dashboardRecordStateColor(r?.status);
 
-  IconData _recordStateIcon(CentralizerRecord? r) {
-    if (r == null) return Icons.radio_button_unchecked;
-    return switch (r.status) {
-      WorkAttemptStatus.completed => Icons.check,
-      WorkAttemptStatus.running => Icons.cleaning_services,
-      WorkAttemptStatus.waitingAccess => Icons.hourglass_top,
-      WorkAttemptStatus.refused => Icons.block,
-      WorkAttemptStatus.notCompleted => Icons.warning_amber_rounded,
-    };
-  }
+  IconData _recordStateIcon(CentralizerRecord? r) =>
+      dashboardRecordStateIcon(r?.status);
 
   @override
   Widget build(BuildContext context) {
@@ -257,6 +395,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return _Page(title: 'Acasă', subtitle: formatDate(now), child: const _Empty(icon: Icons.groups_outlined, text: 'Nu există încă nicio echipă. Adminul poate crea prima echipă din Admin Panel → Echipe.'));
     }
     if (teamIndex >= widget.teams.length) teamIndex = 0;
+    _scheduleRecordRecovery(team.id);
 
     final candidates = widget.schedules.where((s) => s.teamId == team.id && sameDay(s.date, workDate) && !s.closed).toList();
     candidates.sort((a, b) {
@@ -274,33 +413,62 @@ class _DashboardPageState extends State<DashboardPage> {
     final scheduleMatches = candidates.where((s) => s.graphId == selectedGraphId).toList();
     final schedule = scheduleMatches.isEmpty ? null : scheduleMatches.first;
     final items = schedule?.items ?? <ScheduleItem>[];
-    final todaysRecords = widget.records.where((r) => r.teamId == team.id && recordBelongsToWorkDate(r, workDate)).toList();
     final done = items.where((i) => _latestRecord(i, workDate)?.completed == true).length;
     final failed = items.where((i) {
       final r = _latestRecord(i, workDate);
       return r?.status == WorkAttemptStatus.refused || r?.status == WorkAttemptStatus.notCompleted;
     }).length;
-    final running = todaysRecords.where((r) => r.status == WorkAttemptStatus.running && r.startedAt != null && r.finishedAt == null).toList()
-      ..sort((a, b) => recordEventTime(b).compareTo(recordEventTime(a)));
-    final waiting = todaysRecords.where((r) => r.status == WorkAttemptStatus.waitingAccess && r.waitingStartedAt != null && r.waitingEndedAt == null).toList()
-      ..sort((a, b) => recordEventTime(b).compareTo(recordEventTime(a)));
+    final running = dashboardRunningRecords(widget.records, teamId: team.id);
+    final waiting = dashboardWaitingRecords(
+      widget.records,
+      teamId: team.id,
+      workDate: workDate,
+    );
     final inWindow = isInsideWorkWindow(now, workDate);
+
+    final operationalStatus = dashboardTeamOperationalStatus(
+      hasRunningRecord: running.isNotEmpty,
+      waitingForAccess: waiting.isNotEmpty,
+      schedulePaused: schedule?.paused == true,
+      schedulePostponed: schedule?.postponed == true,
+      scheduleStarted: schedule?.started == true,
+      insideWorkWindow: inWindow,
+    );
 
     String stateText;
     IconData stateIcon;
     Color stateColor;
-    if (running.isNotEmpty) {
-      stateText = 'PE SALĂ · ${running.first.locationNameSnapshot}'; stateIcon = Icons.location_on; stateColor = Colors.green;
-    } else if (waiting.isNotEmpty) {
-      stateText = 'AȘTEPTARE ACCES · ${waiting.first.locationNameSnapshot}'; stateIcon = Icons.hourglass_top; stateColor = Colors.orange;
-    } else if (schedule?.paused == true) {
-      stateText = 'ÎN PAUZĂ'; stateIcon = Icons.pause_circle; stateColor = Colors.orange;
-    } else if (schedule?.postponed == true) {
-      stateText = 'PROGRAM AMÂNAT'; stateIcon = Icons.event_busy; stateColor = Colors.deepOrange;
-    } else if (schedule != null && schedule.started && inWindow) {
-      stateText = 'ÎN TIMPUL PROGRAMULUI'; stateIcon = Icons.nightlight_round; stateColor = Colors.blue;
-    } else {
-      stateText = 'ÎN AFARA PROGRAMULUI'; stateIcon = Icons.schedule; stateColor = Colors.blueGrey;
+    switch (operationalStatus) {
+      case DashboardOperationalStatus.running:
+        stateText = 'PE SALĂ · ${running.first.locationNameSnapshot}';
+        stateIcon = Icons.location_on;
+        stateColor = Colors.green;
+        break;
+      case DashboardOperationalStatus.waitingAccess:
+        stateText = 'AȘTEPTARE ACCES · ${waiting.first.locationNameSnapshot}';
+        stateIcon = Icons.hourglass_top;
+        stateColor = Colors.orange;
+        break;
+      case DashboardOperationalStatus.paused:
+        stateText = 'ÎN PAUZĂ';
+        stateIcon = Icons.pause_circle;
+        stateColor = Colors.orange;
+        break;
+      case DashboardOperationalStatus.postponed:
+        stateText = 'PROGRAM AMÂNAT';
+        stateIcon = Icons.event_busy;
+        stateColor = Colors.deepOrange;
+        break;
+      case DashboardOperationalStatus.duringWorkWindow:
+        stateText = 'ÎN TIMPUL PROGRAMULUI';
+        stateIcon = Icons.nightlight_round;
+        stateColor = Colors.blue;
+        break;
+      case DashboardOperationalStatus.outsideWorkWindow:
+        stateText = 'ÎN AFARA PROGRAMULUI';
+        stateIcon = Icons.schedule;
+        stateColor = Colors.blueGrey;
+        break;
     }
 
     final pendingForEstimate = items.where((item) {
@@ -498,21 +666,50 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Future<void> _startLocation(ScheduleItem item) async {
+  final Set<String> _pendingStarts = {};
+
+  Future<void> _startLocation(ScheduleItem item) => runDashboardPendingOperation(
+        pending: _pendingStarts,
+        key: item.locationId,
+        action: () async {
+          _traceRecordOperation('start.button.callback');
+          await _startLocationOnce(item);
+        },
+      );
+
+  Future<void> _startLocationOnce(ScheduleItem item) async {
+    _traceRecordOperation('start.callback.enter');
     final now = DateTime.now();
     final workDate = operationalWorkDate(now);
-    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList();
-    if (running.isNotEmpty && running.first.locationId != item.locationId) {
-      if (mounted) showErrorMessage(context, 'Echipa este deja pe sală la ${running.first.locationNameSnapshot}. Apasă IEȘI înainte de a intra în altă locație.');
+    final decision = dashboardStartRecordDecision<CentralizerRecord>(
+      records: widget.records,
+      belongsToIntervention: (r) => recordMatchesIntervention(r, item),
+      teamId: team.id,
+      locationId: item.locationId,
+      teamIdOf: (record) => record.teamId,
+      locationIdOf: (record) => record.locationId,
+      statusOf: (record) => record.status,
+      isRunning: WorkAttemptStatus.running,
+      finishedAtOf: (record) => record.finishedAt,
+      eventTimeOf: recordEventTime,
+    );
+    if (decision.action == DashboardStartRecordAction.blockedByOtherLocation) {
+      _traceRecordOperation('start.blocked.by.other.location');
+      final running = decision.activeRecord!;
+      if (mounted) showErrorMessage(context, 'Echipa este deja pe sală la ${running.locationNameSnapshot}. Apasă IEȘI înainte de a intra în altă locație.');
       return;
     }
-    if (running.isNotEmpty && running.first.locationId == item.locationId) return;
-
-    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList()
-      ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
-    final base = existing.isEmpty ? null : existing.last;
+    if (decision.action == DashboardStartRecordAction.alreadyRunning) {
+      _traceRecordOperation('start.already.running');
+      return;
+    }
+    final base = decision.baseRecord;
     final r = CentralizerRecord(
-      id: base?.id ?? idNow(),
+      id: base?.id ?? nextInterventionRecordId(item, widget.records),
+      graphId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.graphId ?? '',
+      scheduleId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.id ?? '',
+      interventionId: item.interventionId,
+      writeBaseline: base?.writeBaseline,
       teamId: team.id,
       locationId: item.locationId,
       type: item.typeSnapshot,
@@ -528,16 +725,29 @@ class _DashboardPageState extends State<DashboardPage> {
       facadePlanned: item.facadePlanned, facadeDone: base?.facadeDone ?? false,
     );
     try {
-      await widget.saveRecord(r);
+      _traceRecordOperation('start.save.begin');
+      await _saveRecordJournalled(r);
+      _traceRecordOperation('start.save.done');
       widget.log('INTRĂ pe sală', '${team.name} · ${item.locationNameSnapshot}');
       if (mounted) showSuccessMessage(context, 'Intrare salvată: ${item.locationNameSnapshot} · ${timeText(r.startedAt)}');
     } catch (e) {
+      _traceRecordOperation('start.save.failed', e);
       if (mounted) showErrorMessage(context, 'Intrarea nu a putut fi salvată: $e');
+    } finally {
+      _traceRecordOperation('start.operation.complete');
     }
   }
 
-  Future<void> _finishLocation(CentralizerRecord source) async {
-    final facadeDone = await showDialog<bool>(
+  final Set<String> _pendingFinishes = {};
+
+  Future<void> _finishLocation(CentralizerRecord source) => runDashboardPendingOperation(
+        pending: _pendingFinishes,
+        key: source.id,
+        action: () => _finishLocationOnce(source),
+      );
+
+  Future<void> _finishLocationOnce(CentralizerRecord source) async {
+    final facadeDone = !source.facadePlanned ? source.facadeDone : await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (c) => AlertDialog(
@@ -552,6 +762,8 @@ class _DashboardPageState extends State<DashboardPage> {
     if (facadeDone == null) return;
     final r = CentralizerRecord(
       id: source.id,
+      graphId: source.graphId, scheduleId: source.scheduleId, interventionId: source.interventionId,
+      writeBaseline: source.writeBaseline,
       teamId: source.teamId,
       locationId: source.locationId,
       type: source.type,
@@ -568,20 +780,10 @@ class _DashboardPageState extends State<DashboardPage> {
       facadeDone: facadeDone,
     );
     try {
-      await widget.saveRecord(r);
+      await _saveRecordJournalled(r);
       widget.log('IEȘI de pe sală', '${team.name} · ${r.locationNameSnapshot} · ${durationText(r.duration)}');
       if (mounted) {
-        if(widget.settings.allowUndo){
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content:Text('Ieșire salvată: ${r.locationNameSnapshot} · ${timeText(r.finishedAt)} · ${durationText(r.duration)}'),
-            action:SnackBarAction(label:'ANULEAZĂ',onPressed:()async{
-              try{await widget.saveRecord(source);widget.log('Undo IEȘI','${team.name} · ${source.locationNameSnapshot}');if(mounted)showSuccessMessage(context,'FINAL a fost anulat; locația este din nou în lucru.');}
-              catch(e){if(mounted)showErrorMessage(context,'Undo nu a reușit: $e');}
-            }),
-          ));
-        }else{
-          showSuccessMessage(context, 'Ieșire salvată: ${r.locationNameSnapshot} · ${timeText(r.finishedAt)} · ${durationText(r.duration)}');
-        }
+        showSuccessMessage(context, 'Ieșire salvată: ${r.locationNameSnapshot} · ${timeText(r.finishedAt)} · ${durationText(r.duration)}');
       }
     } catch (e) {
       if (mounted) showErrorMessage(context, 'Ieșirea nu a putut fi salvată: $e');
@@ -591,16 +793,20 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _markWaiting(ScheduleItem item) async {
     final now = DateTime.now();
     final workDate = operationalWorkDate(now);
-    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList();
+    final running = widget.records.where((r) => r.teamId == team.id && r.status == WorkAttemptStatus.running && r.finishedAt == null).toList();
     if (running.isNotEmpty) {
       if (mounted) showErrorMessage(context, 'Există deja o locație în lucru. Închide întâi intervenția curentă.');
       return;
     }
-    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList()
+    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && recordMatchesIntervention(r, item) && r.finishedAt == null).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     final base = existing.isEmpty ? null : existing.last;
     final r = CentralizerRecord(
-      id: base?.id ?? idNow(),
+      id: base?.id ?? nextInterventionRecordId(item, widget.records),
+      graphId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.graphId ?? '',
+      scheduleId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.id ?? '',
+      interventionId: item.interventionId,
+      writeBaseline: base?.writeBaseline,
       teamId: team.id,
       locationId: item.locationId,
       type: item.typeSnapshot,
@@ -616,7 +822,7 @@ class _DashboardPageState extends State<DashboardPage> {
       facadePlanned: item.facadePlanned, facadeDone: base?.facadeDone ?? false,
     );
     try {
-      await widget.saveRecord(r);
+      await _saveRecordJournalled(r);
       widget.log('Așteptare acces', '${team.name} · ${item.locationNameSnapshot}');
       if (mounted) showSuccessMessage(context, 'Așteptarea a fost pornită pentru ${item.locationNameSnapshot}.');
     } catch (e) {
@@ -655,11 +861,15 @@ class _DashboardPageState extends State<DashboardPage> {
     if (reason == null) return;
     final now = DateTime.now();
     final workDate = operationalWorkDate(now);
-    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && r.finishedAt == null && recordBelongsToWorkDate(r, workDate)).toList()
+    final existing = widget.records.where((r) => r.teamId == team.id && r.locationId == item.locationId && recordMatchesIntervention(r, item) && r.finishedAt == null).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     final base = existing.isEmpty ? null : existing.last;
     final r = CentralizerRecord(
-      id: base?.id ?? idNow(),
+      id: base?.id ?? nextInterventionRecordId(item, widget.records),
+      graphId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.graphId ?? '',
+      scheduleId: item.interventionId.isEmpty ? '' : _scheduleForItem(item)?.id ?? '',
+      interventionId: item.interventionId,
+      writeBaseline: base?.writeBaseline,
       teamId: team.id,
       locationId: item.locationId,
       type: item.typeSnapshot,
@@ -675,7 +885,7 @@ class _DashboardPageState extends State<DashboardPage> {
       facadePlanned: item.facadePlanned, facadeDone: base?.facadeDone ?? false,
     );
     try {
-      await widget.saveRecord(r);
+      await _saveRecordJournalled(r);
       final label = status == WorkAttemptStatus.refused ? 'Refuzată' : 'Nerealizată';
       widget.log(label, '${team.name} · ${item.locationNameSnapshot} · $reason');
       if (mounted) showSuccessMessage(context, '$label: ${item.locationNameSnapshot}. Motivul a fost păstrat pentru Learning.');

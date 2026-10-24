@@ -8,7 +8,13 @@ Future<void> downloadWorkGraphPdf({
 }) async {
   if (days.isEmpty) return;
   final theme = await _buildPdfTheme();
-  final orderedDays = [...days]..sort((a, b) => a.date.compareTo(b.date));
+  final dayProjections = projectWorkGraphPdfDays<WorkSchedule, ScheduleItem>(
+    days: days,
+    dateOf: (day) => day.date,
+    itemsOf: (day) => day.items,
+    orderOf: (item) => item.order,
+  );
+  final orderedDays = dayProjections.map((projection) => projection.day).toList();
   final first = orderedDays.first;
   final roadKm = await estimateGraphRoadDistanceKm(orderedDays, locations);
   final km = roadKm ?? estimateGraphDistanceKm(orderedDays, locations);
@@ -36,10 +42,11 @@ Future<void> downloadWorkGraphPdf({
         if (fuelCost > 0) pw.Text('Cost carburant estimat: ${fuelCost.toStringAsFixed(2)} lei'),
       ]),
       pw.SizedBox(height: 14),
-      ...orderedDays.asMap().entries.expand((entry) {
+      ...dayProjections.asMap().entries.expand((entry) {
         final dayIndex = entry.key;
-        final day = entry.value;
-        final orderedItems = [...day.items]..sort((a, b) => a.order.compareTo(b.order));
+        final dayProjection = entry.value;
+        final day = dayProjection.day;
+        final orderedItems = dayProjection.items;
         return <pw.Widget>[
           pw.Container(
             margin: const pw.EdgeInsets.only(top: 10, bottom: 4),
@@ -57,7 +64,53 @@ Future<void> downloadWorkGraphPdf({
       pw.Text('Nota: traseul include plecarea, toate locatiile si intoarcerea. Cand rutarea nu este disponibila, distanta este in linie dreapta si consumul/costul sunt doar valori minime orientative.', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
     ],
   ));
-  await downloadFile(await doc.save(), 'grafic_${_safeFilePart(first.graphName)}.pdf', mimeType: 'application/pdf');
+  await deliverPdf(
+    buildBytes: doc.save,
+    filename: () => 'grafic_${_safeFilePart(first.graphName)}.pdf',
+    download: downloadFile,
+  );
+}
+
+class CentralizerPdfExecutionRow {
+  final CentralizerRecord record;
+  final DateTime date;
+
+  const CentralizerPdfExecutionRow({required this.record, required this.date});
+}
+
+List<CentralizerPdfExecutionRow> centralizerPdfExecutionRows({
+  required List<CentralizerRecord> records,
+  required LocationType type,
+  String? teamId,
+  DateTime? from,
+  DateTime? to,
+  String search = '',
+  WorkAttemptStatus? statusFilter,
+}) {
+  return projectCentralizerPdfExecutionRows<CentralizerRecord>(
+    records: records,
+    type: type,
+    teamId: teamId,
+    from: from,
+    to: to,
+    search: search,
+    statusFilter: statusFilter,
+    typeOf: (record) => record.type,
+    teamIdOf: (record) => record.teamId,
+    statusOf: (record) => record.status,
+    locationNameOf: (record) => record.locationNameSnapshot,
+    addressOf: (record) => record.addressSnapshot,
+    eventDateOf: (record) {
+      final eventDate = recordEventTime(record);
+      return eventDate;
+    },
+  ).map((row) {
+    final record = row.record;
+    return CentralizerPdfExecutionRow(
+      record: record,
+      date: recordEventTime(record),
+    );
+  }).toList();
 }
 
 Future<void> downloadCentralizerPdf({
@@ -73,27 +126,58 @@ Future<void> downloadCentralizerPdf({
   WorkAttemptStatus? statusFilter,
   String? teamLabel,
 }) async {
-  final theme = await _buildPdfTheme();
+  final bytes = await buildCentralizerPdf(
+    type: type, locations: locations, teams: teams, schedules: schedules,
+    records: records, teamId: teamId, from: from, to: to, search: search,
+    statusFilter: statusFilter, teamLabel: teamLabel,
+  );
+  final now = DateTime.now();
+  final filename='centralizator_${_safeFilePart(type.label)}_${now.year}${two(now.month)}${two(now.day)}.pdf';
+  await deliverPdf(
+    buildBytes: () async => bytes,
+    filename: () => filename,
+    download: downloadFile,
+  );
+}
+
+Future<Uint8List> buildCentralizerPdf({
+  required LocationType type,
+  required List<Location> locations,
+  required List<Team> teams,
+  required List<WorkSchedule> schedules,
+  required List<CentralizerRecord> records,
+  String? teamId,
+  DateTime? from,
+  DateTime? to,
+  String search = '',
+  WorkAttemptStatus? statusFilter,
+  String? teamLabel,
+  pw.ThemeData? pdfTheme,
+}) async {
+  final theme = pdfTheme ?? await _buildPdfTheme();
   final doc = pw.Document();
   final q = search.trim().toLowerCase();
   final start = from == null ? null : DateTime(from.year, from.month, from.day);
-  final finish = to == null ? null : DateTime(to.year, to.month, to.day, 23, 59, 59, 999);
-  bool dateAllowed(DateTime d) => (start == null || !d.isBefore(start)) && (finish == null || !d.isAfter(finish));
+  final finish = to == null ? null : DateTime(to.year, to.month, to.day + 1);
+  bool dateAllowed(DateTime d) => (start == null || !d.isBefore(start)) && (finish == null || d.isBefore(finish));
   bool textAllowed(String name, String address) => q.isEmpty || name.toLowerCase().contains(q) || address.toLowerCase().contains(q);
 
-  final filteredRecords = records.where((r) {
-    if (r.type != type) return false;
-    if (teamId != null && teamId.isNotEmpty && r.teamId != teamId) return false;
-    if (statusFilter != null && r.status != statusFilter) return false;
-    final when = recordEventTime(r);
-    if (!dateAllowed(when)) return false;
-    if (!textAllowed(r.locationNameSnapshot, r.addressSnapshot)) return false;
-    return true;
-  }).toList()..sort((a,b)=>recordEventTime(a).compareTo(recordEventTime(b)));
+  final executionRows = centralizerPdfExecutionRows(
+    records: records,
+    type: type,
+    teamId: teamId,
+    from: from,
+    to: to,
+    search: search,
+    statusFilter: statusFilter,
+  );
 
   final rowsByLocation = <String,List<Map<String,dynamic>>>{};
-  for (final r in filteredRecords) {
-    rowsByLocation.putIfAbsent(r.locationId, () => <Map<String,dynamic>>[]).add({'record':r,'date':recordEventTime(r)});
+  for (final row in executionRows) {
+    rowsByLocation.putIfAbsent(row.record.locationId, () => <Map<String, dynamic>>[])
+        .add({'record': row.record, 'date': row.date,
+          'name': row.record.locationNameSnapshot,
+          'address': row.record.addressSnapshot});
   }
 
   // Fără filtru explicit de stare includem și toate sălile din grafice, chiar dacă nu există execuție.
@@ -168,61 +252,60 @@ Future<void> downloadCentralizerPdf({
     child: pw.Text(text, style: const pw.TextStyle(fontSize: 8)),
   );
 
-  pw.Widget interventionTable(List<Map<String,dynamic>> sourceRows, Location? location) {
-    final rows=[...sourceRows]..sort((a,b)=>(a['date'] as DateTime).compareTo(b['date'] as DateTime));
-    return pw.Table(
-      border: pw.TableBorder(
-        horizontalInside: const pw.BorderSide(color: PdfColors.grey300, width: .45),
-        verticalInside: const pw.BorderSide(color: PdfColors.grey300, width: .45),
-      ),
-      columnWidths: const {
-        0: pw.FixedColumnWidth(78),
-        1: pw.FixedColumnWidth(50),
-        2: pw.FixedColumnWidth(50),
-        3: pw.FixedColumnWidth(72),
-        4: pw.FixedColumnWidth(48),
-      },
-      children: rows.map((row) {
-        final record=row['record'] is CentralizerRecord ? row['record'] as CentralizerRecord : null;
-        final date=row['date'] as DateTime;
-        final surface=location!=null && location.surfaceM2>0
-            ? '${location.surfaceM2.toStringAsFixed(location.surfaceM2%1==0?0:1)} m²'
-            : '—';
-        return pw.TableRow(children:[
-          valueCell(record==null ? '${_pdfDate(date)}\n${row['statusText'] ?? 'Neexecutată'}' : _pdfDate(date)),
-          valueCell(record==null?'—':timeText(record.startedAt),alignment:pw.Alignment.center),
-          valueCell(record==null?'—':timeText(record.finishedAt),alignment:pw.Alignment.center),
-          valueCell(surface,alignment:pw.Alignment.centerRight),
-          pw.Container(padding:const pw.EdgeInsets.symmetric(vertical:4),alignment:pw.Alignment.center,child:facadeBox(planned:record?.facadePlanned==true,done:record?.facadeDone==true)),
-        ]);
-      }).toList(),
-    );
-  }
-
-  final tableHeader=pw.Table(
-    border: pw.TableBorder.all(color: PdfColors.grey500,width:.6),
-    columnWidths: const {0: pw.FixedColumnWidth(190),1: pw.FlexColumnWidth()},
-    children:[pw.TableRow(children:[
+  // A flat table can span pages row by row. A nested per-location table
+  // was indivisible and failed with PdfTooBigPageException on long histories.
+  const columns = <int, pw.TableColumnWidth>{
+    0: pw.FixedColumnWidth(190),
+    1: pw.FlexColumnWidth(78),
+    2: pw.FlexColumnWidth(50),
+    3: pw.FlexColumnWidth(50),
+    4: pw.FlexColumnWidth(72),
+    5: pw.FlexColumnWidth(48),
+  };
+  final tableHeader = pw.Table(
+    border: pw.TableBorder.all(color: PdfColors.grey500, width: .6),
+    columnWidths: columns,
+    children: [pw.TableRow(children: [
       headerCell('LOCAȚIE / ADRESĂ'),
-      pw.Table(
-        border: const pw.TableBorder(verticalInside: pw.BorderSide(color: PdfColors.grey500,width:.6)),
-        columnWidths: const {
-          0: pw.FixedColumnWidth(78),
-          1: pw.FixedColumnWidth(50),
-          2: pw.FixedColumnWidth(50),
-          3: pw.FixedColumnWidth(72),
-          4: pw.FixedColumnWidth(48),
-        },
-        children:[pw.TableRow(children:[
-          headerCell('DATA'),
-          headerCell('START',alignment:pw.Alignment.center),
-          headerCell('FINAL',alignment:pw.Alignment.center),
-          headerCell('SUPRAFAȚĂ',alignment:pw.Alignment.centerRight),
-          headerCell('FAȚADĂ',alignment:pw.Alignment.center),
-        ])],
-      ),
+      headerCell('DATA'),
+      headerCell('START', alignment: pw.Alignment.center),
+      headerCell('FINAL', alignment: pw.Alignment.center),
+      headerCell('SUPRAFAȚĂ', alignment: pw.Alignment.centerRight),
+      headerCell('FAȚADĂ', alignment: pw.Alignment.center),
     ])],
   );
+  final tableRows = <pw.TableRow>[];
+  for (final id in orderedIds) {
+    final location = locationById[id];
+    final rows = [...rowsByLocation[id]!]
+      ..sort((a,b)=>(a['date'] as DateTime).compareTo(b['date'] as DateTime));
+    for (final row in rows) {
+      final record = row['record'] as CentralizerRecord?;
+      final date = row['date'] as DateTime;
+      final surface = location != null && location.surfaceM2 > 0
+          ? '${location.surfaceM2.toStringAsFixed(location.surfaceM2 % 1 == 0 ? 0 : 1)} m²'
+          : '—';
+      tableRows.add(pw.TableRow(children: [
+        pw.Container(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Text(location?.name ?? row['name']?.toString() ?? id,
+                style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 2),
+            pw.Text(location?.address ?? row['address']?.toString() ?? '',
+                style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+          ]),
+        ),
+        valueCell(record == null ? '${_pdfDate(date)}\n${row['statusText'] ?? 'Neexecutată'}' : _pdfDate(date)),
+        valueCell(record == null ? '—' : timeText(record.startedAt), alignment: pw.Alignment.center),
+        valueCell(record == null ? '—' : timeText(record.finishedAt), alignment: pw.Alignment.center),
+        valueCell(surface, alignment: pw.Alignment.centerRight),
+        pw.Container(padding: const pw.EdgeInsets.symmetric(vertical: 4),
+            alignment: pw.Alignment.center,
+            child: facadeBox(planned: record?.facadePlanned == true, done: record?.facadeDone == true)),
+      ]));
+    }
+  }
 
   doc.addPage(pw.MultiPage(
     pageFormat: PdfPageFormat.a4.landscape,
@@ -241,32 +324,17 @@ Future<void> downloadCentralizerPdf({
     ]),
     build: (_) => [
       if (orderedIds.isEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 20), child: pw.Text('Nu există săli pentru filtrele selectate.')),
-      for(final id in orderedIds) ...[
-        pw.Table(
-          border: pw.TableBorder.all(color:PdfColors.grey500,width:.55),
-          columnWidths: const {0: pw.FixedColumnWidth(190),1: pw.FlexColumnWidth()},
-          children:[pw.TableRow(children:[
-            pw.Container(
-              padding:const pw.EdgeInsets.all(6),
-              child:pw.Column(crossAxisAlignment:pw.CrossAxisAlignment.start,children:[
-                pw.Text(locationById[id]?.name ?? rowsByLocation[id]!.first['name']?.toString() ?? id,style:pw.TextStyle(fontSize:9,fontWeight:pw.FontWeight.bold)),
-                pw.SizedBox(height:2),
-                pw.Text(locationById[id]?.address ?? rowsByLocation[id]!.first['address']?.toString() ?? '',style:const pw.TextStyle(fontSize:7.5,color:PdfColors.grey700)),
-              ]),
-            ),
-            interventionTable(rowsByLocation[id]!,locationById[id]),
-          ])],
-        ),
-        pw.SizedBox(height:3),
-      ],
+      if (tableRows.isNotEmpty) pw.Table(
+        border: pw.TableBorder.all(color: PdfColors.grey500, width: .55),
+        columnWidths: columns,
+        children: tableRows,
+      ),
     ],
   ));
-  final bytes=await doc.save();
-  final filename='centralizator_${_safeFilePart(type.label)}_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf';
-  await downloadFile(bytes,filename,mimeType:'application/pdf');
+  return doc.save();
 }
 
-Future<void> downloadDecontPdf({
+Future<Uint8List> buildDecontPdfBytes({
   required Team team,
   required List<AppUser> users,
   required List<Expense> expenses,
@@ -277,26 +345,33 @@ Future<void> downloadDecontPdf({
 }) async {
   final theme = await _buildPdfTheme();
   final doc = pw.Document();
-  bool matchesSettlement(String? id) {
-    if (settlement != null) return id == settlement.id;
-    if (legacyOnly) return id == null || id.isEmpty;
-    return true;
-  }
-
   // Reconcile by immutable document/transfer IDs before exporting totals.
   // A repeated Firestore snapshot must not duplicate an expense or payment.
-  final expenseIds = <String>{};
-  final confirmedExpenses = expenses.where((e) =>
-      e.teamId == team.id && e.confirmed && e.amount.isFinite && e.amount >= 0 &&
-      matchesSettlement(e.settlementId) && expenseIds.add(e.id)).toList()
-    ..sort((a,b)=>a.date.compareTo(b.date));
-  final paymentIds = <String>{};
-  final confirmedPerDiems = perDiems.where((d) =>
-      d.teamId == team.id && d.status == PerDiemStatus.confirmed &&
-      d.received == true && d.actualReceivedAmount != null &&
-      d.actualReceivedAmount!.isFinite && d.actualReceivedAmount! >= 0 &&
-      matchesSettlement(d.settlementId) && paymentIds.add(d.id)).toList()
-    ..sort((a,b)=>a.date.compareTo(b.date));
+  final confirmedExpenses = selectDecontPdfExpenses<Expense>(
+    expenses: expenses,
+    teamId: team.id,
+    selectedSettlementId: settlement?.id,
+    legacyOnly: legacyOnly,
+    teamIdOf: (expense) => expense.teamId,
+    confirmedOf: (expense) => expense.confirmed,
+    amountOf: (expense) => expense.amount,
+    settlementIdOf: (expense) => expense.settlementId,
+    idOf: (expense) => expense.id,
+    dateOf: (expense) => expense.date,
+  );
+  final confirmedPerDiems = selectDecontPdfPerDiems<PerDiemEntry>(
+    entries: perDiems,
+    teamId: team.id,
+    selectedSettlementId: settlement?.id,
+    legacyOnly: legacyOnly,
+    teamIdOf: (entry) => entry.teamId,
+    confirmedOf: (entry) => entry.status == PerDiemStatus.confirmed,
+    receivedOf: (entry) => entry.received == true,
+    actualAmountOf: (entry) => entry.actualReceivedAmount,
+    settlementIdOf: (entry) => entry.settlementId,
+    idOf: (entry) => entry.id,
+    dateOf: (entry) => entry.date,
+  );
   String userName(String id) => users.firstWhere((u) => u.id == id, orElse: () => AppUser(id: id, name: id, role: UserRole.member)).name;
 
   final fuelReceipts = confirmedExpenses.where((e) => e.category == 'Combustibil').toList();
@@ -308,23 +383,29 @@ Future<void> downloadDecontPdf({
   // Derive received totals from the same unique transfers shown in the PDF.
   // Legacy aggregate-only records retain their historical stored totals.
   final rawReceipts = settlement?.receivedEntries ?? finance.receivedEntries;
-  final uniqueReceiptIds = <String>{};
-  final uniqueReceipts = rawReceipts.where((e) => e.amount.isFinite && e.amount >= 0 &&
-      uniqueReceiptIds.add(e.id)).toList();
+  final uniqueReceipts = selectDecontPdfReceivedEntries(
+    entries: rawReceipts,
+    amountOf: (entry) => entry.amount,
+    idOf: (entry) => entry.id,
+  );
   final receivedDeparture = rawReceipts.isEmpty
       ? (settlement?.departureTotal ?? finance.departureTotal)
-      : uniqueReceipts.where((e)=>e.kind=='departure').fold<double>(0,(a,e)=>a+e.amount);
+      : uniqueReceipts.where((entry) => entry.kind == 'departure')
+          .fold<double>(0, (total, entry) => total + entry.amount);
   final receivedDuring = rawReceipts.isEmpty
       ? (settlement?.duringTotal ?? finance.duringTotal)
-      : uniqueReceipts.where((e)=>e.kind=='during').fold<double>(0,(a,e)=>a+e.amount);
+      : uniqueReceipts.where((entry) => entry.kind == 'during')
+          .fold<double>(0, (total, entry) => total + entry.amount);
   final totalReceived = receivedDeparture + receivedDuring;
   final budgetRemaining = math.max(0.0, totalReceived - spent).toDouble();
   final amountDue = math.max(0.0, spent - totalReceived).toDouble();
   final titleSuffix = settlement?.name ?? (legacyOnly ? 'Istoric anterior' : team.name);
   final rawEntries = settlement?.receivedEntries ?? finance.receivedEntries;
-  final receiptIds = <String>{};
-  final entries = rawEntries.where((e) => e.amount.isFinite && e.amount >= 0 &&
-      receiptIds.add(e.id)).toList();
+  final entries = selectDecontPdfReceivedEntries(
+    entries: rawEntries,
+    amountOf: (entry) => entry.amount,
+    idOf: (entry) => entry.id,
+  );
   final duringEntries = entries.where((e)=>e.kind=='during').toList()..sort((a,b)=>a.date.compareTo(b.date));
 
   String money(double value) => '${value.toStringAsFixed(2)} lei';
@@ -459,9 +540,34 @@ Future<void> downloadDecontPdf({
       pw.Text('Notă: fotografiile bonurilor și facturilor nu sunt păstrate în decont; OCR-ul salvează numai datele structurate necesare.',style:const pw.TextStyle(fontSize:7,color:PdfColors.grey700)),
     ],
   ));
-  final bytes = await doc.save();
+  return doc.save();
+}
+
+Future<void> downloadDecontPdf({
+  required Team team,
+  required List<AppUser> users,
+  required List<Expense> expenses,
+  required List<PerDiemEntry> perDiems,
+  required TeamFinance finance,
+  TravelSettlement? settlement,
+  bool legacyOnly = false,
+}) async {
+  final bytes = await buildDecontPdfBytes(
+    team: team,
+    users: users,
+    expenses: expenses,
+    perDiems: perDiems,
+    finance: finance,
+    settlement: settlement,
+    legacyOnly: legacyOnly,
+  );
+  final titleSuffix = settlement?.name ?? (legacyOnly ? 'Istoric anterior' : team.name);
   final filename = 'decont_${_safeFilePart(team.name)}_${_safeFilePart(titleSuffix)}_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf';
-  await downloadFile(bytes, filename, mimeType: 'application/pdf');
+  await deliverPdf(
+    buildBytes: () async => bytes,
+    filename: () => filename,
+    download: downloadFile,
+  );
 }
 
 Future<void> downloadAuditPdf(List<AuditEntry> audit) async {
@@ -477,11 +583,21 @@ Future<void> downloadAuditPdf(List<AuditEntry> audit) async {
       pw.Divider(),
     ]),
     build: (_) => [
-      for (final a in audit)
-        pw.Padding(padding: const pw.EdgeInsets.only(bottom: 5), child: pw.Text('${formatDate(a.at)} ${timeText(a.at)} · ${a.actor} · ${a.action} · ${a.target}', style: const pw.TextStyle(fontSize: 8))),
+      for (final row in projectAuditPdfRows<AuditEntry>(
+        entries: audit,
+        dateOf: (entry) => entry.at,
+        actorOf: (entry) => entry.actor,
+        actionOf: (entry) => entry.action,
+        targetOf: (entry) => entry.target,
+      ))
+        pw.Padding(padding: const pw.EdgeInsets.only(bottom: 5), child: pw.Text('${formatDate(row.at)} ${timeText(row.at)} · ${row.actor} · ${row.action} · ${row.target}', style: const pw.TextStyle(fontSize: 8))),
     ],
   ));
-  await downloadFile(await doc.save(), 'audit_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf', mimeType: 'application/pdf');
+  await deliverPdf(
+    buildBytes: doc.save,
+    filename: () => 'audit_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf',
+    download: downloadFile,
+  );
 }
 
 Future<void> downloadFinancialSummaryPdf({
@@ -493,14 +609,18 @@ Future<void> downloadFinancialSummaryPdf({
 }) async {
   final theme = await _buildPdfTheme();
   final doc = pw.Document();
-  TeamFinance financeFor(String teamId) => finances.firstWhere((f) => f.teamId == teamId, orElse: () => TeamFinance(teamId: teamId));
   pw.Widget financeRow(Team team) {
-    final ex = expenses.where((e) => e.teamId == team.id && e.confirmed).fold<double>(0, (a,b)=>a+b.amount);
-    final di = perDiems.where((d) => d.teamId == team.id && d.status == PerDiemStatus.confirmed && d.received == true && d.actualReceivedAmount != null).fold<double>(0, (a,b)=>a+b.actualReceivedAmount!);
-    final f = financeFor(team.id);
-    final tripReceived = settlements.where((x) => x.teamId == team.id).fold<double>(0, (a,b) => a + b.totalReceived);
-    final totalReceived = f.totalReceived + tripReceived;
-    return pw.Text('Primit ${totalReceived.toStringAsFixed(2)} lei · Cheltuieli ${(ex+di).toStringAsFixed(2)} lei · Sold ${(totalReceived-ex-di).toStringAsFixed(2)} lei · ${settlements.where((x)=>x.teamId==team.id).length} deplasări', style: const pw.TextStyle(fontSize: 9));
+    final projection = projectFinancialSummaryRow(
+      team: team,
+      expenses: expenses,
+      perDiems: perDiems,
+      finances: finances,
+      settlements: settlements,
+    );
+    return pw.Text(
+      'Primit ${projection.totalReceived.toStringAsFixed(2)} lei · Cheltuieli ${(projection.expenseTotal + projection.perDiemTotal).toStringAsFixed(2)} lei · Sold ${projection.balance.toStringAsFixed(2)} lei · ${projection.settlementCount} deplasări',
+      style: const pw.TextStyle(fontSize: 9),
+    );
   }
   doc.addPage(pw.MultiPage(
     pageFormat: PdfPageFormat.a4,
@@ -519,6 +639,10 @@ Future<void> downloadFinancialSummaryPdf({
       ],
     ],
   ));
-  await downloadFile(await doc.save(), 'raport_financiar_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf', mimeType: 'application/pdf');
+  await deliverPdf(
+    buildBytes: doc.save,
+    filename: () => 'raport_financiar_${DateTime.now().year}${two(DateTime.now().month)}${two(DateTime.now().day)}.pdf',
+    download: downloadFile,
+  );
 }
 

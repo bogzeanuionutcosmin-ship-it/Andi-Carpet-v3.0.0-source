@@ -4,7 +4,13 @@ class HomePage extends StatefulWidget {
   final AppSettings settings;
   final VoidCallback onSettingsChanged;
   final FirebaseUserProfile profile;
-  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile});
+  final FirebaseFirestore? firestore;
+  final FirebaseMessaging? messaging;
+  final Stream<RemoteMessage>? messageOpenedApp;
+  final VoidCallback? startLocation;
+  final Future<void> Function()? initializePush;
+  final bool Function()? sessionIsCurrent;
+  const HomePage({super.key, required this.settings, required this.onSettingsChanged, required this.profile, this.firestore, this.messaging, this.messageOpenedApp, this.startLocation, this.initializePush, this.sessionIsCurrent});
   @override State<HomePage> createState() => _HomePageState();
 }
 
@@ -12,6 +18,18 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   int tab = 0;
   late final String currentUserId;
   AppSettings get settings => widget.settings;
+  bool get _sessionActive => mounted && (widget.sessionIsCurrent?.call() ?? true);
+
+  void _requireCurrentSession() {
+    if (!_sessionActive) throw StateError('Sesiunea s-a schimbat. Reîncarcă înainte de salvare.');
+  }
+
+  void _scheduleSettingsChanged() {
+    if (!_sessionActive) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_sessionActive) widget.onSettingsChanged();
+    });
+  }
   late final List<AppUser> users;
   late final List<Team> teams;
   late final List<Car> cars;
@@ -27,8 +45,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   final notifications = <AppNotification>[];
   final audit = <AuditEntry>[];
   final Set<String> _hiddenUserIds = <String>{};
-  Timer? _liveLocationTimer;
-  StreamSubscription<Position>? _backgroundLocationSubscription;
+  final HomeLiveLocationResources _liveLocationResources = HomeLiveLocationResources();
   Position? _lastSharedPosition;
   DateTime? _lastSharedAt;
   String _personalLocationMode = 'economic';
@@ -86,14 +103,16 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     categories.addAll(defaultLocationCategories());
     functionDefinitions.addAll(defaultFunctionDefinitions());
     _startCoreSync();
-    _startAdaptiveLiveLocation();
-    unawaited(_initPushNotifications());
+    if (!usesLocalFirebaseEmulators) {
+      (widget.startLocation ?? _startAdaptiveLiveLocation)();
+      unawaited((widget.initializePush ?? _initPushNotifications)());
+    }
   }
 
   void _showIncomingPopup({required String title, required String body, VoidCallback? onView}) {
-    if (!mounted) return;
+    if (!_sessionActive) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_sessionActive) return;
       final messenger = ScaffoldMessenger.maybeOf(context);
       if (messenger == null) return;
       messenger
@@ -116,11 +135,11 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   Future<void> _openChatFromAlert(String otherUserId) async {
-    if (!mounted || otherUserId.trim().isEmpty || otherUserId == currentUserId) return;
+    if (!_sessionActive || otherUserId.trim().isEmpty || otherUserId == currentUserId) return;
     if (!isAdmin && _hiddenUserIds.contains(otherUserId)) return;
     try {
       final snap = await FirebaseFirestore.instance.collection(isAdmin ? 'users' : 'memberDirectory').doc(otherUserId).get();
-      if (!mounted) return;
+      if (!_sessionActive) return;
       final d = snap.data() ?? <String, dynamic>{};
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => PrivateChatPage(
         currentUser: me,
@@ -129,16 +148,16 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         otherPhotoBase64: (d['photoBase64'] ?? '').toString(),
       )));
     } catch (_) {
-      if (mounted) _openMembersDirectory();
+      if (_sessionActive) _openMembersDirectory();
     }
   }
 
-  String _pushTokenDocId(String token) => base64UrlEncode(utf8.encode(token)).replaceAll('=', '');
+  String _pushTokenDocId(String token) => pushTokenDocumentId(token);
 
   Future<void> _savePushToken(String token) async {
-    if (token.trim().isEmpty) return;
+    if (!_sessionActive || token.trim().isEmpty) return;
     final platform = kIsWeb ? 'web' : defaultTargetPlatform.name;
-    await FirebaseFirestore.instance
+    await (widget.firestore ?? FirebaseFirestore.instance)
         .collection('users').doc(currentUserId)
         .collection('pushTokens').doc(_pushTokenDocId(token))
         .set({
@@ -152,10 +171,10 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _offerPushPermissionAutomatically() {
-    if (_pushPermissionDialogShown || !mounted) return;
+    if (_pushPermissionDialogShown || !_sessionActive) return;
     _pushPermissionDialogShown = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_sessionActive) return;
       showDialog<void>(
         context: context,
         barrierDismissible: true,
@@ -191,18 +210,20 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   Future<void> _initPushNotifications({bool fromUserGesture = false}) async {
-    if (_pushInitializationInFlight) return;
+    if (!_sessionActive || _pushInitializationInFlight) return;
     _pushInitializationInFlight = true;
     try {
-      final messaging = FirebaseMessaging.instance;
+      final messaging = widget.messaging ?? FirebaseMessaging.instance;
 
       NotificationSettings permission;
       if (kIsWeb && fromUserGesture) {
         // Pe Web (inclusiv PWA iPhone), cererea trebuie lansată direct dintr-un
         // gest al utilizatorului. Nu facem niciun await înainte de apelul acesta.
         permission = await messaging.requestPermission(alert: true, badge: true, sound: true);
+        if (!_sessionActive) return;
       } else {
         permission = await messaging.getNotificationSettings();
+        if (!_sessionActive) return;
         if (permission.authorizationStatus == AuthorizationStatus.notDetermined) {
           if (kIsWeb) {
             // Nu cerem utilizatorului să intre în Profil. Afișăm automat dialogul
@@ -211,6 +232,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
             return;
           }
           permission = await messaging.requestPermission(alert: true, badge: true, sound: true);
+          if (!_sessionActive) return;
         }
       }
 
@@ -231,17 +253,20 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         }
         // După acordarea permisiunii, dăm service worker-ului o clipă să fie gata.
         await Future<void>.delayed(const Duration(milliseconds: 700));
+        if (!_sessionActive) return;
       }
 
       final token = kIsWeb
           ? await messaging.getToken(vapidKey: _webPushVapidKey)
           : await messaging.getToken();
+      if (!_sessionActive) return;
       if (token == null || token.trim().isEmpty) {
         debugPrint('[push] Firebase Messaging nu a returnat un token.');
         return;
       }
 
       await _savePushToken(token);
+      if (!_sessionActive) return;
       debugPrint('[push] Token FCM înregistrat AUTOMAT și salvat pentru $currentUserId.');
 
       if (!_pushListenersAttached) {
@@ -250,7 +275,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           (value) => unawaited(_savePushToken(value)),
           onError: (Object error) => debugPrint('[push] onTokenRefresh: $error'),
         ));
-        _coreSubscriptions.add(FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _coreSubscriptions.add((widget.messageOpenedApp ?? FirebaseMessaging.onMessageOpenedApp).listen((message) {
           final type = (message.data['type'] ?? '').toString();
           if (type == 'chat') {
             final senderId = (message.data['senderId'] ?? '').toString();
@@ -260,6 +285,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       }
 
       final initial = await messaging.getInitialMessage();
+      if (!_sessionActive) return;
       if (initial != null && (initial.data['type'] ?? '').toString() == 'chat') {
         final senderId = (initial.data['senderId'] ?? '').toString();
         if (senderId.isNotEmpty) {
@@ -277,33 +303,41 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _startAdaptiveLiveLocation() {
-    _liveLocationTimer?.cancel();
-    _liveLocationTimer = null;
-    _backgroundLocationSubscription?.cancel();
-    _backgroundLocationSubscription = null;
+    if (!_sessionActive || usesLocalFirebaseEmulators) return;
+    unawaited(_liveLocationResources.stop());
     unawaited(_shareLiveLocationIfAllowed());
     if (kIsWeb) {
       // Browserele/PWA pot suspenda complet execuția când aplicația este închisă.
       // Cât timp pagina rulează folosim intervalul adaptiv de mai jos.
-      _liveLocationTimer = Timer.periodic(const Duration(minutes: 1), (_) => unawaited(_shareLiveLocationIfAllowed()));
+      _liveLocationResources.startPeriodicPolling(
+        interval: const Duration(minutes: 1),
+        onTick: () => unawaited(_shareLiveLocationIfAllowed()),
+      );
       return;
     }
     unawaited(_startNativeBackgroundLocationStream());
   }
 
   Future<void> _startNativeBackgroundLocationStream() async {
+    if (!_sessionActive) return;
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return;
+      if (!_sessionActive) return;
       var permission = await Geolocator.checkPermission();
+      if (!_sessionActive) return;
       if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+      if (!_sessionActive) return;
       if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
 
-      await _backgroundLocationSubscription?.cancel();
-      _backgroundLocationSubscription = null;
+      await _liveLocationResources.clearPositionSubscription();
+      if (!_sessionActive) return;
 
       // Mod economic: cât timp suntem departe de următoarea sală folosim mai puține
       // actualizări. La apropierea de traseul activ activăm temporar precizia ridicată.
-      final economical = _personalLocationMode == 'economic' && !_nativeLocationProximityBoost;
+      final economical = homeUsesEconomicalLocationTracking(
+        locationMode: _personalLocationMode,
+        proximityBoost: _nativeLocationProximityBoost,
+      );
       LocationSettings settings;
       if (defaultTargetPlatform == TargetPlatform.android) {
         settings = AndroidSettings(
@@ -331,9 +365,11 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           distanceFilter: economical ? 60 : 10,
         );
       }
-      _backgroundLocationSubscription = Geolocator.getPositionStream(locationSettings: settings).listen(
-        (position) => unawaited(_shareLiveLocationIfAllowed(position)),
-        onError: (Object e) => debugPrint('[location] Background stream: $e'),
+      await _liveLocationResources.replacePositionSubscription(
+        Geolocator.getPositionStream(locationSettings: settings).listen(
+          (position) => unawaited(_shareLiveLocationIfAllowed(position)),
+          onError: (Object e) => debugPrint('[location] Background stream: $e'),
+        ),
       );
     } catch (e) {
       debugPrint('[location] Nu am putut porni tracking-ul nativ în background: $e');
@@ -344,11 +380,22 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (kIsWeb || _personalLocationMode != 'economic') return;
     final teamId = me.teamId;
     if (teamId == null || teamId.isEmpty) return;
-    final active = schedules.where((s) => s.teamId == teamId && sameDay(s.date, workDate) && s.started && !s.closed && !s.paused && !s.postponed).toList();
+    final active = homeActiveSchedulesForWorkDate<WorkSchedule>(
+      schedules: schedules,
+      teamId: teamId,
+      workDate: workDate,
+      teamIdOf: (schedule) => schedule.teamId,
+      dateOf: (schedule) => schedule.date,
+      isStarted: (schedule) => schedule.started,
+      isClosed: (schedule) => schedule.closed,
+      isPaused: (schedule) => schedule.paused,
+      isPostponed: (schedule) => schedule.postponed,
+      sameDay: sameDay,
+    );
     var nearest = double.infinity;
     for (final schedule in active) {
       for (final item in schedule.items) {
-        final r = _homeLatestRecord(teamId, item.locationId, workDate);
+        final r = _homeLatestRecord(teamId, item.locationId, workDate, interventionId: item.interventionId);
         if (r?.status == WorkAttemptStatus.completed || r?.status == WorkAttemptStatus.refused || r?.status == WorkAttemptStatus.notCompleted) continue;
         final loc = _homeLocationById(item.locationId);
         if (loc?.latitude == null || loc?.longitude == null) continue;
@@ -356,12 +403,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         if (meters < nearest) nearest = meters;
       }
     }
-    final shouldBoost = nearest <= 3000;
-    final shouldRelax = nearest > 5000 || nearest == double.infinity;
-    if (shouldBoost && !_nativeLocationProximityBoost) {
+    final action = homeLocationProximityAction(
+      isBoosted: _nativeLocationProximityBoost,
+      nearestMeters: nearest,
+    );
+    if (action == HomeLocationProximityAction.boost) {
       _nativeLocationProximityBoost = true;
       Future<void>.delayed(const Duration(milliseconds: 250), () => _startNativeBackgroundLocationStream());
-    } else if (shouldRelax && _nativeLocationProximityBoost) {
+    } else if (action == HomeLocationProximityAction.relax) {
       _nativeLocationProximityBoost = false;
       Future<void>.delayed(const Duration(milliseconds: 250), () => _startNativeBackgroundLocationStream());
     }
@@ -369,10 +418,17 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
   Future<String> _resolveLiveLocality(Position p) async {
     final now = DateTime.now();
-    if (_lastLiveLocalityLabel.isNotEmpty && _lastLiveLocalityResolvedAt != null && _lastLiveLocalityPosition != null) {
-      final moved = Geolocator.distanceBetween(_lastLiveLocalityPosition!.latitude, _lastLiveLocalityPosition!.longitude, p.latitude, p.longitude);
-      if (moved < 5000 && now.difference(_lastLiveLocalityResolvedAt!) < const Duration(minutes: 30)) return _lastLiveLocalityLabel;
-    }
+    final resolvedAt = _lastLiveLocalityResolvedAt;
+    final lastPosition = _lastLiveLocalityPosition;
+    final movedMeters = _lastLiveLocalityLabel.isNotEmpty && resolvedAt != null && lastPosition != null
+        ? Geolocator.distanceBetween(lastPosition.latitude, lastPosition.longitude, p.latitude, p.longitude)
+        : null;
+    if (shouldReuseLiveLocalityCache(
+      label: _lastLiveLocalityLabel,
+      resolvedAt: resolvedAt,
+      distanceMovedMeters: movedMeters,
+      now: now,
+    )) return _lastLiveLocalityLabel;
     try {
       final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
         'format': 'jsonv2',
@@ -389,16 +445,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         final decoded = jsonDecode(response.body);
         if (decoded is Map && decoded['address'] is Map) {
           final a = decoded['address'] as Map;
-          String first(List<String> keys) {
-            for (final key in keys) {
-              final v = a[key]?.toString().trim() ?? '';
-              if (v.isNotEmpty) return v;
-            }
-            return '';
-          }
-          final city = first(['city','town','municipality','village']);
-          final county = first(['county','state']);
-          final label = city.isNotEmpty && county.isNotEmpty && city.toLowerCase() != county.toLowerCase() ? '$city · $county' : (city.isNotEmpty ? city : county);
+          final label = liveLocalityLabelFromAddress(a);
           if (label.isNotEmpty) {
             _lastLiveLocalityLabel = label;
             _lastLiveLocalityResolvedAt = now;
@@ -414,19 +461,29 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   Future<void> _shareLiveLocationIfAllowed([Position? suppliedPosition]) async {
+    if (!_sessionActive) return;
     try {
       final permission = await Geolocator.checkPermission();
+      if (!_sessionActive) return;
       if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
       if (!await Geolocator.isLocationServiceEnabled()) return;
+      if (!_sessionActive) return;
       final now = DateTime.now();
       final workDate = operationalWorkDate(now);
       final inWork = isInsideWorkWindow(now, workDate);
 
       // Preferința personală poate fi live / economic / offline. În timpul programului
       // modul offline este ridicat automat la economic, ca detectarea operațională să aibă date.
-      var effectiveMode = _personalLocationMode;
-      if (inWork && effectiveMode == 'offline') effectiveMode = 'economic';
-      if (!inWork && effectiveMode == 'offline') {
+      final locationPolicy = liveLocationSharePolicy(
+        personalMode: _personalLocationMode,
+        inWork: inWork,
+        nativeLocationProximityBoost: _nativeLocationProximityBoost,
+        preferredIntervalMinutes: _personalLocationIntervalMinutes,
+        now: now,
+        lastSharedAt: _lastSharedAt,
+      );
+      final effectiveMode = locationPolicy.effectiveMode;
+      if (locationPolicy.clearWhenOutsideWork) {
         if (!_offlineLocationCleared) {
           await FirebaseFirestore.instance.collection('liveLocations').doc(currentUserId).delete();
           _offlineLocationCleared = true;
@@ -437,27 +494,27 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       }
       _offlineLocationCleared = false;
 
-      final configured = _personalLocationIntervalMinutes.clamp(1, 60).toInt();
-      final minGap = _nativeLocationProximityBoost && inWork
-          ? const Duration(seconds: 20)
-          : effectiveMode == 'live'
-              ? const Duration(minutes: 1)
-              : Duration(minutes: inWork ? configured.clamp(1, 3).toInt() : configured);
-      if (_lastSharedAt != null && now.difference(_lastSharedAt!) < minGap) return;
+      if (_lastSharedAt != null &&
+          now.difference(_lastSharedAt!) < locationPolicy.minimumInterval) {
+        return;
+      }
 
-      final accuracy = effectiveMode == 'live' || inWork ? LocationAccuracy.high : LocationAccuracy.medium;
+      final accuracy = locationPolicy.useHighAccuracy
+          ? LocationAccuracy.high
+          : LocationAccuracy.medium;
       final p = suppliedPosition ?? await Geolocator.getCurrentPosition(locationSettings: LocationSettings(accuracy: accuracy));
+      if (!_sessionActive) return;
       _updateNativeLocationProximityBoost(p, workDate);
       var moved = true;
       if (_lastSharedPosition != null) {
         final meters = Geolocator.distanceBetween(_lastSharedPosition!.latitude, _lastSharedPosition!.longitude, p.latitude, p.longitude);
-        final threshold = effectiveMode == 'live' ? 10.0 : (inWork ? 25.0 : 150.0);
-        moved = meters >= threshold;
+        moved = meters >= locationPolicy.movementThresholdMeters;
       }
-      final heartbeatDue = _lastSharedAt == null || inWork || (effectiveMode == 'live' && now.difference(_lastSharedAt!) >= const Duration(minutes: 5));
+      final heartbeatDue = locationPolicy.heartbeatDue;
       if (!moved && !heartbeatDue) return;
       final myTeam = me.teamId;
       final localityLabel = await _resolveLiveLocality(p);
+      if (!_sessionActive) return;
       await FirebaseFirestore.instance.collection('liveLocations').doc(currentUserId).set({
         'userId': currentUserId,
         'name': me.name,
@@ -471,6 +528,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         'localityLabel': localityLabel,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+      if (!_sessionActive) return;
       _lastSharedPosition = p;
       _lastSharedAt = now;
       await _applyWorkAutomationFromPosition(p, now, workDate);
@@ -484,8 +542,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     return null;
   }
 
-  CentralizerRecord? _homeLatestRecord(String teamId, String locationId, DateTime workDate) {
-    final list = records.where((r) => r.teamId == teamId && r.locationId == locationId && recordBelongsToWorkDate(r, workDate)).toList()
+  CentralizerRecord? _homeLatestRecord(String teamId, String locationId, DateTime workDate, {String interventionId = ''}) {
+    final list = records.where((r) => r.teamId == teamId && r.locationId == locationId && r.interventionId == interventionId && (interventionId.isNotEmpty || recordHasOpenAttempt(r) || recordBelongsToWorkDate(r, workDate))).toList()
       ..sort((a, b) => recordEventTime(a).compareTo(recordEventTime(b)));
     return list.isEmpty ? null : list.last;
   }
@@ -498,20 +556,32 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     // Geofencing-ul nu poate confirma sosirea dintr-o poziție GPS imprecisă,
     // veche sau raportată în timpul deplasării rapide. Nu pornim niciodată
     // o intervenție fără alegerea explicită a utilizatorului.
-    if (!p.latitude.isFinite || !p.longitude.isFinite ||
-        p.latitude < -90 || p.latitude > 90 ||
-        p.longitude < -180 || p.longitude > 180) return;
-    if (!p.accuracy.isFinite || p.accuracy < 0 || p.accuracy > 80) return;
-    if (p.timestamp.isAfter(now.add(const Duration(minutes: 1))) ||
-        now.difference(p.timestamp) > const Duration(minutes: 2)) return;
-    if (p.speed.isFinite && p.speed > 8) return;
+    if (!isUsableGeofencePosition(
+      latitude: p.latitude,
+      longitude: p.longitude,
+      accuracyMeters: p.accuracy,
+      speedMetersPerSecond: p.speed,
+      timestamp: p.timestamp,
+      now: now,
+    )) return;
     if (!hasPermission(FunctionPermission.editProgram)) return;
     final teamId = me.teamId;
     if (teamId == null || teamId.isEmpty || !canEditTeam(teamId)) return;
 
     await _maybeAutoCloseResolvedSchedules(workDate);
 
-    final active = schedules.where((s) => s.teamId == teamId && sameDay(s.date, workDate) && s.started && !s.closed && !s.paused && !s.postponed).toList();
+    final active = homeActiveSchedulesForWorkDate<WorkSchedule>(
+      schedules: schedules,
+      teamId: teamId,
+      workDate: workDate,
+      teamIdOf: (schedule) => schedule.teamId,
+      dateOf: (schedule) => schedule.date,
+      isStarted: (schedule) => schedule.started,
+      isClosed: (schedule) => schedule.closed,
+      isPaused: (schedule) => schedule.paused,
+      isPostponed: (schedule) => schedule.postponed,
+      sameDay: sameDay,
+    );
     if (active.isEmpty) return;
     if (active.length > 1) {
       _automationNotifyOnce('multi_${teamId}_${workDate.toIso8601String().substring(0,10)}', 'Automatizare suspendată', 'Sunt mai multe grafice pornite pentru aceeași echipă. Alege manual locația pentru INTRĂ/IEȘI.');
@@ -552,9 +622,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
     // Sosirea la sală cere întotdeauna confirmarea omului. Nu pornim lucrarea doar
     // pentru că GPS-ul spune că telefonul este în apropiere.
-    final candidates = <(ScheduleItem, Location, double)>[];
+    final candidates = <HomeArrivalCandidate<(ScheduleItem, Location)>>[];
     for (final item in schedule.items) {
-      final r = _homeLatestRecord(teamId, item.locationId, workDate);
+      final r = _homeLatestRecord(teamId, item.locationId, workDate, interventionId: item.interventionId);
       if (r?.status == WorkAttemptStatus.completed ||
           r?.status == WorkAttemptStatus.refused ||
           r?.status == WorkAttemptStatus.notCompleted ||
@@ -563,11 +633,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       final loc = _homeLocationById(item.locationId);
       if (loc?.latitude == null || loc?.longitude == null) continue;
       final meters = Geolocator.distanceBetween(p.latitude, p.longitude, loc!.latitude!, loc.longitude!);
-      // GPS-ul cu eroare mare nu trebuie să declanșeze promptul la marginea razei.
-      // Cerem ca distanța + eroarea estimată să rămână în raza de 250 m.
-      if (meters + p.accuracy <= 250) candidates.add((item, loc, meters));
+      candidates.add(HomeArrivalCandidate(value: (item, loc), meters: meters));
     }
-    if (candidates.isEmpty) {
+    final candidate = nearestEligibleHomeArrivalCandidate<(ScheduleItem, Location)>(
+      candidates: candidates,
+      accuracyMeters: p.accuracy,
+    );
+    if (candidate == null) {
       _autoInsideSince.clear();
       _arrivalSnoozedUntil.clear();
       _arrivalPromptCounts.clear();
@@ -575,9 +647,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       return;
     }
 
-    candidates.sort((a, b) => a.$3.compareTo(b.$3));
-    final item = candidates.first.$1;
-    final meters = candidates.first.$3;
+    final item = candidate.value.$1;
+    final meters = candidate.meters;
     final key = '${schedule.id}_${item.locationId}_${workDate.year}${two(workDate.month)}${two(workDate.day)}';
     final firstInside = _autoInsideSince.putIfAbsent(key, () => now);
     _autoInsideSince.removeWhere((k, _) => k != key);
@@ -598,7 +669,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       'Ai ajuns la ${item.locationNameSnapshot}',
       'Ești la aproximativ ${meters.round()} m. Ai început lucrul sau ești în așteptare?',
     );
-    if (!mounted || _arrivalDialogOpen) return;
+    if (!_sessionActive || _arrivalDialogOpen) return;
 
     _arrivalDialogOpen = true;
     _arrivalPromptCounts[key] = (_arrivalPromptCounts[key] ?? 0) + 1;
@@ -622,7 +693,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       ),
     );
     _arrivalDialogOpen = false;
-    if (!mounted) return;
+    if (!_sessionActive) return;
 
     if (choice == 'later') {
       _arrivalSnoozedUntil[key] = DateTime.now().add(const Duration(minutes: 10));
@@ -642,11 +713,17 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   Future<void> _saveArrivalStart(WorkSchedule schedule, ScheduleItem item, DateTime workDate) async {
     final teamId = schedule.teamId;
     final now = DateTime.now();
-    final existing = _homeLatestRecord(teamId, item.locationId, workDate);
+    final attempts = records.where((r) => r.teamId == teamId && recordMatchesIntervention(r, item) &&
+      (item.interventionId.isNotEmpty || recordBelongsToWorkDate(r, workDate))).toList()
+      ..sort((a,b) => recordEventTime(a).compareTo(recordEventTime(b)));
+    final existing = attempts.isEmpty ? null : attempts.last;
     // Dacă între timp colegul a stabilit deja starea, nu dublăm execuția.
-    if (existing?.status == WorkAttemptStatus.running || existing?.status == WorkAttemptStatus.waitingAccess || existing?.completed == true) return;
+    if (!canWriteHomeArrivalChoice(existing)) return;
     final started = CentralizerRecord(
-      id: existing?.id ?? idNow(), teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
+      id: existing?.finishedAt == null && existing != null ? existing.id : nextInterventionRecordId(item, records),
+      graphId: item.interventionId.isEmpty ? '' : schedule.graphId,
+      scheduleId: item.interventionId.isEmpty ? '' : schedule.id, interventionId: item.interventionId,
+      writeBaseline: existing?.finishedAt == null ? existing?.writeBaseline : null, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
       locationNameSnapshot: item.locationNameSnapshot, addressSnapshot: item.addressSnapshot,
       waitingStartedAt: existing?.waitingStartedAt,
       waitingEndedAt: existing?.waitingStartedAt != null && existing?.waitingEndedAt == null ? now : existing?.waitingEndedAt,
@@ -657,19 +734,25 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     try {
       await _saveRecordDirect(started);
       log('INTRĂ confirmat la sosire', '${item.locationNameSnapshot} · ${timeText(now)}');
-      if (mounted) showSuccessMessage(context, 'Lucrarea a început la ${item.locationNameSnapshot}.');
+      if (_sessionActive) showSuccessMessage(context, 'Lucrarea a început la ${item.locationNameSnapshot}.');
     } catch (e) {
-      if (mounted) showErrorMessage(context, 'Pornirea lucrării nu a putut fi salvată: $e');
+      if (_sessionActive) showErrorMessage(context, 'Pornirea lucrării nu a putut fi salvată: $e');
     }
   }
 
   Future<void> _saveArrivalWaiting(WorkSchedule schedule, ScheduleItem item, DateTime workDate) async {
     final teamId = schedule.teamId;
     final now = DateTime.now();
-    final existing = _homeLatestRecord(teamId, item.locationId, workDate);
-    if (existing?.status == WorkAttemptStatus.running || existing?.status == WorkAttemptStatus.waitingAccess || existing?.completed == true) return;
+    final attempts = records.where((r) => r.teamId == teamId && recordMatchesIntervention(r, item) &&
+      (item.interventionId.isNotEmpty || recordBelongsToWorkDate(r, workDate))).toList()
+      ..sort((a,b) => recordEventTime(a).compareTo(recordEventTime(b)));
+    final existing = attempts.isEmpty ? null : attempts.last;
+    if (!canWriteHomeArrivalChoice(existing)) return;
     final waiting = CentralizerRecord(
-      id: existing?.id ?? idNow(), teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
+      id: existing?.finishedAt == null && existing != null ? existing.id : nextInterventionRecordId(item, records),
+      graphId: item.interventionId.isEmpty ? '' : schedule.graphId,
+      scheduleId: item.interventionId.isEmpty ? '' : schedule.id, interventionId: item.interventionId,
+      writeBaseline: existing?.finishedAt == null ? existing?.writeBaseline : null, teamId: teamId, locationId: item.locationId, type: item.typeSnapshot,
       locationNameSnapshot: item.locationNameSnapshot, addressSnapshot: item.addressSnapshot,
       waitingStartedAt: existing?.waitingStartedAt ?? now, waitingEndedAt: null,
       startedAt: null, finishedAt: null, status: WorkAttemptStatus.waitingAccess,
@@ -679,9 +762,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     try {
       await _saveRecordDirect(waiting);
       log('Așteptare confirmată la sosire', '${item.locationNameSnapshot} · ${timeText(now)}');
-      if (mounted) showSuccessMessage(context, 'Așteptarea a fost pornită la ${item.locationNameSnapshot}.');
+      if (_sessionActive) showSuccessMessage(context, 'Așteptarea a fost pornită la ${item.locationNameSnapshot}.');
     } catch (e) {
-      if (mounted) showErrorMessage(context, 'Așteptarea nu a putut fi salvată: $e');
+      if (_sessionActive) showErrorMessage(context, 'Așteptarea nu a putut fi salvată: $e');
     }
   }
 
@@ -691,99 +774,82 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (programLearning?.enabled != true) return;
     final teamId = me.teamId;
     if (teamId == null || teamId.isEmpty || !canEditTeam(teamId)) return;
-    final active = schedules.where((s) => s.teamId == teamId && sameDay(s.date, workDate) && s.started && !s.closed).toList();
-    for (final schedule in active) {
-      if (schedule.items.isEmpty) continue;
-      var allResolved = true;
-      for (final item in schedule.items) {
-        final r = _homeLatestRecord(teamId, item.locationId, workDate);
-        if (r == null || (r.status != WorkAttemptStatus.completed && r.status != WorkAttemptStatus.refused && r.status != WorkAttemptStatus.notCompleted)) {
-          allResolved = false; break;
-        }
-      }
-      if (!allResolved) continue;
-      final key = 'close_${schedule.id}';
-      if (programLearning!.mode == LearningMode.manualApproval) {
-        _automationNotifyOnce(key, 'Grafic terminat', '${schedule.graphName} are toate locațiile rezolvate. Poți închide graficul.');
-        continue;
-      }
-      schedule.closed = true;
-      schedule.active = false;
-      schedule.paused = false;
-      try {
-        await _saveScheduleDirect(schedule);
-        log('Grafic închis automat Learning', '${schedule.graphName} · ${formatDate(schedule.date)}');
-        _automationNotified.add(key);
-      } catch (_) {}
+    final readyGraphs = programGraphsReadyForOfficialStop(
+      schedules:schedules,records:records,teamId:teamId,workDate:workDate,
+    );
+    for (final graph in readyGraphs) {
+      // Learning can suggest STOP, but only the explicit Program confirmation
+      // may close a graph. Refusals and unresolved later days remain blockers.
+      _automationNotifyOnce('close_${teamId}_${graph.graphId}',
+        'Grafic pregătit pentru STOP',
+        '${graph.graphName} are toate intervențiile principale finalizate. Confirmă STOP în Grafic pentru închiderea oficială.');
     }
   }
 
-  final List<StreamSubscription<dynamic>> _coreSubscriptions = [];
-  final List<StreamSubscription<dynamic>> _financialSubscriptions = [];
+  final _coreSubscriptions = HomeSubscriptionRegistry();
+  final _financialSubscriptions = HomeSubscriptionRegistry();
   String? _financialTeamScope;
   final Map<String, String> _locationCache = {};
-  final Map<String, String> _categoryCache = {};
-  final Map<String, String> _functionCache = {};
   final Map<String, String> _teamCache = {};
   final Map<String, String> _carCache = {};
-  final Map<String, String> _scheduleCache = {};
-  final Map<String, String> _recordCache = {};
-  final Map<String, String> _expenseCache = {};
-  final Map<String, String> _perDiemCache = {};
-  final Map<String, String> _financeCache = {};
   final Map<String, String?> _userTeamCache = {};
   String? coreSyncError;
 
   void _applyTeamMembership() {
-    for (final u in users) {
-      String? found;
-      for (final t in teams) {
-        if (t.members.contains(u.id)) {
-          found = t.id;
-          break;
-        }
-      }
-      u.teamId = found;
+    final teamIds = projectHomeTeamMembership(
+      userIds: users.map((user) => user.id),
+      teams: teams,
+    );
+    for (var index = 0; index < users.length; index++) {
+      users[index].teamId = teamIds[index];
     }
   }
 
   void _startFinancialSync() {
-    final canViewAll = isAdmin || hasPermission(FunctionPermission.viewOtherDecont);
-    final scope = canViewAll ? '*' : me.teamId;
-    if (_financialTeamScope == scope) return;
+    final canViewOtherDeconts = hasPermission(FunctionPermission.viewOtherDecont);
+    final canViewAll = isAdmin || canViewOtherDeconts;
+    final scope = homeFinancialSyncScope(
+      isAdmin: isAdmin,
+      canViewOtherDeconts: canViewOtherDeconts,
+      teamId: me.teamId,
+    );
+    if (!shouldRestartHomeFinancialSync(_financialTeamScope, scope)) return;
     _financialTeamScope = scope;
-    for (final sub in _financialSubscriptions) { sub.cancel(); }
-    _financialSubscriptions.clear();
+    unawaited(_financialSubscriptions.cancelAll());
     expenses.clear(); perDiems.clear(); finances.clear(); settlements.clear();
     if (scope == null || scope.isEmpty) {
-      if (mounted) setState(() {});
+      if (_sessionActive) setState(() {});
       return;
     }
-    final db=FirebaseFirestore.instance;
+    final db=widget.firestore ?? FirebaseFirestore.instance;
     final Query<Map<String,dynamic>> expensesQuery = canViewAll ? db.collection('expenses') : db.collection('expenses').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> perDiemQuery = canViewAll ? db.collection('perDiems') : db.collection('perDiems').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> financeQuery = canViewAll ? db.collection('finance') : db.collection('finance').where('teamId',isEqualTo:scope);
     final Query<Map<String,dynamic>> settlementQuery = canViewAll ? db.collection('settlements') : db.collection('settlements').where('teamId',isEqualTo:scope);
     _financialSubscriptions.add(expensesQuery.snapshots().listen((snap){
+        if (!_sessionActive) return;
       final list=snap.docs.map(_expenseFromDoc).toList()..sort((a,b)=>a.date.compareTo(b.date));
-      if(!mounted)return;setState((){expenses..clear()..addAll(list);});
-    },onError:(Object e){if(mounted)setState(()=>coreSyncError='Cheltuieli: $e');}));
+      if(!_sessionActive)return;setState((){expenses..clear()..addAll(list);});
+    },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Cheltuieli: $e');}));
     _financialSubscriptions.add(perDiemQuery.snapshots().listen((snap){
+        if (!_sessionActive) return;
       final list=snap.docs.map(_perDiemFromDoc).toList()..sort((a,b)=>a.date.compareTo(b.date));
-      if(!mounted)return;setState((){perDiems..clear()..addAll(list);});
-    },onError:(Object e){if(mounted)setState(()=>coreSyncError='Diurne: $e');}));
+      if(!_sessionActive)return;setState((){perDiems..clear()..addAll(list);});
+    },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Diurne: $e');}));
     _financialSubscriptions.add(financeQuery.snapshots().listen((snap){
+        if (!_sessionActive) return;
       final list=snap.docs.map(_financeFromDoc).toList();
-      if(!mounted)return;setState((){finances..clear()..addAll(list);});
-    },onError:(Object e){if(mounted)setState(()=>coreSyncError='Financiar: $e');}));
+      if(!_sessionActive)return;setState((){finances..clear()..addAll(list);});
+    },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Financiar: $e');}));
     _financialSubscriptions.add(settlementQuery.snapshots().listen((snap){
+        if (!_sessionActive) return;
       final list=snap.docs.map(_settlementFromDoc).toList()..sort((a,b)=>b.startDate.compareTo(a.startDate));
-      if(!mounted)return;setState((){settlements..clear()..addAll(list);});
-    },onError:(Object e){if(mounted)setState(()=>coreSyncError='Deplasări: $e');}));
+      if(!_sessionActive)return;setState((){settlements..clear()..addAll(list);});
+    },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Deplasări: $e');}));
   }
 
   Future<void> _runAutomaticMaintenance() async {
-    if (!isAdmin || _automaticBackupInFlight) return;
+    if (!_sessionActive || !isAdmin || _automaticBackupInFlight) return;
     _automaticBackupInFlight = true;
     try {
       await _pruneOldNotifications();
@@ -812,6 +878,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     if (!isAdmin) return;
     _coreSubscriptions.add(
       db.collection('audit').orderBy('at', descending: true).limit(500).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map((doc) {
           final d = doc.data();
           return AuditEntry(
@@ -822,14 +889,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
             at: _dateFrom(d['at']) ?? DateTime.now(),
           );
         }).toList();
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           audit
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Audit: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Audit: $e');
       }),
     );
   }
@@ -837,22 +904,20 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void _startDefinitionsSync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       db.collection('locationCategories').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedDefinitionsIfNeeded());
           return;
         }
         final list = snap.docs.map(_categoryFromDoc).toList()..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        for (final doc in snap.docs) {
-          final item = _categoryFromDoc(doc);
-          _categoryCache[item.id] = _encoded(_categoryMap(item));
-        }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() { categories..clear()..addAll(list); });
-      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Categorii: $e'); }),
+      }, onError: (Object e) { if (_sessionActive) setState(() => coreSyncError = 'Categorii: $e'); }),
     );
 
     _coreSubscriptions.add(
       db.collection('backgrounds').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final next=<String,Map<String,String>>{};
         for(final doc in snap.docs){
           final d=doc.data();
@@ -861,28 +926,25 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           if(image.isEmpty)continue;
           next[doc.id]={'name':(d['name']??doc.id).toString(),'imageBase64':image};
         }
-        if(!mounted)return;
+        if(!_sessionActive)return;
         setState((){settings.customBackgrounds..clear()..addAll(next);});
-        WidgetsBinding.instance.addPostFrameCallback((_)=>widget.onSettingsChanged());
-      },onError:(Object e){if(mounted)setState(()=>coreSyncError='Fundaluri: $e');}),
+        _scheduleSettingsChanged();
+      },onError:(Object e){if(_sessionActive)setState(()=>coreSyncError='Fundaluri: $e');}),
     );
 
     _coreSubscriptions.add(
       db.collection('functions').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedDefinitionsIfNeeded());
           return;
         }
         final list = snap.docs.map(_functionFromDoc).toList()..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        for (final doc in snap.docs) {
-          final item = _functionFromDoc(doc);
-          _functionCache[item.id] = _encoded(_functionMap(item));
-        }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() { functionDefinitions..clear()..addAll(list); });
         _startFinancialSync();
         if (isAdmin) unawaited(_syncUserPermissionSnapshots());
-      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Funcții: $e'); }),
+      }, onError: (Object e) { if (_sessionActive) setState(() => coreSyncError = 'Funcții: $e'); }),
     );
 
   }
@@ -890,6 +952,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void _startDirectorySync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       (isAdmin ? db.collection('users') : db.collection('memberDirectory')).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map((doc) {
           final d = doc.data();
           final roleText = (d['role'] ?? 'member').toString();
@@ -916,7 +979,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
             // Fundalul este global și este controlat exclusiv de Admin.
             settings.personalBackgroundId = 'global';
             settings.fontFamily = personalFont;
-            if (visualChanged) WidgetsBinding.instance.addPostFrameCallback((_) => widget.onSettingsChanged());
+            if (visualChanged) _scheduleSettingsChanged();
           }
           final functionIds = d['functionIds'] is List
               ? (d['functionIds'] as List).map((e) => e.toString()).where((e) => e.isNotEmpty).toList()
@@ -942,7 +1005,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           if (a.role != b.role) return a.role == UserRole.director ? -1 : 1;
           return a.name.toLowerCase().compareTo(b.name.toLowerCase());
         });
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           _hiddenUserIds
             ..clear()
@@ -965,7 +1028,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         });
         _startFinancialSync();
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Conturi: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Conturi: $e');
       }),
     );
 
@@ -975,8 +1038,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     // Datele private ale contului propriu nu sunt in directorul public.
     if (!isAdmin) _coreSubscriptions.add(
       db.collection('users').doc(currentUserId).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final d = snap.data();
-        if (d == null || !mounted) return;
+        if (d == null || !_sessionActive) return;
         _personalLocationMode = (d['locationMode'] ?? 'economic').toString();
         _personalLocationIntervalMinutes = (d['locationIntervalMinutes'] is num)
             ? (d['locationIntervalMinutes'] as num).toInt().clamp(1, 60).toInt() : 10;
@@ -997,8 +1061,8 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         settings.theme = personalTheme;
         settings.personalBackgroundId = 'global';
         settings.fontFamily = personalFont;
-        if (visualChanged) WidgetsBinding.instance.addPostFrameCallback((_) => widget.onSettingsChanged());
-      }, onError: (Object e) { if (mounted) setState(() => coreSyncError = 'Profil propriu: $e'); }),
+        if (visualChanged) _scheduleSettingsChanged();
+      }, onError: (Object e) { if (_sessionActive) setState(() => coreSyncError = 'Profil propriu: $e'); }),
     );
 
   }
@@ -1006,12 +1070,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void _startOperationsSync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       db.collection('teams').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_teamFromDoc).toList()..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         for (final doc in snap.docs) {
           final t = _teamFromDoc(doc);
           _teamCache[doc.id] = _encoded(_teamMap(t));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           teams
             ..clear()
@@ -1020,30 +1085,32 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         });
         _startFinancialSync();
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Echipe: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Echipe: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('cars').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_carFromDoc).toList()..sort((a, b) => a.plate.compareTo(b.plate));
         for (final doc in snap.docs) {
           final c = _carFromDoc(doc);
           _carCache[doc.id] = _encoded(_carMap(c));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           cars
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Mașini: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Mașini: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('locations').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         if (snap.docs.isEmpty) {
           if (isAdmin) unawaited(_seedLocationsIfNeeded());
           return;
@@ -1053,45 +1120,39 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           final l = _locationFromDoc(doc);
           _locationCache[doc.id] = _encoded(_locationMap(l));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           locations
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Locații: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Locații: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('schedules').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_scheduleFromDoc).toList()
           ..sort((a, b) => a.date.compareTo(b.date));
-        for (final doc in snap.docs) {
-          final item = _scheduleFromDoc(doc);
-          _scheduleCache[doc.id] = _encoded(_scheduleMap(item));
-        }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           schedules
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Grafice de lucru: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Grafice de lucru: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('records').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_recordFromDoc).toList()
           ..sort((a, b) => (a.startedAt ?? DateTime(2000)).compareTo(b.startedAt ?? DateTime(2000)));
-        for (final doc in snap.docs) {
-          final item = _recordFromDoc(doc);
-          _recordCache[doc.id] = _encoded(_recordMap(item));
-        }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           records
             ..clear()
@@ -1099,7 +1160,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         });
         unawaited(_maybeAutoCloseResolvedSchedules(operationalWorkDate(DateTime.now())));
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Execuții: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Execuții: $e');
       }),
     );
 
@@ -1112,6 +1173,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         : db.collection('notifications').where('userId', isEqualTo: currentUserId);
     _coreSubscriptions.add(
       notificationQuery.snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final list = snap.docs.map(_notificationFromDoc).toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         final ownUnread = snap.docs.where((d) {
@@ -1140,25 +1202,22 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           }
           _knownNotificationIds.addAll(snap.docs.map((d) => d.id));
         }
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() {
           notifications
             ..clear()
             ..addAll(list);
         });
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Notificări: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Notificări: $e');
       }),
     );
 
   }
 
   void _startChatSync(FirebaseFirestore db) {
-    String visibleSenderName(Map<String, dynamic> data) {
-      final senderId = (data['senderId'] ?? '').toString();
-      if (!isAdmin && _hiddenUserIds.contains(senderId)) return 'Sistem';
-      return (data['senderName'] ?? 'un membru').toString();
-    }
+    String visibleSenderName(Map<String, dynamic> data) =>
+        visibleChatSenderName(data, isAdmin: isAdmin, hiddenUserIds: _hiddenUserIds);
 
     bool mandatoryChatAlert(Map<String,dynamic> data) {
       final senderId=(data['senderId']??'').toString();
@@ -1168,6 +1227,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
     _coreSubscriptions.add(
       db.collection('chatMessages').where('recipientId', isEqualTo: currentUserId).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final unread = snap.docs.where((d) {
           final data = d.data();
           final deletedFor = data['deletedFor'];
@@ -1204,12 +1264,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         _unreadPrivateMessageCount = unread.length;
         _refreshUnreadMessageCount();
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Mesaje: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Mesaje: $e');
       }),
     );
 
     _coreSubscriptions.add(
       db.collection('groupChatMessages').orderBy('createdAt', descending: true).limit(20).snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final docs = snap.docs;
         _recentGroupDocs = docs;
         _recomputeGroupUnread();
@@ -1234,7 +1295,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
           _knownGroupMessageIds.addAll(docs.map((d) => d.id));
         }
       }, onError: (Object e) {
-        if (mounted) setState(() => coreSyncError = 'Chat comun: $e');
+        if (_sessionActive) setState(() => coreSyncError = 'Chat comun: $e');
       }),
     );
 
@@ -1243,8 +1304,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   void _startSettingsSync(FirebaseFirestore db) {
     _coreSubscriptions.add(
       db.collection('meta').doc('uiSettings').snapshots().listen((snap) {
+        if (!_sessionActive) return;
         final d = snap.data();
-        if (!mounted) return;
+        if (!_sessionActive) return;
         if (d == null) { if (isAdmin) unawaited(_runAutomaticMaintenance()); return; }
         setState(() {
           settings.background = (d['background'] ?? settings.background).toString();
@@ -1285,14 +1347,14 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
         });
         if (isAdmin) unawaited(_runAutomaticMaintenance());
       }, onError: (Object e) {
-        if (mounted && isAdmin) setState(() => coreSyncError = 'Setări UI: $e');
+        if (_sessionActive && isAdmin) setState(() => coreSyncError = 'Setări UI: $e');
       }),
     );
 
   }
 
   void _startCoreSync() {
-    final db = FirebaseFirestore.instance;
+    final db = widget.firestore ?? FirebaseFirestore.instance;
 
     _startDefinitionsSync(db);
 
@@ -1321,6 +1383,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     String scheduleId = '',
     Map<String, dynamic>? data,
   }) async {
+    if (!_sessionActive) return;
     final cfg = settings.learning[category];
     if (cfg?.enabled == false) return;
     try {
@@ -1343,15 +1406,17 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   Future<void> _deleteLocationDirect(String id) async {
+    _requireCurrentSession();
     if (!isAdmin) throw StateError('Doar Adminul poate șterge locații.');
     await FirebaseFirestore.instance.collection('locations').doc(id).delete();
     unawaited(_writeLearningEvent(category: 'operations', event: 'location_deleted', locationId: id));
     _locationCache.remove(id);
-    if (!mounted) return;
+    if (!_sessionActive) return;
     setState(() => locations.removeWhere((x) => x.id == id));
   }
 
   Future<void> _saveLocationDirect(Location l) async {
+    _requireCurrentSession();
     if (!isAdmin) throw StateError('Doar Adminul poate modifica locații.');
     final data = _locationMap(l);
     await FirebaseFirestore.instance.collection('locations').doc(l.id).set(data, SetOptions(merge: true));
@@ -1359,7 +1424,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
       'name': l.name, 'status': l.status.name, 'active': l.active, 'hasGps': l.latitude != null && l.longitude != null,
     }));
     _locationCache[l.id] = _encoded(data);
-    if (!mounted) return;
+    if (!_sessionActive) return;
     setState(() {
       final index = locations.indexWhere((x) => x.id == l.id);
       if (index >= 0) {
@@ -1371,43 +1436,245 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     });
   }
 
-  Future<void> _saveScheduleDirect(WorkSchedule schedule) async {
-    if (!canEditTeam(schedule.teamId) || !hasPermission(FunctionPermission.editProgram)) {
-      throw StateError('Nu ai dreptul să modifici acest Grafic de lucru.');
+  Future<void> _saveScheduleDirect(WorkSchedule schedule) => _saveSchedulesDirect(<WorkSchedule>[schedule]);
+
+  /// Commits a whole-graph change in one Firestore transaction. Comparing each
+  /// loaded updatedAt timestamp prevents a second editor from silently
+  /// replacing a newer day, while the transaction keeps multi-day writes atomic.
+  /// Local state is updated only after Firestore confirms the transaction.
+  Future<void> _saveSchedulesDirect(List<WorkSchedule> batchSchedules) async {
+    _requireCurrentSession();
+    if (batchSchedules.isEmpty) return;
+    if (batchSchedules.length > 500) {
+      throw StateError('Graficul depășește limita sigură de 500 de zile pentru o singură salvare.');
     }
-    final data = _scheduleMap(schedule);
-    await FirebaseFirestore.instance.collection('schedules').doc(schedule.id).set(data, SetOptions(merge: true));
-    unawaited(_writeLearningEvent(category: 'program', event: 'schedule_saved', teamId: schedule.teamId, scheduleId: schedule.id, data: {
-      'date': schedule.date.toIso8601String(), 'started': schedule.started, 'closed': schedule.closed,
-      'paused': schedule.paused, 'postponed': schedule.postponed, 'order': schedule.items.map((e) => e.locationId).toList(),
-      'autoProposed': schedule.autoProposed, 'learningConfidence': schedule.learningConfidence,
-    }));
-    _scheduleCache[schedule.id] = _encoded(data);
-    if (!mounted) return;
+    final ids = <String>{};
+    final teamId = batchSchedules.first.teamId;
+    final graphId = batchSchedules.first.graphId;
+    for (final schedule in batchSchedules) {
+      if (schedule.id.trim().isEmpty || !ids.add(schedule.id)) {
+        throw StateError('Graficul conține identificatori de zile lipsă sau duplicați; nicio modificare nu a fost salvată.');
+      }
+      if (schedule.teamId != teamId || schedule.graphId != graphId) {
+        throw StateError('Salvarea grupată trebuie să conțină zile dintr-un singur grafic și o singură echipă.');
+      }
+      if (!canEditTeam(schedule.teamId) || !hasPermission(FunctionPermission.editProgram)) {
+        throw StateError('Nu ai dreptul să modifici graficul echipei ${schedule.teamId}.');
+      }
+    }
+
+    final db = FirebaseFirestore.instance;
+    final committedAt = DateTime.now();
+    final writeTokens = <String, String>{
+      for (final schedule in batchSchedules)
+        schedule.id: '${committedAt.microsecondsSinceEpoch}-${idNow()}-${schedule.id}',
+    };
+    await db.runTransaction((transaction) async {
+      _requireCurrentSession();
+      final refs = <String, DocumentReference<Map<String, dynamic>>>{};
+      for (final schedule in batchSchedules) {
+        final reference = db.collection('schedules').doc(schedule.id);
+        refs[schedule.id] = reference;
+        final snapshot = await transaction.get(reference);
+        // Existence is independent of revision metadata: a deleted legacy day
+        // with no timestamp/token must not be mistaken for a new day.
+        if (schedule.persisted != snapshot.exists) {
+          throw StateError('Ziua de grafic a fost ștearsă sau identificatorul este deja folosit. Reîncarcă graficul.');
+        }
+        final remoteData = snapshot.data();
+        final rawUpdatedAt = remoteData?['updatedAt'];
+        final remoteUpdatedAt = rawUpdatedAt is Timestamp ? rawUpdatedAt.toDate() : null;
+        final rawWriteToken = remoteData?['writeToken'];
+        final remoteWriteToken = rawWriteToken is String ? rawWriteToken : null;
+        if (rawUpdatedAt != null && remoteUpdatedAt == null) {
+          throw StateError('Graficul ${schedule.graphName} conține un timestamp de versiune invalid. Reîncarcă aplicația și cere administratorului să verifice datele.');
+        }
+        if (rawWriteToken != null && remoteWriteToken == null) {
+          throw StateError('Graficul ${schedule.graphName} conține un token de versiune invalid. Reîncarcă aplicația și cere administratorului să verifice datele.');
+        }
+        final expectedUpdatedAt = schedule.updatedAt;
+        final timestampChanged = snapshot.exists
+            ? expectedUpdatedAt == null
+                ? remoteUpdatedAt != null
+                : remoteUpdatedAt == null || !remoteUpdatedAt.isAtSameMomentAs(expectedUpdatedAt)
+            : expectedUpdatedAt != null;
+        final tokenChanged = snapshot.exists
+            ? schedule.writeToken == null
+                ? remoteWriteToken != null
+                : remoteWriteToken != schedule.writeToken
+            : schedule.writeToken != null;
+        if (timestampChanged || tokenChanged) {
+          throw StateError('Ziua ${formatDate(schedule.date)} din graficul ${schedule.graphName} a fost modificată sau ștearsă de pe alt dispozitiv. Reîncarcă graficul și aplică din nou modificarea.');
+        }
+      }
+      _requireCurrentSession();
+      for (final schedule in batchSchedules) {
+        final data = _scheduleMap(schedule);
+        data['updatedAt'] = Timestamp.fromDate(committedAt);
+        data['writeToken'] = writeTokens[schedule.id];
+        transaction.set(refs[schedule.id]!, data, SetOptions(merge: true));
+      }
+    });
+
+    for (final schedule in batchSchedules) {
+      schedule.persisted = true;
+      schedule.updatedAt = committedAt;
+      schedule.writeToken = writeTokens[schedule.id];
+      unawaited(_writeLearningEvent(category: 'program', event: 'schedule_saved', teamId: schedule.teamId, scheduleId: schedule.id, data: {
+        'date': schedule.date.toIso8601String(), 'started': schedule.started, 'closed': schedule.closed,
+        'paused': schedule.paused, 'postponed': schedule.postponed, 'order': schedule.items.map((e) => e.locationId).toList(),
+        'autoProposed': schedule.autoProposed, 'learningConfidence': schedule.learningConfidence,
+      }));
+    }
+    if (!_sessionActive) return;
     setState(() {
-      final index = schedules.indexWhere((x) => x.id == schedule.id);
-      if (index >= 0) {
-        schedules[index] = schedule;
-      } else {
-        schedules.add(schedule);
+      for (final schedule in batchSchedules) {
+        final index = schedules.indexWhere((x) => x.id == schedule.id);
+        if (index >= 0) {
+          schedules[index] = schedule;
+        } else {
+          schedules.add(schedule);
+        }
       }
     });
   }
 
+  Future<void> _saveDashboardScheduleOperation(DashboardScheduleIntent intent) async {
+    _requireCurrentSession();
+    intent.validate();
+    if (intent.userId != currentUserId || !hasPermission(FunctionPermission.editProgram)) {
+      throw StateError('Nu ai dreptul să modifici programul acestei echipe.');
+    }
+    for (final write in intent.writes) {
+      if (!canEditTeam(intent.teamId) ||
+          write.desired['teamId'] != intent.teamId ||
+          write.desired['graphId'] != intent.graphId) {
+        throw StateError('Programul nu mai aparține echipei autorizate.');
+      }
+    }
+
+    final db = FirebaseFirestore.instance;
+    final wrote = await db.runTransaction<bool>((transaction) async {
+      _requireCurrentSession();
+      final snapshots = <DocumentSnapshot<Map<String, dynamic>>>[];
+      for (final write in intent.writes) {
+        snapshots.add(await transaction.get(db.collection('schedules').doc(write.scheduleId)));
+      }
+      final plan = dashboardScheduleWritePlan(
+        intent: intent,
+        currentDocuments: snapshots.map((snapshot) => snapshot.data()).toList(),
+      );
+      if (plan == DashboardScheduleWritePlan.replay) return false;
+      _requireCurrentSession();
+      for (var index = 0; index < intent.writes.length; index++) {
+        transaction.set(
+          snapshots[index].reference,
+          intent.writes[index].desired,
+          SetOptions(merge: true),
+        );
+      }
+      return true;
+    });
+
+    _requireCurrentSession();
+    final committed = <WorkSchedule>[
+      for (final write in intent.writes)
+        scheduleFromDocumentData(write.scheduleId, write.desired),
+    ];
+    if (!_sessionActive) return;
+    setState(() {
+      for (final schedule in committed) {
+        final index = schedules.indexWhere((item) => item.id == schedule.id);
+        if (index >= 0) {
+          schedules[index] = schedule;
+        } else {
+          schedules.add(schedule);
+        }
+      }
+    });
+    if (!wrote) return; // Exact replay after a lost acknowledgement.
+    for (final schedule in committed) {
+      unawaited(_writeLearningEvent(category: 'program', event: 'schedule_saved', teamId: schedule.teamId, scheduleId: schedule.id, data: {
+        'date': schedule.date.toIso8601String(), 'started': schedule.started, 'closed': schedule.closed,
+        'paused': schedule.paused, 'postponed': schedule.postponed, 'order': schedule.items.map((item) => item.locationId).toList(),
+        'autoProposed': schedule.autoProposed, 'learningConfidence': schedule.learningConfidence,
+      }));
+    }
+  }
+
+  Future<void> _closeProgramGraphDirect(List<WorkSchedule> days) async {
+    _requireCurrentSession();
+    if (days.isEmpty) throw StateError('Grafic fără zile.');
+    final head = days.first;
+    if (!canEditTeam(head.teamId) || !hasPermission(FunctionPermission.editProgram)) {
+      throw StateError('Nu ai dreptul să închizi acest grafic.');
+    }
+    final endpoint = _backendFunction('closeProgramGraph');
+    const storage = FlutterSecureStorage();
+    final journal = GraphClosureJournal(
+      read: (key) => storage.read(key: key),
+      write: (key, value) => storage.write(key: key, value: value),
+      remove: (key) => storage.delete(key: key));
+    await journal.close(
+      projectId: Firebase.app().options.projectId,
+      userId: currentUserId,
+      operation: {
+        'teamId': head.teamId, 'graphId': head.graphId,
+        'requestId': '${idNow()}-${newInterventionId()}',
+        'days': [for (final day in days) {'id': day.id, 'writeToken': day.writeToken}],
+      },
+      send: (operation) => requestGraphClosure(endpoint: endpoint,
+        getIdToken: () async => FirebaseAuth.instance.currentUser?.getIdToken(),
+        canContinue: () => _sessionActive && FirebaseAuth.instance.currentUser?.uid == currentUserId,
+        post: (uri, {headers, body}) => http.post(uri, headers: headers, body: body),
+        operation: operation));
+    _requireCurrentSession();
+    // Publish only authoritative server snapshots, including the new revisions.
+    final snapshot = await FirebaseFirestore.instance.collection('schedules')
+      .where('teamId', isEqualTo: head.teamId).get(const GetOptions(source: Source.server));
+    if (snapshot.metadata.isFromCache || snapshot.metadata.hasPendingWrites) {
+      throw StateError('STOP acceptat, dar reîncărcarea nu este confirmată. Reîncarcă graficul.');
+    }
+    final saved = snapshot.docs.where((d) => d.data()['graphId'] == head.graphId)
+      .map(_scheduleFromDoc).toList();
+    if (saved.isEmpty || saved.any((d) => !d.closed)) {
+      throw StateError('Starea graficului s-a schimbat după STOP. Reîncarcă.');
+    }
+    if (!_sessionActive) return;
+    setState(() {
+      schedules.removeWhere((d) => d.teamId == head.teamId && d.graphId == head.graphId);
+      schedules.addAll(saved);
+    });
+  }
+
   Future<void> _saveRecordDirect(CentralizerRecord record) async {
+    _requireCurrentSession();
     final canWriteRecord = hasPermission(FunctionPermission.editProgram) || hasPermission(FunctionPermission.editCentralizer);
     if (!canEditTeam(record.teamId) || !canWriteRecord) {
       throw StateError('Nu ai dreptul să modifici execuțiile acestei echipe.');
     }
     final data = _recordMap(record);
-    await FirebaseFirestore.instance.collection('records').doc(record.id).set(data, SetOptions(merge: true));
+    if (record.status == WorkAttemptStatus.running && record.finishedAt == null) {
+      final otherActiveRecords = records.where((current) => current.teamId == record.teamId
+          && current.id != record.id && current.status == WorkAttemptStatus.running
+          && current.finishedAt == null);
+      if (otherActiveRecords.isNotEmpty) {
+        final otherActive = otherActiveRecords.first;
+        throw StateError('Echipa are deja o intervenție pornită la ${otherActive.locationNameSnapshot}. Închide-o înainte de un nou START.');
+      }
+    }
+    await saveRecordCompared(FirebaseFirestore.instance, record.id, data, expected: record.writeBaseline, canContinue: () => _sessionActive);
+    // A replay may adopt the already committed server times.
+    record.startedAt = _recordDateFrom(data['startedAt']);
+    record.waitingEndedAt = _recordDateFrom(data['waitingEndedAt']);
+    record.finishedAt = _recordDateFrom(data['finishedAt']);
+    record.writeBaseline = Map<String, dynamic>.from(data)..remove('updatedAt');
     unawaited(_writeLearningEvent(category: 'duration', event: 'execution_${record.status.name}', teamId: record.teamId, locationId: record.locationId, data: {
       'startedAt': record.startedAt?.toIso8601String(), 'finishedAt': record.finishedAt?.toIso8601String(),
       'durationSeconds': record.duration?.inSeconds, 'waitingSeconds': record.waitingDuration?.inSeconds,
       'refusalReason': record.refusalReason ?? '', 'keptForLearning': record.keptForLearning,
     }));
-    _recordCache[record.id] = _encoded(data);
-    if (!mounted) return;
+    if (!_sessionActive) return;
     setState(() {
       final index = records.indexWhere((x) => x.id == record.id);
       if (index >= 0) {
@@ -1418,20 +1685,101 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     });
   }
 
+  // Centralizer corrections are compare-and-swap updates, never upserts.
+  // A stale editor cannot resurrect a deleted record or overwrite a newer correction.
+  Future<void> _correctCentralizerRecord(
+    CentralizerRecord original,
+    CentralizerRecord corrected,
+  ) async {
+    _requireCurrentSession();
+    if (!hasPermission(FunctionPermission.editCentralizer) ||
+        !canEditTeam(original.teamId) ||
+        original.id != corrected.id ||
+        original.teamId != corrected.teamId ||
+        original.locationId != corrected.locationId ||
+        original.type != corrected.type) {
+      throw StateError('Corecția intervenției nu este autorizată.');
+    }
+    final expected = <String, Object?>{
+      'teamId': original.teamId,
+      'locationId': original.locationId,
+      'type': original.type.name,
+      'startedAt': original.startedAt,
+      'finishedAt': original.finishedAt,
+      'status': original.status.name,
+      'facadeDone': original.facadeDone,
+      'facadePlanned': original.facadePlanned,
+    };
+    final changes = <String, dynamic>{
+      'startedAt': corrected.startedAt == null ? null : Timestamp.fromDate(corrected.startedAt!),
+      'finishedAt': corrected.finishedAt == null ? null : Timestamp.fromDate(corrected.finishedAt!),
+      'facadeDone': corrected.facadeDone,
+      'facadePlanned': corrected.facadePlanned,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    await correctCentralizerRecordCompared(
+      FirebaseFirestore.instance, original.id, expected: expected, changes: changes,
+    );
+    if (!_sessionActive) return;
+    setState(() {
+      final index = records.indexWhere((item) => item.id == corrected.id);
+      if (index >= 0) records[index] = corrected;
+    });
+  }
+
   Future<void> _saveExpenseDirect(Expense expense) async {
+    _requireCurrentSession();
     if (!canEditTeam(expense.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici Decontul acestei echipe.');
     }
     final data = _expenseMap(expense);
-    await FirebaseFirestore.instance.collection('expenses').doc(expense.id).set(data, SetOptions(merge: true));
+    final db = FirebaseFirestore.instance;
+    final ref = db.collection('expenses').doc(expense.id);
+    final created = await db.runTransaction((transaction) async {
+      _requireCurrentSession();
+      final snapshot = await transaction.get(ref);
+      final write = expenseDocumentCreateWrite(
+        incoming: data,
+        current: snapshot.data() ?? const <String, dynamic>{},
+        exists: snapshot.exists,
+      );
+      _requireCurrentSession();
+      if (write == null) return false;
+      transaction.set(ref, write);
+      return true;
+    });
+    _requireCurrentSession();
+    if (!created) return; // Exact retry after an uncertain acknowledgement.
     unawaited(_writeLearningEvent(category: expense.ocrRawText.trim().isNotEmpty ? 'ocr' : 'finance', event: 'expense_saved', teamId: expense.teamId, data: {
       'category': expense.category, 'amount': expense.amount, 'documentType': expense.documentType.name,
       'ocrConfidence': expense.ocrConfidence, 'confirmed': expense.confirmed, 'hasImage': expense.hasImage,
     }));
-    _expenseCache[expense.id] = _encoded(data);
+  }
+
+  Future<void> _confirmExpenseDirect(Expense expense) async {
+    _requireCurrentSession();
+    if (!canEditTeam(expense.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
+      throw StateError('Nu ai dreptul să modifici Decontul acestei echipe.');
+    }
+    final incoming = _expenseMap(expense)..['confirmed'] = true;
+    final db = FirebaseFirestore.instance;
+    final ref = db.collection('expenses').doc(expense.id);
+    await db.runTransaction((transaction) async {
+      _requireCurrentSession();
+      final snapshot = await transaction.get(ref);
+      final write = expenseDocumentConfirmationWrite(
+        incoming: incoming,
+        current: snapshot.data() ?? const <String, dynamic>{},
+        exists: snapshot.exists,
+      );
+      _requireCurrentSession();
+      if (write != null) transaction.update(ref, write);
+    });
+    _requireCurrentSession();
   }
 
   Future<void> _savePerDiemDirect(PerDiemEntry entry) async {
+    _requireCurrentSession();
     final canWrite = isAdmin || entry.memberId == currentUserId ||
         (canEditTeam(entry.teamId) && hasPermission(FunctionPermission.viewOwnDecont));
     if (!canWrite) throw StateError('Nu ai dreptul să modifici această diurnă.');
@@ -1518,34 +1866,59 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     unawaited(_writeLearningEvent(category: 'finance', event: 'per_diem_saved', teamId: entry.teamId, data: {
       'memberId': entry.memberId, 'amount': entry.amount, 'status': entry.status.name, 'method': entry.method?.name ?? '',
     }));
-    _perDiemCache[entry.id] = _encoded(data);
   }
 
   Future<void> _saveSettlementDirect(TravelSettlement settlement) async {
+    _requireCurrentSession();
     if (!canEditTeam(settlement.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici această deplasare.');
     }
-    await FirebaseFirestore.instance.collection('settlements').doc(settlement.id).set(_settlementMap(settlement), SetOptions(merge: true));
+    validateReceivedMoneyState(departure:settlement.receivedDeparture,during:settlement.receivedDuring,
+      perDiemRate:settlement.perDiemRate,entries:settlement.receivedEntries);
+    await _saveReceivedMoneyDocument(collection: 'settlements', id: settlement.id, data: _settlementMap(settlement));
     unawaited(_writeLearningEvent(category: 'finance', event: 'settlement_saved', teamId: settlement.teamId, data: {
       'name': settlement.name, 'closed': settlement.closed, 'received': settlement.totalReceived,
     }));
   }
 
   Future<void> _saveFinanceDirect(TeamFinance finance) async {
+    _requireCurrentSession();
     if (!canEditTeam(finance.teamId) || !hasPermission(FunctionPermission.viewOwnDecont)) {
       throw StateError('Nu ai dreptul să modifici datele financiare ale acestei echipe.');
     }
+    validateReceivedMoneyState(departure:finance.receivedDeparture,during:finance.receivedDuring,
+      perDiemRate:finance.perDiemRate,entries:finance.receivedEntries);
     final data = _financeMap(finance);
-    await FirebaseFirestore.instance.collection('finance').doc(finance.teamId).set(data, SetOptions(merge: true));
+    await _saveReceivedMoneyDocument(collection: 'finance', id: finance.teamId, data: data);
     unawaited(_writeLearningEvent(category: 'finance', event: 'team_finance_saved', teamId: finance.teamId, data: {
       'receivedDeparture': finance.receivedDeparture, 'receivedDuring': finance.receivedDuring, 'perDiemRate': finance.perDiemRate,
     }));
-    _financeCache[finance.teamId] = _encoded(data);
+  }
+
+  /// Merge entry history against the current server record. A stale client may
+  /// not erase another device's receipt, and retries with the same entry ID
+  /// cannot count it twice. Unknown or conflicting records fail closed.
+  Future<void> _saveReceivedMoneyDocument({required String collection, required String id,
+      required Map<String, dynamic> data}) async {
+    _requireCurrentSession();
+    final db = FirebaseFirestore.instance;
+    final ref = db.collection(collection).doc(id);
+    await db.runTransaction((tx) async {
+      _requireCurrentSession();
+      final snap = await tx.get(ref);
+      _requireCurrentSession();
+      final writeData = mergeReceivedMoneyDocument(incoming: data,
+        current: snap.data() ?? <String, dynamic>{}, exists: snap.exists);
+      _requireCurrentSession();
+      tx.set(ref, writeData, SetOptions(merge: true));
+    });
+    _requireCurrentSession();
   }
 
   Future<void> _writeAuditRemote(String action, String target) async {
+    if (!_sessionActive) return;
     final entry = AuditEntry(id: idNow(), actor: me.name, action: action, target: target, at: DateTime.now());
-    if (isAdmin && mounted) {
+    if (isAdmin && _sessionActive) {
       setState(() => audit.insert(0, entry));
     }
     try {
@@ -1563,6 +1936,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   Future<void> _persistCoreData() async {
+    _requireCurrentSession();
     if (!isAdmin) return;
     final db = FirebaseFirestore.instance;
     final batch = db.batch();
@@ -1620,10 +1994,9 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
 
   @override
   void dispose() {
-    for (final sub in _coreSubscriptions) { sub.cancel(); }
-    for (final sub in _financialSubscriptions) { sub.cancel(); }
-    _liveLocationTimer?.cancel();
-    _backgroundLocationSubscription?.cancel();
+    unawaited(_coreSubscriptions.dispose());
+    unawaited(_financialSubscriptions.dispose());
+    unawaited(_liveLocationResources.dispose());
     super.dispose();
   }
 
@@ -1651,24 +2024,21 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     return users.firstWhere((u) => u.id == id, orElse: () => AppUser(id: id, name: 'Membru', role: UserRole.member)).name;
   }
   void log(String action, String target) { unawaited(_writeAuditRemote(action, target)); }
-  String _notificationCategory(String title,String message){
-    final t='$title $message'.toLowerCase();
-    if(t.contains('diurn')||t.contains('decont')||t.contains('cheltu'))return 'decont';
-    if(t.contains('sosir')||t.contains('locați')||t.contains('locati')||t.contains('gps'))return 'arrival';
-    if(t.contains('learning')||t.contains('estim')||t.contains('recomand'))return 'learning';
-    if(t.contains('grafic')||t.contains('program')||t.contains('traseu')||t.contains('plan'))return 'schedule';
-    return 'general';
-  }
-  bool _allowPersonalAlert(String title,String message){
-    if(title.trim().toLowerCase()=='sistem'||title.trim().toLowerCase().contains('admin'))return true;
-    return _personalNotificationPreferences[_notificationCategory(title,message)]??true;
-  }
+  String _notificationCategory(String title, String message) =>
+      personalAlertCategory(title, message);
+
+  bool _allowPersonalAlert(String title, String message) =>
+      allowsPersonalAlert(
+        title: title,
+        message: message,
+        preferences: _personalNotificationPreferences,
+      );
   void notifyUser(String uid, String title, String msg) {
-    if (!settings.pushNotifications) return;
+    if (!_sessionActive || !settings.pushNotifications) return;
     final n = AppNotification(id: idNow(), userId: uid, title: title, message: msg, createdAt: DateTime.now());
-    if (mounted && (isAdmin || uid == currentUserId)) setState(() => notifications.insert(0, n));
+    if (_sessionActive && (isAdmin || uid == currentUserId)) setState(() => notifications.insert(0, n));
     unawaited(FirebaseFirestore.instance.collection('notifications').doc(n.id).set(_notificationMap(n)).catchError((Object e) {
-      if (mounted) setState(() => coreSyncError = 'Notificare: $e');
+      if (_sessionActive) setState(() => coreSyncError = 'Notificare: $e');
     }));
   }
   void notifyTeam(String teamId, String title, String msg) {
@@ -1679,12 +2049,13 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     }
   }
   void refresh() {
+    if (!_sessionActive) return;
     // Refresh-urile operaționale nu trebuie să reconstruiască MaterialApp/AuthGate.
     // Tema este propagată separat doar când se schimbă efectiv în Firestore.
     setState(() {});
     if (isAdmin) {
       unawaited(_persistCoreData().catchError((Object e) {
-        if (!mounted) return;
+        if (!_sessionActive) return;
         setState(() => coreSyncError = 'Salvare Firestore: $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvarea nu a reușit: $e')));
       }));
@@ -1720,7 +2091,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
   }
 
   void _refreshUnreadMessageCount() {
-    if (!mounted) return;
+    if (!_sessionActive) return;
     setState(() => _unreadMessageCount = _unreadPrivateMessageCount + _unreadGroupMessageCount);
   }
 
@@ -1785,7 +2156,7 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
                             onTap: n.read ? null : () async {
                               n.read = true;
                               await FirebaseFirestore.instance.collection('notifications').doc(n.id).set({'read': true, 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
-                              if (mounted) setState(() {});
+                              if (_sessionActive) setState(() {});
                             },
                           ),
                         )).toList(),
@@ -1828,19 +2199,19 @@ class _HomePageState extends State<HomePage> with _HomeBackupMaintenance, _HomeP
     const settingsColor = Color(0xff607D8B);
 
     addPage(hasPermission(FunctionPermission.viewDashboard),
-      DashboardPage(teams: teams, users: users, functionDefinitions: functionDefinitions, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, currentUser: me, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, saveRecord: _saveRecordDirect, saveSchedule: _saveScheduleDirect, log: log),
+      DashboardPage(teams: teams, users: users, functionDefinitions: functionDefinitions, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, currentUser: me, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, saveRecord: _saveRecordDirect, saveDashboardScheduleOperation: _saveDashboardScheduleOperation, log: log),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_dashboard.png', size: 24, accent: homeColor), selectedIcon: appAssetIcon('assets/ui/tab_dashboard.png', size: 27, accent: homeColor, selected: true), label: 'Acasă'), homeColor);
     addPage(hasPermission(FunctionPermission.viewProgram),
-      ProgramPage(currentUser: me, teams: teams, cars: cars, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, canEditTeam: canEditTeam, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, notifyTeam: notifyTeam, log: log, saveSchedule: _saveScheduleDirect),
+      ProgramPage(currentUser: me, teams: teams, cars: cars, locations: locations, categories: categories, schedules: schedules, records: records, settings: settings, canEditTeam: canEditTeam, canEditProgram: hasPermission(FunctionPermission.editProgram), userName: userName, onChanged: refresh, notifyTeam: notifyTeam, log: log, saveSchedules: _saveSchedulesDirect, closeGraph: _closeProgramGraphDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_grafic.png', size: 24, accent: programColor), selectedIcon: appAssetIcon('assets/ui/tab_grafic.png', size: 27, accent: programColor, selected: true), label: 'Grafic'), programColor);
     addPage(hasPermission(FunctionPermission.viewMap),
       MapPage(currentUser: me, users: users, teams: teams, schedules: schedules, records: records, locations: locations, categories: categories, isAdmin: isAdmin, hiddenUserIds: _hiddenUserIds, onChanged: refresh, log: log, saveLocation: _saveLocationDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_harta.png', size: 24, accent: mapColor), selectedIcon: appAssetIcon('assets/ui/tab_harta.png', size: 27, accent: mapColor, selected: true), label: 'Hartă'), mapColor);
     addPage(hasPermission(FunctionPermission.viewCentralizer),
-      CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect),
+      CentralizerPage(currentUser: me, teams: teams, locations: locations, categories: categories, schedules: schedules, records: records, isAdmin: isAdmin, canEditTeam: canEditTeam, canEditCentralizer: hasPermission(FunctionPermission.editCentralizer), onChanged: refresh, log: log, saveRecord: _saveRecordDirect, correctRecord: _correctCentralizerRecord),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_centralizator.png', size: 24, accent: centralizerColor), selectedIcon: appAssetIcon('assets/ui/tab_centralizator.png', size: 27, accent: centralizerColor, selected: true), label: compactNav ? 'Central.' : 'Centralizator'), centralizerColor);
     addPage(hasPermission(FunctionPermission.viewOwnDecont) || hasPermission(FunctionPermission.viewOtherDecont),
-      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
+      ExpensePage(currentUser: me, teams: teams, users: users, expenses: expenses, perDiems: perDiems, finances: finances, settlements: settlements, settings: settings, canEditTeam: canEditTeam, isAdmin: isAdmin, canEditOwnDecont: hasPermission(FunctionPermission.viewOwnDecont), canViewOtherDecont: hasPermission(FunctionPermission.viewOtherDecont), onChanged: refresh, notifyUser: notifyUser, log: log, saveExpense: _saveExpenseDirect, confirmExpense: _confirmExpenseDirect, savePerDiem: _savePerDiemDirect, saveFinance: _saveFinanceDirect, saveSettlement: _saveSettlementDirect),
       NavigationDestination(icon: appAssetIcon('assets/ui/tab_decont.png', size: 24, accent: decontColor), selectedIcon: appAssetIcon('assets/ui/tab_decont.png', size: 27, accent: decontColor, selected: true), label: 'Decont'), decontColor);
     addPage(hasPermission(FunctionPermission.viewContacts),
       MessagesContactsPage(locations:locations,settings:settings,canEditContacts:hasPermission(FunctionPermission.editContacts),canManageTemplates:hasPermission(FunctionPermission.manageMessageTemplates),onChanged:refresh,log:log),

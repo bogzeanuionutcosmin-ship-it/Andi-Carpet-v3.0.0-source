@@ -179,147 +179,13 @@ mixin _HomeDocumentCodecs {
     );
   }
 
-  Map<String, dynamic> _scheduleMap(WorkSchedule s) => {
-    'teamId': s.teamId,
-    'graphId': s.graphId,
-    'graphName': s.graphName,
-    'date': Timestamp.fromDate(s.date),
-    'active': s.active,
-    'closed': s.closed,
-    'started': s.started,
-    'paused': s.paused,
-    'postponed': s.postponed,
-    'autoProposed': s.autoProposed,
-    'planAlertAt': s.planAlertAt == null ? null : Timestamp.fromDate(s.planAlertAt!),
-    'planAlertReason': s.planAlertReason,
-    'lastRecalculatedAt': s.lastRecalculatedAt == null ? null : Timestamp.fromDate(s.lastRecalculatedAt!),
-    'recalculationCount': s.recalculationCount,
-    'learningExplanation': s.learningExplanation,
-    'learningConfidence': s.learningConfidence,
-    'learningSamples': s.learningSamples,
-    'departureName': s.departureName,
-    'departureLatitude': s.departureLatitude,
-    'departureLongitude': s.departureLongitude,
-    'returnName': s.returnName,
-    'returnLatitude': s.returnLatitude,
-    'returnLongitude': s.returnLongitude,
-    'items': s.items.map((i) => {
-      'locationId': i.locationId,
-      'locationNameSnapshot': i.locationNameSnapshot,
-      'addressSnapshot': i.addressSnapshot,
-      'typeSnapshot': i.typeSnapshot.name,
-      'categoryIdSnapshot': i.categoryIdSnapshot,
-      'order': i.order,
-      'transferred': i.transferred,
-      'facadePlanned': i.facadePlanned,
-    }).toList(),
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
+  Map<String, dynamic> _scheduleMap(WorkSchedule s) => scheduleDocumentData(s);
 
-  WorkSchedule _scheduleFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    final rawItems = d['items'];
-    final items = <ScheduleItem>[];
-    if (rawItems is List) {
-      for (final raw in rawItems) {
-        if (raw is! Map) continue;
-        var type = LocationType.million;
-        final typeText = (raw['typeSnapshot'] ?? 'million').toString();
-        for (final value in LocationType.values) {
-          if (value.name == typeText) type = value;
-        }
-        items.add(ScheduleItem(
-          locationId: (raw['locationId'] ?? '').toString(),
-          locationNameSnapshot: (raw['locationNameSnapshot'] ?? '').toString(),
-          addressSnapshot: (raw['addressSnapshot'] ?? '').toString(),
-          typeSnapshot: type,
-          categoryIdSnapshot: (raw['categoryIdSnapshot'] ?? defaultCategoryIdForType(type)).toString(),
-          order: raw['order'] is num ? (raw['order'] as num).toInt() : int.tryParse('${raw['order']}') ?? 0,
-          transferred: raw['transferred'] == true,
-          facadePlanned: raw['facadePlanned'] == true,
-        ));
-      }
-    }
-    items.sort((a, b) => a.order.compareTo(b.order));
-    return WorkSchedule(
-      id: doc.id,
-      teamId: (d['teamId'] ?? '').toString(),
-      graphId: (d['graphId'] ?? '').toString().trim().isNotEmpty
-          ? (d['graphId'] ?? '').toString()
-          : 'legacy_${(d['teamId'] ?? '').toString()}_${(_dateFrom(d['date']) ?? DateTime.now()).year}_${(_dateFrom(d['date']) ?? DateTime.now()).month.toString().padLeft(2, '0')}',
-      graphName: (d['graphName'] ?? '').toString().trim().isNotEmpty
-          ? (d['graphName'] ?? '').toString()
-          : graphDefaultName(_dateFrom(d['date']) ?? DateTime.now()),
-      date: _dateFrom(d['date']) ?? DateTime.now(),
-      items: items,
-      active: d['active'] != false,
-      closed: d['closed'] == true,
-      started: d['started'] == true,
-      paused: d['paused'] == true,
-      postponed: d['postponed'] == true,
-      autoProposed: d['autoProposed'] == true,
-      planAlertAt: _dateFrom(d['planAlertAt']),
-      planAlertReason: (d['planAlertReason'] ?? '').toString(),
-      lastRecalculatedAt: _dateFrom(d['lastRecalculatedAt']),
-      recalculationCount: d['recalculationCount'] is num ? (d['recalculationCount'] as num).toInt() : int.tryParse('${d['recalculationCount']}') ?? 0,
-      learningExplanation: (d['learningExplanation'] ?? '').toString(),
-      learningConfidence: d['learningConfidence'] is num ? (d['learningConfidence'] as num).toDouble() : 0,
-      learningSamples: d['learningSamples'] is num ? (d['learningSamples'] as num).toInt() : 0,
-      departureName: (d['departureName'] ?? '').toString(),
-      departureLatitude: d['departureLatitude'] is num ? (d['departureLatitude'] as num).toDouble() : null,
-      departureLongitude: d['departureLongitude'] is num ? (d['departureLongitude'] as num).toDouble() : null,
-      returnName: (d['returnName'] ?? '').toString(),
-      returnLatitude: d['returnLatitude'] is num ? (d['returnLatitude'] as num).toDouble() : null,
-      returnLongitude: d['returnLongitude'] is num ? (d['returnLongitude'] as num).toDouble() : null,
-    );
-  }
+  WorkSchedule _scheduleFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) =>
+      scheduleFromDocumentData(doc.id, doc.data());
 
-  Map<String, dynamic> _recordMap(CentralizerRecord r) => {
-    'teamId': r.teamId,
-    'locationId': r.locationId,
-    'type': r.type.name,
-    'locationNameSnapshot': r.locationNameSnapshot,
-    'addressSnapshot': r.addressSnapshot,
-    'waitingStartedAt': r.waitingStartedAt == null ? null : Timestamp.fromDate(r.waitingStartedAt!),
-    'waitingEndedAt': r.waitingEndedAt == null ? null : Timestamp.fromDate(r.waitingEndedAt!),
-    'startedAt': r.startedAt == null ? null : Timestamp.fromDate(r.startedAt!),
-    'finishedAt': r.finishedAt == null ? null : Timestamp.fromDate(r.finishedAt!),
-    'status': r.status.name,
-    'refusalReason': r.refusalReason,
-    'keptForLearning': r.keptForLearning,
-    'facadePlanned': r.facadePlanned,
-    'facadeDone': r.facadeDone,
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  CentralizerRecord _recordFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data();
-    var type = LocationType.million;
-    for (final value in LocationType.values) {
-      if (value.name == (d['type'] ?? 'million').toString()) type = value;
-    }
-    var status = WorkAttemptStatus.waitingAccess;
-    for (final value in WorkAttemptStatus.values) {
-      if (value.name == (d['status'] ?? 'waitingAccess').toString()) status = value;
-    }
-    return CentralizerRecord(
-      id: doc.id,
-      teamId: (d['teamId'] ?? '').toString(),
-      locationId: (d['locationId'] ?? '').toString(),
-      type: type,
-      locationNameSnapshot: (d['locationNameSnapshot'] ?? '').toString(),
-      addressSnapshot: (d['addressSnapshot'] ?? '').toString(),
-      waitingStartedAt: _dateFrom(d['waitingStartedAt']),
-      waitingEndedAt: _dateFrom(d['waitingEndedAt']),
-      startedAt: _dateFrom(d['startedAt']),
-      finishedAt: _dateFrom(d['finishedAt']),
-      status: status,
-      refusalReason: d['refusalReason']?.toString(),
-      keptForLearning: d['keptForLearning'] != false,
-      facadePlanned: d['facadePlanned'] == true,
-      facadeDone: d['facadeDone'] == true,
-    );
-  }
+  Map<String, dynamic> _recordMap(CentralizerRecord r) => recordDocumentData(r);
+  CentralizerRecord _recordFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) => centralizerRecordFromData(doc.id, doc.data());
 
   Map<String, dynamic> _notificationMap(AppNotification n) => {
     'userId': n.userId,
@@ -540,4 +406,66 @@ mixin _HomeDocumentCodecs {
     return MapEntry(key, value);
   }));
 
+}
+
+Map<String, dynamic> recordDocumentData(CentralizerRecord r) => {
+    'graphId': r.graphId,
+    'scheduleId': r.scheduleId,
+    'interventionId': r.interventionId,
+    'teamId': r.teamId,
+    'locationId': r.locationId,
+    'type': r.type.name,
+    'locationNameSnapshot': r.locationNameSnapshot,
+    'addressSnapshot': r.addressSnapshot,
+    'waitingStartedAt': r.waitingStartedAt == null ? null : Timestamp.fromDate(r.waitingStartedAt!),
+    'waitingEndedAt': r.waitingEndedAt == null ? null : Timestamp.fromDate(r.waitingEndedAt!),
+    'startedAt': r.startedAt == null ? null : Timestamp.fromDate(r.startedAt!),
+    'finishedAt': r.finishedAt == null ? null : Timestamp.fromDate(r.finishedAt!),
+    'status': r.status.name,
+    'refusalReason': r.refusalReason,
+    'keptForLearning': r.keptForLearning,
+    'facadePlanned': r.facadePlanned,
+    'facadeDone': r.facadeDone,
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
+
+
+CentralizerRecord centralizerRecordFromData(String id, Map<String, dynamic> d) {
+    var type = LocationType.million;
+    for (final value in LocationType.values) {
+      if (value.name == (d['type'] ?? 'million').toString()) type = value;
+    }
+    var status = WorkAttemptStatus.waitingAccess;
+    for (final value in WorkAttemptStatus.values) {
+      if (value.name == (d['status'] ?? 'waitingAccess').toString()) status = value;
+    }
+    return CentralizerRecord(
+      id: id,
+      writeBaseline: Map<String, dynamic>.from(d),
+      graphId: (d['graphId'] ?? '').toString(),
+      scheduleId: (d['scheduleId'] ?? '').toString(),
+      interventionId: (d['interventionId'] ?? '').toString(),
+      teamId: (d['teamId'] ?? '').toString(),
+      locationId: (d['locationId'] ?? '').toString(),
+      type: type,
+      locationNameSnapshot: (d['locationNameSnapshot'] ?? '').toString(),
+      addressSnapshot: (d['addressSnapshot'] ?? '').toString(),
+      waitingStartedAt: _recordDateFrom(d['waitingStartedAt']),
+      waitingEndedAt: _recordDateFrom(d['waitingEndedAt']),
+      startedAt: _recordDateFrom(d['startedAt']),
+      finishedAt: _recordDateFrom(d['finishedAt']),
+      status: status,
+      refusalReason: d['refusalReason']?.toString(),
+      keptForLearning: d['keptForLearning'] != false,
+      facadePlanned: d['facadePlanned'] == true,
+      facadeDone: d['facadeDone'] == true,
+    );
+  }
+
+
+DateTime? _recordDateFrom(dynamic value) {
+  if(value is Timestamp) return value.toDate();
+  if(value is DateTime) return value;
+  if(value is String) return DateTime.tryParse(value);
+  return null;
 }

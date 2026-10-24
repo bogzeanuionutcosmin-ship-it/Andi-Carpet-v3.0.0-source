@@ -17,21 +17,112 @@ class ExpensePage extends StatefulWidget {
   final void Function(String,String,String) notifyUser;
   final void Function(String,String) log;
   final Future<void> Function(Expense) saveExpense;
+  final Future<void> Function(Expense) confirmExpense;
   final Future<void> Function(PerDiemEntry) savePerDiem;
   final Future<void> Function(TeamFinance) saveFinance;
   final Future<void> Function(TravelSettlement) saveSettlement;
-  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement});
+  final Future<XFile?> Function({bool allowNoImage})? pickDocumentImage;
+  final Future<String> Function(Uint8List, {String? path})? recognizeExpenseText;
+  const ExpensePage({super.key,required this.currentUser,required this.teams,required this.users,required this.expenses,required this.perDiems,required this.finances,required this.settlements,required this.settings,required this.canEditTeam,required this.isAdmin,required this.canEditOwnDecont,required this.canViewOtherDecont,required this.onChanged,required this.notifyUser,required this.log,required this.saveExpense,required this.confirmExpense,required this.savePerDiem,required this.saveFinance,required this.saveSettlement,this.pickDocumentImage,this.recognizeExpenseText});
   @override State<ExpensePage> createState()=>_ExpensePageState();
 }
 
-class _ExpensePageState extends State<ExpensePage> {
+class _ExpensePageState extends State<ExpensePage> with WidgetsBindingObserver {
   static const String _legacySettlementKey = '__legacy__';
+  static const FlutterSecureStorage _moneyStorage = FlutterSecureStorage();
+  static const FlutterSecureStorage _expenseStorage = FlutterSecureStorage();
   int teamIndex = 0;
   String? selectedSettlementId;
   bool exporting = false;
   bool scanning = false;
+  final Set<String> _confirmingExpenseIds = <String>{};
   final Set<String> _savingPerDiemIds = <String>{};
+  final Set<String> _expenseRecoveryStarted = <String>{};
+  final Set<String> _expenseRetryTeams = <String>{};
+  final Set<String> _expenseBusyTeams = <String>{};
+  Timer? _expenseRetryTimer;
   final ImagePicker _imagePicker = ImagePicker();
+
+  ExpenseSaveJournal get _expenseJournal => ExpenseSaveJournal(
+    read: (key) => _expenseStorage.read(key: key),
+    write: (key, value) => _expenseStorage.write(key: key, value: value),
+    remove: (key) => _expenseStorage.delete(key: key),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    for (final team in widget.teams) {
+      if (widget.canEditTeam(team.id) && widget.canEditOwnDecont) _scheduleExpenseRecovery(team.id);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    for (final team in widget.teams) {
+      if (widget.canEditTeam(team.id) && widget.canEditOwnDecont) {
+        unawaited(_recoverExpenseIntent(team.id));
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _expenseRetryTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleExpenseRecovery(String teamId) {
+    if (!_expenseRecoveryStarted.add(teamId)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_recoverExpenseIntent(teamId));
+    });
+  }
+
+  void _ensureExpenseRetryTimer() {
+    if (!mounted) return;
+    _expenseRetryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
+      for (final teamId in _expenseRetryTeams.toList()) {
+        unawaited(_recoverExpenseIntent(teamId));
+      }
+    });
+  }
+
+  Future<void> _recoverExpenseIntent(String teamId) async {
+    if (!_expenseBusyTeams.add(teamId)) return;
+    try {
+      final intent = await _expenseJournal.pending(userId: widget.currentUser.id, teamId: teamId);
+      if (intent == null) {
+        _expenseRetryTeams.remove(teamId);
+        if (_expenseRetryTeams.isEmpty) {
+          _expenseRetryTimer?.cancel();
+          _expenseRetryTimer = null;
+        }
+        return;
+      }
+      await _expenseJournal.run(candidate: intent, send: widget.saveExpense);
+      _expenseRetryTeams.remove(teamId);
+      if (!mounted) return;
+      widget.onChanged();
+      widget.log('Cheltuială confirmată după reconectare', '${intent.expense.category} · ${intent.expense.amount.toStringAsFixed(2)} lei');
+      if (mounted) showSuccessMessage(context, 'O cheltuială în așteptare a fost confirmată după reconectare.');
+      if (_expenseRetryTeams.isEmpty) {
+        _expenseRetryTimer?.cancel();
+        _expenseRetryTimer = null;
+      }
+    } catch (_) {
+      if (_expenseRetryTeams.add(teamId) && mounted) {
+        showErrorMessage(context, 'O cheltuială este în așteptarea confirmării serverului. Reconectează-te; sistemul va reîncerca aceeași operație.');
+      }
+      _ensureExpenseRetryTimer();
+    } finally {
+      _expenseBusyTeams.remove(teamId);
+    }
+  }
 
   List<Team> get visibleTeams => (widget.isAdmin || widget.canViewOtherDecont)
       ? widget.teams
@@ -62,17 +153,15 @@ class _ExpensePageState extends State<ExpensePage> {
       || finance.receivedDeparture != 0
       || finance.receivedDuring != 0;
 
-  String? _resolvedSettlementId() {
-    final available = teamSettlements.map((e) => e.id).toSet();
-    if (selectedSettlementId != null && (available.contains(selectedSettlementId) || (selectedSettlementId == _legacySettlementKey && hasLegacyData))) {
-      return selectedSettlementId;
-    }
-    final open = teamSettlements.where((s) => !s.closed).toList();
-    if (open.isNotEmpty) return open.first.id;
-    if (teamSettlements.isNotEmpty) return teamSettlements.first.id;
-    if (hasLegacyData) return _legacySettlementKey;
-    return null;
-  }
+  String? _resolvedSettlementId() =>
+      resolveExpenseSettlementId<TravelSettlement>(
+        orderedSettlements: teamSettlements,
+        selectedSettlementId: selectedSettlementId,
+        hasLegacyData: () => hasLegacyData,
+        legacySettlementKey: _legacySettlementKey,
+        idOf: (settlement) => settlement.id,
+        isClosed: (settlement) => settlement.closed,
+      );
 
   TravelSettlement? get settlement {
     final id = _resolvedSettlementId();
@@ -110,20 +199,18 @@ class _ExpensePageState extends State<ExpensePage> {
     ..sort((a, b) => b.date.compareTo(a.date));
   // Sold informativ pe toate deplasările, inclusiv cele închise.
   // Diferențele contestate nu sunt compensate automat.
-  int _perDiemDifferenceBani(String beneficiaryId, String distributorId) {
-    var balance = 0;
-    for (final entry in widget.perDiems) {
-      if (entry.memberId != beneficiaryId || entry.distributedBy != distributorId ||
-          entry.status != PerDiemStatus.confirmed || entry.actualReceivedAmount == null) continue;
-      final receivedBani = parsePerDiemBani(entry.actualReceivedAmount!.toString());
-      final declaredBani = parsePerDiemBani(entry.amount.toString());
-      if (receivedBani == null || declaredBani == null) continue;
-      // A supplementary distribution is cash paid toward a prior debt,
-      // not an additional daily allowance.
-      balance += (entry.supplementaryFor == null ? declaredBani : 0) - receivedBani;
-    }
-    return balance;
-  }
+  int _perDiemDifferenceBani(String beneficiaryId, String distributorId) =>
+      calculateLegacyPerDiemDifferenceBani<PerDiemEntry>(
+        entries: widget.perDiems,
+        beneficiaryId: beneficiaryId,
+        distributorId: distributorId,
+        memberId: (entry) => entry.memberId,
+        distributedBy: (entry) => entry.distributedBy,
+        isConfirmed: (entry) => entry.status == PerDiemStatus.confirmed,
+        actualReceivedAmount: (entry) => entry.actualReceivedAmount,
+        declaredAmount: (entry) => entry.amount,
+        supplementaryFor: (entry) => entry.supplementaryFor,
+      );
 
   double _perDiemDifference(String beneficiaryId, String distributorId) =>
       _perDiemDifferenceBani(beneficiaryId, distributorId) / 100;
@@ -538,78 +625,31 @@ class _ExpensePageState extends State<ExpensePage> {
     }));
   }
 
+  bool _moneyPending=false;
   Future<void> _money(bool departure) async {
-    final amountC=TextEditingController();
-    final fromC=TextEditingController();
-    String method='Cash';
-    final now=DateTime.now();
-    final result=await showDialog<ReceivedMoneyEntry>(
-      context:context,
-      builder:(d)=>StatefulBuilder(builder:(d,setD)=>AlertDialog(
-        title:Text(departure?'Adaugă sumă primită la plecare':'Adaugă sumă primită în timpul deplasării'),
-        content:SizedBox(width:480,child:Column(mainAxisSize:MainAxisSize.min,children:[
-          TextField(
-            controller:amountC,
-            autofocus:true,
-            keyboardType:const TextInputType.numberWithOptions(decimal:true),
-            decoration:const InputDecoration(labelText:'Valoare',suffixText:'lei'),
-          ),
-          const SizedBox(height:10),
-          DropdownButtonFormField<String>(
-            value:method,
-            decoration:const InputDecoration(labelText:'Metodă'),
-            items:const[
-              DropdownMenuItem(value:'Cash',child:Text('Cash')),
-              DropdownMenuItem(value:'Transfer',child:Text('Transfer')),
-            ],
-            onChanged:(v){if(v!=null)setD(()=>method=v);},
-          ),
-          const SizedBox(height:10),
-          TextField(controller:fromC,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'De la cine')),
-          const SizedBox(height:10),
-          ListTile(
-            contentPadding:EdgeInsets.zero,
-            leading:const Icon(Icons.event_outlined),
-            title:const Text('Data'),
-            subtitle:Text('${two(now.day)}.${two(now.month)}.${now.year} · completată automat'),
-          ),
-        ])),
-        actions:[
-          TextButton(onPressed:()=>Navigator.pop(d),child:const Text('Anulează')),
-          FilledButton(onPressed:(){
-            final amount=double.tryParse(amountC.text.trim().replaceAll(',','.'));
-            final from=fromC.text.trim();
-            if(amount==null||amount<=0||from.isEmpty)return;
-            Navigator.pop(d,ReceivedMoneyEntry(
-              id:idNow(),
-              kind:departure?'departure':'during',
-              amount:amount,
-              method:method,
-              fromName:from,
-              date:now,
-            ));
-          },child:const Text('Adaugă')),
-        ],
-      )),
-    );
-    amountC.dispose();fromC.dispose();
-    if(result==null)return;
-    try{
-      if(settlement!=null){
-        settlement!.receivedEntries.add(result);
-        settlement!.receivedDeparture=settlement!.departureTotal;
-        settlement!.receivedDuring=settlement!.duringTotal;
-        await widget.saveSettlement(settlement!);
-        widget.log('Sumă primită adăugată','${settlement!.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
-      }else{
-        finance.receivedEntries.add(result);
-        finance.receivedDeparture=finance.departureTotal;
-        finance.receivedDuring=finance.duringTotal;
-        await widget.saveFinance(finance);
-        widget.log('Sumă primită adăugată','${team.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
-      }
+    if(_moneyPending)return;
+    _moneyPending=true;
+    final targetSettlement=settlement;
+    final targetFinance=targetSettlement==null?finance:null;
+    final targetId=targetSettlement?.id??targetFinance!.teamId;
+    final journal=ReceivedMoneyJournal(read:(key)=>_moneyStorage.read(key:key),
+      write:(key,value)=>_moneyStorage.write(key:key,value:value),
+      remove:(key)=>_moneyStorage.delete(key:key));
+    try {
+      final pending=await journal.pending(userId:widget.currentUser.id,teamId:team.id,targetId:targetId);
+      final result=pending??await showDialog<ReceivedMoneyEntry>(context:context,
+        builder:(_)=>ReceivedMoneyDialog(departure:departure,now:DateTime.now(),newId:idNow));
+      if(result==null||!mounted)return;
+      await journal.run(userId:widget.currentUser.id,teamId:team.id,targetId:targetId,candidate:result,
+        send:(entry)=>saveReceivedMoneyDraft(entry:entry,settlement:targetSettlement,finance:targetFinance,
+          saveSettlement:widget.saveSettlement,saveFinance:widget.saveFinance));
+      widget.log('Sumă primită adăugată','${targetSettlement?.name??team.name} · ${result.amount.toStringAsFixed(2)} lei · ${result.fromName} · ${result.method}');
       if(mounted){setState((){});showSuccessMessage(context,'Suma primită a fost adăugată.');}
-    }catch(e){if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $e');}
+    } catch(error) {
+      if(mounted)showErrorMessage(context,'Nu s-a putut salva suma: $error');
+    } finally {
+      _moneyPending=false;
+    }
   }
 
   Widget _pendingPerDiemCard(PerDiemEntry entry) {
@@ -983,69 +1023,57 @@ class _ExpensePageState extends State<ExpensePage> {
     catch (e) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva diurna: $e'); }
   }
 
-  Future<XFile?> _pickDocumentImage({bool allowNoImage = false}) async {
-    final source = await showModalBottomSheet<String>(context: context, builder: (c) => SafeArea(child: Wrap(children: [
-      ListTile(leading: const Icon(Icons.photo_camera_outlined), title: const Text('Fotografiază acum'), onTap: () => Navigator.pop(c, 'camera')),
-      ListTile(leading: const Icon(Icons.photo_library_outlined), title: const Text('Alege din galerie'), onTap: () => Navigator.pop(c, 'gallery')),
-      if (allowNoImage) ListTile(leading: const Icon(Icons.edit_note), title: const Text('Fără fotografie'), onTap: () => Navigator.pop(c, 'none')),
-    ])));
-    if (source == null || source == 'none') return null;
-    try {
-      return await _imagePicker.pickImage(source: source == 'camera' ? ImageSource.camera : ImageSource.gallery, imageQuality: 92, maxWidth: 2400, maxHeight: 2400);
-    } catch (e) { if (mounted) showErrorMessage(context, 'Imaginea nu a putut fi deschisă: $e'); return null; }
+  Future<XFile?> _pickDocumentImage({bool allowNoImage = false}) {
+    final injectedPicker = widget.pickDocumentImage;
+    if (injectedPicker != null) return injectedPicker(allowNoImage: allowNoImage);
+    return pickExpenseDocumentImage(
+        context: context,
+        allowNoImage: allowNoImage,
+        requestImage: (source, {
+          required imageQuality,
+          required maxWidth,
+          required maxHeight,
+        }) => _imagePicker.pickImage(
+          source: source,
+          imageQuality: imageQuality,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+        ),
+        onError: (error) {
+          if (mounted) {
+            showErrorMessage(context, 'Imaginea nu a putut fi deschisă: $error');
+          }
+        },
+      );
   }
 
-  Uint8List _compressDocumentImage(Uint8List bytes) {
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) { if (bytes.length <= 550000) return bytes; throw const FormatException('Imagine prea mare sau format nesuportat.'); }
-    var work = img.bakeOrientation(decoded);
-    int longest = work.width > work.height ? work.width : work.height;
-    if (longest > 1400) {
-      work = work.width >= work.height ? img.copyResize(work, width: 1400) : img.copyResize(work, height: 1400);
-    }
-    var encoded = Uint8List.fromList(img.encodeJpg(work, quality: 68));
-    if (encoded.length > 480000) {
-      work = work.width >= work.height ? img.copyResize(work, width: 1050) : img.copyResize(work, height: 1050);
-      encoded = Uint8List.fromList(img.encodeJpg(work, quality: 56));
-    }
-    if (encoded.length > 480000) {
-      work = work.width >= work.height ? img.copyResize(work, width: 800) : img.copyResize(work, height: 800);
-      encoded = Uint8List.fromList(img.encodeJpg(work, quality: 48));
-    }
-    return encoded;
-  }
+  Future<String> _recognizeExpenseText(Uint8List bytes, {String? path}) =>
+      widget.recognizeExpenseText?.call(bytes, path: path) ??
+      recognizeTextFromImage(bytes, path: path);
 
-  String _fingerprint(Uint8List bytes) {
-    var h = BigInt.parse('cbf29ce484222325', radix: 16);
-    final prime = BigInt.parse('100000001b3', radix: 16);
-    final mask = (BigInt.one << 64) - BigInt.one;
-    for (final b in bytes) {
-      h ^= BigInt.from(b);
-      h = (h * prime) & mask;
-    }
-    return h.toRadixString(16).padLeft(16, '0');
-  }
-
-  String _normalizedDocNo(String s) => s.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-
-  Expense? _duplicateOf(Expense candidate) {
-    for (final e in widget.expenses) {
-      if (e.teamId != candidate.teamId) continue;
-      final sameSettlement = (e.settlementId ?? '') == (candidate.settlementId ?? '');
-      if (!sameSettlement) continue;
-      if (candidate.imageFingerprint.isNotEmpty && e.imageFingerprint == candidate.imageFingerprint) return e;
-      final n1 = _normalizedDocNo(candidate.documentNumber), n2 = _normalizedDocNo(e.documentNumber);
-      if (n1.isNotEmpty && n1 == n2 && sameDay(candidate.date, e.date) && (candidate.amount - e.amount).abs() < .02) return e;
-    }
-    return null;
-  }
+  Expense? _duplicateOf(Expense candidate) =>
+      findPotentialExpenseDuplicate<Expense>(
+        existing: widget.expenses,
+        candidate: candidate,
+        teamId: (expense) => expense.teamId,
+        settlementId: (expense) => expense.settlementId,
+        imageFingerprint: (expense) => expense.imageFingerprint,
+        documentNumber: (expense) => expense.documentNumber,
+        date: (expense) => expense.date,
+        amount: (expense) => expense.amount,
+      );
 
   Future<bool> _duplicateAllowed(Expense candidate) async {
     final learning = widget.settings.learning['conflicts'];
-    if (learning?.enabled != true) return true;
-    final duplicate = _duplicateOf(candidate);
-    if (duplicate == null) return true;
-    if (learning!.mode == LearningMode.automatic) {
+    final decision = decideExpenseDuplicate<Expense>(
+      conflictsEnabled: learning?.enabled == true,
+      automatic: learning?.mode == LearningMode.automatic,
+      findDuplicate: () => _duplicateOf(candidate),
+    );
+    if (decision.kind == ExpenseDuplicateDecisionKind.allow) return true;
+
+    final duplicate = decision.duplicate!;
+    if (decision.kind == ExpenseDuplicateDecisionKind.block) {
       if (mounted) showErrorMessage(context, 'Document duplicat blocat automat: ${duplicate.documentNumber.isEmpty ? duplicate.description : duplicate.documentNumber}.');
       widget.log('Duplicat financiar blocat', candidate.documentNumber);
       return false;
@@ -1055,17 +1083,34 @@ class _ExpensePageState extends State<ExpensePage> {
 
   Future<void> _manual() async {
     final picked = await _pickDocumentImage(allowNoImage: true);
+    if (!mounted) return;
     Uint8List? raw;
     FiscalOcrData? parsed;
     if (picked != null) {
       raw = await picked.readAsBytes();
+      if (!mounted) return;
       final ocrSetting = widget.settings.learning['ocr'];
-      if (raw.isNotEmpty && ocrSetting?.enabled == true && ocrSetting?.mode == LearningMode.automatic) {
+      final shouldRunAutomaticOcr = shouldRunOptionalAutomaticExpenseOcr(
+        imageBytes: raw,
+        enabled: ocrSetting?.enabled == true,
+        automaticMode: ocrSetting?.mode == LearningMode.automatic,
+      );
+      if (shouldRunAutomaticOcr) {
         setState(() => scanning = true);
         try {
-          final text = await recognizeTextFromImage(raw, path: picked.path);
-          parsed = parseFiscalOcr(text);
-          widget.log('OCR automat la atașare', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
+          final result = await scanOptionalAutomaticExpenseOcr(
+            raw,
+            path: picked.path,
+            enabled: ocrSetting?.enabled == true,
+            automaticMode: ocrSetting?.mode == LearningMode.automatic,
+            recognize: _recognizeExpenseText,
+            parse: parseFiscalOcr,
+          );
+          if (!mounted) return;
+          if (result != null && result.error == null) {
+            parsed = result.data;
+            widget.log('OCR automat la atașare', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
+          }
         } catch (_) {
           // În modul automat, eșecul OCR nu blochează introducerea manuală.
         } finally {
@@ -1073,65 +1118,64 @@ class _ExpensePageState extends State<ExpensePage> {
         }
       }
     }
+    if (!mounted) return;
     final e = await _expenseDialog(ocr: parsed, imageBytes: raw);
-    if (e != null) await _saveNewExpense(e);
+    if (mounted && e != null) await _saveNewExpense(e);
   }
 
   Future<void> _scan() async {
     final ocrSetting = widget.settings.learning['ocr'];
     if (ocrSetting?.enabled != true) { if (mounted) showErrorMessage(context, 'OCR financiar este dezactivat din Learning Center.'); return; }
     final picked = await _pickDocumentImage();
-    if (picked == null) return;
+    if (!mounted || picked == null) return;
     final raw = await picked.readAsBytes();
-    if (raw.isEmpty) return;
+    if (!mounted || raw.isEmpty) return;
     setState(() => scanning = true);
-    FiscalOcrData parsed;
+    late final FiscalOcrData parsed;
     try {
-      final text = await recognizeTextFromImage(raw, path: picked.path);
-      parsed = parseFiscalOcr(text);
-      widget.log('OCR document procesat', '${team.name} · încredere ${(parsed.confidence * 100).round()}%');
-    } catch (e) {
-      parsed = const FiscalOcrData(rawText: '');
-      if (mounted) showErrorMessage(context, 'OCR-ul nu a putut citi documentul. Poți completa manual; fotografia nu se salvează în baza de date. Detalii: $e');
+      final result = await scanExpenseDocumentOcr(
+        raw,
+        path: picked.path,
+        recognize: _recognizeExpenseText,
+        parse: parseFiscalOcr,
+        onSuccess: (data) {
+          if (mounted) widget.log('OCR document procesat',
+            '${team.name} · încredere ${(data.confidence * 100).round()}%');
+        },
+      );
+      if (!mounted) return;
+      parsed = result.data;
+      if (result.error != null && mounted) {
+        showErrorMessage(context, 'OCR-ul nu a putut citi documentul. Poți completa manual; fotografia nu se salvează în baza de date. Detalii: ${result.error}');
+      }
     } finally {
       if (mounted) setState(() => scanning = false);
     }
+    if (!mounted) return;
     final expense = await _expenseDialog(ocr: parsed, imageBytes: raw);
-    if (expense != null) await _saveNewExpense(expense);
-  }
-
-  // Monetary input is validated as decimal text before conversion to double.
-  // This prevents NaN, infinity, exponential notation and sub-ban amounts.
-  int? _expenseAmountBani(String raw) {
-    final normalized = raw.trim().replaceAll(',', '.');
-    if (!RegExp(r'^\d{1,9}(?:\.\d{1,2})?$').hasMatch(normalized)) return null;
-    final parts = normalized.split('.');
-    final lei = int.tryParse(parts.first);
-    if (lei == null) return null;
-    final bani = parts.length == 1 ? 0 : int.parse(parts.last.padRight(2, '0'));
-    final total = lei * 100 + bani;
-    return total > 0 ? total : null;
+    if (mounted && expense != null) await _saveNewExpense(expense);
   }
 
   Future<Expense?> _expenseDialog({FiscalOcrData? ocr, Uint8List? imageBytes}) async {
     final formKey = GlobalKey<FormState>();
-    final number = TextEditingController(text: ocr?.documentNumber ?? '');
-    final amount = TextEditingController(text: ocr?.amount == null ? '' : ocr!.amount!.toStringAsFixed(2));
-    final supplier = TextEditingController(text: ocr?.supplier ?? '');
+    final prefill = expenseOcrPrefill(ocr, now: DateTime.now());
+    final number = TextEditingController(text: prefill.documentNumber);
+    final amount = TextEditingController(text: prefill.amountText);
+    final supplier = TextEditingController(text: prefill.supplier);
     final desc = TextEditingController();
-    final litersC = TextEditingController(text: ocr?.liters == null ? '' : ocr!.liters!.toStringAsFixed(2));
-    final priceC = TextEditingController(text: ocr?.pricePerLiter == null ? '' : ocr!.pricePerLiter!.toStringAsFixed(2));
-    String cat = ocr?.looksLikeFuel == true ? 'Combustibil' : 'Alte cheltuieli';
-    ExpenseDocumentType docType = (ocr?.rawText.toUpperCase().contains('FACTUR') ?? false) ? ExpenseDocumentType.invoice : ExpenseDocumentType.fiscalReceipt;
-    DateTime docDate = ocr?.date ?? DateTime.now();
+    final litersC = TextEditingController(text: prefill.litersText);
+    final priceC = TextEditingController(text: prefill.pricePerLiterText);
+    String cat = prefill.category;
+    ExpenseDocumentType docType = prefill.documentType;
+    DateTime docDate = prefill.date;
     Uint8List? compressed;
     if(imageBytes!=null){
-      try{compressed=_compressDocumentImage(imageBytes);}catch(e){if(mounted)showErrorMessage(context,'Fotografia nu a putut fi comprimată și nu va fi atașată: $e');}
+      try{compressed=compressExpenseDocumentImage(imageBytes);}catch(e){if(mounted)showErrorMessage(context,'Fotografia nu a putut fi comprimată și nu va fi atașată: $e');}
     }
     // Fotografia este utilizată numai în memorie pentru OCR/previzualizare.
     // În Firestore salvăm doar un fingerprint mic pentru deduplicare.
     const photoBase64 = '';
-    final fingerprint = imageBytes == null ? '' : _fingerprint(imageBytes);
+    final fingerprint = imageBytes == null ? '' : fingerprintExpenseDocumentImage(imageBytes);
 
     final result = await showDialog<Expense>(context: context, builder: (d) => StatefulBuilder(builder: (d, setD) => AlertDialog(
       title: Text(ocr == null ? 'Introducere document' : 'Verifică datele citite prin OCR'),
@@ -1141,16 +1185,16 @@ class _ExpensePageState extends State<ExpensePage> {
           const SizedBox(height: 8),
         ],
         if (ocr != null) ...[
-          _InfoCard(icon: Icons.document_scanner, title: 'OCR ${(ocr.confidence * 100).round()}%', text: ocr.rawText.isEmpty ? 'Textul nu a putut fi extras. Completează manual.' : 'Datele au fost completate automat. Verifică-le înainte de salvare. Fotografia este temporară și nu va fi salvată.'),
+          _InfoCard(icon: Icons.document_scanner, title: 'OCR ${(ocr.confidence * 100).round()}%', text: ocr.ambiguousDocument ? 'Fotografia pare să conțină mai multe documente. Datele OCR nu au fost precompletate; verifică și completează documentul dorit manual.' : ocr.rawText.isEmpty ? 'Textul nu a putut fi extras. Completează manual.' : 'Datele au fost completate automat. Verifică-le înainte de salvare. Fotografia este temporară și nu va fi salvată.'),
           const SizedBox(height: 8),
         ],
         DropdownButtonFormField<ExpenseDocumentType>(initialValue: docType, decoration: const InputDecoration(labelText: 'Tip document'), items: const [DropdownMenuItem(value: ExpenseDocumentType.fiscalReceipt, child: Text('Bon Fiscal')), DropdownMenuItem(value: ExpenseDocumentType.invoice, child: Text('Factură'))], onChanged: (v) { if (v != null) setD(() { docType = v; if (v == ExpenseDocumentType.invoice && cat == 'Alte cheltuieli') cat = 'Facturi'; if (v == ExpenseDocumentType.fiscalReceipt && cat == 'Facturi') cat = 'Alte cheltuieli'; }); }),
         const SizedBox(height: 8),
-        TextFormField(controller: number, decoration: InputDecoration(labelText: docType == ExpenseDocumentType.fiscalReceipt ? 'Nr. bon' : 'Nr. factură'), validator: (v) => v == null || v.trim().isEmpty ? 'Numărul documentului este obligatoriu.' : null),
+        TextFormField(controller: number, decoration: InputDecoration(labelText: docType == ExpenseDocumentType.fiscalReceipt ? 'Nr. bon' : 'Nr. factură'), validator: expenseDocumentNumberValidationError),
         const SizedBox(height: 8),
         TextFormField(controller: supplier, decoration: const InputDecoration(labelText: 'Furnizor / comerciant')),
         const SizedBox(height: 8),
-        TextFormField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Sumă', suffixText: 'lei'), validator: (v) => _expenseAmountBani(v ?? '') == null ? 'Introdu o sumă pozitivă, cu maximum 2 zecimale.' : null),
+        TextFormField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Sumă', suffixText: 'lei'), validator: (v) => expenseAmountValidationError(parseExpenseAmountBani(v ?? ''))),
         const SizedBox(height: 8),
         ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event), title: const Text('Data documentului'), subtitle: Text(_shortDate(docDate)), trailing: TextButton(onPressed: () async { final x = await showDatePicker(context: d, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: docDate); if (x != null) setD(() => docDate = x); }, child: const Text('Alege'))),
         DropdownButtonFormField<String>(initialValue: cat, decoration: const InputDecoration(labelText: 'Categorie'), items: const [DropdownMenuItem(value: 'Combustibil', child: Text('Combustibil')), DropdownMenuItem(value: 'Facturi', child: Text('Facturi')), DropdownMenuItem(value: 'Alte cheltuieli', child: Text('Alte cheltuieli'))], onChanged: (v) { if (v != null) setD(() => cat = v); }),
@@ -1166,11 +1210,11 @@ class _ExpensePageState extends State<ExpensePage> {
         TextButton(onPressed: () => Navigator.pop(d), child: const Text('Anulează')),
         FilledButton(onPressed: () {
           if (!(formKey.currentState?.validate() ?? false)) return;
-          if (docDate.isAfter(DateTime.now().add(const Duration(days: 1)))) {
+          if (expenseDateExceedsFutureAllowance(docDate, DateTime.now())) {
             ScaffoldMessenger.of(d).showSnackBar(const SnackBar(content: Text('Data documentului nu poate fi în viitor.')));
             return;
           }
-          final bani = _expenseAmountBani(amount.text);
+          final bani = parseExpenseAmountBani(amount.text);
           if (bani == null) return;
           final value = bani / 100.0;
           Navigator.pop(d, Expense(
@@ -1189,12 +1233,45 @@ class _ExpensePageState extends State<ExpensePage> {
   }
 
   Future<void> _saveNewExpense(Expense e) async {
-    if (!await _duplicateAllowed(e)) return;
+    if (!mounted || !await _duplicateAllowed(e) || !mounted) return;
+    final intent = ExpenseSaveIntent(userId: widget.currentUser.id, teamId: e.teamId, expense: e);
     try {
-      await widget.saveExpense(e);
+      await _expenseJournal.run(candidate: intent, send: widget.saveExpense);
+      _expenseRetryTeams.remove(e.teamId);
+      if (_expenseRetryTeams.isEmpty) {
+        _expenseRetryTimer?.cancel();
+        _expenseRetryTimer = null;
+      }
       widget.log('${e.documentType == ExpenseDocumentType.fiscalReceipt ? 'Bon Fiscal' : 'Factură'} introdus', '${e.category} · ${settlement?.name ?? 'istoric anterior'}');
       if (mounted) showSuccessMessage(context, e.confirmed ? 'Documentul a fost salvat.' : 'Documentul a fost trimis gestionarului pentru confirmare.');
-    } catch (err) { if (mounted) showErrorMessage(context, 'Nu s-a putut salva documentul: $err'); }
+    } catch (err) {
+      ExpenseSaveIntent? pending;
+      var journalStateUnknown = false;
+      try {
+        pending = await _expenseJournal.pending(userId: intent.userId, teamId: intent.teamId);
+      } catch (_) {
+        // A read failure cannot prove whether the durable write completed.
+        journalStateUnknown = true;
+      }
+      if (pending != null || journalStateUnknown) {
+        _expenseRetryTeams.add(e.teamId);
+        _ensureExpenseRetryTimer();
+      } else {
+        _expenseRetryTeams.remove(e.teamId);
+        if (_expenseRetryTeams.isEmpty) {
+          _expenseRetryTimer?.cancel();
+          _expenseRetryTimer = null;
+        }
+      }
+      if (mounted) {
+        final message = pending == null && !journalStateUnknown
+            ? 'Cheltuiala nu a fost trimisă: nu s-a putut salva jurnalul securizat. Încearcă din nou.'
+            : pending != null && !pending.sameOperation(intent)
+                ? 'Există o cheltuială anterioară fără confirmare; reîncercarea ei continuă. Această cheltuială nu a fost trimisă.'
+                : 'Nu s-a putut confirma salvarea documentului. Starea jurnalului este incertă; sistemul va verifica și va reîncerca aceeași operație.';
+        showErrorMessage(context, '$message ($err)');
+      }
+    }
   }
 
   List<Widget> _groupedExpenses() {
@@ -1224,9 +1301,18 @@ class _ExpensePageState extends State<ExpensePage> {
   }
 
   Future<void> _confirmExpense(Expense e) async {
-    e.confirmed = true;
-    try { await widget.saveExpense(e); widget.log('Cheltuială confirmată', e.documentNumber); }
-    catch (err) { e.confirmed = false; if (mounted) showErrorMessage(context, 'Confirmarea a eșuat: $err'); }
+    if (!isManager || !_confirmingExpenseIds.add(e.id)) return;
+    try {
+      await widget.confirmExpense(e);
+      if (!mounted) return;
+      setState(() => e.confirmed = true);
+      widget.onChanged();
+      widget.log('Cheltuială confirmată', e.documentNumber);
+    } catch (err) {
+      if (mounted) showErrorMessage(context, 'Confirmarea nu a fost verificată. Reîncearcă: $err');
+    } finally {
+      _confirmingExpenseIds.remove(e.id);
+    }
   }
 
   Future<void> _pdf() async {

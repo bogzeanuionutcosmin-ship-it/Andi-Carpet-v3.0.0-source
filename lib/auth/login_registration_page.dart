@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<String> _resolveLoginIdentifier(String identifier, String pass) async {
     if (identifier.contains('@')) return identifier.trim();
-    final uri = Uri.parse('https://europe-central2-andicarpet-e777e.cloudfunctions.net/resolveLoginAlias');
+    final uri = _backendFunction('resolveLoginAlias');
     final response = await http.post(
       uri,
       headers: const {'Content-Type': 'application/json'},

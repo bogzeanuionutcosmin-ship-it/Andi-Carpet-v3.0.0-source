@@ -1,4 +1,6 @@
-part of '../main.dart';
+import 'app_enums_permissions.dart';
+import 'category_identity.dart';
+import '../utils/date_formatters.dart' show graphDefaultName;
 
 class AppUser {
   final String id;
@@ -84,6 +86,7 @@ class Location {
 }
 
 class ScheduleItem {
+  final String interventionId;
   final String locationId;
   final String locationNameSnapshot;
   final String addressSnapshot;
@@ -92,7 +95,7 @@ class ScheduleItem {
   int order;
   bool transferred;
   bool facadePlanned;
-  ScheduleItem({required this.locationId, required this.locationNameSnapshot, required this.addressSnapshot, required this.typeSnapshot, String? categoryIdSnapshot, required this.order, this.transferred = false, this.facadePlanned = false}) : categoryIdSnapshot = categoryIdSnapshot ?? defaultCategoryIdForType(typeSnapshot);
+  ScheduleItem({this.interventionId = '', required this.locationId, required this.locationNameSnapshot, required this.addressSnapshot, required this.typeSnapshot, String? categoryIdSnapshot, required this.order, this.transferred = false, this.facadePlanned = false}) : categoryIdSnapshot = categoryIdSnapshot ?? defaultCategoryIdForType(typeSnapshot);
 }
 
 class WorkSchedule {
@@ -121,15 +124,24 @@ class WorkSchedule {
   String returnName;
   double? returnLatitude;
   double? returnLongitude;
-  WorkSchedule({required this.id, required this.teamId, String? graphId, String? graphName, required this.date, required this.items, this.active = true, this.closed = false, this.started = false, this.paused = false, this.postponed = false, this.autoProposed = false, this.planAlertAt, this.planAlertReason = '', this.lastRecalculatedAt, this.recalculationCount = 0, this.learningExplanation = '', this.learningConfidence = 0, this.learningSamples = 0, this.departureName = '', this.departureLatitude, this.departureLongitude, this.returnName = '', this.returnLatitude, this.returnLongitude})
+  DateTime? updatedAt;
+  String? writeToken;
+  // Local provenance; never serialized. Legacy documents may have no revision.
+  bool persisted;
+  WorkSchedule({required this.id, required this.teamId, String? graphId, String? graphName, required this.date, required this.items, this.active = true, this.closed = false, this.started = false, this.paused = false, this.postponed = false, this.autoProposed = false, this.planAlertAt, this.planAlertReason = '', this.lastRecalculatedAt, this.recalculationCount = 0, this.learningExplanation = '', this.learningConfidence = 0, this.learningSamples = 0, this.departureName = '', this.departureLatitude, this.departureLongitude, this.returnName = '', this.returnLatitude, this.returnLongitude, this.updatedAt, this.writeToken, this.persisted = false})
       : graphId = graphId ?? id,
         graphName = graphName ?? graphDefaultName(date);
 }
 
 class CentralizerRecord {
+  // Local compare-and-swap baseline, never persisted as a field.
+  Map<String, dynamic>? writeBaseline;
   final String id;
   final String teamId;
   final String locationId;
+  final String graphId;
+  final String scheduleId;
+  final String interventionId;
   final LocationType type;
   String locationNameSnapshot;
   String addressSnapshot;
@@ -146,9 +158,13 @@ class CentralizerRecord {
     required this.id,
     required this.teamId,
     required this.locationId,
+    this.graphId = '',
+    this.scheduleId = '',
+    this.interventionId = '',
     required this.type,
     required this.locationNameSnapshot,
     required this.addressSnapshot,
+    this.writeBaseline,
     this.waitingStartedAt,
     this.waitingEndedAt,
     this.startedAt,
@@ -205,19 +221,6 @@ class Expense {
 }
 
 
-// PATCH 63–70: validare exactă a sumelor monetare (maxim două zecimale).
-// Evită rotunjirea implicită a unei sume introduse greșit.
-int? parsePerDiemBani(String raw, {bool allowZero = true}) {
-  final value = raw.trim().replaceAll(',', '.');
-  if (!RegExp(r'^\d{1,9}(?:\.\d{1,2})?$').hasMatch(value)) return null;
-  final parts = value.split('.');
-  final lei = int.tryParse(parts[0]);
-  if (lei == null || lei > 100000000) return null;
-  final bani = parts.length == 2 ? int.parse(parts[1].padRight(2, '0')) : 0;
-  final total = lei * 100 + bani;
-  if (!allowZero && total == 0) return null;
-  return total;
-}
 
 class PerDiemEntry {
   final String id;

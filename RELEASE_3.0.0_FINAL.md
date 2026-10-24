@@ -1,6 +1,8 @@
 # Andi Carpetă / Andi Carpet — v3.0.0 final
 
-Build intern final: `3.0.0+32`.
+Historical internal build: `3.0.0+32`. This archived release note is not evidence for the current candidate.
+
+Current source version metadata is `3.0.1+33` in both `pubspec.yaml` and the in-app version label in `lib/main.dart`. Android Gradle derives `versionName` and `versionCode` from Flutter metadata. A built APK must still be checked for its actual manifest values and digest.
 
 ## Ultima regulă funcțională
 

@@ -3,10 +3,15 @@ import 'package:http/http.dart' as http;
 
 /// Optional Mapbox services. Public pk.* token only; no secret token in app.
 class MapboxServices {
-  MapboxServices(this.token, {http.Client? client}) : _client = client ?? http.Client();
+  MapboxServices(this.token, {http.Client? client, DateTime Function()? now})
+      : _client = client ?? http.Client(),
+        _now = now ?? DateTime.now;
   final String token;
   final http.Client _client;
+  final DateTime Function() _now;
   final Map<String, _CachedDistance> _distances = {};
+  final Map<String, _CachedGeometry> _geometries = {};
+  final Map<String, Future<List<List<double>>?>> _geometryRequests = {};
   int requestCount = 0;
   final Map<String, int> _requestsByService = {
     'Directions': 0,
@@ -42,7 +47,7 @@ class MapboxServices {
     if (!enabled || latLon.length < 2 || latLon.length > 75 || !_valid(latLon)) return null;
     final key = latLon.map((p) => '${p[0].toStringAsFixed(5)},${p[1].toStringAsFixed(5)}').join(';');
     final cached = _distances[key];
-    if (cached != null && DateTime.now().difference(cached.at) < const Duration(minutes: 10)) return cached.km;
+    if (cached != null && _now().difference(cached.at) < const Duration(minutes: 10)) return cached.km;
     var meters = 0.0;
     for (var start = 0; start < latLon.length - 1; start += 24) {
       final chunk = latLon.sublist(start, (start + 25).clamp(0, latLon.length));
@@ -58,14 +63,43 @@ class MapboxServices {
     }
     final km = meters / 1000;
     if (_distances.length >= 80) _distances.clear();
-    _distances[key] = _CachedDistance(km, DateTime.now());
+    _distances[key] = _CachedDistance(km, _now());
     return km;
   }
 
   /// Road-following geometry for an ordered route (not straight-line segments).
+  /// Reuses successful results across MapPage lifetimes to avoid repeat billing,
+  /// and shares an in-flight request when two views ask for the same route.
   /// Returns null when Mapbox cannot provide a complete route.
-  Future<List<List<double>>?> drivingGeometry(List<List<double>> latLon) async {
-    if (!enabled || latLon.length < 2 || latLon.length > 75 || !_valid(latLon)) return null;
+  Future<List<List<double>>?> drivingGeometry(List<List<double>> latLon) {
+    if (!enabled || latLon.length < 2 || latLon.length > 75 || !_valid(latLon)) {
+      return Future<List<List<double>>?>.value(null);
+    }
+    final key = _geometryKey(latLon);
+    final cached = _geometries[key];
+    if (cached != null && _now().difference(cached.at) < const Duration(minutes: 5)) {
+      return Future<List<List<double>>?>.value(_copyGeometry(cached.points));
+    }
+    if (cached != null) _geometries.remove(key);
+
+    final pending = _geometryRequests[key];
+    if (pending != null) return pending.then(_copyGeometry);
+
+    late final Future<List<List<double>>?> request;
+    request = _fetchDrivingGeometry(latLon).then((points) {
+      if (points != null && points.length >= 2 && _valid(points)) {
+        if (_geometries.length >= 80) _geometries.remove(_geometries.keys.first);
+        _geometries[key] = _CachedGeometry(_copyGeometry(points)!, _now());
+      }
+      return points;
+    }).whenComplete(() {
+      if (identical(_geometryRequests[key], request)) _geometryRequests.remove(key);
+    });
+    _geometryRequests[key] = request;
+    return request.then(_copyGeometry);
+  }
+
+  Future<List<List<double>>?> _fetchDrivingGeometry(List<List<double>> latLon) async {
     final path = <List<double>>[];
     for (var start = 0; start < latLon.length - 1; start += 24) {
       final chunk = latLon.sublist(start, (start + 25).clamp(0, latLon.length));
@@ -88,6 +122,14 @@ class MapboxServices {
     }
     return path.length >= 2 ? path : null;
   }
+
+  static String _geometryKey(List<List<double>> points) => points
+      .map((point) => '${point[0].toStringAsFixed(6)},${point[1].toStringAsFixed(6)}')
+      .join(';');
+
+  static List<List<double>>? _copyGeometry(List<List<double>>? points) => points == null
+      ? null
+      : points.map((point) => List<double>.of(point)).toList(growable: false);
 
   /// Snaps a short ordered GPS trace to roads. No automatic upload or tracking.
   /// Returns [lat, lon] positions or null when matching is not reliable.
@@ -142,5 +184,11 @@ class MapboxServices {
 class _CachedDistance {
   const _CachedDistance(this.km, this.at);
   final double km;
+  final DateTime at;
+}
+
+class _CachedGeometry {
+  const _CachedGeometry(this.points, this.at);
+  final List<List<double>> points;
   final DateTime at;
 }

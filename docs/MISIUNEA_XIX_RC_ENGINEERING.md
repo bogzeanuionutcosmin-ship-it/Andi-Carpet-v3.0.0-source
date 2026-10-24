@@ -1,0 +1,174 @@
+# Misiunea XIX — candidat izolat
+
+Comanda XIX autorizează remedieri, teste sintetice și builduri în ramuri Draft.
+Regulamentul main8452159 păstrează modularizarea înaintea noilor automatizări,
+CI pe SHA final și aprobarea separată pentru merge/producție.
+
+## Defecte și contracte
+
+- Writerul general anterior putea recrea o intervenție ștearsă și suprascrie o
+  editare concurentă. Noul writer folosește baseline local și tranzacție, cu
+  retry identic pentru același ID. Nu rezervă START între dispozitive cu ID-uri
+  distincte. Slotul canonic de intervenție și activarea exclusivă a writerelor
+  necesită un contract separat; nu este introdusă o coadă offline.
+- Metadatele legacy Map/List sunt comparate recursiv după valoare, fără a
+  rescrie câmpurile necunoscute. Guardurile locale START/FINAL rămân single-flight.
+- Fereastra uzuală a turei nu invalidează o intervenție reală la 13:00/22:00.
+  Execuțiile deschise rămân disponibile peste limita calendaristică. Asocierea
+  explicită a unui START timpuriu cu o altă zi/grafic rămâne de demonstrat.
+- Restore manual/automat: preflight, inventar server limitat, un singur batch
+  pentru maximum400 mutații inclusiv metadata. Backupurile mari sunt refuzate
+  înainte de scriere. `meta/backup` păstrează metadatele anterioare de export.
+  Nu există lock de mentenanță exclusiv și nici snapshot global al bazei.
+
+## Dovezi inițiale și verificarea finală
+
+HEAD8024722: Validate39076482915 și APK39076482901 SUCCESS. Native39076482990
+a reprodus START reușit urmat de lipsa STOP la22:58, la ensureVisible linia52.
+Testele pinned RED/GREEN verifică separat comparația nested și limita12:30.
+CI final și HEAD-urile actualizate sunt în descrierile PR-urilor și raportul XIX.
+
+Testul conectat folosește Auth/Firestore native SDK și componentele Dashboard/
+Centralizator cu writerul real și PDF real. Crearea graficului folosește acum formularul ProgramPage, cu cele 11 locații
+selectate în UI și confirmate prin citire Source.server fără cache/scrieri în
+așteptare. Markerul graphCreatedThroughUi este obligatoriu în observații;
+artefactele vechi fără acest marker sunt respinse. Activarea graficului și
+redistribuirea datelor pe 15/16 octombrie rămân pregătire sintetică prin SDK;
+corecția este introdusă prin dialogul Centralizatorului, apoi callbackul de
+test folosește writerul nativ, recitește serverul și verifică PDF-ul. Callbackul
+privat al HomePage nu este exercitat de acest montaj de componente; nu se
+pretinde E2E complet al aplicației de producție. Markerul correctionThroughUi
+este obligatoriu pentru artefactele acestui scenariu.
+Nu se declară E2E UI complet. Aplicația operațională cu entrypoint main se
+instalează ulterior cu backend demo, pentru persistența Auth/cold restart.
+
+## Siguranța Android
+
+APK-ul operațional implicit este construit și inspectat, fără lansare cu Firebase
+live. Varianta runtime păstrează package-ul real și folosește backend demo numai
+în debug, cu host loopback și pluginul GoogleServices scos în runnerul temporar.
+Harnessul vechi centralizersmoke nu este folosit ca dovadă pentru acest flux.
+Release de test folosește încă debug signing: nu demonstrează semnătura permanentă
+sau compatibilitatea cu instalările existente. Fără telefon fizic, GPS/background
+real, distribuire APK, deploy sau modificări Firebase live.
+
+## Întărirea probelor native
+
+Testul de concurență acceptă drept pierzător numai conflictul StateError al
+baseline-ului, verifică payloadul câștigător pe server și numărul documentelor.
+Erorile de autorizare trebuie să aibă codul permission-denied, nu orice eroare SDK.
+Proba restore folosește inventarul records citibil de membru și un batch mixt:
+un update permis plus ștergeri/metadata interzise. Snapshotul integral trebuie
+să rămână neschimbat după refuz; un refuz la inventarierea finance nu ar demonstra
+rollbackul. Navigarea main verifică headinguri exacte și pachetul în foreground;
+eticheta tabului singură nu dovedește încărcarea datelor.
+
+Rularea native39093051088 a arătat că finalizarea Future-ului tranzacției cu
+rețeaua SDK oprită nu a produs eroarea așteptată. Writerul cere acum citire
+Source.server înainte de pregătirea tranzacției și confirmarea payloadului pe
+server după aceasta. Sunt două citiri suplimentare explicite; o confirmare
+incertă este eroare, fără regenerarea ID-ului. Concurența rămâne în tranzacție.
+Collectorul validează headerul/trailerul PDF și obiectul JSON, astfel încât
+textul stdout «run-as: unknown package» nu este publicat ca PDF/observații.
+
+Source.server poate include latency compensation pentru scrieri locale: se
+resping și snapshoturile isFromCache/hasPendingWrites. Confirmarea ulterioară
+poate raporta incertitudine dacă un alt writer legitim modifică imediat după
+commit; mesajul nu dovedește că propriul commit a eșuat. Nu se așteaptă global
+waitForPendingWrites, care ar lega această operațiune de alte scrieri.
+
+Flutter 3.47.5 a fost verificat în workflow pentru opțiunea `--no-uninstall`.
+Testul instrumentat oprește procesul după rulare, dar păstrează instalarea și
+Auth-ul emulatorului; aplicația operațională poate fi apoi reinstalată peste
+aceeași package ID pentru cold restart/nav. Dacă opțiunea lipsește, CI eșuează
+înaintea testului nativ, fără fallback care ar elimina aplicația.
+
+## Follow-up: writerul corecțiilor din HomePage
+
+Draft #128 extrage tranzacția existentă a corecțiilor în
+`centralizer/correction_writer.dart`. HomePage păstrează verificările de
+permisiuni și identitate, iar adaptorul UI nativ folosește acum aceeași operație
+de persistență. Probele noi cer refuzul unui baseline vechi, al unei intervenții
+create apoi șterse, al echipei neautorizate și al corecției offline, urmată de
+recitire server fără modificarea fațadei. Aceste rezultate nu sunt declarate
+reușite înainte de CI; extragerea nu introduce implicit confirmare server.
+Coordonatorul privat HomePage și pregătirea calendaristică sintetică rămân limite
+explicite. Ramura include #125 ebd96c27; conținutul comun nu se integrează dublu.
+
+Rularea native 39192340982, job 117867660812, pe HEAD 55cf201c437ba8f039240e4d23246a3e0c0b6adc
+reproduce la linia270 Future<void> finalizat cu null în locul refuzului corecției
+offline. Probele online UI, baseline vechi, document șters și echipă neautorizată
+au precedat acest eșec. Nu există dovadă că operația offline a persistat pe server;
+eșecul demonstrat este raportarea unui succes neconfirmat. Fixul adaugă citire
+Source.server înainte de tranzacție și confirmarea câmpurilor după ea, respingând
+metadata cache/pending. Un rezultat incert nu dovedește lipsa commitului; UI cere
+reîncărcare. Regresiile Dart simulează finalizarea bridge-ului fără mutație server,
+nu înlocuiesc rerularea nativă. Validatorul cere noul marker de writer de producție.
+
+## Probă suplimentară: coordonatorul HomePage
+
+Ramura separată `codex/xix-home-correction-ui` montează AndiCarpetaApp real,
+încarcă funcția editorului din emulator, deschide Centralizatorul din navigare și
+corectează FINAL 00:20→00:21→00:20 prin callbackul privat al HomePage. Fiecare
+salvare cere mesajul de succes și citire server cu metadata autoritativă. Proba
+elimină apoi dreptul editCentralizer din funcția sintetică și cere dispariția
+acțiunilor de corecție, fără schimbarea serverului. Funcția temporară și atribuirea
+se restaurează înaintea restarturilor. Nu se declară reușită înainte de CI.
+Markerul homeCorrectionThroughUi respinge artefactele limitate la componente.
+Crearea/activarea Graph și datele istorice rămân limite distincte; proba nouă nu
+transformă întreaga suită în validare de producție.
+
+## Misiunea XIX — loturi suplimentare de modularizare Map (19 octombrie 2026 UTC)
+
+Au fost create cinci Draft PR-uri noi, distincte de #134–#140 și fără suprapunere de patch: [#141 selectare rute](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/141), [#142 parser reverse-geocode](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/142), [#143 transport reverse-geocode](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/143), [#144 stare badge Map](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/144) și [#145 filtrul programelor Map](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/145). #141/#142/#144/#145 sunt ramuri independente pe baza #137; #143 este descendent al #142. HEAD-urile: #141 `39f3506df19d9a53cd2060f646f57a0df567f7e6`, #142 `43690da9808830c3ac2f71d06ca778a09fd910eb`, #143 `97b9f9198a8e739957fe1b4ab9d1b9ffa20e11b3`, #144 `fd551da6163e014aad901c40e9b7975e1a29f0e9`, #145 `817489db98f1a47140ba5c07fd7bc175d1081e79`. Loturile izolează selecția rutelor, parserul și transportul HTTP reverse-geocode, decizia badge-ului și filtrul programelor operaționale fără schimbare de comportament intenționată.
+
+Validate și Android debug sunt SUCCESS pentru #141 (#141 `39341558517` / `39341558484`) și #143 (`39341822453` / `39341822515` / `39341822442`). Toate cele trei workflow-uri pentru #142 sunt SUCCESS pe SHA exact `43690da9808830c3ac2f71d06ca778a09fd910eb`: Validate `39341819031`, Android `39341819032`, Native `39341819051`. Validate este SUCCESS pentru #144 (`39342521773`) și #145 (`39342732825`); Android #144 (`39342521800`) este de asemenea SUCCESS. Native #141 (`39341558511`) este la attempt 3 pe exact același SHA; attempt 1 a eșuat la NDK (`ZipFile unknown archive`), attempt 2 a produs PDF-ul dar Auth Emulator a întrerupt stream-ul la loginul celui de-al doilea client (`unexpected end of stream`) înainte de aserțiunea finală. Native #143 (`39341822442`) este SUCCESS cu PDF/checksum/artifact verificate; Native #144/#145 (`39342521775`, `39342732906`) și Android #145 (`39342732850`) este SUCCESS. Nu există eșec de aserțiune Map raportat. Teste structurale locale per lot: 173 Python, 3 Node și `git diff --check` PASS; Flutter/Dart nu sunt instalate local.
+
+Niciun PR nu este declarat merged. #134–#145 rămân Draft/Open; nu s-a făcut merge, deploy, acces/modificare Firebase de producție, semnare sau distribuire APK. Modularizarea aplicației este încă incompletă; `production_ready=false`.
+
+
+## Continuare #141–#146 și CI terminal (20 octombrie 2026 UTC)
+
+La SHA exact, toate trei workflow-urile sunt SUCCESS pentru codul #141 (39f3506df19d9a53cd2060f646f57a0df567f7e6: Validate 39341558517, Android 39341558484, Native attempt 3 39341558511), #142 (43690da9808830c3ac2f71d06ca778a09fd910eb: 39341819031/39341819032/39341819051), #143 (97b9f9198a8e739957fe1b4ab9d1b9ffa20e11b3: 39341822453/39341822515/39341822442), #144 (fd551da6163e014aad901c40e9b7975e1a29f0e9: 39342521773/39342521800/39342521775), #145 (817489db98f1a47140ba5c07fd7bc175d1081e79: 39342732825/39342732850/Native rerun 39342732906) și #146 (913d9a2ed34aeff46514acead45c054f105a67e8: 39344765440/39344765436/39344765414). Pentru #145, Native a fost relansat după anularea jobului inițial provocată de avansarea cu documente; rerularea pe SHA-ul aceluiași cod este SUCCESS.
+
+PR Draft #146 [Extract Map location filter policy](https://github.com/bogzeanuionutcosmin-ship-it/Andi-Carpet-v3.0.0-source/pull/146) scoate filtrarea generică categorie/status/poziționare GPS într-un helper fără dependență de modele/UI și reutilizează filtrul în marker list, locații fără GPS și panourile categorice. Testele dedicate verifică seturi selectate, coordonate parțiale și categoria exactă pentru panou. Filtrele de branch CI și testul-contract sunt extinse numai pentru a permite executarea workflow-urilor standard pe copilul #145; pașii și politicile lor rămân neschimbate.
+
+#141–#146 rămân Draft/Open, fără merge. Validările locale: 173 Python, 3 Node și git diff --check PASS; Flutter/Dart lipsesc local. Obligatii încă deschise: modularizarea paginilor și familiilor rămase din matricea PR #137; verificarea prudentă a cache-urilor Home write-only și a parserelor receivedEntries; decuplarea GPS/UI/models/orchestration din Map; review uman și Android fizic. Fără merge, deploy, Firebase de producție, semnare sau distribuire APK; production_ready=false.
+
+
+## Continuare C14 → C30/C31 — 21 octombrie 2026
+
+Checkpointul C14/#192 (`cf7768b6a7d312af1b0092d1fd9403505f3c1b85`) este validat istoric pe toate cele trei fluxuri. Seria cumulativă a continuat până la C30/#208 și C31/#209.
+
+- C30/#208 HEAD `8bfc120ec62d70c24d4317a7577173a61d9537b2`: Validate `39512793185` SUCCESS; Android `39512793093` SUCCESS. Native `39512793206` a întâmpinat `adb: device offline` înainte de testul UI. Retry-ul jobului eșuat rulează; până la terminalizarea lui, Native rămâne nevalidat.
+- C31/#209 Draft/Open, bazat pe C30, HEAD `2566b14ec1d39e71b3cbd9f32cc33377c98d174c`. Policy pură pentru selecția programelor Home active în două call-site-uri duplicate; păstrează filtrul diferit pentru auto-rezolvare. Contractele verifică echipa/data/stările, ordinea și lista nouă goală.
+- C31: Validate run `39516568304` este în curs. Python source/security contracts au SUCCESS; Android/Native nu au încă rezultat terminal pe acest SHA.
+- Limite neschimbate: fără merge, deploy, Firebase de producție, signing ori distribuire APK; `production_ready=false`. Auditul complet, review-ul uman și testarea Android fizică rămân deschise.
+
+
+## C30/C31/C32 checkpoint — 2026-10-21
+
+- C30/#208 `8bfc120ec62d70c24d4317a7577173a61d9537b2`: Validate `39512793185`, Android `39512793093`, Native `39512793206` all PASS. Native passed on retry, job `118949202441`; final artifact `12308024349`, SHA-256 `f482bb088478349f5d96f5f44c311b5d4823368d70ae45d3b27dba0a1a559d6c`.
+- C31/#209 `86d58d3f85d3c8643d7ec2f8f5c751c3c87cb4e4`: Validate `39516711275` PASS; Android/Native are not registered, so C31 is not fully validated.
+- C32 `codex/xix-home-arrival-candidate-policy-20261021`, directly based on C31: tests came first (`1c5edebb8674d30ddd3a46a98b9e4904f6e52bfb`, `20629971af76d5f2a24d4f644f616b70efc516c2`). Scope is a pure Home geofence candidate selector preserving the 250 m accuracy-adjusted boundary and nearest ordering. Final SHA and CI runs pending.
+- PRs remain Draft/Open; no merge/deploy/live Firebase/signing/production APK distribution; `production_ready=false`.
+
+
+## C30–C32 continuation and remaining Home responsibilities — 2026-10-21
+
+### Exact CI checkpoints
+- C30/#208 `8bfc120ec62d70c24d4317a7577173a61d9537b2`: Validate `39512793185`, Android `39512793093`, Native retry `39512793206` all SUCCESS. Native retry job `118949202441`; final artifact `12308024349`, SHA-256 `f482bb088478349f5d96f5f44c311b5d4823368d70ae45d3b27dba0a1a559d6c`.
+- C31/#209 `86d58d3f85d3c8643d7ec2f8f5c751c3c87cb4e4`: Validate original `39516711275` SUCCESS and exact-SHA rerun `39519139411` SUCCESS. Android and Native have no registered runs; C31 is not fully validated.
+- C32/#210 `bfcf1dacb24fd4fa41030c2b504c92572eed49be`: Validate `39519144632` SUCCESS. Flutter tests, Python source/security contracts, Node, Functions and Firestore jobs succeeded. Artifacts: audit `12311105597` SHA-256 `6e19b276d4bb7a9f7274b8095ac577bb355764821e6b5d6f28790889db30cfd1`; PDF evidence `12311120890` SHA-256 `916ae5a0c533a3790e948629dacbc944896c685efbde888439d74821c997dd88`; web build `12310991123` SHA-256 `4f4fd29ffbb11361b60353827ab23280ff5e672056cc207ea5524f78c6a4216b`. Android and Native are absent; this is not complete three-workflow validation.
+- First C32 source-contract run `39518993724` failed because the new stack contract lacked a Native base condition for C32. The condition was added; rerun `39519144632` passed. Earlier C32 Validate attempt `39519088607` was cancelled when the run was re-triggered.
+
+### Responsibility audit
+- Home lifecycle has a dedicated `HomeSubscriptionRegistry`; separate core and financial registries are disposed by Home. Late-added subscriptions are cancelled after disposal. The GPS timer and Geolocator position stream are still cancelled directly by Home's lifecycle.
+- Financial scope and restart decision are already extracted (`homeFinancialSyncScope`, `shouldRestartHomeFinancialSync`). Query construction and four financial listeners still mutate Home-owned lists and use permission/profile state; retain that coupling until source/server, cancellation, and team-scope contracts cover it.
+- Core Firestore sync remains orchestrated in Home across definitions, directory/profile, operations, notifications, chat, settings and audit. Listener callbacks update shared mutable state, call setState, and can restart financial subscriptions. Do not move these listeners as a bulk refactor.
+- Location/category/function/team/car/schedule/record/expense/per-diem/finance/user-team maps are write-baseline caches used to avoid redundant batch writes; values update after the server batch commits. Do not remove or persist them elsewhere until cache freshness, restart, conflict and write-order contracts are documented.
+- Adaptive GPS remains coupled to platform permissions, web timer/native stream settings, schedule proximity and shared-location writes. C30 extracted precision hysteresis; C32 extracted only the 250 m accuracy-adjusted nearest arrival candidate. Reverse-locality caching already has a reuse policy. GPS sampling, background lifecycle, offline clearing and cost/battery behavior remain to audit before another move.
+- C31 extracted the normal active schedule filter. Automatic schedule resolution intentionally uses a distinct started-and-open predicate and remains in Home. Arrival dwell, snooze, prompt limits, state reset and human confirmation remain stateful Home orchestration.
+
+### Constraints
+C30–C32 remain a cumulative Draft chain, unmerged. No deployment, live Firebase modifications, production signing or APK distribution. `production_ready=false`. Exact final C32 SHA and CI still require verification after this documentation-only commit; Android/Native registration remains unresolved.

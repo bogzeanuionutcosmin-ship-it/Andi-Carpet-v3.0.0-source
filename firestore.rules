@@ -151,39 +151,171 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    function graphOpenAfter(data) {
+      let path = /databases/$(database)/documents/graphStates/$(data.teamId)/graphs/$(data.get('graphId', '_'));
+      return !existsAfter(path) || getAfter(path).data.closed != true;
+    }
+
+    match /graphStates/{teamId}/graphs/{graphId} {
+      allow read: if isActive();
+      allow write: if false;
+    }
+
     // Graficul este vizibil intern, dar modificarea lui cere explicit dreptul editProgram.
     match /schedules/{scheduleId} {
       allow read: if isActive();
-      allow create: if isAdmin()
-        || (hasPermission('editProgram') && isTeamMember(request.resource.data.teamId));
-      allow update: if isAdmin()
+      allow create: if graphOpenAfter(request.resource.data)
+        && request.resource.data.get('closed', false) != true
+        && (isAdmin() || (hasPermission('editProgram') && isTeamMember(request.resource.data.teamId)));
+      allow update: if request.resource.data.teamId == resource.data.teamId
+        && request.resource.data.get('graphId', '') == resource.data.get('graphId', '')
+        && graphOpenAfter(request.resource.data)
+        && !(resource.data.get('closed', false) != true && request.resource.data.get('closed', false) == true)
+        && (isAdmin()
         || (hasPermission('editProgram')
           && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+          && isTeamMember(request.resource.data.teamId)
+          && resource.data.closed != true
+          && request.resource.data.get('paused', false) == resource.data.get('paused', false)));
       allow delete: if isAdmin()
         || (hasPermission('editProgram') && isTeamMember(resource.data.teamId));
+    }
+
+    function isRunningRecord(data) {
+      return data.get('status', 'waitingAccess') == 'running' && data.get('finishedAt', null) == null;
+    }
+
+    function activeRecordLockPath(teamId) {
+      return /databases/$(database)/documents/activeRecordLocks/$(teamId);
+    }
+
+    function recordLockMatchesAfter(teamId, recordId) {
+      let lockPath = activeRecordLockPath(teamId);
+      return existsAfter(lockPath) && getAfter(lockPath).data.teamId == teamId
+        && getAfter(lockPath).data.recordId == recordId;
+    }
+
+    function validRecordLockTransition(teamId, recordId, nextRecord, wasRunning) {
+      let lockPath = activeRecordLockPath(teamId);
+      return isRunningRecord(nextRecord)
+        ? recordLockMatchesAfter(teamId, recordId)
+        : (!wasRunning || !existsAfter(lockPath)
+          || getAfter(lockPath).data.recordId != recordId);
+    }
+
+    function canWriteTeamRecords(teamId) {
+      return isAdmin() || ((hasPermission('editProgram') || hasPermission('editCentralizer'))
+        && isTeamMember(teamId));
+    }
+
+    // START/FINAL cer un lock per echipă scris în aceeași tranzacție cu execuția.
+    // Acesta serializează START-uri de pe dispozitive diferite și se eliberează atomic la FINAL.
+    match /activeRecordLocks/{teamId} {
+      allow read: if isAdmin() || (isActive() && isTeamMember(teamId));
+      allow create: if canWriteTeamRecords(teamId)
+        && request.resource.data.keys().hasOnly([
+          'teamId', 'recordId', 'locationId', 'startedAt', 'updatedAt',
+          'graphId', 'scheduleId', 'interventionId'
+        ])
+        && request.resource.data.keys().hasAll(['teamId', 'recordId', 'locationId'])
+        && request.resource.data.teamId == teamId
+        && request.resource.data.recordId is string
+        && request.resource.data.locationId is string
+        // A reservation cannot be forged without its matching active record.
+        && existsAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId))
+        && getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.teamId == teamId
+        && getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.locationId == request.resource.data.locationId
+        && request.resource.data.get('graphId', '') == getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.get('graphId', '')
+        && request.resource.data.get('scheduleId', '') == getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.get('scheduleId', '')
+        && request.resource.data.get('interventionId', '') == getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data.get('interventionId', '')
+        && isRunningRecord(getAfter(/databases/$(database)/documents/records/$(request.resource.data.recordId)).data);
+      // The application never retargets an existing reservation: it creates
+      // a new lock only after the previous one has been removed on FINAL.
+      allow update: if false;
+      // Removing a live reservation alone would permit a second START.
+      // Require the same atomic outcome as the referenced record's FINAL.
+      allow delete: if canWriteTeamRecords(teamId)
+        && (!existsAfter(/databases/$(database)/documents/records/$(resource.data.recordId))
+          || !isRunningRecord(getAfter(/databases/$(database)/documents/records/$(resource.data.recordId)).data));
+    }
+
+    function sameRecordIdentity(a, b) {
+      return a.teamId == b.teamId && a.locationId == b.locationId
+        && a.get('type', '') == b.get('type', '')
+        && a.get('graphId', '') == b.get('graphId', '')
+        && a.get('scheduleId', '') == b.get('scheduleId', '')
+        && a.get('interventionId', '') == b.get('interventionId', '');
+    }
+
+    function validLinkedRecord(data, correctingClosed) {
+      let linked = data.get('interventionId', '') != '';
+      let path = /databases/$(database)/documents/schedules/$(data.get('scheduleId', '_'));
+      return !linked
+        ? data.get('graphId', '') == '' && data.get('scheduleId', '') == ''
+        : exists(path) && get(path).data.teamId == data.teamId
+          && get(path).data.graphId == data.graphId
+          && get(path).data.get('interventionLocations', {}).get(data.interventionId, '') == data.locationId
+          && ((get(path).data.get('closed', false) != true && graphOpenAfter(data)) || correctingClosed)
+          && (!isRunningRecord(data) || (get(path).data.get('started', false) == true
+            && get(path).data.get('paused', false) != true
+            && get(path).data.get('postponed', false) != true));
+    }
+
+    // Receipts are written by the authenticated server transaction only.
+    match /graphClosures/{receiptId} {
+      allow read: if isAdmin() || (isActive() && resource.data.actorId == request.auth.uid);
+      allow write: if false;
     }
 
     // START/FINAL cer editProgram; corecțiile din Centralizator pot folosi editCentralizer.
     match /records/{recordId} {
       allow read: if isActive();
-      allow create: if isAdmin()
-        || ((hasPermission('editProgram') || hasPermission('editCentralizer'))
-          && isTeamMember(request.resource.data.teamId));
-      allow update: if isAdmin()
-        || ((hasPermission('editProgram') || hasPermission('editCentralizer'))
-          && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+      allow create: if canWriteTeamRecords(request.resource.data.teamId)
+        && validLinkedRecord(request.resource.data, false)
+        && validRecordLockTransition(request.resource.data.teamId, recordId, request.resource.data, false);
+      allow update: if canWriteTeamRecords(resource.data.teamId)
+        && sameRecordIdentity(resource.data, request.resource.data)
+        && validLinkedRecord(request.resource.data,
+          resource.data.get('status', '') == 'completed' && request.resource.data.get('status', '') == 'completed'
+            && request.resource.data.finishedAt != null && request.resource.data.startedAt != null)
+        && (isAdmin() || isTeamMember(request.resource.data.teamId))
+        && validRecordLockTransition(request.resource.data.teamId, recordId, request.resource.data,
+          isRunningRecord(resource.data));
       allow delete: if isAdmin();
     }
 
     match /expenses/{expenseId} {
-      allow read: if isAdmin()
+      function expenseManager(teamId, settlementId) {
+        let settlementPath = /databases/$(database)/documents/settlements/$(settlementId);
+        let financePath = /databases/$(database)/documents/finance/$(teamId);
+        let teamPath = /databases/$(database)/documents/teams/$(teamId);
+        let hasSettlement = settlementId is string && settlementId != '' && exists(settlementPath);
+        let settlementData = hasSettlement ? get(settlementPath).data : {};
+        let hasFinance = exists(financePath);
+        let financeData = hasFinance ? get(financePath).data : {};
+        return hasPermission('viewOwnDecont') && isTeamMember(teamId) && (
+          (hasSettlement && settlementData.teamId == teamId
+            && settlementData.get('managerId', null) == request.auth.uid)
+          || ((!hasSettlement || settlementData.get('managerId', null) == null)
+            && hasFinance && financeData.get('managerId', null) == request.auth.uid)
+          || ((!hasSettlement || settlementData.get('managerId', null) == null)
+            && (!hasFinance || financeData.get('managerId', null) == null)
+            && get(teamPath).data.get('financialManagerId', null) == request.auth.uid)
+        );
+      }
+      // A create-only client transaction must read its target document before
+      // writing. Allow missing-document get only to active users with the own-
+      // decont permission; existing documents remain team scoped and list
+      // queries still require the caller's team scope.
+      allow get: if resource == null
+        ? (isAdmin() || hasPermission('viewOwnDecont'))
+        : (isAdmin() || hasPermission('viewOtherDecont') || isTeamMember(resource.data.teamId));
+      allow list: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
       allow create: if (isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId)
-          && request.resource.data.distributedBy == request.auth.uid))
+        || (hasPermission('viewOwnDecont')
+          && isTeamMember(request.resource.data.teamId)))
         && (!('supplementaryFor' in request.resource.data)
           || request.resource.data.supplementaryFor == null
           || (request.resource.data.supplementaryFor is string
@@ -192,9 +324,11 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.distributedBy == request.resource.data.distributedBy
             && get(/databases/$(database)/documents/perDiems/$(request.resource.data.supplementaryFor)).data.status == 'confirmed'));
       allow update: if isAdmin()
-        || (hasPermission('viewOwnDecont')
-          && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+        || (expenseManager(resource.data.teamId, resource.data.get('settlementId', null))
+          && request.resource.data.teamId == resource.data.teamId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed', 'updatedAt'])
+          && resource.data.get('confirmed', true) == false
+          && request.resource.data.confirmed == true);
       allow delete: if isAdmin();
     }
 
@@ -432,12 +566,30 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    function validFinancialTotals(data) {
+      return boundedFinancialAmount(data.get('receivedDeparture', 0))
+        && boundedFinancialAmount(data.get('receivedDuring', 0))
+        && boundedFinancialAmount(data.get('perDiemRate', 0));
+    }
+    function boundedFinancialAmount(value) {
+      return value is number && value >= 0 && value <= 100000000;
+    }
+
     match /finance/{teamId} {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(teamId);
-      allow create, update: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(teamId));
+      // Only Admin may assign/reassign financial authority. Preserve missing
+      // legacy identity fields without allowing a member to populate them.
+      allow create: if validFinancialTotals(request.resource.data) && (isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(teamId)
+          && request.resource.data.get('teamId', teamId) == teamId
+          && request.resource.data.get('managerId', null) in [null, '']));
+      allow update: if validFinancialTotals(request.resource.data) && (isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(teamId)
+          && request.resource.data.get('teamId', teamId) == teamId
+          && request.resource.data.get('teamId', teamId) == resource.data.get('teamId', teamId)
+          && request.resource.data.get('managerId', null) == resource.data.get('managerId', null)));
       allow delete: if isAdmin();
     }
 
@@ -445,12 +597,12 @@ service cloud.firestore {
       allow read: if isAdmin()
         || hasPermission('viewOtherDecont')
         || isTeamMember(resource.data.teamId);
-      allow create: if isAdmin()
-        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId));
-      allow update: if isAdmin()
+      allow create: if validFinancialTotals(request.resource.data) && (isAdmin()
+        || (hasPermission('viewOwnDecont') && isTeamMember(request.resource.data.teamId)));
+      allow update: if validFinancialTotals(request.resource.data) && (isAdmin()
         || (hasPermission('viewOwnDecont')
           && isTeamMember(resource.data.teamId)
-          && isTeamMember(request.resource.data.teamId));
+          && isTeamMember(request.resource.data.teamId)));
       allow delete: if isAdmin();
     }
 
@@ -623,8 +775,12 @@ service cloud.firestore {
       }
     }
 
-    match /{document=**} {
-      allow read, write: if isAdmin();
+    // Operational integrity also applies to administrators. An overlapping
+    // catch-all must never bypass the reservations or official STOP service.
+    match /{collection}/{document=**} {
+      allow read, write: if isAdmin() && !(collection in [
+        'schedules', 'records', 'activeRecordLocks', 'graphStates', 'graphClosures', 'finance', 'settlements'
+      ]);
     }
   }
 }

@@ -1317,3 +1317,201 @@ După clarificarea «conectării la un model AI online» și recomandarea explic
 ## 156. Rezolvare conflicte PR #17 și conservarea PR #18 — 2026-10-13
 
 Conflicte numai în acest document și registrul de reguli, prin append și numerotări 100/9 suprapuse. Toate deciziile PR #18 sunt păstrate integral, inclusiv Vision local, AI opțional, zero costuri suplimentare drept țintă, Error Log obligatoriu în prima versiune și retenția/curățarea limitată. Evidența refactorizării originale este mutată la 155 și registrul 74, fără pierderea conținutului. Codul/testele/configurația sunt identice byte cu byte cu PR #17 anterior. 107 teste Python + 3 Node și syntax Functions PASS local; audit cu 12 avertismente cunoscute. Flutter și emulatorul se verifică în CI. Rezultatul CI final și SHA/run sunt actualizate în descrierea PR #17 după finalizare; nu folosiți verdele vechi ca verdict pentru commitul nou. Raport complet: `AUDIT_MODULARIZARE_2026-10-12.md`, ultima secțiune. Niciun merge în main/deploy/APK/date live. După acest pas: finalizarea modularizării/contractelor și pregătirea Vision, fără activarea prematură a automatizărilor.
+
+## Misiunea XVIII — izolat, 18.10.2026
+
+Succesor al PR #99 pe ramura mission-xviii/hardening. Protecție existență pentru grafice legacy șterse/concurente, single-flight formular Centralizator, generator PDF real testabil și fonturi locale cu licență. Dovezi și limitări în docs/MISIUNEA_XVIII_ENGINEERING.md. Flutter local blocat de revizuirea automată pentru tentativa detectorului Azure către metadata; nu se ocolește, se folosește CI. Fără merge/deploy/Firebase live/distribuire APK; production_ready=false.
+
+## 157. Misiunea XIX — modul independent enumuri/permisiuni (2026-10-18)
+
+- Bază main `8452159475ff187867002425fa9c3b8c7e8006aa`; ramură izolată `mission-xix/enums-module`. Regulamentul, arhitectura Vision și continuitatea au fost consultate înainte de schimbări.
+- `lib/models/app_enums_permissions.dart` devine bibliotecă independentă Flutter; main importă și re-exportă toate enumurile și extensiile. Corpurile declarațiilor sunt identice byte cu byte; 11 enumuri, ordinea/numele valorilor și cele 39 etichete de permisiuni sunt păstrate. Fără schimbare de autoritate, serializare, roluri sau reguli funcționale.
+- `test/app_enums_permissions_test.dart`: patru teste de caracterizare pentru nume/ordine/index, etichete, culori/iconuri și compatibilitate publică prin main; contractul de igienă verifică biblioteca independentă.
+- Local: 107 teste Python PASS și verificare textuală byte cu byte a declarațiilor. Flutter/Dart nu este disponibil local în acest workspace; testele Flutter și buildul trebuie executate în CI pe SHA final. Nu se pretinde execuție Flutter locală.
+- Fără modificarea PR #102 sau a ramurilor altor contributori, Firebase, deploy, merge ori date de producție. Următorul pas: publicare Draft, CI final și integrare simulată cu celelalte module.
+
+
+## 158. Misiunea XIX — integrare modulară izolată (2026-10-18)
+
+- Integrare locală pornită exact din PR #102 `28f886dc5474ffcfb13beb7992473ca9083de38b`, cu PR #117 `dc8e102ace59ab3dd6fd79bd7ae010ae9ee952f4` și PR #118 `fde931dd5bffe8522bd8c3691864cfeb1ed01577`. Ramură proprie `mission-xix/modular-integration`; nicio ramură sursă sau main modificată.
+- Conflicte reale: importurile din main la integrarea #117; importurile main și append-ul ChatGpt la integrarea #118. Păstrate ambele seturi de importuri/exporturi și ambele note. PDF și testele de igienă s-au combinat automat; păstrate fonturile locale și helperul de nume extras.
+- Verificarea textuală confirmă că toate funcțiile runtime din operational_dates, inclusiv apartenența semantică zilei și recordHasOpenAttempt, sunt identice cu #102; numai cei șase formatori au fost extrași conform #117.
+- Local: 121 teste Python PASS, 3 teste Node PASS, git diff --check curat. Flutter/build/emulator necesită CI pe SHA final; nu sunt deduse din CI-urile ramurilor componente. Fără push, merge main, deploy sau Firebase live în acest lot local.
+
+## 159. Misiunea XIX — catalog independent de resurse pentru secțiuni (2026-10-18)
+
+- Bază main `8452159475ff187867002425fa9c3b8c7e8006aa`; lot izolat `mission-xix/section-assets-module`. Regulamentul, arhitectura Vision și nota de continuitate consultate.
+- Extrase textual `categoryBrandAssets` și `sectionAssetForLabel` din part-ul UI în `lib/ui/section_asset_catalog.dart`, fără dependențe Flutter; main importă și re-exportă API-ul existent. Corpurile sunt identice byte cu byte, inclusiv ordinea condițiilor și fallback null. Widgeturile și toți apelanții rămân neschimbați.
+- PR #107/#117 extrag separat badge metadata; acest lot nu repetă acea extragere. La integrare păstrați ambele module și contractele lor în main/testul de igienă.
+- Patru teste Flutter noi: etichete/accente/case/whitespace, prioritate substring, aliasuri exacte/fallback și catalog const/public. Local 107 teste Python PASS și diff-check curat; Flutter necesită CI final, nu a fost executat local.
+- Fără modificări de comportament, roluri, Firebase, assets, deploy ori main. Lot local pregătit pentru PR Draft separat și validare combinată.
+
+
+## 160. Misiunea XIX — integrare catalog secțiuni în candidatul modular (2026-10-18)
+
+- Lot izolat bazat pe integrarea locală `123e3494d4f6f9153cb79c4097094de9767e9d5f`, plus PR #120 `b606e3a25db794e36d5f56f28425e3aee30252b0`.
+- Conflicte rezolvate numai în main, icon_badge_catalog, testul de igienă și append-ul ChatGpt: ambele importuri/exporturi sunt păstrate; badge metadata și catalogul secțiuni rămân biblioteci separate, fără definiții duplicate.
+- Păstrate neschimbate helper-ele runtime ale candidatului și scriptul de regresie existent. Local: 121 teste Python și 3 teste Node PASS; diff-check curat. Flutter/Android/PDF/Firestore necesită CI pe SHA final, fără a prelua automat verdictele PR-urilor componente.
+- Nicio modificare în ramura #102 sau alte worktree-uri; fără push, merge main, deploy ori Firebase live.
+## Misiunea XIX — RC, 18.10.2026
+
+PR #102 conține integrarea izolată #100/#101/#95, writer CAS pentru records,
+restore atomic limitat și testare Android cu Auth/Firestore emulator. CI nativ
+39076482990 a reprodus lipsa STOP după START în afara ferestrei standard; fixul
+nu mută timestampurile reale. Sunt protejate și metadata legacy nested și
+metadatele exportului la restore. Contracte/limite: docs/MISIUNEA_XIX_RC_ENGINEERING.md.
+PR #118 separă enumurile; #119 verifică integrarea cu cele șapte module #117;
+#120 separă catalogul de asseturi. CI final trebuie verificat pe fiecare HEAD.
+Nu sunt autorizate merge/deploy, Firebase live, distribuire APK, semnătură
+permanentă nouă sau activare implicită de automatizări. production_ready=false.
+
+
+## 161. Misiunea XIX — integrare finală preflight restore și fixture-uri native (2026-10-18)
+
+- Integrat în ramura proprie candidatul #102 `9c73b328af547a530e8a6ff2477145c2ef17b0e1`, peste combinația cu #117/#118/#120. Conflictele workflow/ChatGpt au fost rezolvate păstrând toate notele și condiția CI pentru integrarea modulară.
+- Reproducerea RED înlocuiește atomic_restore și record_writer cu implementările defecte fixate; pentru date înlocuiește numai funcția de apartenență, păstrând proprietatea formatterelor extrase. Sunt cerute exact patru defecte comportamentale RED și rerulare GREEN. Buildul release de test rămâne configurat exclusiv pentru candidatul combinat.
+- Fișierele restore, teste native, fixture-uri, documentație RC și pubspec.lock sunt identice cu #102 final. Local: 121 teste Python PASS, 3 Node PASS, diff-check curat; rezultatele Flutter/build/runtime se verifică în CI pe HEAD final.
+- Fără push, deploy, merge main, Firebase live sau schimbarea ramurii sursă #102.
+
+Continuare XIX: probele native sunt întărite pentru a nu confunda o eroare
+SDK arbitrară cu un conflict/permission-denied sau un refuz de inventariere cu
+rollbackul batchului. Navigarea verifică datele sintetice și headinguri exacte,
+nu doar prezența taburilor. CI se reexecută pe commitul final; dovezile anterioare
+rămân asociate SHA-ului lor, fără revendicări pentru codul nou.
+
+Confirmarea XIX respinge și metadata isFromCache/hasPendingWrites; Source.server
+singur poate include latency compensation. Un conflict la citirea de confirmare
+este rezultat incert, nu dovada că un commit anterior nu a persistat.
+
+CI verifică prezența `flutter test --no-uninstall` în versiunea 3.47.5 și o
+folosește pentru a păstra package/Auth demo înaintea restartului entrypointului
+main. Fără flag, etapa nativă se oprește clar; nu continuă fără persistență.
+
+## 162. Misiunea XIX — continuitate Graph/Corecție și autoritate Firestore (2026-10-19)
+
+- Continuarea a recuperat progresul real până la PR #125, nu doar checkpointul vechi #119/#123. Main rămâne 8452159475ff187867002425fa9c3b8c7e8006aa; nicio integrare în main sau modificare de producție.
+- #126, HEAD 73bb07c25615a772dd50642f05434d605d58021e: citirea de recuperare a tranzacției respinge isFromCache/hasPendingWrites înainte de confirmare/clasificare. Validate 39185917554, Android 39185917547 și Native 39185917552 SUCCESS pe exact HEAD; patru teste Dart de recuperare trec. Fixul/testele sunt copiate exact în #125; nu se integrează de două ori.
+- #127 a reprodus în CI folosirea controllerelor după dispose atât la salvarea, cât și la anularea corecției din Centralizator: 6ef002d, Validate 39188374629/job 117855645400. TextFormField deține acum lifecycle-ul. HEAD 32776cfae5a79fdbdc0cb429a54d3d221bf4af5e: Validate 39188579206 SUCCESS, 97 teste Flutter incluzând ambele regresii; Android 39188579271 SUCCESS. Verdictul native se verifică separat. Fixul/testul sunt copiate în #125, fără modificarea ramurii #127.
+- Formularul Graph cu 11 locații a reprodus overflow din etichetele selectate, apoi distrugerea controllerului numelui înainte de sfârșitul animației. Fixurile inițiale au trecut regresia fără tastatură. Native 39187627385 pe f104fbc a reprodus încă un overflow când tastatura Android reducea conținutul la 63.2 px; acel run este FAILURE, nu dovadă E2E/PDF. Pickerul are acum conținut sliver derulabil, panou de selecții limitat, margini compacte și acțiuni Wrap; metadatele Graph sunt derulabile. Driverul folosește căutarea reală și așteaptă layout-ul după scroll. Regresiile acoperă 0/290 px pentru tastatură.
+- #125, cod la f3c1f326cc889849f52224657cd44ec01a6b6386/tree 9a18fd35af87470c122d180c8857c3bf1aaa9788: 161 Python local PASS; suitele Flutter și Firestore din Validate 39189132079 au trecut la ultima verificare, buildul web și verdictul întregului run încă necesitau confirmare. Android 39189132063 și Native 39189132072 nu sunt declarate trecute. HEAD-urile și run-urile curente se citesc din GitHub înainte de reluare.
+- Scenariul combinat cere Graph creat prin UI + citire server și corecție 23:55–00:20/fațadă prin dialog, writer nativ, recitire și PDF. Markerii graphCreatedThroughUi/correctionThroughUi sunt obligatorii. Montajul folosește callbackuri de test; coordinatorul privat HomePage nu este exercitat. Activarea Graph și datele istorice 15/16 octombrie sunt pregătire sintetică; nu se declară E2E complet sau validare în producție.
+- #125 include conținutul #121/#123/#124/#126/#127 peste #119; nu repetați integrarea modulelor #117/#118/#120 sau a fixurilor deja incluse. #103–#122 au fost reverificate fără schimbări ale HEAD-urilor; #122 rămâne follow-up #103. Compatibilitatea instrumentelor independente rămâne distinctă de CI Flutter/native.
+- Eticheta Despre corespunde versiunii existente 3.0.1+33; pubspec/versionCode nu au fost modificate. Release-test folosește Android Debug, APK release nu este publicat. Fără merge, deploy, Firebase live, telefon fizic sau distribuire APK. production_ready=false. Dovezile și următorul checkpoint exact sunt actualizate în PR #125/#126/#127.
+
+## 163. Misiunea XIX — candidat verde și corecție offline reprodusă (2026-10-19)
+
+- #125 HEAD ebd96c27bffd51382cb7887943b4f03f89f8ba77, tree 7c687b907295b9a4d69fa11d6ecccd765330c4a4: Validate 39192029346, Android 39192029345, Native 39192029385 SUCCESS. Cele 11 intervenții, dialogul corecției, PDF și două cold restarturi autentificate trec în limitele componentelor/emulatoarelor. Artefact 12161150248: ZIP be393ba58814fbc4e33b91809cbcff26b4fa2754cba40c13452c9b2a0bb13e89 verificat independent; toate checksumurile APK/PDF corespund. Remedierea verificatorului PDF numără rândurile datate/cu ore, nu repetările din adrese; trei regresii trec.
+- Draft #128 extrage tranzacția reală de corecție din HomePage și o exercită prin adaptorul UI nativ. Head 55cf201c437ba8f039240e4d23246a3e0c0b6adc: Validate 39192340971 și Android 39192340983 SUCCESS; Native 39192340982 FAILURE la xix_native_test.dart:270: offline, tranzacția se finalizează cu null, fără eroarea cerută. Nu se pretinde că a persistat o scriere offline; este demonstrat un succes neconfirmat. Testul precede remedierea.
+- Fixul #128 adaugă preflight Source.server și confirmarea câmpurilor corectate, cu refuz cache/pending. Testul nativ rămâne neschimbat la aserțiunea offline. Regresiile Dart acoperă autoritatea citirilor și bridge finalizat fără stare confirmată; validatorul cere markerul suplimentar productionCorrectionWriter și respinge artefactele vechi. Rezultatele noului SHA se verifică în GitHub; nu se transferă verdele anterior.
+- #128 include #125 și țintește ramura #119 pentru filtrele CI existente. Nu se integrează conținutul comun de două ori. HomePage păstrează permisiunile/identitatea; coordonatorul privat complet nu este montat în test. Fără main/merge/deploy/Firebase live/distribuire; production_ready=false. Starea exactă și următoarele rulări sunt în descrierile #125/#128.
+
+
+## 164. Misiunea XIX — revizie finală #136 și pregătire dispozitiv fizic (2026-10-19)
+
+- Regulile de pe `main`: commit `8452159475ff187867002425fa9c3b8c7e8006aa`, blob `ddbdc55128c285337b006958f86ef323ff6be7c5`. `main` nu a fost modificat.
+- La verificarea live, #134 `cffe3dc0f5b99befa0aa4eee9f59c58993250294`, #135 `6ec13b17d10c339df8e131712534635492e430a9` și #136 `80c27fd907299092e9f28f8f8120941a57da127b` sunt Draft/Open, nemergate, cu toate cele trei workflow-uri SUCCESS pe HEAD-urile lor exacte.
+- #136 față de #134 are fixul datei implicite la intervenția manuală peste miezul nopții, helper pur/teste, plus diagnosticarea restartului și testele aferente; nu atinge rules/Firebase/producție. Comparația cu #135 confirmă că #136 păstrează diagnosticarea din baza comună și adaugă fixul fără duplicare; rutarea CI suplimentară din #135 nu a fost copiată.
+- Bug confirmat: la 00:15 START 23:15 moștenea data curentă, iar FINAL 00:15 putea fi interpretat ca ziua următoare, deci aproape 24h. Helperul aliniază data la ziua START. Două regresii Flutter verifică intervalul 23:15–00:15 și inițializarea obișnuită; Validate #136 confirmă 116 teste Flutter, 173 Python/security și verificările Firebase Emulator, Node/Functions, web și PDF.
+- CI #136 pe SHA de mai sus: Validate `39307173343`, Android `39307173391`, native `39307173396` — toate SUCCESS. Native confirmă două cold restarturi autentificate, navigare Graph/Centralizator/Home și PDF/rânduri de intervenție. Așteptările parse/assert din poller înaintea apariției fișierelor și mesajul emulator `stop: Not implemented` sunt menționate în raport; verificarea PDF și artifact upload au trecut.
+- Artifacte #136 (digests ZIP verificate prin API GitHub și loguri upload): audit `12214590893` / `74641eef4c09076de951ff24e3f19784dc668a4d1a8b6e48c12f7673c6a7a812`; PDF `12213469316` / `58829ec94f8c99acd51a335e31e256764c0c206d0afc8c147835c362ad1acac0`; web `12213607900` / `29e67b817c03898aa4f2c5d215b5d93e7946371cb4ea4abeb0a70689a54e4ab9`; APK test `12215110765` / `2a5f1594ea19da604c0cc41fa9c2fee6411eb9cae093e31c49dafcae9b1b8521`; pachet nativ `12215037723` / `1f67105d7087de89a411eafee62f60ef1b42d164162bd706c72b6e5691ac47c6`. Artifactele nu erau expirate la verificarea din 19 octombrie și au retenție limitată.
+- Auditul final nu a confirmat alte defecte concrete în fluxuri/CAS, permisiuni, lifecycle, restart ori PDF. Nu se implementează statusul fațadei Graph în PDF în această etapă.
+- Modularizarea completă a întregii aplicații nu este demonstrată: regulile cer inventarierea tuturor modulelor, separarea duplicărilor/dependințelor nefolosite, teste regresive și CI pe fiecare lot. După închiderea etapei 1 urmează aprobarea contractelor de categorii, apoi Vision / Diagnostics & Self-Healing; Error Log-ul central și cerințele de retenție/cache sunt încă viitoare.
+- Checklist reproductibil pentru Android fizic (instalare, touch, introducere manuală normală/overnight, permisiuni GPS/revocare, background/offline, restart/recovery și verificare vizuală PDF) este inclus în raportul Misiunii XIX. Testul trebuie folosească APK-ul debug și un proiect Firebase de staging/test; fără backend staging nu se execută operații de scriere pe telefon. Înregistrați model/API, APK SHA-256, rol de test, capturi/loguri redactate, rezultate PASS/FAIL și PDF SHA-256.
+- Status: review tehnic și CI pe #136 confirmate; validarea fizică rămâne de făcut; toate PR-urile nemergate; fără deploy, Firebase de producție, reguli de securitate sau distribuire APK; `production_ready=false`.
+
+## 163. Misiunea XIX — continuare modularizare Map (2026-10-19 UTC)
+
+- Regulile oficiale au fost reverificate: `main` = `8452159475ff187867002425fa9c3b8c7e8006aa`, fără modificări. PR #134–#145 sunt Draft/Open, nemergate și mergeable.
+- PR #141 `39f3506df19d9a53cd2060f646f57a0df567f7e6`: selecție generică de grafuri/rute; Validate `39341558517` și Android `39341558484` SUCCESS; Native `39341558511` attempt 3 rulează pe același SHA. Attempt 1 a eșuat la instalarea NDK (`ZipFile unknown archive`); attempt 2 a ajuns până după generarea PDF, apoi Auth Emulator a întrerupt stream-ul la loginul celui de-al doilea client (`unexpected end of stream`), fără eșec de aserțiune Map.
+- PR #142 `43690da9808830c3ac2f71d06ca778a09fd910eb`: parser pur Nominatim; Validate `39341819031` și Android `39341819032` SUCCESS; Native `39341819051` în scenariul conectat.
+- PR #143 `97b9f9198a8e739957fe1b4ab9d1b9ffa20e11b3`: transport reverse-geocode injectabil; Validate `39341822453`, Android `39341822515` și Native `39341822442` SUCCESS; flux conectat, PDF/checksum și artifact verificate.
+- PR #144 `fd551da6163e014aad901c40e9b7975e1a29f0e9`: politică pură pentru starea badge-urilor Map; Validate `39342521773` și Android `39342521800` SUCCESS; Native `39342521775` în curs.
+- PR #145 `817489db98f1a47140ba5c07fd7bc175d1081e79`: filtrul pur de programe Map; Validate `39342732825` și Android `39342732850` SUCCESS; Native `39342732906` în curs.
+- Teste locale comune: 173 Python, 3 Node și `git diff --check` SUCCESS; auditul repo-wide la checkpointul #136 a identificat 12 grupuri identice exclusiv assets/configuri de platformă. Flutter/Dart lipsesc local; CI Flutter rulează pe HEAD-urile exacte. La 23:46 UTC, Validate/Android sunt verzi pentru #141–#144, Validate pentru #145; nu există eșec de aserțiune Map raportat. Eșecul Native #141 attempt 2 este documentat separat ca întrerupere de transport Auth Emulator după generarea PDF; attempt 3 rulează.
+- Delta auditului oficial păstrează fotografia verificată la #136 și adaugă progresul #141–#145; MapPage rămâne incomplet modularizat (GPS, UI, modele și orchestration). Cache-urile Home numai-scrise și parsing-ul `receivedEntries` rămân neatinse fiindcă efectele/ordinea/identitatea nu sunt caracterizate suficient.
+- Fără merge/deploy, acces Firebase de producție, semnare sau distribuire APK. Modularizarea întregii aplicații nu este închisă; `production_ready=false`. Obligații: terminal SUCCESS pentru Android/Native #141–#145; apoi update documentar final și reverificarea CI pe noul HEAD; continuarea separării controlate a celorlalte familii `part`; review uman și validarea Android fizică rămân deschise.
+
+
+## 164. Misiunea XIX — loturi #141–#146, statusuri CI terminale și obligații (2026-10-20 UTC)
+
+- Auditul oficial din main a fost citit la blob 1f7d9fb93b7be46a28348db8110cefaed9f99a8f; regulile oficiale rămân blob ddbdc55128c285337b006958f86ef323ff6be7c5, iar main SHA 8452159475ff187867002425fa9c3b8c7e8006aa. Matricea repo-wide este la PR #137 și addendumul auditului; constatările istorice au fost reverificate față de cod, nu preluate automat.
+- #141 39f3506df19d9a53cd2060f646f57a0df567f7e6: Validate 39341558517, Android 39341558484, Native attempt 3 39341558511 — SUCCESS.
+- #142 43690da9808830c3ac2f71d06ca778a09fd910eb: 39341819031, 39341819032, 39341819051 — toate SUCCESS.
+- #143 97b9f9198a8e739957fe1b4ab9d1b9ffa20e11b3: 39341822453, 39341822515, 39341822442 — toate SUCCESS.
+- #144 fd551da6163e014aad901c40e9b7975e1a29f0e9: 39342521773, 39342521800, 39342521775 — toate SUCCESS.
+- #145 cod 817489db98f1a47140ba5c07fd7bc175d1081e79: 39342732825, 39342732850, Native rerun 39342732906 — toate SUCCESS. Addendum documentar #145 este 7da7476dd8fc28f08e6105abfcdcce5d704329f3; codul nu s-a schimbat.
+- #146 913d9a2ed34aeff46514acead45c054f105a67e8: Validate 39344765440, Android 39344765436, Native 39344765414 — toate SUCCESS.
+- #146 extrage în lib/map/map_location_filters.dart filtrarea existentă categorie/status/GPS pentru marker list, count/list fără coordonate și panouri grupate. Testele acoperă coordonate complete/parțiale, category/status selection, categorie exactă și seturi goale. Nu introduce modele, dependențe sau schimbări de comportament.
+- Toate PR-urile #134–#146 rămân Draft/Open și nemergate. Local: 173 Python, 3 Node și git diff --check PASS; Flutter/Dart nu sunt disponibile local. Nu s-au făcut merge/deploy, modificări Firebase de producție, signing sau distribuire APK.
+- Modularizarea aplicației este încă incompletă: rămân paginile mari și familiile part/importuri implicite din matricea PR #137. Map încă are GPS/UI/models/orchestration cuplate. Cache-urile Home write-only și parser-ele receivedEntries nu se șterg fără probe de efecte, ordonare și identitate. Validarea Android fizică și review-ul uman rămân deschise. production_ready=false.
+
+
+## 165. Misiunea XIX — continuare de la C14 prin C31 (2026-10-21)
+
+- Am recitit regulile oficiale din `main`. Continui modularizarea și stabilizarea cu verificări exacte pe SHA; fără merge în `main`, deploy, Firebase de producție, signing sau distribuire APK. `production_ready=false`.
+- C14/#192 rămâne checkpoint istoric validat la `cf7768b6a7d312af1b0092d1fd9403505f3c1b85`, cu Validate/Android/Native SUCCESS.
+- C30/#208: SHA `8bfc120ec62d70c24d4317a7577173a61d9537b2`. Validate `39512793185` și Android `39512793093` SUCCESS. Prima rulare Native `39512793206` a eșuat la pornirea emulatorului (`adb: device offline`) înaintea fluxului UI; build/analyze și contractele concentrate au trecut. Numai joburile eșuate au fost relansate; retry-ul este încă în curs, fără concluzie Native declarată.
+- C31/#209 este Draft/Open, stacked pe C30, HEAD exact `2566b14ec1d39e71b3cbd9f32cc33377c98d174c`. Extrage filtrul duplicat de programe Home pornite, deschise, nepausate și neamânate, păstrând `sameDay`, ordinea și filtrul distinct de auto-rezolvare. Testele contract acoperă echipa, ziua, stările, ordinea și rezultatul gol.
+- CI exact-head C31: Validate `39516568304` este în curs; Python source/security contracts SUCCESS. Android și Native sunt încă în așteptarea înregistrării/terminării. Nu se pretinde încă CI verde pentru HEAD-ul C31.
+- Continuarea rămâne pe seria cumulativă deschisă. Auditul celor șase module, review-ul uman și testarea fizică pe Android rămân deschise.
+
+
+## Mission XIX C30–C32 continuation — 2026-10-21
+
+- C30/#208 exact HEAD `8bfc120ec62d70c24d4317a7577173a61d9537b2`: Validate `39512793185` PASS, Android `39512793093` PASS, Native `39512793206` PASS after same-SHA retry. Native retry job `118949202441` completed connected flow and PDF/checksum validation. Final artifact `12308024349`, SHA-256 `f482bb088478349f5d96f5f44c311b5d4823368d70ae45d3b27dba0a1a559d6c`. First attempt artifact `12306664989` preceded the ADB offline failure.
+- C31/#209 exact HEAD `86d58d3f85d3c8643d7ec2f8f5c751c3c87cb4e4`: Validate `39516711275` PASS. Android and Native are absent from commit workflow runs; C31 is not fully validated.
+- C32 branch `codex/xix-home-arrival-candidate-policy-20261021` is based directly on C31. Contract-first commits `1c5edebb8674d30ddd3a46a98b9e4904f6e52bfb` and `20629971af76d5f2a24d4f644f616b70efc516c2` add Flutter and Python source contracts before implementation. C32 extracts only Home's existing geofence candidate selection; schedule/status/coordinate scanning, dwell, snooze and prompt behavior stay in Home. Final SHA and CI evidence pending.
+- Draft PRs remain unmerged; no deploy, live Firebase changes, production signing/distribution. `production_ready=false`.
+
+
+## C30–C32 continuation and remaining Home responsibilities — 2026-10-21
+
+### Exact CI checkpoints
+- C30/#208 `8bfc120ec62d70c24d4317a7577173a61d9537b2`: Validate `39512793185`, Android `39512793093`, Native retry `39512793206` all SUCCESS. Native retry job `118949202441`; final artifact `12308024349`, SHA-256 `f482bb088478349f5d96f5f44c311b5d4823368d70ae45d3b27dba0a1a559d6c`.
+- C31/#209 `86d58d3f85d3c8643d7ec2f8f5c751c3c87cb4e4`: Validate original `39516711275` SUCCESS and exact-SHA rerun `39519139411` SUCCESS. Android and Native have no registered runs; C31 is not fully validated.
+- C32/#210 `bfcf1dacb24fd4fa41030c2b504c92572eed49be`: Validate `39519144632` SUCCESS. Flutter tests, Python source/security contracts, Node, Functions and Firestore jobs succeeded. Artifacts: audit `12311105597` SHA-256 `6e19b276d4bb7a9f7274b8095ac577bb355764821e6b5d6f28790889db30cfd1`; PDF evidence `12311120890` SHA-256 `916ae5a0c533a3790e948629dacbc944896c685efbde888439d74821c997dd88`; web build `12310991123` SHA-256 `4f4fd29ffbb11361b60353827ab23280ff5e672056cc207ea5524f78c6a4216b`. Android and Native are absent; this is not complete three-workflow validation.
+- First C32 source-contract run `39518993724` failed because the new stack contract lacked a Native base condition for C32. The condition was added; rerun `39519144632` passed. Earlier C32 Validate attempt `39519088607` was cancelled when the run was re-triggered.
+
+### Responsibility audit
+- Home lifecycle has a dedicated `HomeSubscriptionRegistry`; separate core and financial registries are disposed by Home. Late-added subscriptions are cancelled after disposal. The GPS timer and Geolocator position stream are still cancelled directly by Home's lifecycle.
+- Financial scope and restart decision are already extracted (`homeFinancialSyncScope`, `shouldRestartHomeFinancialSync`). Query construction and four financial listeners still mutate Home-owned lists and use permission/profile state; retain that coupling until source/server, cancellation, and team-scope contracts cover it.
+- Core Firestore sync remains orchestrated in Home across definitions, directory/profile, operations, notifications, chat, settings and audit. Listener callbacks update shared mutable state, call setState, and can restart financial subscriptions. Do not move these listeners as a bulk refactor.
+- Location/category/function/team/car/schedule/record/expense/per-diem/finance/user-team maps are write-baseline caches used to avoid redundant batch writes; values update after the server batch commits. Do not remove or persist them elsewhere until cache freshness, restart, conflict and write-order contracts are documented.
+- Adaptive GPS remains coupled to platform permissions, web timer/native stream settings, schedule proximity and shared-location writes. C30 extracted precision hysteresis; C32 extracted only the 250 m accuracy-adjusted nearest arrival candidate. Reverse-locality caching already has a reuse policy. GPS sampling, background lifecycle, offline clearing and cost/battery behavior remain to audit before another move.
+- C31 extracted the normal active schedule filter. Automatic schedule resolution intentionally uses a distinct started-and-open predicate and remains in Home. Arrival dwell, snooze, prompt limits, state reset and human confirmation remain stateful Home orchestration.
+
+### Constraints
+C30–C32 remain a cumulative Draft chain, unmerged. No deployment, live Firebase modifications, production signing or APK distribution. `production_ready=false`. Exact final C32 SHA and CI still require verification after this documentation-only commit; Android/Native registration remains unresolved.
+
+
+## Mission XXI — resumed cumulative candidate, 2026-10-21
+
+Selected branch: `codex/xix-home-locality-label-20261021`, PR #217 (Draft/Open, unmerged). Read its actual HEAD and current workflows before continuing; earlier checkpoints are superseded. Main remains untouched; no production deploy, Firebase production change, signing or distribution is authorized by this checkpoint.
+
+Changes in this continuation:
+- Program picker keeps controls and selection chips separate from location rows, reserves list space under keyboard constraints, dismisses editing on outside taps/selection/scroll, and tests all eleven locations with both broad and exact searches. The four short-screen widget scenarios passed on predecessor 1a9986687b2e262196ad4bf2aa7e8808a4891f2a (422 Flutter tests total).
+- Learning no longer closes graphs automatically or treats refusal as final. It only reminds after the existing closure policy checks every day. The legacy stored setting key is retained; its label now describes the reminder and official STOP confirmation.
+- Native expense test keeps the real HomePage mounted and uses its authorization, production expense persistence and financial subscription. Only receipt media and OCR inputs are controlled. It reloads the corrected receipt from Firestore, builds its decont PDF from server data, and checks the original Home Decont receipt row. The evidence validator requires `homePagePersistence=true`; functional proof still requires the latest Native run to pass.
+- START reservation rules now require a matching running record on creation and reject deleting a reservation while that record remains running. Emulator regression tests cover live-lock deletion and forged reservations for missing/finished records. Do not claim these newer rules validated from predecessor CI.
+
+Local source checks after these changes: 199 Python tests, Node syntax for the lock test, and diff whitespace check passed. There is no local Flutter or adb. Validate on predecessor 1a998668 passed (run 39574062046); Android/Native were superseded when the security fix advanced the branch. Read current exact-SHA results before any package closure.
+
+Remaining acceptance gaps include stable graph/intervention identity, atomic server STOP revalidation, complete uncertain-ACK START/STOP coverage, branch/PR cleanup, independent module boundaries, live Mapbox/OCR, isolated staging persistence/auth/backup-restore, physical Android GPS/background/offline/install/upgrade, and approved release signing/provenance/rollback. The schedule-card done badge was corrected to use the latest attempt on the schedule's operational date rather than any historical completion; four widget regressions cover old-day completion, current completion, a later refused retry, and another team's completion. These newer tests require the current exact-SHA Flutter run.
+
+
+### Mission XXI — verified emulator checkpoint and cumulative PR consolidation
+
+Exact candidate `fa37aca3addd76d16de92a628fa174503f32c69e` passed Validate run 39575331267 (426 Flutter tests; 199 Python; 32 Firestore emulator tests), Android 39575331359 and Native 39575331257. Native completed the real UI graph/START/STOP/correction/Home-expense/PDF flow and operational restart. Native evidence archive 12333859330 has SHA-256 c143f9512ca8084d637c808be17839fe1c6252cf5f211f2024577416054b91a1. Android archive 12333518891 has SHA-256 7e464944884a6859b6b254f78a81b10f5d803f957da07f209062674f77cd74a7. All of this is emulator evidence, not staging, live Mapbox/OCR, physical hardware or production signing.
+
+Next integration step keeps PR #217 as the single cumulative candidate and retargets its base to main. The Native job must explicitly allow the selected candidate head so retargeting cannot silently skip the job. Historical open PRs may be closed as superseded only after verifying their exact head is an ancestor of the cumulative candidate. Do not infer inclusion from similar titles or cherry-picked code; preserve any non-ancestor or unclear work for review. Main is not merged or deployed by this cleanup.
+
+## Mission XXI — operational identity and server STOP continuation (21 October 2026)
+
+PR217 remains the cumulative Draft/Open candidate against main. Read live HEAD;
+this session published7379c56d then5ccda329 and is preparing the model-boundary/
+regression follow-up. Complete checkpoint and exact next action are in
+`docs/MISSION_XXI_CHECKPOINT.md`; protocol in
+`docs/MISSION_XXI_OPERATIONAL_IDENTITY.md`;115non-ancestor content comparisons in
+`docs/mission_xxi_nonancestor_content_review.json`. CI is NOT yet all green for
+these changes. Preserve the historical5944943d baseline as superseded evidence.
+No main merge, production Firebase change/deploy, signing or distribution.

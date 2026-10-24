@@ -33,7 +33,8 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> {
   final MapController mapController = MapController();
-  StreamSubscription<Position>? _positionSubscription;
+  final MapLocationTrackingController _locationTracker =
+      MapLocationTrackingController();
   Position? _myPosition;
   String? _gpsError;
   bool _locating = false;
@@ -44,84 +45,32 @@ class _MapPageState extends State<MapPage> {
   final Set<LocationStatus> _selectedStatuses = <LocationStatus>{...LocationStatus.values};
   bool _showGraphRoute = true;
   String? _routeGraphId;
-  String? _roadGeometryKey;
-  Future<List<List<double>>?>? _roadGeometryFuture;
-  DateTime? _roadGeometryRequestedAt;
-
-  Future<List<List<double>>?> _loadRoadGeometry(List<LatLng> points) {
-    final key = points.map((p) => '${p.latitude.toStringAsFixed(6)},${p.longitude.toStringAsFixed(6)}').join('|');
-    final stale = _roadGeometryRequestedAt == null ||
-        DateTime.now().difference(_roadGeometryRequestedAt!) > const Duration(minutes: 5);
-    if (_roadGeometryKey != key || _roadGeometryFuture == null || stale) {
-      _roadGeometryKey = key;
-      _roadGeometryRequestedAt = DateTime.now();
-      _roadGeometryFuture = _mapboxServices.drivingGeometry(
-        points.map((p) => <double>[p.latitude, p.longitude]).toList(),
-      );
-    }
-    return _roadGeometryFuture!;
-  }
+  late final MapRoadGeometryController _roadGeometryController =
+      MapRoadGeometryController(loadGeometry: _mapboxServices.drivingGeometry);
 
   @override
   void initState() {
     super.initState();
-    _selectedCategoryIds.addAll(widget.categories.where((c) => c.active).map((c) => c.id));
+    _selectedCategoryIds.addAll(activeMapCategoriesSorted(
+      widget.categories,
+      isActive: (category) => category.active,
+      nameOf: (category) => category.name,
+    ).map((category) => category.id));
     unawaited(_startLocationTracking());
   }
 
   @override
   void dispose() {
-    _positionSubscription?.cancel();
+    unawaited(_locationTracker.stop());
     super.dispose();
   }
 
   List<LocationCategory> get visibleCategories {
-    final list = widget.categories.where((c) => c.active).toList();
-    list.sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    return list;
-  }
-
-  Future<String?> _reverseGeocodePoint(LatLng point) async {
-    try {
-      final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
-        'format': 'jsonv2',
-        'lat': point.latitude.toStringAsFixed(7),
-        'lon': point.longitude.toStringAsFixed(7),
-        'zoom': '18',
-        'addressdetails': '1',
-        'accept-language': 'ro',
-      });
-      final headers = <String,String>{'Accept': 'application/json', 'Accept-Language': 'ro'};
-      if (!kIsWeb) headers['User-Agent'] = 'AndiCarpeta/1.5.1 (internal operations app)';
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
-      if (response.statusCode != 200 || response.body.isEmpty) return null;
-      final decoded = jsonDecode(response.body);
-      if (decoded is! Map) return null;
-      final address = decoded['address'];
-      if (address is Map) {
-        String first(List<String> keys) {
-          for (final key in keys) {
-            final value = address[key]?.toString().trim() ?? '';
-            if (value.isNotEmpty) return value;
-          }
-          return '';
-        }
-        final road = first(['road','pedestrian','residential','footway','path']);
-        final number = first(['house_number']);
-        final locality = first(['city','town','municipality','village','suburb']);
-        final county = first(['county']);
-        final parts = <String>[];
-        final street = [road, number].where((x) => x.isNotEmpty).join(' ');
-        if (street.isNotEmpty) parts.add(street);
-        if (locality.isNotEmpty && !parts.contains(locality)) parts.add(locality);
-        if (county.isNotEmpty && county != locality) parts.add(county);
-        if (parts.isNotEmpty) return parts.join(', ');
-      }
-      final display = decoded['display_name']?.toString().trim() ?? '';
-      return display.isEmpty ? null : display;
-    } catch (_) {
-      return null;
-    }
+    return activeMapCategoriesSorted(
+      widget.categories,
+      isActive: (category) => category.active,
+      nameOf: (category) => category.name,
+    );
   }
 
   Color _color(Location l) => categoryColor(widget.categories, l.categoryId, fallbackType: l.type);
@@ -132,52 +81,49 @@ class _MapPageState extends State<MapPage> {
   List<WorkSchedule> get _todayOperationalSchedules {
     final workDate = operationalWorkDate(DateTime.now());
     final teamId = widget.currentUser.teamId;
-    return widget.schedules.where((s) =>
-      s.started && sameDay(s.date, workDate) &&
-      (widget.isAdmin || (teamId != null && s.teamId == teamId))
-    ).toList();
+    return todayMapOperationalSchedules(
+      widget.schedules,
+      isAdmin: widget.isAdmin,
+      teamId: teamId,
+      startedOf: (schedule) => schedule.started,
+      isWorkDayOf: (schedule) => sameDay(schedule.date, workDate),
+      teamIdOf: (schedule) => schedule.teamId,
+    );
   }
 
   List<CentralizerRecord> _todayRecordsFor(String locationId, String teamId) {
     final workDate = operationalWorkDate(DateTime.now());
-    return widget.records.where((r) =>
-      r.teamId == teamId && r.locationId == locationId &&
-      recordBelongsToWorkDate(r, workDate)
-    ).toList();
+    return selectWorkDateRecords(
+      widget.records,
+      teamId: teamId,
+      locationId: locationId,
+      teamIdOf: (record) => record.teamId,
+      locationIdOf: (record) => record.locationId,
+      belongsToWorkDate: (record) => recordBelongsToWorkDate(record, workDate),
+    );
   }
 
   Color? _workBadgeColor(Location l) {
     final schedules = _todayOperationalSchedules;
-    if (schedules.isEmpty) return null;
-    var assignments = 0;
-    var finishedAssignments = 0;
-    var nextOrRunning = false;
-    for (final day in schedules) {
-      final ordered = [...day.items]..sort((a, b) => a.order.compareTo(b.order));
-      ScheduleItem? nextItem;
-      for (final item in ordered) {
-        final records = _todayRecordsFor(item.locationId, day.teamId);
-        final done = records.any((r) => r.completed);
-        final running = records.any((r) =>
-          r.status == WorkAttemptStatus.running ||
-          r.status == WorkAttemptStatus.waitingAccess);
-        final cancelled = records.isNotEmpty && records.every((r) =>
-          r.status == WorkAttemptStatus.refused ||
-          r.status == WorkAttemptStatus.notCompleted);
-        if (item.locationId == l.id) {
-          assignments++;
-          if (done) finishedAssignments++;
-          if (!done && running) nextOrRunning = true;
-        }
-        if (nextItem == null && !done && !cancelled) nextItem = item;
-      }
-      if (nextItem?.locationId == l.id) nextOrRunning = true;
-    }
-    if (assignments == 0) return null;
-    // Nu afișăm verde dacă aceeași locație mai are o intervenție restantă.
-    if (finishedAssignments == assignments) return Colors.green;
-    if (nextOrRunning) return Colors.orange;
-    return Colors.red;
+    final state = mapWorkBadgeState(
+      schedules,
+      targetLocationId: l.id,
+      itemsOf: (day) => day.items,
+      orderOf: (item) => item.order,
+      teamIdOf: (day) => day.teamId,
+      locationIdOf: (item) => item.locationId,
+      recordsFor: _todayRecordsFor,
+      completedOf: (record) => record.completed,
+      statusOf: (record) => record.status,
+      runningStatus: WorkAttemptStatus.running,
+      waitingStatus: WorkAttemptStatus.waitingAccess,
+      refusedStatus: WorkAttemptStatus.refused,
+      notCompletedStatus: WorkAttemptStatus.notCompleted,
+    );
+    if (state == MapWorkBadgeState.completed) return Colors.green;
+    if (state == MapWorkBadgeState.nextOrRunning) return Colors.orange;
+    if (state == MapWorkBadgeState.notCompleted) return Colors.red;
+    return null;
   }
 
   String _workBadgeText(Location l) {
@@ -190,54 +136,48 @@ class _MapPageState extends State<MapPage> {
 
   Widget _locationMarkerIcon(Location l) {
     final badge = _workBadgeColor(l);
-    return Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
-      Opacity(
-        opacity: l.status == LocationStatus.open ? 1 : .62,
-        child: DecoratedBox(
-          decoration: BoxDecoration(color: _color(l), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: const [BoxShadow(blurRadius: 5, color: Colors.black26)]),
-          child: SizedBox(width: 40, height: 40, child: Icon(l.status == LocationStatus.open ? Icons.location_on : l.status.icon, color: Colors.white)),
-        ),
-      ),
-      if (badge != null)
-        Positioned(
-          right: -2,
-          bottom: -2,
-          child: Container(
-            width: 15,
-            height: 15,
-            decoration: BoxDecoration(color: badge, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-          ),
-        ),
-    ]);
+    return LocationMapMarker(
+      color: _color(l),
+      icon: l.status == LocationStatus.open ? Icons.location_on : l.status.icon,
+      opacity: l.status == LocationStatus.open ? 1 : .62,
+      workBadgeColor: badge,
+    );
   }
 
   List<String> get _activeRouteGraphIds {
-    final teamId = widget.currentUser.teamId;
-    final active = widget.schedules.where((s) => s.started && !s.closed && (teamId == null || s.teamId == teamId)).toList();
-    final ids = <String>[];
-    for (final s in active) { if (!ids.contains(s.graphId)) ids.add(s.graphId); }
-    return ids;
+    return activeMapRouteGraphIds(
+      widget.schedules,
+      teamId: widget.currentUser.teamId,
+      graphIdOf: (schedule) => schedule.graphId,
+      teamIdOf: (schedule) => schedule.teamId,
+      startedOf: (schedule) => schedule.started,
+      closedOf: (schedule) => schedule.closed,
+    );
   }
 
   List<WorkSchedule> get _routeDays {
-    final ids = _activeRouteGraphIds;
-    if (ids.isEmpty) return <WorkSchedule>[];
-    final id = (_routeGraphId != null && ids.contains(_routeGraphId)) ? _routeGraphId! : ids.first;
-    return widget.schedules.where((s) => s.graphId == id && s.started && !s.closed).toList()..sort((a,b)=>a.date.compareTo(b.date));
+    final graphId = selectedActiveMapRouteGraphId(
+      _activeRouteGraphIds,
+      _routeGraphId,
+    );
+    if (graphId == null) return <WorkSchedule>[];
+    return mapRouteDays(
+      widget.schedules,
+      graphId: graphId,
+      graphIdOf: (schedule) => schedule.graphId,
+      startedOf: (schedule) => schedule.started,
+      closedOf: (schedule) => schedule.closed,
+      dateOf: (schedule) => schedule.date,
+    );
   }
 
   List<Polyline> _rainbowRouteLines() {
-    if (!_showGraphRoute) return const <Polyline>[];
-    const colors = <Color>[Colors.red, Colors.orange, Colors.amber, Colors.green, Colors.blue, Colors.indigo, Colors.purple];
     final route = graphRoutePoints(_routeDays, widget.locations);
-    // Nu desenăm segmente false peste locațiile fără GPS.
-    if (!route.complete) return const <Polyline>[];
-    final lines = <Polyline>[];
-    for (var i = 1; i < route.points.length; i++) {
-      lines.add(Polyline(points: [route.points[i - 1], route.points[i]],
-          color: colors[(i - 1) % colors.length], strokeWidth: 6));
-    }
-    return lines;
+    return mapRouteLinePresentation(
+      visible: _showGraphRoute,
+      complete: route.complete,
+      points: route.points,
+    );
   }
 
   List<Marker> _routeEndpointMarkers() {
@@ -255,33 +195,41 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _startLocationTracking() async {
     if (_locating) return;
-    setState(() { _locating = true; _gpsError = null; });
+    setState(() {
+      _locating = true;
+      _gpsError = null;
+    });
     try {
-      final enabled = await Geolocator.isLocationServiceEnabled();
-      if (!enabled) {
-        if (mounted) setState(() => _gpsError = 'Serviciile de localizare sunt oprite pe dispozitiv.');
-        return;
+      final result = await _locationTracker.start(
+        onPosition: (position) {
+          if (mounted) setState(() => _myPosition = position);
+        },
+        onError: (error) {
+          if (mounted) setState(() => _gpsError = 'GPS: $error');
+        },
+      );
+      if (!mounted) return;
+      switch (result.status) {
+        case MapLocationTrackingStatus.serviceDisabled:
+          setState(() =>
+              _gpsError = 'Serviciile de localizare sunt oprite pe dispozitiv.');
+          break;
+        case MapLocationTrackingStatus.permissionDenied:
+          setState(() => _gpsError =
+              'Permisiunea de localizare nu a fost acordată.');
+          break;
+        case MapLocationTrackingStatus.permissionDeniedForever:
+          setState(() => _gpsError =
+              'Permisiunea de localizare este blocată. Activeaz-o din setările browserului/dispozitivului.');
+          break;
+        case MapLocationTrackingStatus.failed:
+          setState(() => _gpsError = 'Nu am putut citi locația: ${result.error}');
+          break;
+        case MapLocationTrackingStatus.started:
+        case MapLocationTrackingStatus.cancelled:
+        case MapLocationTrackingStatus.alreadyStarting:
+          break;
       }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-        if (mounted) setState(() => _gpsError = permission == LocationPermission.deniedForever
-            ? 'Permisiunea de localizare este blocată. Activeaz-o din setările browserului/dispozitivului.'
-            : 'Permisiunea de localizare nu a fost acordată.');
-        return;
-      }
-      final p = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high));
-      if (mounted) setState(() => _myPosition = p);
-      await _positionSubscription?.cancel();
-      _positionSubscription = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5),
-      ).listen((position) {
-        if (mounted) setState(() => _myPosition = position);
-      }, onError: (Object e) {
-        if (mounted) setState(() => _gpsError = 'GPS: $e');
-      });
-    } catch (e) {
-      if (mounted) setState(() => _gpsError = 'Nu am putut citi locația: $e');
     } finally {
       if (mounted) setState(() => _locating = false);
     }
@@ -444,15 +392,25 @@ class _MapPageState extends State<MapPage> {
 
   @override
   Widget build(BuildContext context) {
-    final positioned = widget.locations.where((l) =>
-      l.latitude != null && l.longitude != null &&
-      _selectedCategoryIds.contains(l.categoryId) &&
-      _selectedStatuses.contains(l.status)
-    ).toList();
-    final unpositioned = widget.locations.where((l) =>
-      (l.latitude == null || l.longitude == null) &&
-      _selectedCategoryIds.contains(l.categoryId) &&
-      _selectedStatuses.contains(l.status)
+    final positioned = filterMapLocations<Location, LocationStatus>(
+      widget.locations,
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedStatuses: _selectedStatuses,
+      categoryIdOf: (location) => location.categoryId,
+      statusOf: (location) => location.status,
+      hasCoordinatesOf: (location) =>
+          location.latitude != null && location.longitude != null,
+      hasCoordinates: true,
+    );
+    final unpositioned = filterMapLocations<Location, LocationStatus>(
+      widget.locations,
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedStatuses: _selectedStatuses,
+      categoryIdOf: (location) => location.categoryId,
+      statusOf: (location) => location.status,
+      hasCoordinatesOf: (location) =>
+          location.latitude != null && location.longitude != null,
+      hasCoordinates: false,
     ).length;
     final compact = MediaQuery.sizeOf(context).width < 650;
     return _Page(
@@ -535,21 +493,25 @@ class _MapPageState extends State<MapPage> {
                 if (_showGraphRoute &&
                     graphRoutePoints(_routeDays, widget.locations).points.length >= 2)
                   FutureBuilder<List<List<double>>?>(
-                    future: _loadRoadGeometry(graphRoutePoints(_routeDays, widget.locations).points),
+                    future: _roadGeometryController.load(
+                      graphRoutePoints(_routeDays, widget.locations).points,
+                    ),
                     builder: (context, snapshot) {
                       final coords = snapshot.data;
                       final hasRoadGeometry = coords != null && coords.length >= 2;
                       final displayPoints = hasRoadGeometry
                           ? coords.map((p) => LatLng(p[0], p[1])).toList()
                           : graphRoutePoints(_routeDays, widget.locations).points;
-                      // Schematic fallback when Mapbox cannot provide road geometry.
-                      return PolylineLayer(polylines: [
+                      // Keep a visible schedule path when Mapbox has no road
+                      // geometry. The multicolour segments also make ordered
+                      // visits easier to follow on the map.
+                      return PolylineLayer(polylines: hasRoadGeometry ? [
                         Polyline(
                           points: displayPoints,
-                          color: hasRoadGeometry ? Colors.deepOrangeAccent : Colors.blueGrey,
-                          strokeWidth: hasRoadGeometry ? 6 : 3,
+                          color: Colors.deepOrangeAccent,
+                          strokeWidth: 6,
                         ),
-                      ]);
+                      ] : _rainbowRouteLines());
                     },
                   ),
                 MarkerLayer(markers: [
@@ -647,11 +609,16 @@ class _MapPageState extends State<MapPage> {
   }
 
   Widget _unpositionedPanel() {
-    final items = widget.locations.where((l) =>
-      (l.latitude == null || l.longitude == null) &&
-      _selectedCategoryIds.contains(l.categoryId) &&
-      _selectedStatuses.contains(l.status)
-    ).toList()..sort((a,b) {
+    final items = filterMapLocations<Location, LocationStatus>(
+      widget.locations,
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedStatuses: _selectedStatuses,
+      categoryIdOf: (location) => location.categoryId,
+      statusOf: (location) => location.status,
+      hasCoordinatesOf: (location) =>
+          location.latitude != null && location.longitude != null,
+      hasCoordinates: false,
+    )..sort((a,b) {
       final cat = _categoryName(a).toLowerCase().compareTo(_categoryName(b).toLowerCase());
       return cat != 0 ? cat : a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
@@ -705,12 +672,17 @@ class _MapPageState extends State<MapPage> {
       cats.add(LocationCategory(id: id, name: categoryName(widget.categories, id), colorValue: categoryColor(widget.categories, id).value));
     }
     return cats.map((cat) {
-      final items = widget.locations.where((l) =>
-        l.categoryId == cat.id &&
-        l.latitude != null && l.longitude != null &&
-        _selectedCategoryIds.contains(cat.id) &&
-        _selectedStatuses.contains(l.status)
-      ).toList()..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      final items = filterMapLocations<Location, LocationStatus>(
+        widget.locations,
+        selectedCategoryIds: _selectedCategoryIds,
+        selectedStatuses: _selectedStatuses,
+        categoryIdOf: (location) => location.categoryId,
+        statusOf: (location) => location.status,
+        hasCoordinatesOf: (location) =>
+            location.latitude != null && location.longitude != null,
+        hasCoordinates: true,
+        categoryId: cat.id,
+      )..sort((a,b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       if (items.isEmpty) return const SizedBox.shrink();
       return Card(
         child: ExpansionTile(
@@ -794,11 +766,7 @@ class _MapPageState extends State<MapPage> {
   );
 
   // Validare înainte de orice modificare a markerelor persistate.
-  bool _validMapPoint(LatLng point) =>
-      point.latitude.isFinite && point.longitude.isFinite &&
-      point.latitude >= -90 && point.latitude <= 90 &&
-      point.longitude >= -180 && point.longitude <= 180 &&
-      !(point.latitude == 0 && point.longitude == 0);
+  bool _validMapPoint(LatLng point) => isValidMapPoint(point);
 
   void _invalidMapPointNotice() {
     if (!mounted) return;
@@ -936,11 +904,12 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _openNavigationForLocation(Location l, String app) async {
-    final useGps = l.latitude != null && l.longitude != null;
-    final destination = useGps ? '${l.latitude},${l.longitude}' : l.address;
-    final uri = app == 'maps'
-        ? Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(destination)}')
-        : Uri.parse(useGps ? 'https://www.waze.com/ul?ll=${l.latitude},${l.longitude}&navigate=yes' : 'https://www.waze.com/ul?q=${Uri.encodeComponent(l.address)}&navigate=yes');
+    final uri = mapNavigationUri(
+      app: app,
+      latitude: l.latitude,
+      longitude: l.longitude,
+      address: l.address,
+    );
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) showErrorMessage(context, 'Nu am putut deschide navigația.');
   }
 
@@ -948,7 +917,7 @@ class _MapPageState extends State<MapPage> {
     String? initialAddress;
     if (initialPoint != null) {
       if (mounted) setState(() => findingAddress = true);
-      initialAddress = await _reverseGeocodePoint(initialPoint);
+      initialAddress = await reverseGeocodePoint(initialPoint, isWeb: kIsWeb);
       if (mounted) setState(() => findingAddress = false);
     }
     final r = await _newLocationForm(initialPoint: initialPoint, initialAddress: initialAddress);

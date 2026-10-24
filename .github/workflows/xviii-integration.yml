@@ -1,0 +1,78 @@
+name: XVIII pinned candidate integration (test only)
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: xviii-integration-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  integration:
+    if: github.head_ref == 'mission-xviii/finance-identity'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Merge pinned candidates only in temporary runner
+        shell: bash
+        run: |
+          git config user.name 'Integration verification'
+          git config user.email 'verification@example.invalid'
+          git fetch origin cfb00b9fea24e7e026019d81bac6ecfe3a294dd2 3c372cc839614125b9f375e5ff20b818aa1e18ed
+          if ! git merge --no-ff --no-edit cfb00b9fea24e7e026019d81bac6ecfe3a294dd2; then
+            test "$(git diff --name-only --diff-filter=U)" = '.github/workflows/validate.yml'
+            git checkout --theirs .github/workflows/validate.yml
+            python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/workflows/validate.yml');s=p.read_text()
+          old="tests/firestore/centralizer_correction.test.cjs'"
+          assert s.count(old)==1
+          p.write_text(s.replace(old,"tests/firestore/centralizer_correction.test.cjs tests/firestore/finance_identity.test.cjs'"))
+          PY
+            git add .github/workflows/validate.yml
+            git commit --no-edit
+          fi
+          git merge --no-ff --no-edit 3c372cc839614125b9f375e5ff20b818aa1e18ed
+          git diff --check
+          git rev-parse HEAD HEAD^{tree}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Combined Python, Node and Flutter tests
+        run: |
+          python3 -m unittest discover -s test -p '*test.py'
+          node --test test/member_directory_projection.test.js
+          node --check functions/index.js
+          flutter test test/
+      - name: Combined real PDF inspection
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          python3 scripts/verify_centralizer_pdfs.py
+      - name: Combined Firestore SDK authorization and concurrency
+        run: |
+          npm install --no-save --no-package-lock firebase-tools@14 @firebase/rules-unit-testing@5 firebase@12
+          npx firebase emulators:exec --only firestore --project demo-andi-carpet --config firebase.rules-test.json 'node --test --test-concurrency=1 tests/firestore/diurna.test.cjs tests/firestore/program_schedule.test.cjs tests/firestore/centralizer_correction.test.cjs tests/firestore/finance_identity.test.cjs'
+      - run: flutter build web --release
+      - run: flutter build apk --debug
+      - name: Verify debug package without distribution
+        run: |
+          test -s build/app/outputs/flutter-apk/app-debug.apk
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt | sort -V | tail -1)
+          "$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk > /tmp/xviii-apk-metadata.txt
+          sed -n '1,5p' /tmp/xviii-apk-metadata.txt

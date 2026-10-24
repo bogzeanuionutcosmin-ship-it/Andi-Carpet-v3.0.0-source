@@ -19,7 +19,8 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.andi_carpeta"
+        applicationId = if (System.getenv("ANDICARPET_STAGING_BUILD") == "true")
+            "com.example.andi_carpeta.staging" else "com.example.andi_carpeta"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24

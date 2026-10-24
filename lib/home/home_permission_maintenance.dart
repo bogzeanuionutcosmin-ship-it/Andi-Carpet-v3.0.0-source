@@ -27,6 +27,8 @@ mixin _HomePermissionMaintenance on State<HomePage> {
     _permissionSyncInFlight = true;
     try {
       final db = FirebaseFirestore.instance;
+      // Legacy role assignments must be reconciled before recalculating grants.
+      if (!await functionBadgeMigrationReady(db)) return;
       final snap = await db.collection('users').get();
       final batch = db.batch();
       var writes = 0;
@@ -89,50 +91,14 @@ mixin _HomePermissionMaintenance on State<HomePage> {
 
   Future<void> _migrateFunctionBadgeSystemIfNeeded() async {
     if (!isAdmin) return;
-    final db = FirebaseFirestore.instance;
-    final metaRef = db.collection('meta').doc('uiSettings');
-    final metaSnap = await metaRef.get();
-    if ((metaSnap.data()?['functionSystemVersion'] ?? '').toString() == 'badge_v2') return;
-
-    final usersSnap = await db.collection('users').get();
-    final functionsSnap = await db.collection('functions').get();
-    final adminFunction = defaultFunctionDefinitions().first;
-    final allPermissions = FunctionPermission.values.map((e) => e.name).toList()..sort();
-
-    WriteBatch batch = db.batch();
-    var writes = 0;
-    Future<void> flush() async {
-      if (writes == 0) return;
-      await batch.commit();
-      batch = db.batch();
-      writes = 0;
+    try {
+      if (await functionBadgeMigrationReady(FirebaseFirestore.instance)) return;
+      if (mounted) setState(() => coreSyncError =
+        'Funcțiile necesită verificare înainte de migrare. Configurația existentă a fost păstrată.');
+    } catch (error) {
+      if (mounted) setState(() => coreSyncError =
+        'Verificarea funcțiilor nu a fost confirmată. Configurația existentă a fost păstrată.');
     }
-
-    for (final doc in functionsSnap.docs) {
-      batch.delete(doc.reference);
-      writes++;
-      if (writes >= 350) await flush();
-    }
-    batch.set(db.collection('functions').doc(adminFunction.id), _functionMap(adminFunction));
-    writes++;
-    if (writes >= 350) await flush();
-
-    for (final doc in usersSnap.docs) {
-      final role = (doc.data()['role'] ?? 'member').toString();
-      final isDocAdmin = role == 'admin';
-      batch.set(doc.reference, {
-        'function': isDocAdmin ? 'admin' : '',
-        'functionIds': isDocAdmin ? <String>['admin'] : <String>[],
-        'effectivePermissions': isDocAdmin ? allPermissions : <String>[],
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      writes++;
-      if (writes >= 350) await flush();
-    }
-
-    batch.set(metaRef, {'functionSystemVersion': 'badge_v2', 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
-    writes++;
-    await flush();
   }
 
 }

@@ -105,6 +105,21 @@ class RepositoryHygieneTests(unittest.TestCase):
                        "_bundledLogoAssets", "_bundledLogoLabels"):
             self.assertIn("const Map<String, String> " + symbol + " =", module)
             self.assertNotIn("const Map<String, String> " + symbol + " =", main)
+        catalog = (ROOT / "lib/ui/branding_asset_catalog.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'ui/branding_asset_catalog.dart';", main)
+        self.assertIn("export 'ui/branding_asset_catalog.dart';", main)
+        self.assertNotIn("part of '../main.dart';", catalog)
+        for public, private in (
+            ("bundledBackgroundAssets", "_bundledBackgroundAssets"),
+            ("bundledBackgroundLabels", "_bundledBackgroundLabels"),
+            ("bundledLogoAssets", "_bundledLogoAssets"),
+            ("bundledLogoLabels", "_bundledLogoLabels"),
+        ):
+            self.assertEqual(catalog.count("const Map<String, String> " + public + " ="), 1)
+            self.assertIn("const Map<String, String> " + private + " = " + public + ";", module)
+        self.assertIn("String _normalizeFontChoice(String? raw) => normalizeFontChoice(raw);", module)
+        self.assertIn("import 'ui/font_choice_normalization.dart';", main)
+        self.assertIn("export 'ui/font_choice_normalization.dart';", main)
         self.assertIn("Image.asset(_activeLogoAsset(settings)", module)
 
     def test_install_buttons_are_extracted_without_behavior_loss(self):
@@ -118,7 +133,9 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("launchUrl(uri,mode:LaunchMode.externalApplication)", module)
-        self.assertIn("Auto Blocker", module)
+        self.assertIn("validatedAndroidApkUrl(raw)", module)
+        self.assertIn("nu dezactiva protecțiile de securitate", module)
+        self.assertNotIn("dezactivarea temporară", module)
         self.assertIn("Adaugă pe ecranul principal", module)
 
     def test_firebase_bootstrap_is_extracted_and_entrypoint_stays_in_main(self):
@@ -376,7 +393,7 @@ class RepositoryHygieneTests(unittest.TestCase):
         for contract in ("widget.onLogout", "Icons.logout", "Ieșire din cont"):
             self.assertIn(contract, module)
 
-    def test_profile_page_extracted_preserving_records_and_per_diem(self):
+    def test_profile_page_extracted_with_live_persistent_statistics(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/profile/profile_page.dart").read_text(encoding="utf-8")
         self.assertEqual(main.count("part 'profile/profile_page.dart';"), 1)
@@ -384,8 +401,9 @@ class RepositoryHygieneTests(unittest.TestCase):
         for name in ("ProfilePage", "_ProfilePageState"):
             self.assertNotIn("class " + name + " extends ", main)
             self.assertEqual(module.count("class " + name + " extends "), 1)
-        for contract in ("widget.user", "widget.records", "widget.perDiems",
-                         "widget.functionDefinitions"):
+        for contract in ("widget.user", "widget.functionDefinitions",
+                         "collection('records')", "collection('perDiems')",
+                         "where('teamId'", "where('memberId'", "actualReceivedAmount"):
             self.assertIn(contract, module)
 
     def test_centralizer_page_extracted_preserving_records_and_export(self):
@@ -455,26 +473,46 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_operational_date_helpers_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/utils/operational_dates.dart").read_text(encoding="utf-8")
+        formatters = (ROOT / "lib/utils/date_formatters.dart").read_text(encoding="utf-8")
         self.assertIn("part 'utils/operational_dates.dart';", main)
+        self.assertIn("import 'utils/work_date_policy.dart';", main)
+        self.assertIn("export 'utils/work_date_policy.dart';", main)
+        policy = (ROOT / "lib/utils/work_date_policy.dart").read_text(encoding="utf-8")
+        self.assertNotIn("part of '../main.dart';", policy)
+        self.assertIn("import 'utils/date_formatters.dart';", main)
+        self.assertIn("export 'utils/date_formatters.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("String two(int n)", "String formatDate(DateTime d)",
-                       "String formatMonth(DateTime d)", "String timeText(DateTime? d)",
-                       "String durationText(Duration? d)", "bool sameDay(DateTime a, DateTime b)",
-                       "DateTime operationalWorkDate(DateTime now)",
-                       "DateTime workWindowStart(DateTime workDate)",
-                       "DateTime workWindowEnd(DateTime workDate)",
-                       "bool isInsideWorkWindow(", "bool recordBelongsToWorkDate(",
-                       "DateTime recordEventTime("):
+        self.assertNotIn("part of '../main.dart';", formatters)
+        pure_symbols = ("String two(int n)", "String formatDate(DateTime d)",
+                        "String formatMonth(DateTime d)", "String timeText(DateTime? d)",
+                        "String durationText(Duration? d)", "bool sameDay(DateTime a, DateTime b)")
+        policy_symbols = ("DateTime operationalWorkDate(DateTime now)",
+                          "DateTime workWindowStart(DateTime workDate)",
+                          "DateTime workWindowEnd(DateTime workDate)",
+                          "bool isInsideWorkWindow(")
+        operational_symbols = ("bool recordBelongsToWorkDate(", "DateTime recordEventTime(")
+        for symbol in pure_symbols:
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(formatters.count(symbol), 1)
+        for symbol in policy_symbols:
+            self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, formatters)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(policy.count(symbol), 1)
+        for symbol in operational_symbols:
+            self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, formatters)
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("Duration(hours: 23, minutes: 30)", module)
-        self.assertIn("DateTime(workDate.year, workDate.month, workDate.day, 9, 30)", module)
+        self.assertIn("Duration(hours: 23, minutes: 30)", policy)
+        self.assertIn("DateTime(workDate.year, workDate.month, workDate.day, 9, 30)", policy)
 
     def test_permission_groups_and_payment_labels_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/permission_status_labels.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/permission_status_labels.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/permission_status_labels.dart';", main)
+        self.assertIn("export 'models/permission_status_labels.dart';", main)
+        self.assertIn("import 'app_enums_permissions.dart';", module)
         for symbol in ("String functionPermissionGroup(FunctionPermission permission)",
                        "extension PerDiemStatusX on PerDiemStatus",
                        "extension PaymentMethodX on PerDiemPaymentMethod"):
@@ -501,13 +539,21 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_section_visual_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/section_visual_helpers.dart").read_text(encoding="utf-8")
+        palette = (ROOT / "lib/ui/section_accent_palette.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/section_visual_helpers.dart';", main)
+        self.assertIn("import 'ui/section_accent_palette.dart';", main)
+        self.assertIn("export 'ui/section_accent_palette.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("Color sectionAccent(String label)",
-                       "void showSuccessMessage(BuildContext context, String message)",
+        self.assertIn("import 'package:flutter/material.dart';", palette)
+        self.assertNotIn("part of '../main.dart';", palette)
+        self.assertEqual(palette.count("Color sectionAccent(String label)"), 1)
+        self.assertNotIn("Color sectionAccent(String label)", main)
+        self.assertNotIn("Color sectionAccent(String label)", module)
+        for symbol in ("void showSuccessMessage(BuildContext context, String message)",
                        "void showErrorMessage(BuildContext context, String message)",
                        "Color _plainBackgroundColor(AppSettings settings, Brightness brightness)"):
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, palette)
             self.assertEqual(module.count(symbol), 1)
         self.assertIn("Colors.white", module)
 
@@ -525,17 +571,34 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_icon_badge_catalog_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/ui/icon_badge_catalog.dart").read_text(encoding="utf-8")
+        metadata = (ROOT / "lib/ui/badge_metadata.dart").read_text(encoding="utf-8")
         self.assertIn("part 'ui/icon_badge_catalog.dart';", main)
+        self.assertIn("import 'ui/badge_metadata.dart';", main)
+        self.assertIn("export 'ui/badge_metadata.dart';", main)
         self.assertIn("part of '../main.dart';", module)
+        self.assertNotIn("part of '../main.dart';", metadata)
         for symbol in ("const Map<String, IconData> appIconChoices",
-                       "const Map<String, String> badgeAssetChoices",
-                       "const List<String> availableBadgeKeys",
-                       "const Map<String, String> categoryBrandAssets",
                        "Widget _badgeGraphic(", "Widget categoryBrandWidget(",
-                       "Widget sectionAssetWidget(", "String badgeLabel("):
+                       "Widget sectionAssetWidget("):
             self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, metadata)
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", module)
+        for symbol in ("const Map<String, String> badgeAssetChoices",
+                       "const List<String> availableBadgeKeys", "String badgeLabel("):
+            self.assertNotIn(symbol, main)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(metadata.count(symbol), 1)
+        self.assertIn("'badge_machine': 'assets/badges/badge_worker.png'", metadata)
+        catalog = (ROOT / "lib/ui/section_asset_catalog.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'ui/section_asset_catalog.dart';", main)
+        self.assertIn("export 'ui/section_asset_catalog.dart';", main)
+        self.assertNotIn("part of", catalog)
+        for symbol in ("const Map<String, String> categoryBrandAssets", "String? sectionAssetForLabel("):
+            self.assertEqual(catalog.count(symbol), 1)
+            self.assertNotIn(symbol, module)
+            self.assertNotIn(symbol, metadata)
+        self.assertIn("final asset = sectionAssetForLabel(label);", module)
+        self.assertIn("final asset = categoryBrandAssets[categoryId];", module)
 
     def test_interactive_member_badges_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
@@ -558,8 +621,11 @@ class RepositoryHygieneTests(unittest.TestCase):
         module = (ROOT / "lib/models/location_category_helpers.dart").read_text(encoding="utf-8")
         self.assertIn("part 'models/location_category_helpers.dart';", main)
         self.assertIn("part of '../main.dart';", module)
-        for symbol in ("String defaultCategoryIdForType(",
-                       "LocationType legacyTypeForCategory(",
+        identity = (ROOT / "lib/models/category_identity.dart").read_text(encoding="utf-8")
+        self.assertNotIn("part of", identity)
+        self.assertEqual(identity.count("String defaultCategoryIdForType("), 1)
+        self.assertNotIn("String defaultCategoryIdForType(", module)
+        for symbol in ("LocationType legacyTypeForCategory(",
                        "Color categoryColor(", "String categoryName("):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
@@ -569,8 +635,11 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_default_categories_and_functions_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/default_categories_functions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/default_categories_functions.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
+        self.assertIn("import 'models/default_categories_functions.dart';", main)
+        self.assertIn("export 'models/default_categories_functions.dart';", main)
+        self.assertNotIn("part of '../main.dart';", module)
+        self.assertIn("import 'app_enums_permissions.dart';", module)
+        self.assertIn("import 'location_category_and_function_definition.dart';", module)
         for symbol in ("String functionPermissionId(",
                        "List<LocationCategory> defaultLocationCategories(",
                        "List<FunctionDefinition> defaultFunctionDefinitions(",
@@ -584,28 +653,43 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_location_status_and_function_models_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/models/location_status_and_functions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/location_status_and_functions.dart';", main)
-        self.assertIn("part of '../main.dart';", module)
-        for symbol in ("extension LocationStatusX on LocationStatus",
-                       "class LocationCategory {", "class FunctionDefinition {"):
+        models = (ROOT / "lib/models/location_category_and_function_definition.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'models/location_status_and_functions.dart';", main)
+        self.assertIn("export 'models/location_status_and_functions.dart';", main)
+        self.assertIn("import 'app_enums_permissions.dart';", module)
+        self.assertIn("import 'models/location_category_and_function_definition.dart';", main)
+        self.assertIn("export 'models/location_category_and_function_definition.dart';", main)
+        self.assertNotIn("part of '../main.dart';", module)
+        self.assertNotIn("part of '../main.dart';", models)
+        self.assertIn("import 'package:flutter/material.dart';", models)
+        self.assertEqual(module.count("extension LocationStatusX on LocationStatus"), 1)
+        for symbol in ("class LocationCategory {", "class FunctionDefinition {"):
             self.assertNotIn(symbol, main)
-            self.assertEqual(module.count(symbol), 1)
-        self.assertIn(".take(3).toList()", module)
-        self.assertIn("iconKey = this.badgeKeys.first;", module)
-        self.assertIn("permissions = permissions ?? <String>{}", module)
+            self.assertNotIn(symbol, module)
+            self.assertEqual(models.count(symbol), 1)
+        self.assertIn(".take(3).toList()", models)
+        self.assertIn("iconKey = this.badgeKeys.first;", models)
+        self.assertIn("permissions = permissions ?? <String>{}", models)
 
     def test_pdf_format_helpers_are_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         module = (ROOT / "lib/reports/pdf_format_helpers.dart").read_text(encoding="utf-8")
         self.assertIn("part 'reports/pdf_format_helpers.dart';", main)
         self.assertIn("part of '../main.dart';", module)
+        normalizer = (ROOT / "lib/reports/pdf_filename_normalization.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'reports/pdf_filename_normalization.dart';", main)
+        self.assertIn("export 'reports/pdf_filename_normalization.dart';", main)
+        self.assertIn("String safePdfFilePart(String text)", normalizer)
+        self.assertIn("String _safeFilePart(String text) => safePdfFilePart(text);", module)
+        self.assertNotIn("String safePdfFilePart(String text)", module)
         for symbol in ("Future<pw.ThemeData> _buildPdfTheme(",
                        "String _safeFilePart(", "String _pdfDate("):
             self.assertNotIn(symbol, main)
             self.assertEqual(module.count(symbol), 1)
-        self.assertIn("PdfGoogleFonts.openSansRegular()", module)
-        self.assertIn("PdfGoogleFonts.openSansBold()", module)
-        self.assertIn("PdfGoogleFonts.openSansItalic()", module)
+        self.assertNotIn("PdfGoogleFonts.", module)
+        for font in ("DejaVuSans.ttf", "DejaVuSans-Bold.ttf", "DejaVuSans-Oblique.ttf"):
+            self.assertIn(f"rootBundle.load('assets/fonts/{font}')", module)
+            self.assertTrue((ROOT / "assets/fonts" / font).is_file())
 
     def test_app_root_theme_is_extracted(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
@@ -730,8 +814,10 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_core_models_extracted_once(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         models = (ROOT / "lib/models/app_data_models.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/app_data_models.dart';", main)
-        self.assertIn("part of '../main.dart';", models)
+        self.assertEqual(main.count("import 'models/app_data_models.dart';"), 1)
+        self.assertEqual(main.count("export 'models/app_data_models.dart';"), 1)
+        self.assertNotIn("part of", models)
+        self.assertNotIn("main.dart", models)
         names = ("AppUser", "Team", "Car", "LocationContact", "Location",
                  "ScheduleItem", "WorkSchedule", "CentralizerRecord", "Expense",
                  "PerDiemEntry", "ReceivedMoneyEntry", "TravelSettlement",
@@ -745,8 +831,11 @@ class RepositoryHygieneTests(unittest.TestCase):
     def test_enums_and_permissions_extracted_without_duplicates(self):
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
         enums = (ROOT / "lib/models/app_enums_permissions.dart").read_text(encoding="utf-8")
-        self.assertIn("part 'models/app_enums_permissions.dart';", main)
-        self.assertIn("part of '../main.dart';", enums)
+        self.assertIn("import 'models/app_enums_permissions.dart';", main)
+        self.assertIn("export 'models/app_enums_permissions.dart';", main)
+        self.assertNotIn("part 'models/app_enums_permissions.dart';", main)
+        self.assertNotIn("part of", enums)
+        self.assertIn("import 'package:flutter/material.dart';", enums)
         for name in ("LocationType", "LocationStatus", "UserRole",
                      "UserFunction", "FunctionPermission", "PerDiemStatus",
                      "PerDiemPaymentMethod", "ExpenseDocumentType",
@@ -766,14 +855,14 @@ class RepositoryHygieneTests(unittest.TestCase):
         for declaration in ("class AdminPanelPage extends StatefulWidget", "class _AdminPanelPageState extends State<AdminPanelPage>"):
             self.assertNotIn(declaration, main)
             self.assertEqual(admin.count(declaration), 1)
-        for contract in ("_exportBackup", "_restoreBackup"):
+        for contract in ("exportBackup", "restoreBackup"):
             self.assertIn(contract, (ROOT / "lib/admin/admin_backup_panel_actions.dart").read_text(encoding="utf-8"))
         for contract in ("saveLocation", "deleteLocation"):
             self.assertIn(contract, (ROOT / "lib/admin/admin_location_actions.dart").read_text(encoding="utf-8"))
         backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
         self.assertIn("part 'admin/admin_backup_actions.dart';", main)
         self.assertIn("with _AdminBackupActions", admin)
-        for method in ("_exportBackup() async", "_restoreAutomaticBackup(String backupId) async", "_restoreBackup() async"):
+        for method in ("exportBackup() async", "restoreAutomaticBackup(String backupId) async", "restoreBackup() async"):
             self.assertIn(method, backup)
             self.assertNotIn("Future<void> " + method, admin)
 
@@ -837,7 +926,10 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertNotIn(".snapshots()", core)
         sync = home.split("  void _startAuditSync(", 1)[1].split("  Future<void> _writeLearningEvent(", 1)[0]
         self.assertEqual(sync.count("_coreSubscriptions.add("), 15)
-        self.assertIn("for (final sub in _coreSubscriptions) { sub.cancel(); }", home)
+        self.assertIn("final _coreSubscriptions = HomeSubscriptionRegistry();", home)
+        self.assertIn("unawaited(_coreSubscriptions.dispose());", home)
+        self.assertIn("unawaited(_financialSubscriptions.dispose());", home)
+        self.assertIn("unawaited(_financialSubscriptions.cancelAll());", home)
         self.assertIn("if (isAdmin) {\n      _startAuditSync(db);", core)
         self.assertIn("_startFinancialSync();", core)
 
@@ -894,7 +986,9 @@ class RepositoryHygieneTests(unittest.TestCase):
             self.assertIn(method, permissions)
         self.assertNotIn("Future<void> _migrateFunctionBadgeSystemIfNeeded()", home)
         self.assertIn("'effectivePermissions'", permissions)
-        self.assertIn("'functionSystemVersion'", permissions)
+        guard = (ROOT / "lib/home/function_migration_guard.dart").read_text(encoding="utf-8")
+        self.assertIn("'functionSystemVersion'", guard)
+        self.assertIn("functionBadgeMigrationReady(", permissions)
         self.assertIn("Set<String> _effectivePermissionsForIds(Iterable<String> ids)", permissions)
         self.assertNotIn("Set<String> _effectivePermissionsForIds(", home)
 
@@ -922,9 +1016,9 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertIn("_AdminBackupPanelActions", admin)
         self.assertIn("Widget _backup()", panel)
         self.assertNotIn("Widget _backup()", admin)
-        self.assertIn("_restoreAutomaticBackup(", panel)
-        self.assertIn("_exportBackup", panel)
-        self.assertIn("_restoreBackup", panel)
+        self.assertIn("restoreAutomaticBackup(", panel)
+        self.assertIn("exportBackup", panel)
+        self.assertIn("restoreBackup", panel)
         self.assertIn("Conturile de autentificare rămân intacte", panel)
 
     def test_admin_function_rights_extracted_and_admin_protected(self):
@@ -1069,39 +1163,57 @@ class RepositoryHygieneTests(unittest.TestCase):
 
     def test_automatic_backup_preflight_prevents_missing_collection_deletion(self):
         backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
-        restore = backup.split("Future<void> _restoreAutomaticBackup(String backupId) async {", 1)[1].split("Future<void> _restoreBackup() async {", 1)[0]
-        self.assertLess(restore.index("for(final item in items.docs)"), restore.index("batch.delete(doc.reference)"))
-        self.assertLess(restore.index("if(grouped.isEmpty)"), restore.index("batch.delete(doc.reference)"))
-        self.assertIn("for(final collection in grouped.keys)", restore)
+        restore = backup.split("Future<void> restoreAutomaticBackup(String backupId) async {", 1)[1].split("Future<void> restoreBackup() async {", 1)[0]
+        self.assertLess(restore.index("for(final item in items.docs)"), restore.index("await restoreAtomically("))
+        self.assertLess(restore.index("if(grouped.isEmpty)"), restore.index("await restoreAtomically("))
+        self.assertIn("restoreAtomically(db, grouped", restore)
         self.assertNotIn("for(final collection in allowed){", restore)
         self.assertIn("if(documents.containsKey(documentId))", restore)
-        self.assertIn("if(validatedSettings!=null)", restore)
+        self.assertIn("settings: validatedSettings", restore)
 
     def test_backup_restore_preflights_all_documents_before_deletion(self):
         backup = (ROOT / "lib/admin/admin_backup_actions.dart").read_text(encoding="utf-8")
-        restore = backup.split("Future<void> _restoreBackup() async {", 1)[1].split("\n  }\n", 1)[0]
+        restore = backup.split("Future<void> restoreBackup() async {", 1)[1].split("\n  }\n", 1)[0]
         validation = restore.index("for(final entry in rawCollections.entries)")
         decoding = restore.index("final decoded=_backupDecode(rawEntry.value)")
         settings_validation = restore.index("final decodedSettings=_backupDecode(parsed['uiSettings'])")
         confirmation = restore.index("final ok=await showDialog<bool>")
-        deletion = restore.index("batch.delete(doc.reference)")
+        deletion = restore.index("await restoreAtomically(")
         self.assertLess(validation, decoding)
         self.assertLess(decoding, settings_validation)
         self.assertLess(settings_validation, confirmation)
         self.assertLess(confirmation, deletion)
-        self.assertIn("if(validatedSettings!=null)", restore)
+        self.assertIn("settings: validatedSettings", restore)
         self.assertIn("if(decoded is! Map)throw FormatException", restore)
         self.assertIn("if(id.isEmpty||id.contains('/'))", restore)
         self.assertIn("Backup invalid. Nu s-au modificat date:", restore)
 
     def test_manual_amount_and_map_route_regressions(self):
         source = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        expense_source = (ROOT / "lib/expenses/expense_page.dart").read_text(encoding="utf-8")
+        expense_source = (ROOT / "lib/expenses/expense_amount_parser.dart").read_text(encoding="utf-8")
         map_source = (ROOT / "lib/map/map_page.dart").read_text(encoding="utf-8")
         self.assertIn("hasMatch(normalized)", expense_source)
         self.assertIn("normalized = raw.trim().replaceAll", expense_source)
-        self.assertIn("Schematic fallback when Mapbox cannot provide road geometry.", map_source)
+        self.assertIn("parseLeiToBani(normalized)", expense_source)
+        self.assertIn("multicolour segments", map_source)
+        self.assertIn(": _rainbowRouteLines()", map_source)
         self.assertNotIn("for (final c in [number, amount, supplier, desc, litersC, priceC]) { c.dispose(); }", source)
+
+
+    def test_profile_employment_tenure_is_standalone_and_directly_tested(self):
+        main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
+        profile = (ROOT / "lib/profile/profile_page.dart").read_text(encoding="utf-8")
+        module = (ROOT / "lib/profile/employment_tenure.dart").read_text(encoding="utf-8")
+        test = (ROOT / "test/employment_tenure_test.dart").read_text(encoding="utf-8")
+        self.assertIn("import 'profile/employment_tenure.dart';", main)
+        self.assertIn("export 'profile/employment_tenure.dart';", main)
+        self.assertIn("calculateEmploymentParts(hire, now: DateTime.now())", profile)
+        self.assertNotIn("_employmentParts(", profile)
+        self.assertIn("if (start.isAfter(now))", module)
+        self.assertIn("DateTime anchorFor(int months)", module)
+        for path in ("end-of-month", "leap-year", "future hire date"):
+            self.assertIn(path, test)
+
 
 
 if __name__ == "__main__":

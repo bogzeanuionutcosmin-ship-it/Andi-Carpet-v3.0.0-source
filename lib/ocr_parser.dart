@@ -8,6 +8,7 @@ class FiscalOcrData {
   final double? pricePerLiter;
   final bool looksLikeFuel;
   final double confidence;
+  final bool ambiguousDocument;
 
   const FiscalOcrData({
     required this.rawText,
@@ -19,6 +20,7 @@ class FiscalOcrData {
     this.pricePerLiter,
     this.looksLikeFuel = false,
     this.confidence = 0,
+    this.ambiguousDocument = false,
   });
 }
 
@@ -36,10 +38,12 @@ String _cleanNumber(String value) {
   final separator=comma>=0?',':(dot>=0?'.':'');
   if(separator.isEmpty)return v;
   final pieces=v.split(separator);
-  if(pieces.length==2&&pieces.last.length<=3)return '${pieces.first}.${pieces.last}';
+  if(pieces.length==2&&pieces.last.length<3)return '${pieces.first}.${pieces.last}';
+  if(pieces.length==2&&pieces.last.length==3)return pieces.join();
   if(pieces.length>2){
     final last=pieces.last;
-    if(last.length<=3)return '${pieces.take(pieces.length-1).join()}.$last';
+    if(last.length<3)return '${pieces.take(pieces.length-1).join()}.$last';
+    if(last.length==3)return pieces.join();
   }
   return v.replaceAll(separator,'');
 }
@@ -63,7 +67,15 @@ DateTime? _parseDate(String value) {
   }
   if (c < 100) c += c >= 70 ? 1900 : 2000;
   if (a < 1 || a > 31 || b < 1 || b > 12 || c < 2000 || c > 2100) return null;
-  try { return DateTime(c, b, a); } catch (_) { return null; }
+  try {
+    final parsed = DateTime(c, b, a);
+    // DateTime normalizes impossible dates (31 February → March). OCR must
+    // reject those rather than silently prefill a different expense date.
+    if (parsed.year != c || parsed.month != b || parsed.day != a) return null;
+    return parsed;
+  } catch (_) {
+    return null;
+  }
 }
 
 FiscalOcrData parseFiscalOcr(String text) {
@@ -88,6 +100,20 @@ FiscalOcrData parseFiscalOcr(String text) {
     RegExp(r'(?:BON(?:\s+FISCAL)?|FACTUR[ĂA]?|FACT\.?|DOCUMENT|NR\.?)\s*(?:NR\.?)?\s*[:#\-]?\s*([A-Z0-9\-/]{2,})', caseSensitive: false),
     RegExp(r'NR\.?\s*[:#\-]?\s*([A-Z0-9\-/]{3,})', caseSensitive: false),
   ];
+  final markedDocumentNumbers = RegExp(
+    r'(?:BON(?:\s+FISCAL)?|FACTUR[ĂA]?)\s*(?:NR\.?)?\s*[:#\-]?\s*([A-Z0-9\-/]{2,})',
+    caseSensitive: false,
+  ).allMatches(raw).map((m) => (m.group(1) ?? '').trim()).where((n) => n.isNotEmpty).toSet();
+  if (markedDocumentNumbers.length > 1) {
+    // Never combine the first receipt's identity/date with a later receipt's
+    // amount when one photo contains multiple numbered documents.
+    return FiscalOcrData(
+      rawText: raw.trim(),
+      looksLikeFuel: false,
+      confidence: 0,
+      ambiguousDocument: true,
+    );
+  }
   for (final re in numberPatterns) {
     final m = re.firstMatch(raw);
     if (m != null) { docNo = (m.group(1) ?? '').trim(); if (docNo.isNotEmpty) break; }
@@ -101,9 +127,13 @@ FiscalOcrData parseFiscalOcr(String text) {
   }
 
   double? amount;
+  // Romanian receipts often group thousands with spaces or dots:
+  // 1 234,56 / 1.234,56. Capture the complete amount so the regex cannot
+  // silently accept only the leading "1" before _money sees the separator.
+  const moneyToken = r'((?:[0-9]{1,3}(?:[ .\u00A0][0-9]{3})*(?:[.,][0-9]{2})?|[0-9]{1,7}(?:[.,][0-9]{2})?)(?![0-9.,]))';
   final totalPatterns = <RegExp>[
-    RegExp(r'(?:TOTAL\s+(?:DE\s+PLAT[ĂA]|PLAT[ĂA])?|TOTAL|SUMA\s+DE\s+PLAT[ĂA]|DE\s+PLAT[ĂA])[^0-9]{0,20}([0-9]{1,7}(?:[.,][0-9]{2})?)', caseSensitive: false),
-    RegExp(r'([0-9]{1,7}(?:[.,][0-9]{2})?)\s*(?:RON|LEI)\b', caseSensitive: false),
+    RegExp('(?:TOTAL\\s+(?:DE\\s+PLAT[ĂA]|PLAT[ĂA])?|TOTAL|SUMA\\s+DE\\s+PLAT[ĂA]|DE\\s+PLAT[ĂA])[^0-9]{0,20}$moneyToken', caseSensitive: false),
+    RegExp('$moneyToken\\s*(?:RON|LEI)\\b', caseSensitive: false),
   ];
   for (final re in totalPatterns) {
     final matches = re.allMatches(raw).toList();
@@ -114,7 +144,7 @@ FiscalOcrData parseFiscalOcr(String text) {
     if (amount != null) break;
   }
   if (amount == null) {
-    final candidates = RegExp(r'\b([0-9]{1,6}[.,][0-9]{2})\b').allMatches(raw)
+    final candidates = RegExp(r'([0-9]{1,3}(?:[ .\u00A0][0-9]{3})*(?:[.,][0-9]{2})|[0-9]{1,7}[.,][0-9]{2})(?![0-9.,])').allMatches(raw)
         .map((m) => _money(m.group(1) ?? ''))
         .whereType<double>()
         .where((x) => x < 100000)
