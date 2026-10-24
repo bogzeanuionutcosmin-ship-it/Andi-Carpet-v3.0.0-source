@@ -56,8 +56,9 @@ test('team finance writer can create an expense without a per-diem distributedBy
 });
 
 test('authorized expense writer can transactionally read a missing target and create the receipt', async () => {
-  const ref = expenseRef(db('writer'), 'expense-transaction-create');
-  await assertSucceeds(runTransaction(db('writer'), async (transaction) => {
+  const writerDb = db('writer');
+  const ref = expenseRef(writerDb, 'expense-transaction-create');
+  await assertSucceeds(runTransaction(writerDb, async (transaction) => {
     const current = await transaction.get(ref);
     assert.equal(current.exists(), false);
     transaction.set(ref, expense('team-a'));
@@ -65,14 +66,16 @@ test('authorized expense writer can transactionally read a missing target and cr
 });
 
 test('missing expense reads need own-decont permission; existing expense reads stay team-scoped', async () => {
-  await assertFails(runTransaction(db('member-no-finance'), async (transaction) => {
-    await transaction.get(expenseRef(db('member-no-finance'), 'missing-expense'));
+  const memberDb = db('member-no-finance');
+  await assertFails(runTransaction(memberDb, async (transaction) => {
+    await transaction.get(expenseRef(memberDb, 'missing-expense'));
   }));
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(expenseRef(ctx.firestore(), 'expense-team-b-private'), expense('team-b'));
   });
-  await assertFails(runTransaction(db('outsider'), async (transaction) => {
-    await transaction.get(expenseRef(db('outsider'), 'expense-team-b-private'));
+  const outsiderDb = db('outsider');
+  await assertFails(runTransaction(outsiderDb, async (transaction) => {
+    await transaction.get(expenseRef(outsiderDb, 'expense-team-b-private'));
   }));
 });
 
